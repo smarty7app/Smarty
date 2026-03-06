@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-arabic: var(--font-arabic);
+  
+  /* Material 3 Light Palette Tokens */
+  --color-primary: #6750A4;
+  --color-on-primary: #FFFFFF;
+  --color-primary-container: #EADDFF;
+  --color-on-primary-container: #21005D;
+  
+  --color-secondary: #625B71;
+  --color-on-secondary: #FFFFFF;
+  --color-secondary-container: #E8DEF8;
+  --color-on-secondary-container: #1D192B;
+  
+  --color-tertiary: #7D5260;
+  --color-on-tertiary: #FFFFFF;
+  --color-tertiary-container: #FFD8E4;
+  --color-on-tertiary-container: #31111D;
+  
+  --color-error: #B3261E;
+  --color-on-error: #FFFFFF;
+  --color-error-container: #F9DEDC;
+  --color-on-error-container: #410E0B;
+  
+  --color-surface: #FEF7FF;
+  --color-on-surface: #1D1B20;
+  --color-surface-variant: #E7E0EB;
+  --color-on-surface-variant: #49454F;
+  --color-outline: #79747E;
+}
+
+@layer base {
+  body {
+    @apply font-arabic bg-surface text-on-surface;
+  }
+}

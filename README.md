@@ -1,2 +1,20 @@
-# Smarty
-Smarty – Your intelligent reminder assistant.  - Understands Arabic and English text (including dialects) - Dual-stage notifications: warning &amp; final reminders - Smart analysis: automatically sets reminder times - Supports 4 languages: العربية, English, Français, 中文 - Works offline, respects your privacy 
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
+
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/a98eb3a9-b4eb-4523-b0f6-77dae3798c2b
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
