@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ChevronLeft, Info, Code, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Info, Code, MessageCircle, Eye } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
 interface AboutScreenProps {
@@ -10,6 +10,26 @@ interface AboutScreenProps {
 
 export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const { t, isRTL } = useLanguage();
+  const [visitorCount, setVisitorCount] = useState(0);
+  const [isAnimated, setIsAnimated] = useState(false);
+
+  useEffect(() => {
+    // عداد حقيقي لكل زائر (يخزن في localStorage)
+    let count = localStorage.getItem('smarty_visitor_count');
+    if (!count) {
+      count = '1';
+      localStorage.setItem('smarty_visitor_count', count);
+    } else {
+      count = (parseInt(count) + 1).toString();
+      localStorage.setItem('smarty_visitor_count', count);
+    }
+    setVisitorCount(parseInt(count));
+
+    // تأثير حركي بسيط عند التحميل
+    setIsAnimated(true);
+    const timer = setTimeout(() => setIsAnimated(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
@@ -31,11 +51,12 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         
         <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
           <p className="font-black text-xl mb-3 text-black dark:text-white">تطوير: Benabdallah Abdallah</p>
+          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm">بالتعاون مع Gemini و DeepSeek AI</p>
         </div>
         
         <div className="flex gap-4 w-full max-w-md">
           <a 
-            href="https://github.com" 
+            href="https://github.com/17benabdallah-hue" 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
@@ -52,6 +73,37 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             <MessageCircle className="w-5 h-5" />
             تيليجرام
           </a>
+        </div>
+
+        {/* Badge Counter - تصميم احترافي */}
+        <div className="mt-8 w-full max-w-md">
+          <div className="relative">
+            {/* خط فاصل مع تأثير */}
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10"></div>
+            </div>
+            
+            {/* محتوى العداد */}
+            <div className="relative flex justify-center">
+              <div className="bg-[#E65100] dark:bg-zinc-800 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 border border-white/10">
+                <div className="relative">
+                  <Eye className={`w-5 h-5 text-white/70 ${isAnimated ? 'animate-pulse' : ''}`} />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></span>
+                </div>
+                <span className="text-white/50 text-sm">زوار التطبيق</span>
+                <div className="h-4 w-px bg-white/20 mx-1"></div>
+                <span className="text-white font-black text-lg tabular-nums">
+                  {visitorCount.toLocaleString()}
+                </span>
+                <span className="text-white/30 text-xs">مشاهدة</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* بصمة رقمية صغيرة (اختياري) */}
+        <div className="mt-4 text-white/20 text-[8px] font-mono tracking-wider">
+          {new Date().getFullYear()} © Smartry
         </div>
       </div>
     </div>
