@@ -44,7 +44,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             GitHub
           </a>
           <a 
-            href="https:href="https://t.me/share/url?url=https://smartyz.netlify.app&text=جرب%20تطبيق%20Smarty%20الرائع"
+            href="https://t.me/share/url?url=https://smartyz.netlify.app&text=جرب%20تطبيق%20Smarty%20الرائع"
             target="_blank" 
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-3 bg-[#0088cc] text-white py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
