@@ -75,12 +75,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             تيليجرام
           </a>
         </div>
-         {/* bay - الاسم الكامل في الأسفل */}
-      <div className="w-full max-w-md text-center mb-2">
-      <p className="text-white/30 text-[10px] font-light">
-        Bay:Benabdallah Abdallah
-    </p>
-  </div>
+         
         {/* Badge Counter - تصميم احترافي */}
         <div className="mt-8 w-full max-w-md">
           <div className="relative">
@@ -108,8 +103,14 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         </div>
 
         {/* بصمة رقمية صغيرة (اختياري) */}
-        <div className="mt-4 text-white/20 text-[8px] font-mono tracking-wider">
+        <div className="mt-4 text-white/20 text-[15px] font-mono tracking-wider">
           {new Date().getFullYear()} © Smatry
+      {/* bay - الاسم الكامل في الأسفل */}
+      <div className="w-full max-w-md text-center mb-2">
+      <p className="text-white/30 text-[15px] font-light">
+        Bay:Benabdallah Abdallah
+    </p>
+  </div>
         </div>
       </div>
     </div>
