@@ -51,8 +51,13 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         
         <h2 className="text-4xl font-black mb-2 text-white tracking-tight">{t.app_name}</h2>
         <p className="text-white/70 font-bold mb-12 tracking-widest uppercase text-sm">{t.version} 2.0</p>
-        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
-
+        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
+  <div className="w-16 h-16 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto mb-3">
+    <span className="text-white text-3xl font-black">S</span>
+  </div>
+  <p className="text-zinc-600 dark:text-zinc-300 text-sm font-medium">
+   سكرتيرك الذكي 
+  </p>
 </div>
         
         <div className="flex gap-4 w-full max-w-md">
