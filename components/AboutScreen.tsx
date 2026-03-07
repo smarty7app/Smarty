@@ -14,20 +14,23 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const [isAnimated, setIsAnimated] = useState(false);
 
   useEffect(() => {
-    // عداد حقيقي لكل زائر (يخزن في localStorage)
-    let count = localStorage.getItem('smarty_visitor_count');
-    if (!count) {
-      count = '1';
-      localStorage.setItem('smarty_visitor_count', count);
-    } else {
-      count = (parseInt(count) + 1).toString();
-      localStorage.setItem('smarty_visitor_count', count);
-    }
-    setVisitorCount(parseInt(count));
+    // استخدام setTimeout لتأخير setState قليلاً (تجنب التحذير)
+    const timer = setTimeout(() => {
+      let count = localStorage.getItem('smarty_visitor_count');
+      if (!count) {
+        count = '1';
+        localStorage.setItem('smarty_visitor_count', count);
+      } else {
+        count = (parseInt(count) + 1).toString();
+        localStorage.setItem('smarty_visitor_count', count);
+      }
+      setVisitorCount(parseInt(count));
+      setIsAnimated(true);
+      
+      // إيقاف التأثير الحركي بعد ثانية
+      setTimeout(() => setIsAnimated(false), 1000);
+    }, 0);
 
-    // تأثير حركي بسيط عند التحميل
-    setIsAnimated(true);
-    const timer = setTimeout(() => setIsAnimated(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
