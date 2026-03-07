@@ -31,7 +31,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         
         <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
           <p className="font-black text-xl mb-3 text-black dark:text-white">تطوير: Benabdallah Abdallah</p>
-          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm">بالتعاون مع Gemini</p>
         </div>
         
         <div className="flex gap-4 w-full max-w-md">
@@ -45,7 +44,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             GitHub
           </a>
           <a 
-            href="https://t.me" 
+            href="https:href="https://t.me/share/url?url=https://smartyz.netlify.app&text=جرب%20تطبيق%20Smarty%20الرائع"
             target="_blank" 
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-3 bg-[#0088cc] text-white py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
