@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, Code, MessageCircle, Eye } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
-
+import React, { useState, useEffect } from 'react';
 interface AboutScreenProps {
   onBack: () => void;
 }
