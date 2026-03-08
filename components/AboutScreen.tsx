@@ -105,7 +105,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         </div>
 
         {/* بصمة رقمية صغيرة (اختياري) */}
-        <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider">
+        <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider text-center">
         {new Date().getFullYear()} © Smatry
       {/* bay - الاسم الكامل في الأسفل */}
       <div className="w-full max-w-md text-center mb-2">
