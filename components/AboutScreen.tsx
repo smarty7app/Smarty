@@ -84,7 +84,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             </div>
             <div className="relative flex justify-center">
               <div className="bg-[#E65100] dark:bg-zinc-800 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 border border-white/10">
-                <span className="text-white/70 text-sm">إجمالي الزوار</span>
+                <span className="text-white/70 text-sm">عدد الزوار</span>
                 <div className="h-4 w-px bg-white/20 mx-1"></div>
                 <span className="text-white font-black text-lg tabular-nums">
                   {loading ? 'جاري التحميل...' : (visitorCount ?? 0).toLocaleString()}
