@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Inter, Cairo } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { LanguageProvider } from '@/components/LanguageContext';
+import VisitorTracker from '@/components/VisitorTracker'; // <-- أضف هذا السطر
 
 const inter = Inter({
   subsets: ['latin'],
@@ -17,8 +19,6 @@ export const metadata: Metadata = {
   title: 'Smatry',
   description: 'تطبيق ذكي لإدارة التذكيرات والمواعيد مع تحليل تلقائي للنصوص العربية',
 };
-
-import { LanguageProvider } from '@/components/LanguageContext';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -48,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </ErrorBoundary>
         </LanguageProvider>
+        <VisitorTracker /> {/* <-- أضف هذا السطر هنا */}
       </body>
     </html>
   );
