@@ -3,9 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, Code, MessageCircle, Eye } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
-import React, { useState, useEffect } from 'react';
-const [visitorCount, setVisitorCount] = useState<number | null>(null);
-const [loading, setLoading] = useState(true);
+
+interface AboutScreenProps {
+  onBack: () => void;
+}
+
+export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
+  const { t, isRTL } = useLanguage();
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
 useEffect(() => {
   const fetchTotalVisitors = async () => {
