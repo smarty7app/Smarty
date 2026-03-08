@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Bell, 
   plus,
-  Pencil, 
+  pencil, 
   Trash2, 
   CheckCircle2, 
   Clock, 
