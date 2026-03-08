@@ -55,11 +55,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </div>
         
-        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
-          <p className="font-black text-xl mb-3 text-black dark:text-white">تطوير: Benabdallah Abdallah</p>
-          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm">بالتعاون مع Gemini و DeepSeek AI</p>
-        </div>
-        
         <div className="flex gap-4 w-full max-w-md">
           <a 
             href="https://github.com/17benabdallah-hue" 
