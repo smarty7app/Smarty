@@ -53,7 +53,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         <p className="text-white/70 font-bold mb-12 tracking-widest uppercase text-sm">{t.version} 2.0</p>
         <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 w-full max-w-xs shadow-lg border border-black/5 dark:border-white/5 mb-4 text-center">
         <p className="text-zinc-600 dark:text-zinc-600 text-sm font-medium">
-   سكرتيرك الذكي 
+   Never Forget Anything Again. 
   </p>
 </div>
         
