@@ -52,8 +52,8 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         <h2 className="text-4xl font-black mb-2 text-white tracking-tight">{t.app_name}</h2>
         <p className="text-white/70 font-bold mb-12 tracking-widest uppercase text-sm">{t.version} 2.0</p>
         <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 w-full max-w-xs shadow-lg border border-black/5 dark:border-white/5 mb-4 text-center">
-        <p className="text-zinc-200 dark:text-zinc-900 text-sm font-medium">
-   Never Forget Anything Again. 
+        <p className="text-zinc-900 dark:text-zinc-900 text-sm font-medium">
+   Never Forget Anything Again
   </p>
 </div>
         
