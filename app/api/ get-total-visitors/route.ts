@@ -1,4 +1,16 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
+
 export async function GET() {
-  return NextResponse.json({ success: true, total: 42 });
+  try {
+    const { data } = await supabase
+      .from('total_visitors')
+      .select('total_count')
+      .eq('id', 1)
+      .single();
+
+    return NextResponse.json({ success: true, total: data?.total_count || 0 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+  }
 }
