@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Bell, 
-  plus
+  plus,
   Pencil, 
   Trash2, 
   CheckCircle2, 
