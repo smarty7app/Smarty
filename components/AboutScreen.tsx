@@ -13,23 +13,24 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const fetchTotalVisitors = async () => {
-    try {
-      const res = await fetch('/api/get-total-visitors');
-      const data = await res.json();
-      if (data.success) {
-        setVisitorCount(data.total);
+  useEffect(() => {
+    const fetchTotalVisitors = async () => {
+      try {
+        const res = await fetch('/api/get-total-visitors');
+        const data = await res.json();
+        if (data.success) {
+          setVisitorCount(data.total);
+        }
+      } catch (err) {
+        console.error('Failed to fetch visitor count:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to fetch visitor count:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  fetchTotalVisitors();
-}, []);
+    };
+    
+    fetchTotalVisitors();
+  }, []);
+
 interface AboutScreenProps {
   onBack: () => void;
 }
