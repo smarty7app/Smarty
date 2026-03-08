@@ -109,7 +109,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         {new Date().getFullYear()} © Smatry
       {/* bay - الاسم الكامل في الأسفل */}
       <div className="w-full max-w-md text-center mb-2">
-      <p className="text-white/20 text-[8px] font-light">
+      <p className="text-white/20 text-[8px] font-center">
                Bay:Benabdallah Abdallah
     </p>
   </div>
