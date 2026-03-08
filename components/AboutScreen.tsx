@@ -106,11 +106,11 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
 
         {/* بصمة رقمية صغيرة (اختياري) */}
         <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider">
-          {new Date().getFullYear()} © Smatry
+        {new Date().getFullYear()} © Smatry
       {/* bay - الاسم الكامل في الأسفل */}
       <div className="w-full max-w-md text-center mb-2">
       <p className="text-white/20 text-[8px] font-light">
-        Bay:Benabdallah Abdallah
+               Bay:Benabdallah Abdallah
     </p>
   </div>
         </div>
