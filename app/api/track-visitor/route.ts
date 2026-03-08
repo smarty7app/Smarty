@@ -53,4 +53,4 @@ export async function POST(request: NextRequest) {
     console.error('Error tracking visitor:', error);
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
   }
-}
+      }
