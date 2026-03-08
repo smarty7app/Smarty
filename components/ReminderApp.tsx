@@ -1054,7 +1054,7 @@ export default function ReminderApp() {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsAdding(true)}
-        className="fixed bottom-8 left-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
       >
        <Pencil className="w-8 h-8" />
       </motion.button>
