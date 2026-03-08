@@ -106,23 +106,23 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
               <div className="w-full border-t border-white/10"></div>
             </div>
             
-            {/* محتوى العداد */}
-            <div className="relative flex justify-center">
-              <div className="bg-[#E65100] dark:bg-zinc-800 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 border border-white/10">
-                <div className="relative">
-                  <Eye className={`w-5 h-5 text-white/70 ${isAnimated ? 'animate-pulse' : ''}`} />
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></span>
-                </div>
-                <span className="text-white/50 text-sm">زوار التطبيق</span>
-                <div className="h-4 w-px bg-white/20 mx-1"></div>
-                <span className="text-white font-black text-lg tabular-nums">
-                  {visitorCount.toLocaleString()}
-                </span>
-                <span className="text-white/30 text-xs">مشاهدة</span>
-              </div>
-            </div>
-          </div>
-        </div>
+            {/* Badge Counter - Supabase */}
+<div className="mt-8 w-full max-w-md">
+  <div className="relative">
+    <div className="absolute inset-0 flex items-center">
+      <div className="w-full border-t border-white/10"></div>
+    </div>
+    <div className="relative flex justify-center">
+      <div className="bg-[#E65100] dark:bg-zinc-800 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 border border-white/10">
+        <span className="text-white/70 text-sm">إجمالي الزوار الفريدين</span>
+        <div className="h-4 w-px bg-white/20 mx-1"></div>
+        <span className="text-white font-black text-lg tabular-nums">
+          {loading ? 'جاري التحميل...' : (visitorCount ?? 0).toLocaleString()}
+        </span>
+      </div>
+    </div>
+  </div>
+</div></div>
 
         {/* بصمة رقمية صغيرة (اختياري) */}
         <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider text-center">
