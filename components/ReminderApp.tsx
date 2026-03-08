@@ -1058,9 +1058,6 @@ export default function ReminderApp() {
       </motion.button>
 
       <footer className="py-8 text-center bg-black/5">
-        <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">
-          {t.app_name} © 2026 • Benabdallah Abdallah
-        </p>
       </footer>
     </div>
   );
