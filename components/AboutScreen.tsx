@@ -4,6 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, Code, MessageCircle, Eye } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import React, { useState, useEffect } from 'react';
+const [visitorCount, setVisitorCount] = useState<number | null>(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const fetchTotalVisitors = async () => {
+    try {
+      const res = await fetch('/api/get-total-visitors');
+      const data = await res.json();
+      if (data.success) {
+        setVisitorCount(data.total);
+      }
+    } catch (err) {
+      console.error('Failed to fetch visitor count:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchTotalVisitors();
+}, []);
 interface AboutScreenProps {
   onBack: () => void;
 }
