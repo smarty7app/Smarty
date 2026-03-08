@@ -144,4 +144,4 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
       </div>
     </div>
   );
-};
+      }
