@@ -51,7 +51,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         
         <h2 className="text-4xl font-black mb-2 text-white tracking-tight">{t.app_name}</h2>
         <p className="text-white/70 font-bold mb-12 tracking-widest uppercase text-sm">{t.version} 2.0</p>
-        <div className="bg-white dark:bg-zinc-700 rounded-[2.5rem] p-6 w-full max-w-md shadow-xl border border-black/5 dark:border-white/5 mb-8 text-center">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 w-full max-w-xs shadow-lg border border-black/5 dark:border-white/5 mb-4 text-center">
         <p className="text-zinc-600 dark:text-zinc-600 text-sm font-medium">
    سكرتيرك الذكي 
   </p>
