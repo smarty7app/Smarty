@@ -1054,7 +1054,7 @@ export default function ReminderApp() {
         onClick={() => setIsAdding(true)}
         className="fixed bottom-8 left-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
       >
-       <Pencil className="w-6 h-6" /> 
+       <Pencil className="w-8 h-8" />
       </motion.button>
 
       <footer className="py-8 text-center bg-black/5">
