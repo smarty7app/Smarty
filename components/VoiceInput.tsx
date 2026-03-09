@@ -1,58 +1,54 @@
 'use client';
 
 import { useState } from 'react';
-import { Mic, MicOff } from 'lucide-react';
-import { useLanguage } from './LanguageContext'; // استيراد سياق اللغة
+import { Mic } from 'lucide-react';
+import { useLanguage } from './LanguageContext';
+
+// تعريفات Web Speech API لـ TypeScript
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => void }) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState('');
-  const { language } = useLanguage(); // الحصول على اللغة الحالية
+  const { language } = useLanguage();
 
   const startListening = () => {
-    // التأكد من دعم المتصفح
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       setError('متصفحك لا يدعم الإدخال الصوتي');
       return;
     }
 
-    // تهيئة التعرف على الكلام
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
-    // تعيين اللغة بناءً على اختيار المستخدم
     switch (language) {
-      case 'ar':
-        recognition.lang = 'ar-SA'; // العربية
-        break;
-      case 'en':
-        recognition.lang = 'en-US'; // الإنجليزية
-        break;
-      case 'fr':
-        recognition.lang = 'fr-FR'; // الفرنسية
-        break;
-      case 'zh':
-        recognition.lang = 'zh-CN'; // الصينية
-        break;
-      default:
-        recognition.lang = 'ar-SA'; // افتراضي: العربية
+      case 'ar': recognition.lang = 'ar-SA'; break;
+      case 'en': recognition.lang = 'en-US'; break;
+      case 'fr': recognition.lang = 'fr-FR'; break;
+      case 'zh': recognition.lang = 'zh-CN'; break;
+      default: recognition.lang = 'ar-SA';
     }
 
-    recognition.continuous = false; // لا تستمر في الاستماع بعد انتهاء الجملة
-    recognition.interimResults = false; // النتائج النهائية فقط
+    recognition.continuous = false;
+    recognition.interimResults = false;
 
     recognition.onstart = () => {
       setIsListening(true);
       setError('');
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      onTranscript(transcript); // إرسال النص إلى المكون الأب
+      onTranscript(transcript);
       setIsListening(false);
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       setError(`خطأ: ${event.error}`);
       setIsListening(false);
     };
@@ -64,6 +60,24 @@ export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => v
     recognition.start();
   };
 
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={startListening}
+        disabled={isListening}
+        className={`p-3 rounded-full transition-all duration-300 ${
+          isListening 
+            ? 'bg-blue-500 text-white animate-pulse scale-110' 
+            : 'bg-[#E65100] text-white hover:bg-[#b23c00] hover:scale-105'
+        } shadow-lg`}
+      >
+        <Mic size={20} className={isListening ? 'animate-pulse' : ''} />
+      </button>
+      {isListening && <span className="text-blue-500 text-sm">جاري الاستماع...</span>}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </div>
+  );
+}
   return (
     <div className="flex items-center gap-2">
       <button
