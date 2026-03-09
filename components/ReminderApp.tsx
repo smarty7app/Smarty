@@ -849,7 +849,7 @@ export default function ReminderApp() {
         )}
       </main>
 
-      {/* Floating Action Button & Modal */}
+    {/* Floating Action Button & Modal */}
       <AnimatePresence>
         {isAdding && (
           <>
@@ -888,10 +888,12 @@ export default function ReminderApp() {
                       className="w-full min-h-[160px] p-6 bg-transparent resize-none text-2xl text-black dark:text-white outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-600 font-black leading-relaxed"
                     />
                     
-                    {/* زر الميكروفون */}
-                    <div className="flex items-center gap-2 mt-2 mb-4">
-                      <VoiceInput onTranscript={(text) => setInputText(text)} />
-                      <span className="text-sm text-zinc-400">يمكنك أيضاً الضغط على الميكروفون للتحدث</span>
+                    {/* زر الميكروفون هنا - داخل نفس الـ div */}
+                    <div className="px-6 pb-6">
+                      <div className="flex items-center gap-2 mt-2 mb-4">
+                        <VoiceInput onTranscript={(text) => setInputText(text)} />
+                        <span className="text-sm text-zinc-400">يمكنك أيضاً الضغط على الميكروفون للتحدث</span>
+                      </div>
                     </div>
                     
                     {/* AI Suggestions */}
