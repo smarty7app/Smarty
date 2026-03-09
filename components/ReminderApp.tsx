@@ -3,10 +3,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VoiceInput } from './VoiceInput';
-const AddReminderDialog = dynamic(() => import('./AddReminderDialog'), {
-  ssr: false,
-  loading: () => null
-});
 import {
   Bell, 
   Plus,
