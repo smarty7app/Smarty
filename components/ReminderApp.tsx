@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VoiceInput } from './VoiceInput';
+import { dynamic } from 'next/dynamic';
 import {
   Bell, 
   Plus,
