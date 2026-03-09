@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Mic } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-// تعريفات Web Speech API لـ TypeScript
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -74,23 +73,6 @@ export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => v
         <Mic size={20} className={isListening ? 'animate-pulse' : ''} />
       </button>
       {isListening && <span className="text-blue-500 text-sm">جاري الاستماع...</span>}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-    </div>
-  );
-}
-  return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={startListening}
-        disabled={isListening}
-        className={`p-3 rounded-full transition ${
-          isListening 
-            ? 'bg-red-500 text-white animate-pulse' 
-            : 'bg-[#E65100] text-white hover:bg-[#b23c00]'
-        }`}
-      >
-        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-      </button>
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
