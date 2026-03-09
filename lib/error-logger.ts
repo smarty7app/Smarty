@@ -2,7 +2,7 @@
  * مسجل الأخطاء - نسخة الويب المستوحاة من نسخة أندرويد
  * ErrorLogger - Web version inspired by the Android implementation
  */
-
+import { ClipboardList } from 'lucide-react';
 export interface ErrorLogEntry {
   timestamp: string;
   type: string;
