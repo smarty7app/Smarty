@@ -24,6 +24,9 @@ import { AboutScreen } from './AboutScreen';
 import { ShareHelper } from '@/lib/share-helper';
 import { notificationService } from './NotificationService';
 import { useLanguage } from './LanguageContext';
+import React, { lazy, Suspense } from 'react';
+
+const AddReminderModal = lazy(() => import('./AddReminderModal'));
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
