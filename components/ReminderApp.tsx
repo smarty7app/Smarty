@@ -5,20 +5,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { VoiceInput } from './VoiceInput';
 import { 
   Reminder, 
-  Priority,
-  EventType,
-  ReminderStage,
-  parseSmartTime, 
-  getPriorityLabel, 
-  getPriorityColor,
-  analyzePriority,
-  detectEventType,
-  generateCustomMessage
-} from '@/lib/reminder-utils';
-import { format, formatDistanceToNow, isPast, isBefore, parseISO, addHours, addMinutes, addDays, addWeeks } from 'date-fns';
-import { arDZ } from 'date-fns/locale';
-import { 
-  Reminder, 
   parseSmartTime, 
   getPriorityLabel, 
   getPriorityColor,
