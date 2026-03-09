@@ -3,29 +3,18 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { VoiceInput } from './VoiceInput';
-import {
-  Bell, 
-  Plus,
-  Pencil, 
-  Trash2, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
-  RefreshCw, 
-  Calendar,
-  Search,
-  Volume2,
-  VolumeX,
-  BarChart3,
-  Download,
-  Settings,
-  Sparkles,
-  ClipboardList,
-  Info,
-  Share2,
-  MapPin,
-  Timer
-} from 'lucide-react';
+import { 
+  Reminder, 
+  Priority,
+  EventType,
+  ReminderStage,
+  parseSmartTime, 
+  getPriorityLabel, 
+  getPriorityColor,
+  analyzePriority,
+  detectEventType,
+  generateCustomMessage
+} from '@/lib/reminder-utils';
 import { format, formatDistanceToNow, isPast, isBefore, parseISO, addHours, addMinutes, addDays, addWeeks } from 'date-fns';
 import { arDZ } from 'date-fns/locale';
 import { 
