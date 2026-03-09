@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { addMinutes, addHours, addDays, setHours, setMinutes, setSeconds, isBefore, format } from 'date-fns';
-import { LanguageCode, translations } from './translations';
+import { LanguageCode, translations } from '@/lib/translations';
 import { VoiceInput } from './VoiceInput';
 import { 
   Reminder, 
