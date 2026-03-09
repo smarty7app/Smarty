@@ -1,3 +1,4 @@
+import { LanguageCode, translations } from '@/lib/translations';
 export type Priority = 1 | 2 | 3 | 4;
 
 export enum EventType {
