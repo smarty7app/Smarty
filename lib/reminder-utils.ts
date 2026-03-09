@@ -1,6 +1,3 @@
-import { addMinutes, addHours, addDays, setHours, setMinutes, setSeconds, isBefore, format } from 'date-fns';
-import { LanguageCode, translations } from './translations';
-
 export function parseSmartTime(text: string, lang: LanguageCode = 'ar'): { 
   eventTime: Date; 
   reminderTimes: Date[]; 
