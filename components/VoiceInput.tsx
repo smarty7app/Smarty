@@ -23,9 +23,9 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
 
     const recognitionInstance = new SpeechRecognition();
     
-    // --- الربط مع إعدادات اللغة ---
+    // --- الربط مع لغة الإعدادات ---
     if (language === 'ar') {
-      recognitionInstance.lang = 'ar-DZ'; // العربية باللكنة الجزائرية (أفضل للدارجة)
+      recognitionInstance.lang = 'ar-DZ'; // العربية باللكنة الجزائرية (تلقط الدارجة أحسن)
     } else if (language === 'fr') {
       recognitionInstance.lang = 'fr-FR'; // الفرنسية
     } else {
@@ -41,8 +41,7 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
       setIsListening(false);
     };
 
-    recognitionInstance.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
+    recognitionInstance.onerror = () => {
       setIsListening(false);
     };
 
@@ -57,11 +56,11 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
         recognitionRef.current.abort();
       }
     };
-  }, [onTranscript, language]); // إضافة language كمراقب ليتحدث المايكروفون عند تغيير اللغة
+  }, [onTranscript, language]); // تحديث المايكروفون عند تغيير اللغة
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert('المتصفح لا يدعم التعرف على الكلام');
+      alert(language === 'ar' ? 'المتصفح لا يدعم التعرف على الكلام' : 'Speech recognition not supported');
       return;
     }
 
@@ -80,10 +79,10 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
   return (
     <button
       onClick={toggleListening}
-      className={`p-2 rounded-full transition-all duration-300 ${
+      className={`p-2 rounded-full transition-all ${
         isListening 
           ? 'bg-red-500 text-white animate-pulse' 
-          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:scale-110'
+          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
       }`}
       title={isListening ? (language === 'ar' ? 'جاري الاستماع...' : 'Listening...') : (language === 'ar' ? 'اضغط للتحدث' : 'Tap to speak')}
     >
