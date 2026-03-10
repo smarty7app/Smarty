@@ -128,7 +128,7 @@ export default function AddReminderModal({
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
           <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
-            العنوان المستخلص: <span className="text-[#E65100]">"{smartParsed.title}"</span>
+          سيتم حفظ: <span className="text-[#E65100]"> {`"${smartParsed.title}"`} </span>
           </span>
         </div>
 
