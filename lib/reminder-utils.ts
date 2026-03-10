@@ -66,8 +66,8 @@ export function extractSmartTitle(text: string): string {
   // 2. حذف كلمات الوقت المعقدة (Time Patterns)
   // يحيي: "من ذاك"، "في الليل"، "بعد شوية"، "in 2 hours"
   const timePatterns = [
-    /(?:بعد|خلال|في|على|للساعة|للساعه|دوا الـ|in|within|at|by|dans|à)\s+\d*.*?(?:دقيقة|دقيقه|دقائق|ساعة|ساعه|ساعات|أيام|ايام|يوم|minutes?|mins?|hours?|days?|صباحا|مساءا|am|pm|du matin|du soir)/gi,
-    /(?:الساعة|الساعه|الوقيت|time|l'heure)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحا|مساءا|ص|م|am|pm)?/gi
+    /(?بعد|خلال|في|على|للساعة|للساعه|دوا الـ|in|within|at|by|dans|à)\s+\d*.*?(?:دقيقة|دقيقه|دقائق|ساعة|ساعه|ساعات|أيام|ايام|يوم|minutes?|mins?|hours?|days?|صباحا|مساءا|am|pm|du matin|du soir)/gi,
+    /(?:الساعة|الساعه|الوقت|time|l'heure)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحا|مساءا|ص|م|am|pm)?/gi
   ];
   
   timePatterns.forEach(reg => cleaned = cleaned.replace(reg, ''));
@@ -98,6 +98,11 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
     'ساعة': 60, 'ساعه': 60, 'ساعتين': 120, 'ساعتان': 120,
     'يوم': 1440, 'يومين': 2880, 'بكرة': 1440, 'غدا': 1440, 'غداً': 1440,
     'دقيقة': 1, 'دقيقه': 1, 'دقيقتين': 2, 'واحد': 1, 'واحدة': 1, 'واحده': 1,
+    'ثلاث ساعات': 180,
+  'تلت سوايع': 180, // بالدارجة
+  'أربع ساعات': 240,
+  'اربع سوايع': 240, // بالدارجة
+  'اربع ساعات': 240,
     'half': 30, 'quarter': 15, 'hour': 60, 'day': 1440
   };
 
