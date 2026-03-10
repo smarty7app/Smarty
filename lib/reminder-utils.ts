@@ -140,8 +140,90 @@ interface TimeParseResult {
 }
   
   const timePatterns = [
-  // 1. الأنماط المركبة والمثنى (أولوية قصوى لأنها الأكثر تحديداً)
+  // 1. الأسابيع (أسبوع، أسبوعين، أسابيع)
   {
+    pattern: /(?:بعد|خلال)\s+أسبوعين/i,
+    parseFn: (now: Date) => addWeeks(now, 2),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(?:أسبوع|اسبوع)/i,
+    parseFn: (now: Date) => addWeeks(now, 1),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+أسابيع/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addWeeks(now, parseInt(m[1])),
+    weight: 0.95
+  },
+
+  // 2. الأيام (يوم، يومين، غداً)
+  {
+    pattern: /(?:بعد|خلال)\s+يومين/i,
+    parseFn: (now: Date) => addDays(now, 2),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+يوم/i,
+    parseFn: (now: Date) => addDays(now, 1),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:غداً|غدا|بكرة)/i,
+    parseFn: (now: Date) => setHours(setMinutes(addDays(now, 1), 0), 9), // غداً الساعة 9 صباحاً افتراضياً
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+أيام/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addDays(now, parseInt(m[1])),
+    weight: 0.95
+  },
+
+  // 3. الساعات (ساعتين، ساعة ونصف، ساعة)
+  {
+    pattern: /(?:بعد|خلال)\s+ساعتين/i,
+    parseFn: (now: Date) => addHours(now, 2),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)\s+(?:و\s+)?(?:نص|نصف)/i,
+    parseFn: (now: Date) => addMinutes(now, 90),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)(?!\s+(?:و|نص|ربع))/i,
+    parseFn: (now: Date) => addHours(now, 1),
+    weight: 0.98
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+(?:ساعة|ساعات|ساعه)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addHours(now, parseInt(m[1])),
+    weight: 0.95
+  },
+
+  // 4. الدقائق (دقيقتين، نصف ساعة، دقائق)
+  {
+    pattern: /(?:بعد|خلال)\s+دقيقتين/i,
+    parseFn: (now: Date) => addMinutes(now, 2),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(?:نص|نصف)\s+ساعة/i,
+    parseFn: (now: Date) => addMinutes(now, 30),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(?:دقيقة|دقيقه)/i,
+    parseFn: (now: Date) => addMinutes(now, 1),
+    weight: 1.0
+  },
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+(?:دقيقة|دقيقه|دقائق)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addMinutes(now, parseInt(m[1])),
+    weight: 0.95
+  }
+];
+  
     pattern: /(?:بعد|خلال)\s+ساعتين/i,
     parseFn: (now: Date) => addHours(now, 2),
     weight: 1.0
