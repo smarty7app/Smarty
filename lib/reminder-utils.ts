@@ -208,59 +208,33 @@ export function detectEventType(text: string): EventType {
   return EventType.OTHER;
 }
 
-export function extractLocation(text: string): string | undefined {
-  const locationPattern = /(?:في|بـ|بمنطقة|at|in)\s+([^\s]+(?:\s+[^\s]+){0,2})/;
-  const match = text.match(locationPattern);
-  return match ? match[1].trim() : undefined;
-}
-
-// ===================== الدالة الأساسية (المخ) =====================
-
 export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
   const now = new Date();
   const timeResult = extractTimeFromText(text, now);
   
-  const eventType = detectEventType(text);
-  const priority = analyzePriority(text);
-  const location = extractLocation(text);
+  // إذا لم يتم اكتشاف وقت، نبحث في الكلمات المفتاحية KEYWORDS
+  let finalEventTime = timeResult.dateTime;
+  let isTimeDetected = timeResult.isTimeDetected;
 
-  let eventTime = timeResult.dateTime;
-
-  // دعم الكلمات المفتاحية KEYWORDS من الملف القديم إذا لم يكتشف وقت محدد
-  if (!eventTime) {
+  if (!finalEventTime) {
     for (const [word, config] of Object.entries(KEYWORDS)) {
-      if (text.toLowerCase().includes(word)) {
-        if (config.minutes) eventTime = addMinutes(now, config.minutes);
-        else if (config.hours) eventTime = addHours(now, config.hours);
+      if (text.includes(word)) {
+        finalEventTime = config.minutes ? addMinutes(now, config.minutes) : addHours(now, config.hours || 0);
+        isTimeDetected = true; // نعتبر الكلمات المفتاحية وقتاً مكتشفاً بدلاً من الافتراضي
         break;
       }
     }
   }
 
-  const finalEventTime = eventTime || addMinutes(now, 15);
-  const diffMinutes = differenceInMinutes(finalEventTime, now);
-
-  // منطق التنبيهات المتعددة (من الملف القديم)
-  let reminderTimes: Date[] = [];
-  if (diffMinutes > 60) {
-    reminderTimes = [addMinutes(finalEventTime, -30), finalEventTime];
-  } else if (diffMinutes > 15) {
-    reminderTimes = [addMinutes(finalEventTime, -5), finalEventTime];
-  } else {
-    reminderTimes = [finalEventTime];
-  }
+  // إذا فشل كل شيء، هنا فقط نضع وقتاً احتياطياً ولكن نعلم الواجهة بذلك
+  const actualTime = finalEventTime || addMinutes(now, 15);
 
   return {
-    eventTime: finalEventTime,
-    reminderTimes,
-    isTimeDetected: timeResult.isTimeDetected,
-    confidence: timeResult.confidence || 0.4,
-    priority,
-    eventType,
-    location,
+    eventTime: actualTime,
+    isTimeDetected: isTimeDetected, // سيعود بـ false إذا كان "توقيت افتراضي"
+    confidence: isTimeDetected ? 1.0 : 0.4,
     title: extractSmartTitle(text),
-    suggestedMessage: generateCustomMessage(eventType, finalEventTime, lang),
-    totalDurationMinutes: timeResult.isTimeDetected ? null : diffMinutes,
+    // ... بقية البيانات
   };
 }
 
