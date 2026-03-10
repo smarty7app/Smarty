@@ -2,19 +2,20 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Plus, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
-import VoiceInput from './VoiceInput';
-import { cn } from '@/lib/utils';
+// سطر واحد نظيف يحتوي على كل ما تحتاجه دون تكرار
 import { 
   X, 
-  Mic, 
+  Plus, 
   Calendar, 
   RefreshCw, 
-  Clock, // أضف هذه
-  Sparkles, // أضف هذه
-  CheckCircle2, // أضف هذه
-  Timer // أضف هذه
+  Clock, 
+  Sparkles, 
+  CheckCircle2, 
+  Timer,
+  Mic 
 } from 'lucide-react';
+import VoiceInput from './VoiceInput';
+import { cn } from '@/lib/utils';
 
 interface AddReminderModalProps {
   isOpen: boolean;
