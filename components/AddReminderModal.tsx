@@ -109,51 +109,49 @@ export default function AddReminderModal({
                 </div>
               </div>
             </div>
-
+            
             {/* لوحة المعاينة الذكية */}
-            <AnimatePresence mode="wait">
-              {smartParsed && inputText.trim().length > 3 && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-6" 
-                >
-                  <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="bg-orange-500 rounded-lg p-1 shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-white" />
-                      </div>
-                      <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
-  تذكير جديد: 
-  <span className="text-[#E65100]"> 
-    {/* إذا كان العنوان المستخلص فارغاً أو مجرد نقاط، اعرض النص الأصلي */}
-    {` "${(smartParsed?.title && smartParsed.title !== "...") ? smartParsed.title : inputText}"`} 
-  </span>
-</span>
+<AnimatePresence mode="wait">
+  {smartParsed && inputText.trim().length > 3 && (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="mb-6" 
+    >
+      <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="bg-orange-500 rounded-lg p-1 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
+            تذكير جديد: <span className="text-[#E65100]"> 
+              {` "${(smartParsed?.title && smartParsed.title !== "..." && smartParsed.title !== "undefined") ? smartParsed.title : inputText}" `} 
+            </span>
+          </span>
+        </div>
 
-
-                    <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-orange-700/70 dark:text-orange-400/70 ml-1">
-                      <div className="flex items-center gap-1.5 py-1 px-2 bg-white/50 dark:bg-black/20 rounded-lg">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{format(smartParsed.eventTime, 'hh:mm a', { locale: arDZ })}</span>
-                      </div>
-                      {smartParsed.isTimeDetected ? (
-                        <div className="flex items-center gap-1 text-emerald-600">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>وقت دقيق</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-zinc-400">
-                          <Timer className="w-3.5 h-3.5" />
-                          <span>توقيت افتراضي</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-orange-700/70 dark:text-orange-400/70 ml-1">
+          <div className="flex items-center gap-1.5 py-1 px-2 bg-white/50 dark:bg-black/20 rounded-lg">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{format(smartParsed.eventTime, 'hh:mm a', { locale: arDZ })}</span>
+          </div>
+          {smartParsed.isTimeDetected ? (
+            <div className="flex items-center gap-1 text-emerald-600">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>وقت دقيق</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-zinc-400">
+              <Timer className="w-3.5 h-3.5" />
+              <span>توقيت افتراضي</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
             {/* الاقتراحات الذكية */}
             <div className="mb-6 px-1">
