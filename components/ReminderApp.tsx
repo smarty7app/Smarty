@@ -279,59 +279,65 @@ export default function ReminderApp() {
     });
   }, []);
 
-const handleAddReminder = () => {
-  if (!inputText.trim()) return;
+  const handleAddReminder = () => {
+    if (!inputText.trim()) return;
 
-  // القائمة الافتراضية
-  let reminderTimes: Date[] = [];
-  let eventTime = new Date();
-  let isTimeDetected = false;
+    // 1. نقوم بحساب التحليل الذكي داخل الدالة فوراً للتأكد من وجوده
+    const currentSmartParsed = isSmartAnalysisEnabled ? parseSmartTime(inputText, language) : null;
 
-  if (isSmartAnalysisEnabled && smartParsed) {
-    eventTime = smartParsed.eventTime;
-    reminderTimes = smartParsed.reminderTimes;
-    isTimeDetected = smartParsed.isTimeDetected; // نأخذ القيمة من المحرك الجديد
-  }
+    let eventTime = new Date();
+    let reminderTimes: Date[] = [];
+    let isTimeDetected = false;
 
-  // إذا لم يكتشف المحرك وقتاً ولم يختر المستخدم تاريخاً يدوياً
-  if (!isTimeDetected && !selectedDate) {
-    // هنا نجعل النظام "منطقي" ولا يفترض وقتاً بعيداً، بل ينبه المستخدم
-    eventTime = addMinutes(new Date(), 15);
-    reminderTimes = [eventTime];
-  }
+    // 2. التحقق من وجود نتائج التحليل
+    if (isSmartAnalysisEnabled && currentSmartParsed) {
+      eventTime = currentSmartParsed.eventTime;
+      reminderTimes = currentSmartParsed.reminderTimes || [eventTime];
+      isTimeDetected = currentSmartParsed.isTimeDetected;
+    }
 
-  const newReminder: Reminder = {
-    id: Math.random().toString(36).substr(2, 9),
-    text: inputText,
-    reminderTime: reminderTimes[0].toISOString(),
-    reminderTimes: reminderTimes.map(t => t.toISOString()),
-    eventTime: eventTime.toISOString(),
-    createdAt: new Date().toISOString(),
-    isCompleted: false,
-    recurring,
-    priority: smartParsed?.priority || 3,
-    eventType: smartParsed?.eventType || EventType.OTHER,
-    location: smartParsed?.location,
-    confidence: smartParsed?.confidence || 0.4,
-    suggestedMessage: smartParsed?.suggestedMessage || inputText,
-    snoozeCount: 0,
-    maxSnooze: 3,
-    stage: ReminderStage.FINAL,
-    totalDurationMinutes: smartParsed?.totalDurationMinutes || undefined
+    // 3. حالة احتياطية إذا لم يكتشف وقتاً ولم يحدد المستخدم تاريخاً
+    if (!isTimeDetected && !selectedDate) {
+      eventTime = addMinutes(new Date(), 15);
+      reminderTimes = [eventTime];
+    } else if (selectedDate) {
+      eventTime = new Date(selectedDate);
+      reminderTimes = [eventTime];
+    }
+
+    const newReminder: Reminder = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: inputText,
+      reminderTime: (reminderTimes[0] || eventTime).toISOString(),
+      reminderTimes: reminderTimes.map(t => t.toISOString()),
+      eventTime: eventTime.toISOString(),
+      createdAt: new Date().toISOString(),
+      isCompleted: false,
+      recurring,
+      priority: currentSmartParsed?.priority || 3,
+      eventType: currentSmartParsed?.eventType || EventType.OTHER,
+      location: currentSmartParsed?.location,
+      confidence: currentSmartParsed?.confidence || 0.4,
+      suggestedMessage: currentSmartParsed?.suggestedMessage || inputText,
+      snoozeCount: 0,
+      maxSnooze: 3,
+      stage: ReminderStage.FINAL,
+    };
+
+    setReminders(prev => [newReminder, ...prev]);
+    
+    if (notificationService) {
+      notificationService.scheduleReminder(newReminder, (id) => {
+        handleReminderDueRef.current(id);
+      });
+    }
+
+    setInputText('');
+    setRecurring('none');
+    setSelectedDate('');
+    setIsAdding(false);
   };
 
-  setReminders(prev => [newReminder, ...prev]);
-  if (notificationService) {
-    notificationService.scheduleReminder(newReminder, (id) => {
-      handleReminderDueRef.current(id);
-    });
-  }
-
-  setInputText('');
-  setRecurring('none');
-  setSelectedDate('');
-  setIsAdding(false);
-};
 
   const activeReminders = reminders.filter(r => !r.isCompleted).sort((a, b) => 
     new Date(a.reminderTime).getTime() - new Date(b.reminderTime).getTime()
