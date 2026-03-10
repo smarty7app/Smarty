@@ -92,7 +92,7 @@ export const KEYWORDS: Record<string, { minutes?: number; hours?: number; priori
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   const lowerText = text.toLowerCase().trim();
   let eventTime = new Date(now);
-  let isTimeDetected = false;
+  let isTimeDetected = true;
   let confidence = 0.4;
 
   // 1. الأيام (عربي، إنجليزي، فرنسي)
