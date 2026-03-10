@@ -133,10 +133,44 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
 
   // 3. الأنماط النسبية
   const relativePatterns = [
-    { p: /(?:بعد|in|dans|خلال)\s+(\d+)\s+(?:دقيقة|minutes?|min|دقائق)/i, fn: (d: Date, m: any) => addMinutes(d, parseInt(m[1])) },
-    { p: /(?:بعد|after|dans|خلال)\s+(\d+)\s+(?:ساعة|hours?|heures?|ساعات)/i, fn: (d: Date, m: any) => addHours(d, parseInt(m[1])) },
-    { p: /(?:نصف ساعة|half hour|demie heure|نص ساعة)/i, fn: (d: Date) => addMinutes(d, 30) },
-    { p: /(?:ربع ساعة|quarter hour|quart d'heure)/i, fn: (d: Date) => addMinutes(d, 15) },
+    [
+  // الأيام: (بعد أربع أيام، بعد 4 أيام)
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس|سنة|شهر)\s+(?:أيام|ايام|يوم|أسبوع|اسبوع)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => {
+      const numMap: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
+      const val = m[1];
+      const amount = isNaN(parseInt(val)) ? (numMap[val] || 1) : parseInt(val);
+      if (m[0].includes('أسبوع') || m[0].includes('اسبوع')) return addDays(now, amount * 7);
+      return addDays(now, amount);
+    },
+    weight: 1.0
+  },
+  // الساعات: (بعد ساعة واحدة، بعد ساعتين، بعد 3 ساعات)
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+|ساعة|ساعه|ساعتين)\s*(واحد|واحدة|واحده|ساعتين|ساعات|ساعة|ساعه)?/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => {
+      const text = m[0];
+      if (text.includes('ساعتين')) return addHours(now, 2);
+      if (text.includes('ساعة') || text.includes('ساعه')) {
+        const num = parseInt(m[1]);
+        return addHours(now, isNaN(num) ? 1 : num);
+      }
+      return addHours(now, parseInt(m[1]) || 1);
+    },
+    weight: 1.0
+  },
+  // الدقائق: (بعد نصف ساعة، بعد 10 دقائق)
+  {
+    pattern: /(?:بعد|خلال)\s+(نصف|نص|ربع|ثلث)\s+(ساعة|ساعه)|(?:بعد|خلال)\s+(\d+)\s+دقيقة/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => {
+      if (m[1] === 'نصف' || m[1] === 'نص') return addMinutes(now, 30);
+      if (m[1] === 'ربع') return addMinutes(now, 15);
+      if (m[1] === 'ثلث') return addMinutes(now, 20);
+      return addMinutes(now, parseInt(m[3]) || 5);
+    },
+    weight: 1.0
+   }
   ];
 
   for (const item of relativePatterns) {
