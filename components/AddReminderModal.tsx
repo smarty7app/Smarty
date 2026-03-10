@@ -125,9 +125,13 @@ export default function AddReminderModal({
                         <Sparkles className="w-3.5 h-3.5 text-white" />
                       </div>
                       <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
-                        سيتم حفظ: <span className="text-[#E65100]"> {`"${smartParsed.title || '...'}"`} </span>
-                      </span>
-                    </div>
+  سأذكرك بـ: 
+  <span className="text-[#E65100]"> 
+    {/* إذا كان العنوان المستخلص فارغاً أو مجرد نقاط، اعرض النص الأصلي */}
+    {` "${(smartParsed?.title && smartParsed.title !== "...") ? smartParsed.title : inputText}"`} 
+  </span>
+</span>
+
 
                     <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-orange-700/70 dark:text-orange-400/70 ml-1">
                       <div className="flex items-center gap-1.5 py-1 px-2 bg-white/50 dark:bg-black/20 rounded-lg">
