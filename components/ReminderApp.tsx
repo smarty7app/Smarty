@@ -62,8 +62,7 @@ const SMART_SUGGESTIONS: Record<string, string[]> = {
 
 export default function ReminderApp() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [preview, setPreview] = useState<any>(null); // حالة المعاينة الحية
+  const [inputText, setInputText] = useState('');  
   const [recurring, setRecurring] = useState<Reminder['recurring']>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -78,20 +77,20 @@ export default function ReminderApp() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
-  // المحرك المحدث لضمان استجابة فورية وحل مشكلة الوقت الثابت
-useEffect(() => {
-  // قللنا الطول المطلوب إلى 2 ليبدأ التحليل فوراً عند قول "في.." أو "بعد.."
-  if (isSmartAnalysisEnabled && inputText.trim().length >= 2) {
-    const analysis = parseSmartTime(inputText, language);
-    
-    // تأكدنا من أن التحليل يعيد وقتاً صالحاً قبل التحديث
-    if (analysis && analysis.eventTime) {
-      setPreview({...analysis}); // إزالة setTimeout لضمان السرعة
+  // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
+  // تم تحويله إلى useMemo لضمان استجابة فورية وحل مشكلة الـ Build
+  const preview = useMemo(() => {
+    if (isSmartAnalysisEnabled && inputText.trim().length >= 2) {
+      try {
+        const analysis = parseSmartTime(inputText, language);
+        // إذا نجح التحليل واكتشف وقتاً، نعيد النتيجة فوراً للواجهة
+        return (analysis && analysis.isTimeDetected) ? analysis : null;
+      } catch (e) {
+        return null;
+      }
     }
-  } else {
-    setPreview(null);
-  }
-}, [inputText, isSmartAnalysisEnabled, language]);
+    return null;
+  }, [inputText, isSmartAnalysisEnabled, language]);
 
   const activeSuggestions = useMemo(() => {
     if (!inputText.trim()) return [];
@@ -99,6 +98,7 @@ useEffect(() => {
     const lastWord = words[words.length - 1];
     return (lastWord && SMART_SUGGESTIONS[lastWord]) ? SMART_SUGGESTIONS[lastWord] : [];
   }, [inputText]);
+
 
   const getTrueTime = React.useCallback(() => new Date(Date.now()), []);
 
