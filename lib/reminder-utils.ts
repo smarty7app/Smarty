@@ -64,33 +64,60 @@ export function extractSmartTitle(text: string): string {
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   const low = text.toLowerCase().trim();
   
-  const durationRegex = /(?:بعد|خلال|in|dans)\s+(\d+|نصف|نص|ربع|half|quarter|demie|quart|ساعة|hour|heure|day|jour|أربع|four|quatre)\s*(?:دقائق|mins|minutes|ساعة|hours|heures|أيام|days|jours)?/i;
+  // 1. القاموس المرن والشامل لجميع اللهجات وأشكال الكتابة
+  const GLOBAL_NUM_MAP: any = {
+    'نصف': 30, 'نص': 30, 'ربع': 15, 'ثلث': 20, 
+    'ساعة': 60, 'ساعه': 60, 'ساعتين': 120, 'ساعتان': 120,
+    'يوم': 1440, 'يومين': 2880, 'بكرة': 1440, 'غدا': 1440, 'غداً': 1440,
+    'دقيقة': 1, 'دقيقه': 1, 'دقيقتين': 2, 'واحد': 1, 'واحدة': 1, 'واحده': 1,
+    'half': 30, 'quarter': 15, 'hour': 60, 'day': 1440
+  };
+
+  // 2. البحث عن "بعد/خلال" + (كلمة أو رقم)
+  const durationRegex = /(?:بعد|خلال|in|dans)\s+(\d+|نصف|نص|ربع|ساعة|ساعه|ساعتين|ساعتان|يوم|يومين|دقيقة|دقيقه|دقيقتين|واحدة|واحده|واحد|half|quarter|hour|day)/i;
   const match = low.match(durationRegex);
 
   if (match) {
     const val = match[1];
-    const num = isNaN(parseInt(val)) ? (GLOBAL_NUM_MAP[val] || 1) : parseInt(val);
-    if (/(يوم|day|jour|أيام)/i.test(low)) return { dateTime: addDays(now, num), confidence: 1, isTimeDetected: true };
-    if (/(ساعة|hour|heure|ساعات)/i.test(low)) return { dateTime: addHours(now, num), confidence: 1, isTimeDetected: true };
-    if (/(نصف|نص|half|demie)/i.test(low)) return { dateTime: addMinutes(now, 30), confidence: 1, isTimeDetected: true };
-    if (/(ربع|quarter|quart)/i.test(low)) return { dateTime: addMinutes(now, 15), confidence: 1, isTimeDetected: true };
-    return { dateTime: addMinutes(now, num), confidence: 1, isTimeDetected: true };
+    let totalMinutes = 0;
+
+    // حالة الرقم المباشر (مثلاً: بعد 5 دقائق)
+    if (!isNaN(parseInt(val))) {
+      const num = parseInt(val);
+      if (/(ساعة|ساعه|ساعات|hour)/i.test(low)) totalMinutes = num * 60;
+      else if (/(يوم|أيام|ايام|day)/i.test(low)) totalMinutes = num * 1440;
+      else totalMinutes = num; // دقائق افتراضياً
+    } 
+    // حالة الكلمات (مثلاً: بعد ساعتين، بعد دقيقة)
+    else if (GLOBAL_NUM_MAP[val]) {
+      totalMinutes = GLOBAL_NUM_MAP[val];
+    }
+
+    if (totalMinutes > 0) {
+      return { dateTime: addMinutes(now, totalMinutes), confidence: 1, isTimeDetected: true };
+    }
   }
 
-  const timeRegex = /(?:الساعة|الساعه|at|à)\s*(\d{1,2})(?::|h|.)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|am|pm)?/i;
+  // 3. فحص الوقت المباشر (مثلاً: الساعة 9:30 مساءً)
+  const timeRegex = /(?:الساعة|الساعه|at|à|على|في)\s*(\d{1,2})(?::|h|.)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm)?/i;
   const tMatch = low.match(timeRegex);
   if (tMatch) {
     let hrs = parseInt(tMatch[1]);
     const mins = tMatch[2] ? parseInt(tMatch[2]) : 0;
     const period = tMatch[3];
-    if (period && /(مساءً|مساءا|pm)/i.test(period) && hrs < 12) hrs += 12;
-    if (period && /(صباحاً|صباحا|am)/i.test(period) && hrs === 12) hrs = 0;
+    if (period && /(مساءً|مساءا|م|pm)/i.test(period) && hrs < 12) hrs += 12;
+    if (period && /(صباحاً|صباحا|ص|am)/i.test(period) && hrs === 12) hrs = 0;
+    
     let res = setHours(setMinutes(setSeconds(new Date(now), 0), mins), hrs);
     if (isBefore(res, now)) res = addDays(res, 1);
     return { dateTime: res, confidence: 1, isTimeDetected: true };
   }
 
-  if (/(غداً|غدا|بكرة|tomorrow|demain)/i.test(low)) return { dateTime: addDays(now, 1), confidence: 0.9, isTimeDetected: true };
+  // 4. حالة غداً أو بكرة
+  if (/(غداً|غدا|بكرة|tomorrow|demain)/i.test(low)) {
+    return { dateTime: addDays(now, 1), confidence: 0.9, isTimeDetected: true };
+  }
+
   return { dateTime: null, confidence: 0, isTimeDetected: false };
 }
 
