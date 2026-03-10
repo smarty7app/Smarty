@@ -132,54 +132,61 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   }
 
   // 3. الأنماط النسبية
-  const relativePatterns = [
-    [
-  // الأيام: (بعد أربع أيام، بعد 4 أيام)
-  {
-    pattern: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس|سنة|شهر)\s+(?:أيام|ايام|يوم|أسبوع|اسبوع)/i,
-    parseFn: (now: Date, m: RegExpMatchArray) => {
-      const numMap: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
-      const val = m[1];
-      const amount = isNaN(parseInt(val)) ? (numMap[val] || 1) : parseInt(val);
-      if (m[0].includes('أسبوع') || m[0].includes('اسبوع')) return addDays(now, amount * 7);
-      return addDays(now, amount);
+    const relativePatterns = [
+    // الأيام: (بعد أربع أيام، بعد 4 أيام)
+    {
+      p: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس|سنة|شهر)\s+(?:أيام|ايام|يوم|أسبوع|اسبوع)/i,
+      f: (now: Date, m: RegExpMatchArray) => {
+        const numMap: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
+        const val = m[1];
+        const amount = isNaN(parseInt(val)) ? (numMap[val] || 1) : parseInt(val);
+        if (m[0].includes('أسبوع') || m[0].includes('اسبوع')) return addDays(now, amount * 7);
+        return addDays(now, amount);
+      },
+      w: 1.0
     },
-    weight: 1.0
-  },
-  // الساعات: (بعد ساعة واحدة، بعد ساعتين، بعد 3 ساعات)
-  {
-    pattern: /(?:بعد|خلال)\s+(\d+|ساعة|ساعه|ساعتين)\s*(واحد|واحدة|واحده|ساعتين|ساعات|ساعة|ساعه)?/i,
-    parseFn: (now: Date, m: RegExpMatchArray) => {
-      const text = m[0];
-      if (text.includes('ساعتين')) return addHours(now, 2);
-      if (text.includes('ساعة') || text.includes('ساعه')) {
-        const num = parseInt(m[1]);
-        return addHours(now, isNaN(num) ? 1 : num);
-      }
-      return addHours(now, parseInt(m[1]) || 1);
+    // الساعات: (بعد ساعة واحدة، بعد ساعتين، بعد 3 ساعات)
+    {
+      p: /(?:بعد|خلال)\s+(\d+|ساعة|ساعه|ساعتين)\s*(واحد|واحدة|واحده|ساعتين|ساعات|ساعة|ساعه)?/i,
+      f: (now: Date, m: RegExpMatchArray) => {
+        const text = m[0];
+        if (text.includes('ساعتين')) return addHours(now, 2);
+        if (text.includes('ساعة') || text.includes('ساعه')) {
+          const num = parseInt(m[1]);
+          return addHours(now, isNaN(num) ? 1 : num);
+        }
+        return addHours(now, parseInt(m[1]) || 1);
+      },
+      w: 1.0
     },
-    weight: 1.0
-  },
-  // الدقائق: (بعد نصف ساعة، بعد 10 دقائق)
-  {
-    pattern: /(?:بعد|خلال)\s+(نصف|نص|ربع|ثلث)\s+(ساعة|ساعه)|(?:بعد|خلال)\s+(\d+)\s+دقيقة/i,
-    parseFn: (now: Date, m: RegExpMatchArray) => {
-      if (m[1] === 'نصف' || m[1] === 'نص') return addMinutes(now, 30);
-      if (m[1] === 'ربع') return addMinutes(now, 15);
-      if (m[1] === 'ثلث') return addMinutes(now, 20);
-      return addMinutes(now, parseInt(m[3]) || 5);
-    },
-    weight: 1.0
-   }
+    // الدقائق: (بعد نصف ساعة، بعد 10 دقائق)
+    {
+      p: /(?:بعد|خلال)\s+(نصف|نص|ربع|ثلث)\s+(ساعة|ساعه)|(?:بعد|خلال)\s+(\d+)\s+دقيقة/i,
+      f: (now: Date, m: RegExpMatchArray) => {
+        if (m[1] === 'نصف' || m[1] === 'نص') return addMinutes(now, 30);
+        if (m[1] === 'ربع') return addMinutes(now, 15);
+        if (m[1] === 'ثلث') return addMinutes(now, 20);
+        return addMinutes(now, parseInt(m[3]) || 5);
+      },
+      w: 1.0
+    }
   ];
 
+  // الإصلاح هنا: تم التأكد من استخدام item.p و item.f لتطابق ما فوق
   for (const item of relativePatterns) {
     const m = lowerText.match(item.p);
-    if (m) return { dateTime: item.fn(now, m), confidence: 0.9, isTimeDetected: true };
+    if (m) {
+      return { 
+        dateTime: item.f(now, m), 
+        confidence: 0.9, 
+        isTimeDetected: true 
+      };
+    }
   }
 
   return { dateTime: null, confidence: 0, isTimeDetected: false };
 }
+
 
 // ===================== دوال التحليل المساعدة =====================
 
