@@ -88,71 +88,103 @@ export const KEYWORDS: Record<string, { minutes?: number; hours?: number; priori
   مطار: { hours: 24, priority: 4, type: EventType.FLIGHT },
 };
 
-// ===================== محرك الوقت المطور v4.0 =====================
+// ===================== محرك الوقت المطور v5.0 (الدقة القصوى) =====================
 
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   const lowerText = text.toLowerCase().trim();
-  let eventTime = new Date(now);
-  
-  // 1. الأيام البسيطة
-  if (/(غداً|غدا|بكرة|tomorrow|demain)/i.test(lowerText)) {
-    return { dateTime: addDays(now, 1), confidence: 0.8, isTimeDetected: true };
-  } 
-  if (/(بعد يومين|in 2 days|dans 2 jours)/i.test(lowerText)) {
-    return { dateTime: addDays(now, 2), confidence: 0.8, isTimeDetected: true };
-  }
+  let targetDate = new Date(now);
+  let isTimeDetected = false;
 
-  // 2. التحليل الرقمي (الساعة 7 مساءً...)
-  const digitalTimeRegex = /(?:الساعة|الساعه|على|في|at|@|à|time|heure)\s*(\d{1,2}|واحد|اثنين|ثلاثة|اربعة|خمسة)(?::|h)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm|soir|matin)?/i;
-  const timeMatch = lowerText.match(digitalTimeRegex);
-
-  if (timeMatch) {
-    let hourStr = timeMatch[1];
-    let hours = isNaN(parseInt(hourStr)) ? arabicNumbers[hourStr] : parseInt(hourStr);
-    const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-    const period = timeMatch[3];
-
-    if (hours !== undefined) {
-      if (period) {
-        if (/(مساءً|مساءا|م|pm|soir)/i.test(period) && hours < 12) hours += 12;
-        if (/(صباحاً|صباحا|ص|am|matin)/i.test(period) && hours === 12) hours = 0;
-      }
-      eventTime = setHours(setMinutes(setSeconds(new Date(now), 0), minutes), hours);
-      return { dateTime: eventTime, confidence: 1.0, isTimeDetected: true };
-    }
-  }
-
-  // 3. الأنماط النسبية (بعد أربع أيام...)
-  const relativePatterns = [
-    {
-      p: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس|سنة|شهر)\s+(?:أيام|ايام|يوم|أسبوع|اسبوع)/i,
-      f: (n: Date, m: any) => {
-        const numMap: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
-        const amount = isNaN(parseInt(m[1])) ? (numMap[m[1]] || 1) : parseInt(m[1]);
-        return m[0].includes('أسبوع') || m[0].includes('اسبوع') ? addDays(n, amount * 7) : addDays(n, amount);
+  // 1. مصفوفة القواعد الذهبية (المدد الزمنية)
+  const durationRules = [
+    { regex: /(?:بعد|خلال)\s+(نصف|نص)\s+ساعة/i, add: () => addMinutes(now, 30) },
+    { regex: /(?:بعد|خلال)\s+ربع\s+ساعة/i, add: () => addMinutes(now, 15) },
+    { regex: /(?:بعد|خلال)\s+ثلث\s+ساعة/i, add: () => addMinutes(now, 20) },
+    { regex: /(?:بعد|خلال)\s+ساعتين/i, add: () => addHours(now, 2) },
+    { regex: /(?:بعد|خلال)\s+يومين/i, add: () => addDays(now, 2) },
+    { regex: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس|عشرة)\s+(أيام|ايام|يوم)/i, 
+      apply: (m: any) => {
+        const map: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5, 'عشرة': 10 };
+        const val = isNaN(parseInt(m[1])) ? map[m[1]] : parseInt(m[1]);
+        return addDays(now, val);
       }
     },
-    {
-      p: /(?:بعد|خلال)\s+(\d+|ساعة|ساعه|ساعتين)\s*(واحد|واحدة|واحده|ساعتين|ساعات|ساعة|ساعه)?/i,
-      f: (n: Date, m: any) => m[0].includes('ساعتين') ? addHours(n, 2) : addHours(n, parseInt(m[1]) || 1)
+    { regex: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس)\s+(ساعة|ساعات|ساعه)/i, 
+      apply: (m: any) => {
+        const map: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
+        const val = isNaN(parseInt(m[1])) ? map[m[1]] : parseInt(m[1]);
+        return addHours(now, val);
+      }
     },
-    {
-      p: /(?:بعد|خلال)\s+(نصف|نص|ربع|ثلث)\s+(ساعة|ساعه)|(?:بعد|خلال)\s+(\d+)\s+دقيقة/i,
-      f: (n: Date, m: any) => {
-        if (m[1] === 'نصف' || m[1] === 'نص') return addMinutes(n, 30);
-        if (m[1] === 'ربع') return addMinutes(n, 15);
-        if (m[1] === 'ثلث') return addMinutes(n, 20);
-        return addMinutes(n, parseInt(m[3]) || 5);
+    { regex: /(?:بعد|خلال)\s+(\d+|عشر|خمس|عشرة)\s+(دقيقة|دقائق)/i, 
+      apply: (m: any) => {
+        const map: any = { 'عشر': 10, 'عشرة': 10, 'خمس': 5 };
+        const val = isNaN(parseInt(m[1])) ? map[m[1]] : parseInt(m[1]);
+        return addMinutes(now, val);
       }
     }
   ];
 
-  for (const item of relativePatterns) {
-    const m = lowerText.match(item.p);
-    if (m) return { dateTime: item.f(now, m), confidence: 0.9, isTimeDetected: true };
+  // تطبيق قواعد المدد
+  for (const rule of durationRules) {
+    const match = lowerText.match(rule.regex);
+    if (match) {
+      targetDate = rule.add ? rule.add() : rule.apply!(match);
+      return { dateTime: targetDate, confidence: 1.0, isTimeDetected: true };
+    }
+  }
+
+  // 2. معالجة الأوقات المحددة (الساعة 4:00 صباحاً)
+  const specificTimeRegex = /(?:الساعة|الساعه|للساعه|على|في|at)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm)/i;
+  const timeMatch = lowerText.match(specificTimeRegex);
+
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1]);
+    const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    const period = timeMatch[3];
+
+    if (period) {
+      if (/(مساءً|مساءا|م|pm)/i.test(period) && hours < 12) hours += 12;
+      if (/(صباحاً|صباحا|ص|am)/i.test(period) && hours === 12) hours = 0;
+    }
+
+    targetDate = setHours(setMinutes(setSeconds(new Date(now), 0), minutes), hours);
+    // إذا كان الوقت المطلوب قد مضى اليوم، نجدوله لغد
+    if (isBefore(targetDate, now)) targetDate = addDays(targetDate, 1);
+    
+    return { dateTime: targetDate, confidence: 1.0, isTimeDetected: true };
+  }
+
+  // 3. الكلمات المفتاحية البسيطة (غداً، بكرة)
+  if (/(غداً|غدا|بكرة|tomorrow)/i.test(lowerText)) {
+    return { dateTime: addDays(now, 1), confidence: 0.9, isTimeDetected: true };
   }
 
   return { dateTime: null, confidence: 0, isTimeDetected: false };
+}
+
+export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
+  const now = new Date();
+  const timeResult = extractTimeFromText(text, now);
+  
+  const eventType = detectEventType(text);
+  const priority = analyzePriority(text);
+  const location = extractLocation(text);
+
+  // إذا لم يتم اكتشاف وقت من النص، نستخدم 15 دقيقة كافتراضي
+  const actualTime = timeResult.dateTime || addMinutes(now, 15);
+
+  return {
+    eventTime: actualTime,
+    reminderTimes: [actualTime],
+    isTimeDetected: timeResult.isTimeDetected, 
+    confidence: timeResult.confidence,
+    priority,
+    eventType,
+    location,
+    title: extractSmartTitle(text),
+    suggestedMessage: generateCustomMessage(eventType, actualTime, lang),
+  };
 }
 
 // ===================== دوال التحليل المساعدة =====================
