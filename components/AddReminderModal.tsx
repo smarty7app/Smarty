@@ -81,14 +81,68 @@ export default function AddReminderModal({
                 className="w-full min-h-[120px] p-4 bg-transparent resize-none text-xl text-black dark:text-white outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-600 font-black leading-relaxed"
               />
               
-              {/* زر الميكروفون */}
-              <div className="px-4 pb-3">
-                <div className="flex items-center gap-2 mt-1">
-                  <VoiceInput onTranscript={setInputText} />
-                  <span className="text-xs text-zinc-400">اضغط للتحدث</span>
-                </div>
-              </div>
-              
+              {/* حقل النص والميكروفون */}
+<div className="relative mb-4 group">
+  <div className="absolute -inset-1 bg-gradient-to-r from-[#E65100] to-amber-500 rounded-[2rem] blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+  <div className="relative bg-white dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 focus-within:border-[#E65100] dark:focus-within:border-[#E65100] rounded-[1.5rem] overflow-hidden transition-all duration-300">
+    <textarea
+      autoFocus
+      value={inputText}
+      onChange={(e) => setInputText(e.target.value)}
+      placeholder={t.what_to_remember}
+      className="w-full min-h-[120px] p-4 bg-transparent resize-none text-xl text-black dark:text-white outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-600 font-black leading-relaxed"
+    />
+    
+    <div className="px-4 pb-3 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <VoiceInput onTranscript={setInputText} />
+        <span className="text-xs text-zinc-400">اضغط للتحدث</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{/* لوحة المعاينة الذكية - يفضل أن تكون خارج حاوية الـ Textarea مباشرة */}
+<AnimatePresence mode="wait">
+  {smartParsed && inputText.trim().length > 3 && (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="mb-6 px-2" 
+    >
+      <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="bg-orange-500 rounded-lg p-1 shadow-sm">
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
+            العنوان المستخلص: <span className="text-[#E65100]">"{smartParsed.title}"</span>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-orange-700/70 dark:text-orange-400/70 ml-1">
+          <div className="flex items-center gap-1.5 py-1 px-2 bg-white/50 dark:bg-black/20 rounded-lg">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{format(smartParsed.eventTime, 'hh:mm a', { locale: arDZ })}</span>
+          </div>
+          {smartParsed.isTimeDetected ? (
+            <div className="flex items-center gap-1 text-emerald-600">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>وقت دقيق</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-zinc-400">
+              <Timer className="w-3.5 h-3.5" />
+              <span>توقيت افتراضي</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
               {/* الاقتراحات الذكية */}
               <AnimatePresence>
                 {!inputText ? (
