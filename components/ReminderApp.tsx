@@ -77,18 +77,26 @@ export default function ReminderApp() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
  
-// 1. عند تشغيل التطبيق: جلب التذكيرات المحفوظة
-useEffect(() => {
-  const savedReminders = localStorage.getItem('smarty_reminders');
-  if (savedReminders) {
-    setReminders(JSON.parse(savedReminders));
-  }
-}, []);
+    // 1. عند تشغيل التطبيق: جلب التذكيرات المحفوظة
+  useEffect(() => {
+    setIsMounted(true); // تأكيد أن التطبيق اشتغل في المتصفح
+    const savedReminders = localStorage.getItem('smarty_reminders');
+    if (savedReminders) {
+      try {
+        setReminders(JSON.parse(savedReminders));
+      } catch (e) {
+        console.error("Error loading reminders", e);
+      }
+    }
+  }, []);
 
-// 2. عند إضافة أو تعديل أي تذكير: حفظ التغييرات فوراً
-useEffect(() => {
-  localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-}, [reminders]);
+  // 2. عند إضافة أو تعديل أي تذكير: حفظ التغييرات فوراً
+  useEffect(() => {
+    // نتحقق بلي التطبيق mounted وبلي المصفوفة ماشي فارغة باش ما نمسحوش الداتا القديمة بالخطأ عند أول ريندير
+    if (isMounted) {
+      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+    }
+  }, [reminders, isMounted]);
 
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
 const preview = useMemo(() => {
