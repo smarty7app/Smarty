@@ -983,8 +983,8 @@ export default function ReminderApp() {
                                 smartParsed.confidence > 0.5 ? "text-amber-600 dark:text-amber-400" :
                                 "text-rose-600 dark:text-rose-400"
                               )}>
-                                  {/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
-
+                                   </main>
+                              
                                   {/* زر القلم - يبقى كما هو */}
                                   <motion.button
                                     whileHover={{ scale: 1.05 }}
