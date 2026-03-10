@@ -213,7 +213,7 @@ interface TimeParseResult {
   confidence: number;
   usedPattern: string;
 }
-
+ /**
  * محرك تحليل الوقت المطور - Smarty Time Engine v2.0
  */
 const timePatterns: {
