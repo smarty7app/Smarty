@@ -1,38 +1,16 @@
 import {
-  addMinutes,
-  addHours,
-  addWeeks,
-  addDays,
-  setHours,
-  setMinutes,
-  setSeconds,
-  isBefore,
-  format,
+  addMinutes, addHours, addDays, setHours, setMinutes, setSeconds, isBefore, format,
 } from 'date-fns';
-
 import { LanguageCode, translations } from './translations';
 
-// ===================== 1. الأنواع والتعريفات (محفوظة بالكامل) =====================
-
+// --- التعريفات الأساسية ---
 export type Priority = 1 | 2 | 3 | 4;
-
 export enum EventType {
   FLIGHT = 'FLIGHT', MEETING = 'MEETING', MEDICINE = 'MEDICINE',
   FOOD = 'FOOD', APPOINTMENT = 'APPOINTMENT', TRAVEL = 'TRAVEL',
   SCHOOL = 'SCHOOL', OTHER = 'OTHER',
 }
-
 export enum ReminderStage { WARNING = 'WARNING', FINAL = 'FINAL' }
-
-export interface Reminder {
-  id: string; text: string; reminderTime: string; reminderTimes: string[];
-  eventTime: string; createdAt: string; isCompleted: boolean;
-  recurring: 'none' | 'hourly' | 'daily' | 'weekly';
-  priority: Priority; eventType: EventType; location?: string;
-  confidence: number; suggestedMessage: string; snoozeCount: number;
-  maxSnooze: number; parentId?: string; stage: ReminderStage;
-  totalDurationMinutes?: number;
-}
 
 export interface TimeParseResult {
   dateTime: Date | null;
@@ -40,160 +18,107 @@ export interface TimeParseResult {
   isTimeDetected: boolean;
 }
 
-// ===================== 2. القواميس والكلمات المفتاحية (محفوظة) =====================
+// --- القواميس الذكية (عقل النظام) ---
+const NUM_MAP: any = { 'ربع': 15, 'ثلث': 20, 'نص': 30, 'نصف': 30, 'ساعة': 1, 'ساعه': 1, 'ساعتين': 2, 'يوم': 1, 'يومين': 2, 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5, 'عشر': 10 };
 
-const medicineKeywords = ['دواء', 'علاج', 'انسولين', 'حبة', 'بندول', 'medicine', 'pill', 'medication'];
-const foodKeywords = ['حليب', 'طعام', 'فرن', 'نار', 'اكل', 'طبخ', 'عشاء', 'غداء', 'milk', 'food'];
-
-export const KEYWORDS: Record<string, { minutes?: number; hours?: number; priority: Priority; type: EventType }> = {
-  طعام: { minutes: 10, priority: 3, type: EventType.FOOD },
-  حليب: { minutes: 10, priority: 3, type: EventType.FOOD },
-  فرن: { minutes: 15, priority: 3, type: EventType.FOOD },
-  نار: { minutes: 10, priority: 3, type: EventType.FOOD },
-  رحلة: { hours: 12, priority: 2, type: EventType.TRAVEL },
-  سفر: { hours: 12, priority: 2, type: EventType.TRAVEL },
-  flight: { hours: 24, priority: 4, type: EventType.FLIGHT },
-  مدرسة: { hours: 4, priority: 2, type: EventType.SCHOOL },
-  موعد: { hours: 2, priority: 2, type: EventType.MEETING },
-  دواء: { minutes: 30, priority: 4, type: EventType.MEDICINE },
-};
-
-// ===================== 3. مبرمج الوقت الذكي v5.5 (الأكثر دقة) =====================
-
-export function extractTimeFromText(text: string, now: Date): TimeParseResult {
-  const lowerText = text.toLowerCase().trim();
-  
-  // أ. القواعد الذهبية للمدد (تحل مشاكل الصور)
-  const durationRules = [
-    { regex: /(?:بعد|خلال)\s+(نصف|نص)\s+ساعة/i, add: () => addMinutes(now, 30) },
-    { regex: /(?:بعد|خلال)\s+ربع\s+ساعة/i, add: () => addMinutes(now, 15) },
-    { regex: /(?:بعد|خلال)\s+ساعتين/i, add: () => addHours(now, 2) },
-    { regex: /(?:بعد|خلال)\s+دقيقة\s+واحدة/i, add: () => addMinutes(now, 1) },
-    { regex: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس)\s+(أيام|ايام|يوم)/i, 
-      apply: (m: any) => {
-        const map: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3, 'خمس': 5 };
-        const val = isNaN(parseInt(m[1])) ? (map[m[1]] || 1) : parseInt(m[1]);
-        return addDays(now, val);
-      }
-    },
-    { regex: /(?:بعد|خلال)\s+(\d+|أربع|اربع|ثلاث|خمس)\s+(ساعة|ساعات|ساعه)/i, 
-      apply: (m: any) => {
-        const map: any = { 'أربع': 4, 'اربع': 4, 'ثلاث': 3 };
-        const val = isNaN(parseInt(m[1])) ? (map[m[1]] || 1) : parseInt(m[1]);
-        return addHours(now, val);
-      }
-    },
-    { regex: /(?:بعد|خلال)\s+(\d+)\s+(دقيقة|دقائق)/i, apply: (m: any) => addMinutes(now, parseInt(m[1])) }
-  ];
-
-  for (const rule of durationRules) {
-    const match = lowerText.match(rule.regex);
-    if (match) return { dateTime: rule.add ? rule.add() : rule.apply!(match), confidence: 1.0, isTimeDetected: true };
-  }
-
-  // ب. الأوقات المحددة (الساعة 4 صباحاً)
-  const specificTimeRegex = /(?:الساعة|الساعه|للساعه|على|في|at)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm)/i;
-  const timeMatch = lowerText.match(specificTimeRegex);
-  if (timeMatch) {
-    let hours = parseInt(timeMatch[1]);
-    const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-    const period = timeMatch[3];
-    if (period) {
-      if (/(مساءً|مساءا|م|pm)/i.test(period) && hours < 12) hours += 12;
-      if (/(صباحاً|صباحا|ص|am)/i.test(period) && hours === 12) hours = 0;
-    }
-    let targetDate = setHours(setMinutes(setSeconds(new Date(now), 0), minutes), hours);
-    if (isBefore(targetDate, now)) targetDate = addDays(targetDate, 1);
-    return { dateTime: targetDate, confidence: 1.0, isTimeDetected: true };
-  }
-
-  // ج. غداً
-  if (/(غداً|غدا|بكرة|tomorrow)/i.test(lowerText)) {
-    return { dateTime: addDays(now, 1), confidence: 0.9, isTimeDetected: true };
-  }
-
-  return { dateTime: null, confidence: 0, isTimeDetected: false };
+// --- 1. دالة تحليل الأولوية (المطلوبة للـ Build) ---
+export function analyzePriority(text: string): Priority {
+  const low = text.toLowerCase();
+  if (/(عاجل|ضروري|فورا|urgent|important|emergency|🚨)/i.test(low)) return 4;
+  if (/(دواء|علاج|نار|فرن|مطار|طائرة|flight)/i.test(low)) return 4;
+  return 3;
 }
 
-// ===================== 4. دوال التنظيف المساعدة =====================
-
+// --- 2. دالة تنظيف العنوان (الدقة المتناهية) ---
 export function extractSmartTitle(text: string): string {
   return text
-    .replace(/(?:ذكرني|تذكير|سوي|عمل)\s+/gi, '')
-    .replace(/(?:بعد|خلال|في|على|الساعة|الساعه|للساعه)\s+\d+.*?(?:دقيقة|دقائق|ساعة|ساعات|أيام|ايام|يوم|صباحا|مساءا|ص|م|am|pm)/gi, '')
+    .replace(/(?:تذكير|ذكرني|سوي|عمل|ابيك تذكرني)\s+/gi, '')
+    .replace(/(?:بعد|خلال|في|على|الساعة|الساعه|للساعه)\s+\d*.*?(?:دقيقة|دقائق|ساعة|ساعات|أيام|ايام|يوم|صباحا|مساءا|ص|م|am|pm)/gi, '')
     .replace(/(?:بعد|خلال)\s+(?:نصف|نص|ربع|ثلث|ساعتين|يومين|ساعة|ساعه|دقيقة واحدة)/gi, '')
     .replace(/(?:غداً|غدا|بكرة|tomorrow)/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || text;
 }
 
-export function detectEventType(text: string): EventType {
-  const low = text.toLowerCase();
-  if (/(طائرة|مطار|flight)/.test(low)) return EventType.FLIGHT;
-  if (medicineKeywords.some(kw => low.includes(kw))) return EventType.MEDICINE;
-  if (foodKeywords.some(kw => low.includes(kw))) return EventType.FOOD;
-  if (/(اجتماع|موعد|meeting|appointment)/.test(low)) return EventType.MEETING;
-  return EventType.OTHER;
-}
-
-export function extractLocation(text: string): string | undefined {
-  const match = text.match(/(?:في|بـ|at|in)\s+([^ ]+)/i);
-  return match ? match[1] : undefined;
-}
-
-// ===================== 5. المحرك الرئيسي (Unified) =====================
-
-export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
-  const now = new Date();
-  const timeResult = extractTimeFromText(text, now);
+// --- 3. المحلل الزمني العميق (Deep Time Parser) ---
+export function extractTimeFromText(text: string, now: Date): TimeParseResult {
+  const lowerText = text.toLowerCase().trim();
   
-  const eventType = detectEventType(text);
-  const location = extractLocation(text);
+  // أ. معالجة المدد (بعد X دقيقة/ساعة/يوم)
+  const durationRegex = /(?:بعد|خلال)\s+(\d+|نصف|نص|ربع|ثلث|ساعة|ساعه|ساعتين|يوم|يومين|أربع|اربع|ثلاث|خمس)\s*(?:دقائق|دقيقة|ساعة|ساعه|ساعات|أيام|ايام|يوم)?/i;
+  const match = lowerText.match(durationRegex);
 
-  let finalEventTime = timeResult.dateTime;
-  let isTimeDetected = timeResult.isTimeDetected;
-
-  // فحص الكلمات المفتاحية (حليب، فرن...) إذا لم يتم اكتشاف وقت صريح
-  if (!finalEventTime) {
-    for (const [word, config] of Object.entries(KEYWORDS)) {
-      if (text.toLowerCase().includes(word)) {
-        finalEventTime = config.minutes ? addMinutes(now, config.minutes) : addHours(now, config.hours || 0);
-        isTimeDetected = true; 
-        break;
-      }
-    }
+  if (match) {
+    const val = match[1];
+    if (val === 'نصف' || val === 'نص') return { dateTime: addMinutes(now, 30), confidence: 1, isTimeDetected: true };
+    if (val === 'ربع') return { dateTime: addMinutes(now, 15), confidence: 1, isTimeDetected: true };
+    if (val === 'ساعتين') return { dateTime: addHours(now, 2), confidence: 1, isTimeDetected: true };
+    
+    const num = isNaN(parseInt(val)) ? (NUM_MAP[val] || 1) : parseInt(val);
+    
+    if (lowerText.includes('يوم') || lowerText.includes('أيام')) return { dateTime: addDays(now, num), confidence: 1, isTimeDetected: true };
+    if (lowerText.includes('ساعة') || lowerText.includes('ساعات')) return { dateTime: addHours(now, num), confidence: 1, isTimeDetected: true };
+    return { dateTime: addMinutes(now, num), confidence: 1, isTimeDetected: true };
   }
 
-  const actualTime = finalEventTime || addMinutes(now, 15);
+  // ب. معالجة التوقيت المباشر (الساعة 4:30 م)
+  const timeRegex = /(?:الساعة|الساعه|في)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm)?/i;
+  const tMatch = lowerText.match(timeRegex);
+  if (tMatch) {
+    let hrs = parseInt(tMatch[1]);
+    const mins = tMatch[2] ? parseInt(tMatch[2]) : 0;
+    const period = tMatch[3];
+    if (period && /(مساءً|مساءا|م|pm)/i.test(period) && hrs < 12) hrs += 12;
+    if (period && /(صباحاً|صباحا|ص|am)/i.test(period) && hrs === 12) hrs = 0;
+    
+    let res = setHours(setMinutes(setSeconds(new Date(now), 0), mins), hrs);
+    if (isBefore(res, now)) res = addDays(res, 1);
+    return { dateTime: res, confidence: 1, isTimeDetected: true };
+  }
+
+  if (/(غداً|غدا|بكرة)/.test(lowerText)) return { dateTime: addDays(now, 1), confidence: 0.9, isTimeDetected: true };
+  
+  return { dateTime: null, confidence: 0, isTimeDetected: false };
+}
+
+// --- 4. المحرك الرئيسي (The Core Engine) ---
+export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
+  const now = new Date();
+  const timeRes = extractTimeFromText(text, now);
+  const actualTime = timeRes.dateTime || addMinutes(now, 15);
+  const eventType = detectEventType(text);
 
   return {
     eventTime: actualTime,
     reminderTimes: [actualTime],
-    isTimeDetected: isTimeDetected, 
-    confidence: isTimeDetected ? 1.0 : 0.4,
-    priority: (text.includes('عاجل') || text.includes('دواء') ? 4 : 3) as Priority,
+    isTimeDetected: timeRes.isTimeDetected,
+    confidence: timeRes.confidence,
+    priority: analyzePriority(text),
     eventType,
-    location,
+    location: extractLocation(text),
     title: extractSmartTitle(text),
     suggestedMessage: generateCustomMessage(eventType, actualTime, lang),
   };
 }
 
-export function generateCustomMessage(eventType: EventType, eventTime: Date, lang: LanguageCode = 'ar'): string {
-  const timeStr = format(eventTime, 'hh:mm a');
-  const isAr = lang === 'ar';
-  switch (eventType) {
-    case EventType.FLIGHT: return isAr ? `✈️ موعد الرحلة في ${timeStr}` : `✈️ Flight at ${timeStr}`;
-    case EventType.MEDICINE: return isAr ? `💊 حان وقت الدواء (${timeStr})` : `💊 Medicine time (${timeStr})`;
-    case EventType.FOOD: return isAr ? `🍲 تفقّد الطعام (${timeStr})` : `🍲 Check the food (${timeStr})`;
-    default: return isAr ? `🔔 تذكير: ${timeStr}` : `🔔 Reminder: ${timeStr}`;
-  }
+// --- الدوال المساعدة ---
+export function detectEventType(text: string): EventType {
+  const low = text.toLowerCase();
+  if (/(طائرة|مطار|سفر|flight)/.test(low)) return EventType.FLIGHT;
+  if (/(دواء|علاج|حبة|insulin)/.test(low)) return EventType.MEDICINE;
+  if (/(أكل|طعام|طبخ|غداء|عشاء)/.test(low)) return EventType.FOOD;
+  return EventType.OTHER;
 }
 
-export function getPriorityLabel(priority: Priority, lang: LanguageCode = 'ar'): string {
-  return translations[lang][priority === 4 ? 'priority_critical' : 'priority_high'];
+export function extractLocation(text: string) {
+  const m = text.match(/(?:في|بـ|at|in)\s+([^ ]+)/i);
+  return m ? m[1] : undefined;
 }
 
-export function getPriorityColor(priority: Priority): string {
-  return priority === 4 ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600';
+export function generateCustomMessage(type: EventType, time: Date, lang: LanguageCode): string {
+  const tStr = format(time, 'hh:mm a');
+  return lang === 'ar' ? `🔔 تذكير ذكي: ${tStr}` : `🔔 Smart Reminder: ${tStr}`;
 }
+
+export function getPriorityLabel(p: Priority, l: LanguageCode) { return translations[l].priority_high; }
+export function getPriorityColor(p: Priority) { return p === 4 ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'; }
