@@ -138,8 +138,6 @@ interface TimeParseResult {
   confidence: number;
   usedPattern: string;
 }
-
-const timePatterns = [
   
   const timePatterns = [
   // 1. الأنماط المركبة والمثنى (أولوية قصوى لأنها الأكثر تحديداً)
