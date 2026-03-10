@@ -278,7 +278,7 @@ const timePatterns: {
     },
     weight: 0.95
   }
-
+// ===================== الدالة الأساسية المحسنة =====================
 export function parseSmartTime(
   text: string,
   lang: LanguageCode = 'ar'
