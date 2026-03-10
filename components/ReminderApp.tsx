@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import VoiceInput from './VoiceInput';
-import AddReminderModal from './AddReminderModal'; // اسم الملف حسب مساره الفعلي
+import AddReminderModal from './AddReminderModal';
 import {
   Bell, 
   Plus,
@@ -25,7 +25,8 @@ import {
   Info,
   Share2,
   MapPin,
-  Timer
+  Timer,
+  Tag
 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast, isBefore, parseISO, addHours, addMinutes, addDays, addWeeks } from 'date-fns';
 import { arDZ } from 'date-fns/locale';
@@ -62,6 +63,7 @@ const SMART_SUGGESTIONS: Record<string, string[]> = {
 export default function ReminderApp() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [inputText, setInputText] = useState('');
+  const [preview, setPreview] = useState<any>(null); // حالة المعاينة الحية
   const [recurring, setRecurring] = useState<Reminder['recurring']>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -75,6 +77,20 @@ export default function ReminderApp() {
   const [selectedDate, setSelectedDate] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
+
+  // --- منطق المعاينة الحية (Live Preview Logic) ---
+  useEffect(() => {
+    if (isSmartAnalysisEnabled && inputText.trim().length > 3) {
+      try {
+        const analysis = parseSmartTime(inputText, language);
+        setPreview(analysis);
+      } catch (e) {
+        setPreview(null);
+      }
+    } else {
+      setPreview(null);
+    }
+  }, [inputText, isSmartAnalysisEnabled, language]);
 
   const activeSuggestions = useMemo(() => {
     if (!inputText.trim()) return [];
@@ -115,7 +131,7 @@ export default function ReminderApp() {
         audioRef.current.muted = false;
         audioRef.current.currentTime = 0;
         audioRef.current.play().catch(e => {
-          console.warn('Audio playback blocked by browser. Interaction required.', e);
+          console.warn('Audio playback blocked by browser.', e);
         });
       } catch (e) {
         console.error('Audio playback failed', e);
@@ -130,11 +146,8 @@ export default function ReminderApp() {
       const rem = prev.find(r => r.id === id);
       if (rem && !rem.isCompleted) {
         setDueReminder(rem);
-        if (soundEnabled) {
-          playNotificationSound();
-        }
+        if (soundEnabled) playNotificationSound();
         
-        // Update the next reminder time if there are more
         const now = new Date();
         const nextTimes = rem.reminderTimes
           .map(t => new Date(t))
@@ -142,12 +155,9 @@ export default function ReminderApp() {
           .sort((a, b) => a.getTime() - b.getTime());
         
         if (nextTimes.length > 0) {
-          return prev.map(r => 
-            r.id === id ? { ...r, reminderTime: nextTimes[0].toISOString() } : r
-          );
+          return prev.map(r => r.id === id ? { ...r, reminderTime: nextTimes[0].toISOString() } : r);
         }
 
-        // Handle recurring if no more alert times
         if (rem.recurring !== 'none') {
           const nextTime = getNextRecurringTime(rem);
           const newRem: Reminder = {
@@ -162,7 +172,6 @@ export default function ReminderApp() {
           if (notificationService) {
             notificationService.scheduleReminder(newRem, (rid) => handleReminderDueRef.current(rid));
           }
-          // For recurring, we mark the current one as completed and add the new one
           return [newRem, ...prev.map(r => r.id === id ? { ...r, isCompleted: true } : r)];
         }
       }
@@ -176,32 +185,24 @@ export default function ReminderApp() {
 
   const handleDelete = React.useCallback((id: string) => {
     setReminders(prev => prev.filter(r => r.id !== id));
-    if (notificationService) {
-      notificationService.cancelReminder(id);
-    }
+    if (notificationService) notificationService.cancelReminder(id);
   }, []);
 
   const handleToggleComplete = React.useCallback((id: string) => {
-    setReminders(prev => {
-      const updated = prev.map(r => {
-        if (r.id === id) {
-          const newState = !r.isCompleted;
-          if (notificationService) {
-            if (newState) {
-              notificationService.cancelReminder(id);
-            } else {
-              notificationService.scheduleReminder(r, (rid) => handleReminderDueRef.current(rid));
-            }
-          }
-          return { ...r, isCompleted: newState };
+    setReminders(prev => prev.map(r => {
+      if (r.id === id) {
+        const newState = !r.isCompleted;
+        if (notificationService) {
+          if (newState) notificationService.cancelReminder(id);
+          else notificationService.scheduleReminder(r, (rid) => handleReminderDueRef.current(rid));
         }
-        return r;
-      });
-      return updated;
-    });
+        return { ...r, isCompleted: newState };
+      }
+      return r;
+    }));
   }, []);
 
-  // Load reminders from cache
+  // Cache Loading
   useEffect(() => {
     const cached = localStorage.getItem('smart_reminders_cache');
     if (cached) {
@@ -211,68 +212,29 @@ export default function ReminderApp() {
           setTimeout(() => {
             setReminders(parsed);
             if (notificationService) {
-              notificationService.rescheduleAll(parsed, (id) => {
-                handleReminderDueRef.current(id);
-              });
+              notificationService.rescheduleAll(parsed, (id) => handleReminderDueRef.current(id));
             }
           }, 0);
         }
-      } catch (e) {
-        console.error('Failed to parse cached reminders', e);
-      }
+      } catch (e) { console.error(e); }
     }
-    
     const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
-    if (smartAnalysis !== null) {
-      setTimeout(() => setIsSmartAnalysisEnabled(smartAnalysis === 'true'), 0);
-    }
-
+    if (smartAnalysis !== null) setTimeout(() => setIsSmartAnalysisEnabled(smartAnalysis === 'true'), 0);
     setTimeout(() => setIsMounted(true), 0);
   }, []);
 
-  // Save reminders to cache
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('smart_reminders_cache', JSON.stringify(reminders));
-    }
+    if (isMounted) localStorage.setItem('smart_reminders_cache', JSON.stringify(reminders));
   }, [reminders, isMounted]);
 
-  // Theme Initialization
+  // Theme Logic
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    let initialTheme: 'light' | 'dark' = 'light';
-    if (savedTheme) {
-      initialTheme = savedTheme;
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      initialTheme = 'dark';
-    }
-    
-    const timer = setTimeout(() => {
-      setTheme(initialTheme);
-      if (initialTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }, 0);
-
-    const handleStorage = () => {
-      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-      setTheme(currentTheme);
-      const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
-      if (smartAnalysis !== null) {
-        setIsSmartAnalysisEnabled(smartAnalysis === 'true');
-      }
-    };
-
-    window.addEventListener('storage', handleStorage);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('storage', handleStorage);
-    };
+    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
   }, []);
 
-  // Initialize audio object
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -282,125 +244,80 @@ export default function ReminderApp() {
   }, []);
 
   const toggleSound = () => {
-    const nextState = !soundEnabled;
-    setSoundEnabled(nextState);
-    
-    if (nextState && audioRef.current) {
+    setSoundEnabled(!soundEnabled);
+    if (!soundEnabled && audioRef.current) {
       audioRef.current.muted = true;
       audioRef.current.play().catch(() => {});
     }
   };
 
-  // Background checker for due reminders (safety fallback)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setReminders(prev => {
-        const dueReminders = prev.filter(rem => !rem.isCompleted && isPast(parseISO(rem.reminderTime)));
-        if (dueReminders.length > 0) {
-          dueReminders.forEach(rem => handleReminderDueRef.current(rem.id));
-        }
-        return prev;
-      });
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const handleSnooze = React.useCallback((id: string, durationMinutes: number = 5) => {
     setReminders(prev => {
       const reminder = prev.find(r => r.id === id);
       if (!reminder || reminder.snoozeCount >= reminder.maxSnooze) return prev;
-
-      const newReminderTime = addMinutes(new Date(), durationMinutes);
-      const snoozedReminder: Reminder = {
+      const newTime = addMinutes(new Date(), durationMinutes);
+      const snoozed: Reminder = {
         ...reminder,
         id: Math.random().toString(36).substr(2, 9),
-        reminderTime: newReminderTime.toISOString(),
+        reminderTime: newTime.toISOString(),
         snoozeCount: reminder.snoozeCount + 1,
-        parentId: reminder.id,
         isCompleted: false,
       };
-
       if (notificationService) {
         notificationService.cancelReminder(id);
-        notificationService.scheduleReminder(snoozedReminder, (rid) => handleReminderDueRef.current(rid));
+        notificationService.scheduleReminder(snoozed, (rid) => handleReminderDueRef.current(rid));
       }
-
-      return [snoozedReminder, ...prev.filter(r => r.id !== id)];
+      return [snoozed, ...prev.filter(r => r.id !== id)];
     });
   }, []);
-
-  const smartParsed = useMemo(() => {
-    if (!isSmartAnalysisEnabled || !inputText.trim()) return null;
-    try {
-      return parseSmartTime(inputText, language);
-    } catch (e) {
-      return null;
-    }
-  }, [inputText, isSmartAnalysisEnabled, language]);
 
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
 
     let reminderTimes: Date[] = [new Date()];
     let eventTime = new Date();
-    let reminderPriority: Priority = 1;
+    let priority: Priority = 3;
     let eventType = EventType.OTHER;
-    let location: string | undefined;
-    let confidence = 0.5;
-    let suggestedMessage = '';
 
-    if (isSmartAnalysisEnabled && smartParsed) {
-      reminderTimes = smartParsed.reminderTimes;
-      eventTime = smartParsed.eventTime;
-      reminderPriority = smartParsed.priority;
-      eventType = smartParsed.eventType;
-      location = smartParsed.location;
-      confidence = smartParsed.confidence;
-      suggestedMessage = smartParsed.suggestedMessage;
+    // استخدام المعاينة الحية إذا كانت موجودة
+    if (isSmartAnalysisEnabled && preview) {
+      reminderTimes = preview.reminderTimes;
+      eventTime = preview.eventTime;
+      priority = preview.priority;
+      eventType = preview.eventType;
     } else {
-      if (selectedDate) {
-        eventTime = new Date(selectedDate);
-      } else {
-        eventTime = new Date(Date.now() + 15 * 60000);
-      }
+      eventTime = selectedDate ? new Date(selectedDate) : addMinutes(new Date(), 15);
       reminderTimes = [eventTime];
-      reminderPriority = analyzePriority(inputText);
+      priority = analyzePriority(inputText);
       eventType = detectEventType(inputText);
-      suggestedMessage = generateCustomMessage(eventType, eventTime, language);
     }
     
     const newReminder: Reminder = {
       id: Math.random().toString(36).substr(2, 9),
-      text: inputText,
+      // التعديل: حفظ العنوان النظيف المكتشف ذكياً
+      text: (isSmartAnalysisEnabled && preview?.title) ? preview.title : inputText,
       reminderTime: reminderTimes[0].toISOString(),
       reminderTimes: reminderTimes.map(t => t.toISOString()),
       eventTime: eventTime.toISOString(),
       createdAt: new Date().toISOString(),
       isCompleted: false,
       recurring,
-      priority: reminderPriority,
+      priority,
       eventType,
-      location,
-      confidence,
-      suggestedMessage,
+      location: preview?.location,
+      confidence: preview?.confidence || 0.5,
+      suggestedMessage: preview?.suggestedMessage || generateCustomMessage(eventType, eventTime, language),
       snoozeCount: 0,
       maxSnooze: 3,
       stage: ReminderStage.FINAL,
-      totalDurationMinutes: smartParsed?.totalDurationMinutes || undefined
     };
 
     setReminders(prev => [newReminder, ...prev]);
-    
-    if (notificationService) {
-      notificationService.scheduleReminder(newReminder, (id) => {
-        handleReminderDueRef.current(id);
-      });
-    }
+    if (notificationService) notificationService.scheduleReminder(newReminder, (id) => handleReminderDueRef.current(id));
 
     setInputText('');
+    setPreview(null);
     setRecurring('none');
-    setSelectedDate('');
     setIsAdding(false);
   };
 
@@ -411,481 +328,108 @@ export default function ReminderApp() {
   const completedReminders = reminders.filter(r => r.isCompleted).slice(0, 10);
 
   if (!isMounted) return null;
-
-  if (showSettings) {
-    return <SettingsScreen onBack={() => setShowSettings(false)} />;
-  }
-
-  if (showAbout) {
-    return <AboutScreen onBack={() => setShowAbout(false)} />;
-  }
+  if (showSettings) return <SettingsScreen onBack={() => setShowSettings(false)} />;
+  if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />;
 
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col transition-colors duration-500">
       
-      {/* Due Reminder Modal */}
-      <AnimatePresence>
-        {dueReminder && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[3rem] p-8 shadow-2xl border border-black/5 dark:border-white/5"
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 bg-[#E65100]/10 rounded-[2rem] flex items-center justify-center mb-6">
-                  <Bell className="w-10 h-10 text-[#E65100] animate-bounce" />
-                </div>
-                
-                <p className="text-xs font-black text-[#E65100] uppercase tracking-widest mb-2">📋 {t.app_name}</p>
-                
-                <h2 className="text-2xl font-black mb-2 dark:text-white">
-                  {dueReminder.text}
-                </h2>
-                
-                {dueReminder.suggestedMessage && (
-                  <p className="text-zinc-500 dark:text-zinc-400 mb-8 italic text-lg leading-relaxed">
-                    {dueReminder.suggestedMessage}
-                  </p>
-                )}
-
-                <div className="flex flex-col gap-3 w-full">
-                  <div className="grid grid-cols-2 gap-3 w-full">
-                    <button
-                      onClick={() => {
-                        handleSnooze(dueReminder.id);
-                        setDueReminder(null);
-                      }}
-                      disabled={dueReminder.snoozeCount >= dueReminder.maxSnooze}
-                      className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all disabled:opacity-50"
-                    >
-                      <Timer className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                      <span className="text-xs font-black uppercase tracking-widest">😴 {t.snooze} 5 {language === 'ar' ? 'دقائق' : 'mins'}</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        const currentRem = reminders.find(r => r.id === dueReminder.id);
-                        if (currentRem && !currentRem.isCompleted) {
-                          handleToggleComplete(dueReminder.id);
-                        }
-                        setDueReminder(null);
-                      }}
-                      className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-[#E65100] hover:bg-[#D84315] transition-all"
-                    >
-                      <CheckCircle2 className="w-5 h-5 text-white" />
-                      <span className="text-xs font-black uppercase tracking-widest text-white">
-                        ✅ {dueReminder.recurring !== 'none' ? (language === 'ar' ? 'تم' : 'Done') : (language === 'ar' ? 'إكمال' : 'Complete')}
-                      </span>
-                    </button>
-                  </div>
-                  
-                  <button
-                    onClick={() => {
-                      setSelectedReminderForDetails(dueReminder);
-                      setDueReminder(null);
-                    }}
-                    className="flex items-center justify-center gap-2 p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-all"
-                  >
-                    <Info className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
-                    <span className="text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300">
-                      📄 {t.details}
-                    </span>
-                  </button>
-                </div>
-                
-                <button 
-                  onClick={() => setDueReminder(null)}
-                  className="mt-6 text-zinc-400 text-[10px] font-black uppercase tracking-widest hover:text-zinc-600"
-                >
-                  {t.cancel}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Reminder Details Modal */}
-      <AnimatePresence>
-        {selectedReminderForDetails && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[3rem] p-8 shadow-2xl border border-black/5 dark:border-white/5"
-            >
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-black dark:text-white flex items-center gap-2">
-                    <Info className="w-6 h-6 text-[#E65100]" />
-                    {t.details}
-                  </h2>
-                  <button onClick={() => setSelectedReminderForDetails(null)} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                    <Plus className="w-6 h-6 rotate-45 text-zinc-400" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">{language === 'ar' ? 'النص الأصلي' : 'Original Text'}</p>
-                    <p className="text-lg font-bold dark:text-white">{selectedReminderForDetails.text}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">📅 {t.event_time}</p>
-                      <p className="text-sm font-bold dark:text-white">
-                        {format(parseISO(selectedReminderForDetails.eventTime), 'p, d MMM')}
-                      </p>
-                    </div>
-                    <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">⏰ {t.remind_at}</p>
-                      <p className="text-sm font-bold dark:text-white">
-                        {format(parseISO(selectedReminderForDetails.reminderTime), 'p, d MMM')}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">💬 {t.suggested_message}</p>
-                    <p className="text-sm font-bold dark:text-white italic">&quot;{selectedReminderForDetails.suggestedMessage}&quot;</p>
-                  </div>
-
-                  <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl">
-                    <div>
-                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">🔍 {t.confidence}</p>
-                      <p className="text-sm font-bold dark:text-white">{(selectedReminderForDetails.confidence * 100).toFixed(0)}%</p>
-                    </div>
-                    <div className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                      getPriorityColor(selectedReminderForDetails.priority)
-                    )}>
-                      {getPriorityLabel(selectedReminderForDetails.priority, language)}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setSelectedReminderForDetails(null)}
-                  className="w-full bg-[#E65100] text-white font-black py-4 rounded-2xl hover:bg-[#D84315] transition-all text-sm uppercase tracking-widest"
-                >
-                  {t.back}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
       {/* App Bar */}
       <header className="sticky top-0 z-10 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 bg-white text-[#E65100] rounded-2xl flex items-center justify-center shadow-lg">
             <ClipboardList className="w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-white leading-none tracking-tight">{t.app_name}</h1>
-          </div>
+          <h1 className="text-2xl font-black text-white">{t.app_name}</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowAbout(true)}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-            title={t.about}
-          >
-            <Info className="w-6 h-6" />
-          </button>
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-            title={t.settings}
-          >
-            <Settings className="w-6 h-6" />
-          </button>
-          <button 
-            onClick={toggleSound}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
-          >
-            {soundEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-          </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowAbout(true)} className="p-2 text-white"><Info /></button>
+          <button onClick={() => setShowSettings(true)} className="p-2 text-white"><Settings /></button>
+          <button onClick={toggleSound} className="p-2 text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
         </div>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
-        {/* Search Bar */}
-        <div className="mb-8 px-2">
-          <div className="relative group">
-            <Search className={cn("absolute top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-white transition-colors", isRTL ? "left-4" : "right-4")} />
-            <input 
-              type="text"
-              placeholder={t.search_placeholder}
-              className={cn(
-                "w-full bg-white/10 border border-white/10 rounded-2xl py-3.5 text-sm focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all outline-none shadow-sm text-white placeholder:text-white/30 font-bold",
-                isRTL ? "pl-12 pr-5" : "pr-12 pl-5"
-              )}
-              onChange={(e) => {
-                // Search logic
-              }}
-            />
-          </div>
+        {/* Search */}
+        <div className="mb-8 relative">
+          <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40", isRTL ? "left-4" : "right-4")} />
+          <input 
+            placeholder={t.search_placeholder}
+            className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 px-6 text-white font-bold outline-none"
+          />
         </div>
 
-        {/* Active Reminders */}
-        <section className="space-y-4 mb-12">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              {t.active_reminders} ({activeReminders.length})
-            </h3>
-          </div>
+        {/* Reminders List */}
+        <section className="space-y-4">
+          <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+            <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
+          </h3>
 
           <div className="flex flex-col gap-3">
             <AnimatePresence>
               {activeReminders.length === 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                  className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10"
-                >
-                  <Bell className="w-16 h-16 text-white/10 mx-auto mb-4" />
-                  <p className="text-white/40 font-black uppercase tracking-widest text-xs">{t.no_active_reminders}</p>
-                </motion.div>
+                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
+                  <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
+                </div>
               ) : (
-                activeReminders.map((rem) => {
-                  const isDueSoon = !rem.isCompleted && 
-                    new Date(rem.reminderTime).getTime() - getTrueTime().getTime() < 300000 && // 5 mins
-                    new Date(rem.reminderTime).getTime() - getTrueTime().getTime() > 0;
-
-                  return (
-                    <motion.div
-                      key={rem.id}
-                      layout
-                      initial={{ opacity: 0, y: 20, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                      transition={{ 
-                        opacity: { duration: 0.2 },
-                        height: { duration: 0.3 },
-                        y: { type: "spring", stiffness: 300, damping: 25 }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <div className="relative rounded-[2.5rem] overflow-hidden bg-zinc-100 dark:bg-zinc-800/50">
-                        <div className="absolute inset-0 flex justify-between items-center px-8">
-                          <div className="flex items-center gap-2 text-emerald-500 font-bold opacity-70">
-                            <CheckCircle2 className="w-6 h-6" />
-                            <span className="text-sm uppercase tracking-widest">{language === 'ar' ? 'إكمال' : 'Complete'}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-red-500 font-bold opacity-70">
-                            <span className="text-sm uppercase tracking-widest">{language === 'ar' ? 'حذف' : 'Delete'}</span>
-                            <Trash2 className="w-6 h-6" />
-                          </div>
+                activeReminders.map((rem) => (
+                  <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
+                      <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </button>
+                      <div className="flex-1">
+                        <p className="text-xl font-black dark:text-white leading-tight">{rem.text}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-black text-zinc-500">
+                            {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                          </span>
+                          <span className={cn("px-3 py-1 rounded-full text-[10px] font-black text-white", rem.priority >= 3 ? "bg-orange-500" : "bg-blue-500")}>
+                            {getPriorityLabel(rem.priority, language)}
+                          </span>
                         </div>
-
-                        <motion.div
-                          drag="x"
-                          dragConstraints={{ left: 0, right: 0 }}
-                          dragElastic={0.8}
-                          onDragEnd={(e, { offset }) => {
-                            if (offset.x > 100) handleToggleComplete(rem.id);
-                            if (offset.x < -100) handleDelete(rem.id);
-                          }}
-                          className={cn(
-                            "relative bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] border transition-all duration-300 group cursor-grab active:cursor-grabbing",
-                            isDueSoon 
-                              ? "border-white dark:border-zinc-700 shadow-[0_8px_30px_rgba(0,0,0,0.2)] ring-2 ring-white/50 dark:ring-zinc-700/50" 
-                              : "border-black/5 dark:border-white/5 shadow-lg hover:shadow-xl hover:scale-[1.02]"
-                          )}>
-                          <div className="flex items-start gap-5">
-                            <button 
-                              onClick={() => handleToggleComplete(rem.id)}
-                              className={cn(
-                                "mt-1 w-8 h-8 rounded-2xl border-2 flex items-center justify-center transition-all duration-300 shrink-0",
-                                "border-zinc-100 dark:border-zinc-800 hover:border-[#E65100] hover:bg-[#E65100]/5 text-transparent hover:text-[#E65100]"
-                              )}
-                            >
-                              <CheckCircle2 className="w-5 h-5" />
-                            </button>
-                            
-                            <div className="flex-1 min-w-0">
-                              <p className="text-black dark:text-white text-xl font-black mb-1 break-words leading-tight tracking-tight">
-                                {rem.text}
-                              </p>
-                              {rem.suggestedMessage && rem.suggestedMessage !== rem.text && (
-                                <p className="text-zinc-500 dark:text-zinc-400 text-sm mb-3 italic">
-                                  {rem.suggestedMessage}
-                                </p>
-                              )}
-                              
-                              <div className="flex flex-wrap items-center gap-3">
-                                <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                  <Clock className="w-3.5 h-3.5" />
-                                  {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: language === 'ar' ? arDZ : undefined })}
-                                </div>
-                                
-                                <div className={cn(
-                                  "px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
-                                  rem.priority === 4 ? "bg-red-500 text-white" :
-                                  rem.priority === 3 ? "bg-orange-500 text-white" :
-                                  "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
-                                )}>
-                                  {t.priority} {getPriorityLabel(rem.priority, language)}
-                                </div>
-
-                                {rem.stage === ReminderStage.WARNING && (
-                                  <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    <AlertCircle className="w-3.5 h-3.5" />
-                                    {language === 'ar' ? 'تذكير تحذيري' : 'Warning Reminder'}
-                                  </div>
-                                )}
-
-                                {rem.location && (
-                                  <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    {t.location}: {rem.location}
-                                  </div>
-                                )}
-
-                                {rem.recurring !== 'none' && (
-                                  <div className="flex items-center gap-1.5 bg-[#E65100]/10 text-[#E65100] px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    <RefreshCw className="w-3.5 h-3.5" />
-                                    {rem.recurring === 'hourly' ? t.hourly : rem.recurring === 'daily' ? t.daily : t.weekly}
-                                  </div>
-                                )}
-
-                                {rem.reminderTimes.length > 1 && (
-                                  <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    <Bell className="w-3.5 h-3.5" />
-                                    {t.all_alerts}: {rem.reminderTimes.length}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-2 shrink-0">
-                              <button 
-                                onClick={() => handleSnooze(rem.id)}
-                                disabled={rem.snoozeCount >= rem.maxSnooze}
-                                className={cn(
-                                  "p-3 rounded-2xl transition-all",
-                                  rem.snoozeCount >= rem.maxSnooze 
-                                    ? "text-zinc-100 dark:text-zinc-800 cursor-not-allowed" 
-                                    : "text-zinc-300 hover:text-orange-500 hover:bg-orange-50"
-                                )}
-                                title={t.snooze}
-                              >
-                                <Timer className="w-5 h-5" />
-                              </button>
-                              <button 
-                                onClick={() => ShareHelper.shareReminder(rem.text)}
-                                className="p-3 text-zinc-300 hover:text-blue-500 hover:bg-blue-50 rounded-2xl transition-all"
-                                title="مشاركة التذكير"
-                              >
-                                <Share2 className="w-5 h-5" />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(rem.id)}
-                                className="p-3 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                                title="حذف التذكير"
-                              >
-                                <Trash2 className="w-5 h-5" />
-                              </button>
-                            </div>
-                          </div>
-                        </motion.div>
                       </div>
-                    </motion.div>
-                  );
-                })
+                      <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500"><Trash2 /></button>
+                    </div>
+                  </motion.div>
+                ))
               )}
             </AnimatePresence>
           </div>
         </section>
+      </main>
 
-        {/* Completed Reminders */}
-        {completedReminders.length > 0 && (
-          <section className="space-y-4 mt-16">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                {t.completed_recently}
-              </h3>
-              <button 
-                onClick={() => setReminders(prev => prev.filter(r => !r.isCompleted))}
-                className="text-xs font-bold text-primary hover:underline"
-              >
-                {t.clear_all}
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <AnimatePresence>
-                {completedReminders.map((rem) => (
-                  <motion.div 
-                    key={rem.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.6 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="bg-zinc-50 dark:bg-zinc-900/40 p-4 rounded-2xl flex items-center gap-4 border border-zinc-100 dark:border-zinc-800/50 group"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <p className="flex-1 text-zinc-500 dark:text-zinc-400 line-through text-sm font-medium truncate">{rem.text}</p>
-                    <button 
-                      onClick={() => handleDelete(rem.id)}
-                      className="p-1.5 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </section>
-        )}
-      </main> 
-      
-      {/* Floating Action Button - زر القلم */}
+      {/* Floating Button */}
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsAdding(true)}
-        // أضفنا z-[50] لضمان ظهوره فوق كل العناصر و shadow-orange للتمييز
-        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] flex items-center justify-center z-[50] hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all border border-black/5"
+        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-2xl shadow-2xl flex items-center justify-center z-50 border border-black/5"
       >
         <Pencil className="w-8 h-8" />
       </motion.button>
 
-      {/* نافذة إضافة التذكير - المكون الجديد */}
+      {/* Modal - نمرر له الـ preview ليعرض المعاينة الحية */}
       <AddReminderModal
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         inputText={inputText}
         setInputText={setInputText}
         recurring={recurring}
-        setRecurring={(val: any) => setRecurring(val)}
+        setRecurring={setRecurring}
         handleAddReminder={handleAddReminder}
         t={t}
-        smartParsed={smartParsed}
+        smartParsed={preview} // نمرر المعاينة الحية هنا
         activeSuggestions={activeSuggestions}
         language={language}
         getTimeBeforeLabel={getTimeBeforeLabel}
         format={format}
         arDZ={arDZ}
       />
-
-      {/* الفوتر */}
-      <footer className="py-8 text-center bg-black/5">
-        <p className="text-white/20 text-[10px] font-black uppercase tracking-[0.2em]">
-          Smarty AI Reminder &copy; {new Date().getFullYear()}
-        </p>
+      
+      <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">
+        Smarty AI Reminder &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );
 }
-
