@@ -210,31 +210,39 @@ export function detectEventType(text: string): EventType {
 
 export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
   const now = new Date();
+  // 1. محاولة استخراج الوقت باستخدام الأنماط الجديدة
   const timeResult = extractTimeFromText(text, now);
   
-  // إذا لم يتم اكتشاف وقت، نبحث في الكلمات المفتاحية KEYWORDS
+  const eventType = detectEventType(text);
+  const priority = analyzePriority(text);
+  const location = extractLocation(text);
+
   let finalEventTime = timeResult.dateTime;
   let isTimeDetected = timeResult.isTimeDetected;
 
+  // 2. إذا لم يجد نمطاً صريحاً، يبحث في الكلمات المفتاحية (حليب، فرن، إلخ)
   if (!finalEventTime) {
     for (const [word, config] of Object.entries(KEYWORDS)) {
-      if (text.includes(word)) {
+      if (text.toLowerCase().includes(word)) {
         finalEventTime = config.minutes ? addMinutes(now, config.minutes) : addHours(now, config.hours || 0);
-        isTimeDetected = true; // نعتبر الكلمات المفتاحية وقتاً مكتشفاً بدلاً من الافتراضي
+        isTimeDetected = true; 
         break;
       }
     }
   }
 
-  // إذا فشل كل شيء، هنا فقط نضع وقتاً احتياطياً ولكن نعلم الواجهة بذلك
+  // 3. التوقيت النهائي (الواقعي أو الاحتياطي)
   const actualTime = finalEventTime || addMinutes(now, 15);
 
   return {
     eventTime: actualTime,
-    isTimeDetected: isTimeDetected, // سيعود بـ false إذا كان "توقيت افتراضي"
+    isTimeDetected: isTimeDetected, 
     confidence: isTimeDetected ? 1.0 : 0.4,
+    priority,
+    eventType,
+    location,
     title: extractSmartTitle(text),
-    // ... بقية البيانات
+    suggestedMessage: generateCustomMessage(eventType, actualTime, lang),
   };
 }
 
