@@ -221,9 +221,8 @@ interface TimeParseResult {
     pattern: /(?:بعد|خلال)\s+(\d+)\s+(?:دقيقة|دقيقه|دقائق)/i,
     parseFn: (now: Date, m: RegExpMatchArray) => addMinutes(now, parseInt(m[1])),
     weight: 0.95
-  }
-];
-  
+  },
+  {
     pattern: /(?:بعد|خلال)\s+ساعتين/i,
     parseFn: (now: Date) => addHours(now, 2),
     weight: 1.0
