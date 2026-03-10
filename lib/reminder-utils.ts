@@ -213,15 +213,16 @@ interface TimeParseResult {
   confidence: number;
   usedPattern: string;
 }
- /**
- * محرك تحليل الوقت المطور - Smarty Time Engine v2.0
- */
+
+// ==========================================
+// Time Parsing Engine v2.0
+// ==========================================
+
 const timePatterns: {
   pattern: RegExp;
   parseFn: (matches: RegExpMatchArray, now: Date) => Date | null;
   weight: number;
 }[] = [
-  // 1. الأوقات النسبية العامية (بعد ساعة، بعد نص ساعة، بعد ربع ساعة)
   {
     pattern: /(?:بعد|كمان)\s+(?:ساعة|ساعه)\s+(?:و|و\s+)?(?:نص|نصف)/i,
     parseFn: (m, now) => addMinutes(now, 90),
@@ -237,28 +238,25 @@ const timePatterns: {
     parseFn: (m, now) => addMinutes(now, 30),
     weight: 0.9
   },
-  // 2. الكلمات اليومية (غدوة، بكرة، اليوم، العشية)
   {
     pattern: /(?:غدوة|غدا|بكرة|بكره)\s+(?:الـ|في\s+)?(?:عشية|العشية|المساء|ليل)/i,
-    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 18), // غداً 6 مساءً
+    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 18), 
     weight: 0.85
   },
   {
     pattern: /(?:غدوة|غدا|بكرة|بكره)\s+(?:الـ|في\s+)?(?:صباح|الصباح|بكري)/i,
-    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 8), // غداً 8 صباحاً
+    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 8),
     weight: 0.85
   },
-  // 3. تحليل الوقت الرقمي المتطور (الساعة 7 ونص، 8 وربع)
   {
     pattern: /(?:الساعة|ساعة)\s+(\d{1,2})(?:\s+)?(?:و|:)\s*(نص|نصف|30)/i,
     parseFn: (m, now) => {
       let h = parseInt(m[1]);
-      if (h < 12 && now.getHours() >= 12) h += 12; // تحويل تلقائي للمساء بناءً على الوقت الحالي
+      if (h < 12 && now.getHours() >= 12) h += 12;
       return setHours(setMinutes(now, 30), h);
     },
     weight: 0.95
   },
-  // 4. تحليل "بعد X دقيقة/ساعة" (دعم الأرقام العربية والإنجليزية)
   {
     pattern: /(?:بعد|كمان)\s+(\d+)\s+(دقيقة|دقائق|دقايف|ساعة|ساعات|ساعه)/i,
     parseFn: (m, now) => {
@@ -268,13 +266,13 @@ const timePatterns: {
     },
     weight: 0.9
   },
-  // 5. تحليل أيام الأسبوع مع وقت محدد (السبت الجاي الـ 10)
   {
     pattern: /(الأحد|الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت)\s+(?:الجاي|القادم)?\s*(?:الساعة|الـ)?\s*(\d{1,2})/i,
     parseFn: (m, now) => {
       const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
       const targetDay = days.indexOf(m[1]);
       let h = parseInt(m[2]);
+      if (h < 12) h += 12;
       let date = addDays(now, (targetDay + 7 - now.getDay()) % 7 || 7);
       return setHours(setMinutes(date, 0), h);
     },
@@ -282,23 +280,6 @@ const timePatterns: {
   }
 ];
 
-// تحديث دالة استخراج العنوان لتكون أكثر ذكاءً
-function extractTitle(text: string, detectedType: EventType, location?: string): string {
-    let title = text
-        .replace(/(ذكرني|فكرني|تذكير|قولي|يا سمارتي|ديرلي تذكير)/gi, '')
-        .replace(/(بعد|كمان|الساعة|ساعة|غدوة|بكرة|اليوم|عشية|صباح|ليل)/gi, '')
-        // حذف الأرقام التي استُخدمت للوقت فقط
-        .replace(/\d{1,2}(?::\d{2})?/g, '') 
-        .trim();
-
-    if (!title || title.length < 2) {
-        const labels: any = { [EventType.FOOD]: 'تحضير طعام', [EventType.MEDICINE]: 'موعد دواء', [EventType.SCHOOL]: 'مدرسة' };
-        return labels[detectedType] || 'تذكير جديد';
-    }
-    return title;
-}
-
-    
 // ===================== الدالة الأساسية المحسنة =====================
 
 export function parseSmartTime(
