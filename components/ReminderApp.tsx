@@ -282,34 +282,34 @@ export default function ReminderApp() {
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
 
-    // 1. نقوم بحساب التحليل الذكي داخل الدالة فوراً للتأكد من وجوده
+    // 1. التحليل الذكي
     const currentSmartParsed = isSmartAnalysisEnabled ? parseSmartTime(inputText, language) : null;
 
     let eventTime = new Date();
-    let reminderTimes: Date[] = [];
     let isTimeDetected = false;
 
-    // 2. التحقق من وجود نتائج التحليل
-    if (isSmartAnalysisEnabled && currentSmartParsed) {
+    // 2. استخراج الوقت المكتشف
+    if (isSmartAnalysisEnabled && currentSmartParsed && currentSmartParsed.isTimeDetected) {
       eventTime = currentSmartParsed.eventTime;
-      reminderTimes = currentSmartParsed.reminderTimes || [eventTime];
-      isTimeDetected = currentSmartParsed.isTimeDetected;
-    }
-
-    // 3. حالة احتياطية إذا لم يكتشف وقتاً ولم يحدد المستخدم تاريخاً
-    if (!isTimeDetected && !selectedDate) {
-      eventTime = addMinutes(new Date(), 15);
-      reminderTimes = [eventTime];
+      isTimeDetected = true;
     } else if (selectedDate) {
       eventTime = new Date(selectedDate);
-      reminderTimes = [eventTime];
+      isTimeDetected = true;
+    } else {
+      // وقت افتراضي +15 دقيقة إذا لم يوجد مدخل
+      eventTime = addMinutes(new Date(), 15);
     }
+
+    // 3. ضمان وجود مصفوفة أوقات صالحة
+    const finalReminderTimes = (currentSmartParsed?.reminderTimes && currentSmartParsed.reminderTimes.length > 0) 
+      ? currentSmartParsed.reminderTimes 
+      : [eventTime];
 
     const newReminder: Reminder = {
       id: Math.random().toString(36).substr(2, 9),
       text: inputText,
-      reminderTime: (reminderTimes[0] || eventTime).toISOString(),
-      reminderTimes: reminderTimes.map(t => t.toISOString()),
+      reminderTime: finalReminderTimes[0].toISOString(),
+      reminderTimes: finalReminderTimes.map(t => t.toISOString()),
       eventTime: eventTime.toISOString(),
       createdAt: new Date().toISOString(),
       isCompleted: false,
@@ -332,12 +332,12 @@ export default function ReminderApp() {
       });
     }
 
+    // تنظيف المدخلات
     setInputText('');
     setRecurring('none');
     setSelectedDate('');
     setIsAdding(false);
   };
-
 
   const activeReminders = reminders.filter(r => !r.isCompleted).sort((a, b) => 
     new Date(a.reminderTime).getTime() - new Date(b.reminderTime).getTime()
