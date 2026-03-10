@@ -5,6 +5,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Plus, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 import VoiceInput from './VoiceInput';
 import { cn } from '@/lib/utils';
+import { 
+  X, 
+  Mic, 
+  Calendar, 
+  RefreshCw, 
+  Clock, // أضف هذه
+  Sparkles, // أضف هذه
+  CheckCircle2, // أضف هذه
+  Timer // أضف هذه
+} from 'lucide-react';
 
 interface AddReminderModalProps {
   isOpen: boolean;
