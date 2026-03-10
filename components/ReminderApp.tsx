@@ -76,28 +76,37 @@ export default function ReminderApp() {
   const [selectedDate, setSelectedDate] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
- 
-    // 1. عند تشغيل التطبيق: جلب التذكيرات المحفوظة
+   // 1. هاد الـ Effect مخصص فقط لضبط حالة الـ Mount (مرة واحدة)
   useEffect(() => {
-    setIsMounted(true); // تأكيد أن التطبيق اشتغل في المتصفح
-    const savedReminders = localStorage.getItem('smarty_reminders');
-    if (savedReminders) {
-      try {
-        setReminders(JSON.parse(savedReminders));
-      } catch (e) {
-        console.error("Error loading reminders", e);
-      }
-    }
+    setIsMounted(true);
   }, []);
 
-  // 2. عند إضافة أو تعديل أي تذكير: حفظ التغييرات فوراً
+  // 2. هاد الـ Effect مخصص فقط لجلب البيانات من localStorage
   useEffect(() => {
-    // نتحقق بلي التطبيق mounted وبلي المصفوفة ماشي فارغة باش ما نمسحوش الداتا القديمة بالخطأ عند أول ريندير
+    // نخدمو غير إذا كنا في المتصفح (isMounted)
+    if (isMounted) {
+      const savedReminders = localStorage.getItem('smarty_reminders');
+      if (savedReminders) {
+        try {
+          const parsed = JSON.parse(savedReminders);
+          // نأكدوا بلي الداتا موجودة قبل ما نديرو Update
+          if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+            setReminders(parsed);
+          }
+        } catch (e) {
+          console.error("Error loading reminders", e);
+        }
+      }
+    }
+  }, [isMounted]); // يشتغل غير كي تولي isMounted = true
+
+  // 3. هاد الـ Effect مخصص لحفظ أي تغيير يصرى في المصفوفة
+  useEffect(() => {
     if (isMounted) {
       localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
     }
   }, [reminders, isMounted]);
-
+    
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
 const preview = useMemo(() => {
   // زدنا الحساسية ليعمل المربع فوراً
