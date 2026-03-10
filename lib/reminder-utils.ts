@@ -52,13 +52,41 @@ export function analyzePriority(text: string): Priority {
 }
 
 export function extractSmartTitle(text: string): string {
-  return text
-    .replace(/(?:تذكير|ذكرني|سوي|عمل|remind me|rappelle-moi)\s+/gi, '')
-    .replace(/(?:بعد|خلال|في|على|الساعة|in|within|dans|at|à|sur)\s+\d*.*?(?:دقيقة|ساعة|أيام|min|hour|day|jour|minute|صباحا|مساءا|am|pm)/gi, '')
-    .replace(/(?:بعد|خلال|in|dans)\s+(?:نصف|نص|ربع|half|quarter|demie|quart|ساعتين|two hours|deux heures)/gi, '')
-    .replace(/(?:غداً|غدا|بكرة|tomorrow|demain)/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim() || text;
+  let cleaned = text;
+
+  // 1. حذف البادئات (الكلمات اللي نبداو بيها الهدرة)
+  const prefixes = [
+    /^(ذكرني|فكرني|ديرلي تذكير|سويلي|ابعتلي|كاشما تفكرني|سجل)\s+(بـ|ب|أن|ان)?/gi,
+    /^(remind me to|remind me|set a reminder|add a task)\s+/gi,
+    /^(rappelle-moi de|rappelle-moi|créer un rappel)\s+/gi
+  ];
+  
+  prefixes.forEach(reg => cleaned = cleaned.replace(reg, ''));
+
+  // 2. حذف كلمات الوقت المعقدة (Time Patterns)
+  // يحيي: "من ذاك"، "في الليل"، "بعد شوية"، "in 2 hours"
+  const timePatterns = [
+    /(?:بعد|خلال|في|على|للساعة|للساعه|دوا الـ|in|within|at|by|dans|à)\s+\d*.*?(?:دقيقة|دقيقه|دقائق|ساعة|ساعه|ساعات|أيام|ايام|يوم|minutes?|mins?|hours?|days?|صباحا|مساءا|am|pm|du matin|du soir)/gi,
+    /(?:الساعة|الساعه|الوقيت|time|l'heure)\s*(\d{1,2})(?::|.)?(\d{2})?\s*(صباحا|مساءا|ص|م|am|pm)?/gi
+  ];
+  
+  timePatterns.forEach(reg => cleaned = cleaned.replace(reg, ''));
+
+  // 3. حذف الكلمات الزمنية "تاع الدزاير" والعالمية
+  const relativeTime = [
+    /(?:غداً|غدا|بكرة|بكرت|بعدين|قريبا|ساعتين|دقيقتين|يومين|دوقا|دروك|دقيقة|دقيقه|tomorrow|demain|today|tonight|later|soon|tout de suite)/gi
+  ];
+  
+  relativeTime.forEach(reg => cleaned = cleaned.replace(reg, ''));
+
+  // 4. تنظيف "الزيادات" اللي تبقى في لافان (End Clean-up)
+  cleaned = cleaned
+    .replace(/\s+(في|على|عند|الى|إلى|بعد|at|on|in|to|for|by|de|à|dans)$/g, '')
+    .replace(/\s+/g, ' ') 
+    .trim();
+
+  // إذا بقا السطر فارغ، رجع النص كيما كان
+  return cleaned || text;
 }
 
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
