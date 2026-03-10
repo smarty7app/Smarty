@@ -221,7 +221,6 @@ const timePatterns = [
   }
 ];
 
-
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   const lowerText = text.toLowerCase();
   for (const item of timePatterns) {
