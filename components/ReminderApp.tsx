@@ -883,7 +883,4 @@ export default function ReminderApp() {
         {/* يمكن إضافة محتوى الفوتر هنا إذا أردت */}
       </footer>
     </div>
-  );
-        }
-
          
