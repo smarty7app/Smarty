@@ -228,13 +228,20 @@ export default function ReminderApp() {
     if (isMounted) localStorage.setItem('smart_reminders_cache', JSON.stringify(reminders));
   }, [reminders, isMounted]);
 
-  // Theme Logic
+    // Theme Logic - Fixed for Vercel Build
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+    
+    // نستخدم التوقيت لضمان عدم حدوث Cascading Render
+    const timer = setTimeout(() => {
+      setTheme(initialTheme);
+      document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
