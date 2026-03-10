@@ -278,7 +278,6 @@ const timePatterns: {
     },
     weight: 0.95
   }
-];
 
 export function parseSmartTime(
   text: string,
