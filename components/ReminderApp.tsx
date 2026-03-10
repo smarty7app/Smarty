@@ -849,6 +849,17 @@ export default function ReminderApp() {
           </section>
         )}
       </main> 
+      
+      {/* Floating Action Button - زر القلم */}
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsAdding(true)}
+        // أضفنا z-[50] لضمان ظهوره فوق كل العناصر و shadow-orange للتمييز
+        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] flex items-center justify-center z-[50] hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all border border-black/5"
+      >
+        <Pencil className="w-8 h-8" />
+      </motion.button>
 
       {/* نافذة إضافة التذكير - المكون الجديد */}
       <AddReminderModal
