@@ -416,7 +416,7 @@ export default function ReminderApp() {
         inputText={inputText}
         setInputText={setInputText}
         recurring={recurring}
-        setRecurring={setRecurring}
+        setRecurring={(val: any) => setRecurring(val)}
         handleAddReminder={handleAddReminder}
         t={t}
         smartParsed={preview} // نمرر المعاينة الحية هنا
