@@ -109,9 +109,7 @@ export default function AddReminderModal({
                 </div>
               </div>
             </div>
-            
-            {/* لوحة المعاينة الذكية */}
-<AnimatePresence mode="wait">
+            <AnimatePresence mode="wait">
   {smartParsed && inputText.trim().length > 3 && (
     <motion.div 
       initial={{ opacity: 0, y: -10 }}
@@ -119,42 +117,62 @@ export default function AddReminderModal({
       exit={{ opacity: 0, y: -10 }}
       className="mb-6" 
     >
-      <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 rounded-2xl p-4 flex flex-col gap-2 shadow-sm">
-        <div className="flex items-center gap-2">
-          <div className="bg-orange-500 rounded-lg p-1 shadow-sm">
+      {/* حاوية واحدة رئيسية - تمنع التداخل */}
+      <div className="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+        
+        {/* السطر الأول: العنوان المستخلص (مرة واحدة فقط) */}
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className="bg-orange-500 rounded-lg p-1 shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-sm font-bold text-orange-900 dark:text-orange-100 leading-tight">
+          <span className="text-sm font-bold text-orange-900 dark:text-orange-100 truncate leading-tight">
             تذكير جديد: <span className="text-[#E65100]"> 
               {` "${(smartParsed?.title && smartParsed.title !== "..." && smartParsed.title !== "undefined") ? smartParsed.title : inputText}" `} 
             </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-wider text-orange-700/70 dark:text-orange-400/70 ml-1">
-          <div className="flex items-center gap-1.5 py-1 px-2 bg-white/50 dark:bg-black/20 rounded-lg">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{format(smartParsed.eventTime, 'hh:mm a', { locale: arDZ })}</span>
+        {/* السطر الثاني: شريط المعلومات السريع (ساعة، تاريخ، عد تنازلي) */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {/* الوقت */}
+          <div className="flex items-center gap-1.5 shrink-0 bg-white/80 dark:bg-black/40 px-2.5 py-1 rounded-lg border border-orange-100/50 shadow-sm">
+            <Clock className="w-3.5 h-3.5 text-[#E65100]" />
+            <span className="text-[11px] font-black text-zinc-700 dark:text-zinc-200">
+              {format(smartParsed.eventTime, 'hh:mm a', { locale: arDZ })}
+            </span>
           </div>
-          {smartParsed.isTimeDetected ? (
-            <div className="flex items-center gap-1 text-emerald-600">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>وقت دقيق</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-zinc-400">
-              <Timer className="w-3.5 h-3.5" />
-              <span>توقيت افتراضي</span>
-            </div>
-          )}
+
+          {/* التاريخ الكامل (يوم شهر سنة) */}
+          <div className="flex items-center gap-1.5 shrink-0 text-zinc-500 dark:text-zinc-400 px-1">
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="text-[11px] font-bold">
+              {format(smartParsed.eventTime, 'd MMMM yyyy', { locale: arDZ })}
+            </span>
+          </div>
+
+          {/* العد التنازيلي */}
+          <div className="flex items-center gap-1.5 shrink-0 bg-orange-500 text-white px-2.5 py-1 rounded-lg shadow-sm">
+            <Timer className="w-3.5 h-3.5" />
+            <span className="text-[10px] font-black whitespace-nowrap">
+              {getTimeBeforeLabel(new Date(), smartParsed.eventTime)}
+            </span>
+          </div>
         </div>
+
+        {/* حالة الدقة - تظهر فقط عند الضرورة */}
+        {!smartParsed.isTimeDetected && (
+          <div className="flex items-center gap-1 px-1">
+            <div className="w-1 h-1 bg-zinc-300 rounded-full" />
+            <span className="text-[9px] text-zinc-400 font-bold italic">توقيت افتراضي</span>
+          </div>
+        )}
       </div>
     </motion.div>
   )}
 </AnimatePresence>
-
+            
             {/* الاقتراحات الذكية */}
-            <div className="mb-6 px-1">
+           <div className="mb-6 px-1">
               {!inputText ? (
                 <div className="flex flex-wrap gap-2">
                   <p className="w-full text-[10px] font-black text-[#E65100] mb-1 uppercase tracking-[0.2em] opacity-70">
@@ -231,3 +249,6 @@ export default function AddReminderModal({
     </AnimatePresence>
   );
 }
+ 
+   
+         
