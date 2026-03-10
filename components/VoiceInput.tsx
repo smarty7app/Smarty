@@ -1,79 +1,75 @@
 'use client';
 
-import { useState } from 'react';
-import { Mic } from 'lucide-react';
-import { useLanguage } from './LanguageContext';
+import React, { useState, useRef, useEffect } from 'react';
+import { Mic, MicOff } from 'lucide-react';
 
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
+interface VoiceInputProps {
+  onTranscript: (text: string) => void;
 }
 
-export function VoiceInput({ onTranscript }: { onTranscript: (text: string) => void }) {
+export default function VoiceInput({ onTranscript }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
-  const [error, setError] = useState('');
-  const { language } = useLanguage();
+  const recognitionRef = useRef<any>(null);
 
-  const startListening = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setError('متصفحك لا يدعم الإدخال الصوتي');
+  useEffect(() => {
+    // التحقق من دعم المتصفح
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('المتصفح لا يدعم التعرف على الكلام');
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const recognitionInstance = new SpeechRecognition();
+    recognitionInstance.lang = 'ar-SA'; // العربية
+    recognitionInstance.continuous = false;
+    recognitionInstance.interimResults = false;
 
-    switch (language) {
-      case 'ar': recognition.lang = 'ar-SA'; break;
-      case 'en': recognition.lang = 'en-US'; break;
-      case 'fr': recognition.lang = 'fr-FR'; break;
-      case 'zh': recognition.lang = 'zh-CN'; break;
-      default: recognition.lang = 'ar-SA';
-    }
-
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setError('');
-    };
-
-    recognition.onresult = (event: any) => {
+    recognitionInstance.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       onTranscript(transcript);
       setIsListening(false);
     };
 
-    recognition.onerror = (event: any) => {
-      setError(`خطأ: ${event.error}`);
+    recognitionInstance.onerror = () => {
       setIsListening(false);
     };
 
-    recognition.onend = () => {
+    recognitionInstance.onend = () => {
       setIsListening(false);
     };
 
-    recognition.start();
+    recognitionRef.current = recognitionInstance;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [onTranscript]);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert('المتصفح لا يدعم التعرف على الكلام');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+      setIsListening(true);
+    }
   };
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={startListening}
-        disabled={isListening}
-        className={`p-3 rounded-full transition-all duration-300 ${
-          isListening 
-            ? 'bg-blue-500 text-white animate-pulse scale-110' 
-            : 'bg-[#E65100] text-white hover:bg-[#b23c00] hover:scale-105'
-        } shadow-lg`}
-      >
-        <Mic size={20} className={isListening ? 'animate-pulse' : ''} />
-      </button>
-      {isListening && <span className="text-blue-500 text-sm">جاري الاستماع...</span>}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-    </div>
+    <button
+      onClick={toggleListening}
+      className={`p-2 rounded-full transition-colors ${
+        isListening ? 'bg-red-500 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
+      }`}
+      title={isListening ? 'جاري الاستماع...' : 'اضغط للتحدث'}
+    >
+      {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+    </button>
   );
 }
