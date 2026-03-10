@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { VoiceInput } from './VoiceInput';
+import VoiceInput from './VoiceInput';
 import AddReminderModal from './AddReminderModal'; // اسم الملف حسب مساره الفعلي
 import {
   Bell, 
