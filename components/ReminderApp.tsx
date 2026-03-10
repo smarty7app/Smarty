@@ -76,6 +76,19 @@ export default function ReminderApp() {
   const [selectedDate, setSelectedDate] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
+ 
+// 1. عند تشغيل التطبيق: جلب التذكيرات المحفوظة
+useEffect(() => {
+  const savedReminders = localStorage.getItem('smarty_reminders');
+  if (savedReminders) {
+    setReminders(JSON.parse(savedReminders));
+  }
+}, []);
+
+// 2. عند إضافة أو تعديل أي تذكير: حفظ التغييرات فوراً
+useEffect(() => {
+  localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+}, [reminders]);
 
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
 const preview = useMemo(() => {
