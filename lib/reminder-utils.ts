@@ -214,269 +214,91 @@ interface TimeParseResult {
   usedPattern: string;
 }
 
-/**
- * قائمة بأنماط الوقت المدعومة مع دوال التحويل
+ * محرك تحليل الوقت المطور - Smarty Time Engine v2.0
  */
 const timePatterns: {
   pattern: RegExp;
   parseFn: (matches: RegExpMatchArray, now: Date) => Date | null;
-  lang: 'ar' | 'en' | 'both';
-  weight: number; // مساهمة في الثقة عند المطابقة
+  weight: number;
 }[] = [
-  // ===== أنماط عربية =====
+  // 1. الأوقات النسبية العامية (بعد ساعة، بعد نص ساعة، بعد ربع ساعة)
   {
-    pattern: /بعد\s+(\d+)\s+(دقيقة|دقائق)/i,
-    parseFn: (matches, now) => addMinutes(now, parseInt(matches[1])),
-    lang: 'ar',
-    weight: 0.6,
+    pattern: /(?:بعد|كمان)\s+(?:ساعة|ساعه)\s+(?:و|و\s+)?(?:نص|نصف)/i,
+    parseFn: (m, now) => addMinutes(now, 90),
+    weight: 0.9
   },
   {
-    pattern: /بعد\s+(\d+)\s+(ساعة|ساعات)/i,
-    parseFn: (matches, now) => addHours(now, parseInt(matches[1])),
-    lang: 'ar',
-    weight: 0.6,
+    pattern: /(?:بعد|كمان)\s+(?:ساعة|ساعه)\s+(?:و|و\s+)?(?:ربع)/i,
+    parseFn: (m, now) => addMinutes(now, 75),
+    weight: 0.9
   },
   {
-    pattern: /الساعة\s+(\d{1,2})(?:\s*):?\s*(\d{2})?\s*(ص|م|صباحاً|مساءً|صباح|مساء)?/i,
-    parseFn: (matches, now) => {
-      let hour = parseInt(matches[1]);
-      const minute = matches[2] ? parseInt(matches[2]) : 0;
-      const period = matches[3] || '';
-
-      if ((period.includes('م') || period.includes('مساء')) && hour < 12) hour += 12;
-      else if ((period.includes('ص') || period.includes('صباح')) && hour === 12) hour = 0;
-
-      let date = setHours(setMinutes(now, minute), hour);
-      date = setSeconds(date, 0);
-      if (isBefore(date, now)) date = addDays(date, 1);
-      return date;
+    pattern: /(?:بعد|كمان)\s+(نص|نصف)\s+(?:ساعة|ساعه)/i,
+    parseFn: (m, now) => addMinutes(now, 30),
+    weight: 0.9
+  },
+  // 2. الكلمات اليومية (غدوة، بكرة، اليوم، العشية)
+  {
+    pattern: /(?:غدوة|غدا|بكرة|بكره)\s+(?:الـ|في\s+)?(?:عشية|العشية|المساء|ليل)/i,
+    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 18), // غداً 6 مساءً
+    weight: 0.85
+  },
+  {
+    pattern: /(?:غدوة|غدا|بكرة|بكره)\s+(?:الـ|في\s+)?(?:صباح|الصباح|بكري)/i,
+    parseFn: (m, now) => setHours(setMinutes(addDays(now, 1), 0), 8), // غداً 8 صباحاً
+    weight: 0.85
+  },
+  // 3. تحليل الوقت الرقمي المتطور (الساعة 7 ونص، 8 وربع)
+  {
+    pattern: /(?:الساعة|ساعة)\s+(\d{1,2})(?:\s+)?(?:و|:)\s*(نص|نصف|30)/i,
+    parseFn: (m, now) => {
+      let h = parseInt(m[1]);
+      if (h < 12 && now.getHours() >= 12) h += 12; // تحويل تلقائي للمساء بناءً على الوقت الحالي
+      return setHours(setMinutes(now, 30), h);
     },
-    lang: 'ar',
-    weight: 0.7,
+    weight: 0.95
   },
+  // 4. تحليل "بعد X دقيقة/ساعة" (دعم الأرقام العربية والإنجليزية)
   {
-    pattern: /(?:غداً|غدا|بكرة)\s+الساعة\s+(\d{1,2})(?:\s*):?\s*(\d{2})?\s*(ص|م|صباحاً|مساءً)?/i,
-    parseFn: (matches, now) => {
-      let hour = parseInt(matches[1]);
-      const minute = matches[2] ? parseInt(matches[2]) : 0;
-      const period = matches[3] || '';
-      if ((period.includes('م') || period.includes('مساء')) && hour < 12) hour += 12;
-      else if ((period.includes('ص') || period.includes('صباح')) && hour === 12) hour = 0;
-      let date = setHours(setMinutes(addDays(now, 1), minute), hour);
-      date = setSeconds(date, 0);
-      return date;
+    pattern: /(?:بعد|كمان)\s+(\d+)\s+(دقيقة|دقائق|دقايف|ساعة|ساعات|ساعه)/i,
+    parseFn: (m, now) => {
+      const val = parseInt(m[1]);
+      const unit = m[2];
+      return unit.includes('ساع') ? addHours(now, val) : addMinutes(now, val);
     },
-    lang: 'ar',
-    weight: 0.8,
+    weight: 0.9
   },
+  // 5. تحليل أيام الأسبوع مع وقت محدد (السبت الجاي الـ 10)
   {
-    pattern: /(?:الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت|الأحد)\s+الساعة\s+(\d{1,2})(?:\s*):?\s*(\d{2})?\s*(ص|م|صباحاً|مساءً)?/i,
-    parseFn: (matches, now) => {
-      const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-      const dayIndex = dayNames.findIndex((d) => matches[0].includes(d));
-      if (dayIndex === -1) return null;
-
-      let hour = parseInt(matches[1]);
-      const minute = matches[2] ? parseInt(matches[2]) : 0;
-      const period = matches[3] || '';
-      if ((period.includes('م') || period.includes('مساء')) && hour < 12) hour += 12;
-      else if ((period.includes('ص') || period.includes('صباح')) && hour === 12) hour = 0;
-
-      let targetDate = new Date(now);
-      const currentDay = now.getDay(); // 0 = الأحد
-      let daysToAdd = (dayIndex - currentDay + 7) % 7;
-      if (daysToAdd === 0) daysToAdd = 7; // إذا كان اليوم نفسه، ننتقل للأسبوع القادم
-      targetDate = addDays(targetDate, daysToAdd);
-      targetDate = setHours(setMinutes(targetDate, minute), hour);
-      targetDate = setSeconds(targetDate, 0);
-      return targetDate;
+    pattern: /(الأحد|الاثنين|الثلاثاء|الأربعاء|الخميس|الجمعة|السبت)\s+(?:الجاي|القادم)?\s*(?:الساعة|الـ)?\s*(\d{1,2})/i,
+    parseFn: (m, now) => {
+      const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const targetDay = days.indexOf(m[1]);
+      let h = parseInt(m[2]);
+      let date = addDays(now, (targetDay + 7 - now.getDay()) % 7 || 7);
+      return setHours(setMinutes(date, 0), h);
     },
-    lang: 'ar',
-    weight: 0.9,
-  },
-  // ===== أنماط إنجليزية =====
-  {
-    pattern: /in\s+(\d+)\s+(minute|minutes)/i,
-    parseFn: (matches, now) => addMinutes(now, parseInt(matches[1])),
-    lang: 'en',
-    weight: 0.6,
-  },
-  {
-    pattern: /in\s+(\d+)\s+(hour|hours)/i,
-    parseFn: (matches, now) => addHours(now, parseInt(matches[1])),
-    lang: 'en',
-    weight: 0.6,
-  },
-  {
-    pattern: /(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
-    parseFn: (matches, now) => {
-      let hour = parseInt(matches[1]);
-      const minute = matches[2] ? parseInt(matches[2]) : 0;
-      const period = matches[3] ? matches[3].toLowerCase() : '';
-
-      if (period === 'pm' && hour < 12) hour += 12;
-      else if (period === 'am' && hour === 12) hour = 0;
-
-      let date = setHours(setMinutes(now, minute), hour);
-      date = setSeconds(date, 0);
-      if (isBefore(date, now)) date = addDays(date, 1);
-      return date;
-    },
-    lang: 'en',
-    weight: 0.7,
-  },
-  {
-    pattern: /tomorrow\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
-    parseFn: (matches, now) => {
-      let hour = parseInt(matches[1]);
-      const minute = matches[2] ? parseInt(matches[2]) : 0;
-      const period = matches[3] ? matches[3].toLowerCase() : '';
-      if (period === 'pm' && hour < 12) hour += 12;
-      else if (period === 'am' && hour === 12) hour = 0;
-      let date = setHours(setMinutes(addDays(now, 1), minute), hour);
-      date = setSeconds(date, 0);
-      return date;
-    },
-    lang: 'en',
-    weight: 0.8,
-  },
-  {
-    pattern: /(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i,
-    parseFn: (matches, now) => {
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayIndex = dayNames.findIndex((d) => matches[1].toLowerCase().includes(d));
-      if (dayIndex === -1) return null;
-
-      let hour = parseInt(matches[2]);
-      const minute = matches[3] ? parseInt(matches[3]) : 0;
-      const period = matches[4] ? matches[4].toLowerCase() : '';
-      if (period === 'pm' && hour < 12) hour += 12;
-      else if (period === 'am' && hour === 12) hour = 0;
-
-      let targetDate = new Date(now);
-      const currentDay = now.getDay();
-      let daysToAdd = (dayIndex - currentDay + 7) % 7;
-      if (daysToAdd === 0) daysToAdd = 7;
-      targetDate = addDays(targetDate, daysToAdd);
-      targetDate = setHours(setMinutes(targetDate, minute), hour);
-      targetDate = setSeconds(targetDate, 0);
-      return targetDate;
-    },
-    lang: 'en',
-    weight: 0.9,
-  },
+    weight: 0.95
+  }
 ];
 
-/**
- * محاولة استخراج الوقت باستخدام جميع الأنماط
- */
-function extractTimeFromText(text: string, now: Date): TimeParseResult {
-  const lowerText = text.toLowerCase();
-  let bestResult: TimeParseResult = { dateTime: null, confidence: 0, usedPattern: '' };
-
-  for (const { pattern, parseFn, weight } of timePatterns) {
-    const match = lowerText.match(pattern);
-    if (match) {
-      try {
-        const dateTime = parseFn(match, now);
-        if (dateTime && isValid(dateTime)) {
-          // إذا حصلنا على وقت، نرجعه فوراً مع الثقة
-          return { dateTime, confidence: weight, usedPattern: pattern.source };
-        }
-      } catch (e) {
-        // تجاهل الأخطاء
-      }
-    }
-  }
-  return bestResult;
-}
-
-/**
- * تحسين استخراج العنوان (إزالة كلمات الوقت والكلمات الدالة)
- */
+// تحديث دالة استخراج العنوان لتكون أكثر ذكاءً
 function extractTitle(text: string, detectedType: EventType, location?: string): string {
-  let title = text;
-  // إزالة كلمات التنبيه العامة
-  title = title.replace(/^(ذكرني|تذكير|في|عند|الساعة|على|بعد|في|at|remind me|reminder|in|on)\s*/gi, '');
-  // إزالة أنماط الوقت
-  for (const { pattern } of timePatterns) {
-    title = title.replace(pattern, '');
-  }
-  // إزالة الموقع إذا وجد
-  if (location) {
-    const locationRegex = new RegExp(`(?:في|بـ|at|in)\\s*${location}`, 'gi');
-    title = title.replace(locationRegex, '');
-  }
-  // تنظيف المسافات الزائدة
-  title = title.replace(/\s+/g, ' ').trim();
-  if (!title || title.length === 0) {
-    // إذا أصبح العنوان فارغاً، نستخدم نوع الحدث كعنوان افتراضي
-    switch (detectedType) {
-      case EventType.FLIGHT:
-        return 'تذكير رحلة';
-      case EventType.MEETING:
-        return 'موعد اجتماع';
-      case EventType.MEDICINE:
-        return 'موعد دواء';
-      case EventType.FOOD:
-        return 'تذكير طعام';
-      case EventType.SCHOOL:
-        return 'مدرسة';
-      case EventType.TRAVEL:
-        return 'سفر';
-      default:
-        return 'تذكير';
+    let title = text
+        .replace(/(ذكرني|فكرني|تذكير|قولي|يا سمارتي|ديرلي تذكير)/gi, '')
+        .replace(/(بعد|كمان|الساعة|ساعة|غدوة|بكرة|اليوم|عشية|صباح|ليل)/gi, '')
+        // حذف الأرقام التي استُخدمت للوقت فقط
+        .replace(/\d{1,2}(?::\d{2})?/g, '') 
+        .trim();
+
+    if (!title || title.length < 2) {
+        const labels: any = { [EventType.FOOD]: 'تحضير طعام', [EventType.MEDICINE]: 'موعد دواء', [EventType.SCHOOL]: 'مدرسة' };
+        return labels[detectedType] || 'تذكير جديد';
     }
-  }
-  return title;
+    return title;
 }
 
-/**
- * حساب مستوى الثقة بناءً على عدة عوامل
- */
-function calculateConfidence(
-  text: string,
-  extractedTime: Date | null,
-  eventType: EventType,
-  location: string | undefined,
-  timeResult: TimeParseResult
-): number {
-  let confidence = 0.2; // قاعدة
-
-  // 1. إذا تم استخراج وقت بنمط محدد
-  if (extractedTime) {
-    confidence += timeResult.confidence; // الوزن المبدئي للنمط
-    // مكافأة إضافية إذا كان الوقت دقيقاً (أي يتضمن دقائق)
-    if (text.includes(':')) confidence += 0.1;
-  } else {
-    // إذا لم نجد وقتاً، نخفض الثقة
-    confidence -= 0.2;
-  }
-
-  // 2. نوع الحدث ليس OTHER
-  if (eventType !== EventType.OTHER) confidence += 0.15;
-
-  // 3. وجود موقع
-  if (location) confidence += 0.1;
-
-  // 4. طول النص المنطقي (كلما زاد النص الوصفي، زادت الثقة)
-  const words = text.split(/\s+/).length;
-  if (words >= 3) confidence += 0.1;
-  else if (words <= 1) confidence -= 0.1;
-
-  // 5. وجود كلمات دالة من KEYWORDS
-  const lowerText = text.toLowerCase();
-  for (const word of Object.keys(KEYWORDS)) {
-    if (lowerText.includes(word)) {
-      confidence += 0.1;
-      break;
-    }
-  }
-
-  // حد أقصى وأدنى
-  return Math.min(1, Math.max(0.1, confidence));
-}
-
+    
 // ===================== الدالة الأساسية المحسنة =====================
 
 export function parseSmartTime(
