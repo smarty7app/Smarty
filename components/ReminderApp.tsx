@@ -78,18 +78,18 @@ export default function ReminderApp() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
-  // --- منطق المعاينة الحية (Live Preview Logic) ---
-  useEffect(() => {
-  if (isSmartAnalysisEnabled && inputText.trim().length > 3) {
-    try {
-      const analysis = parseSmartTime(inputText, language);
-      // لفها داخل setTimeout لإصلاح خطأ الـ Build
-      setTimeout(() => setPreview(analysis), 0);
-    } catch (e) {
-      setTimeout(() => setPreview(null), 0);
+  // المحرك المحدث لضمان استجابة فورية وحل مشكلة الوقت الثابت
+useEffect(() => {
+  // قللنا الطول المطلوب إلى 2 ليبدأ التحليل فوراً عند قول "في.." أو "بعد.."
+  if (isSmartAnalysisEnabled && inputText.trim().length >= 2) {
+    const analysis = parseSmartTime(inputText, language);
+    
+    // تأكدنا من أن التحليل يعيد وقتاً صالحاً قبل التحديث
+    if (analysis && analysis.eventTime) {
+      setPreview({...analysis}); // إزالة setTimeout لضمان السرعة
     }
   } else {
-    setTimeout(() => setPreview(null), 0);
+    setPreview(null);
   }
 }, [inputText, isSmartAnalysisEnabled, language]);
 
