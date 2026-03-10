@@ -983,70 +983,38 @@ export default function ReminderApp() {
                                 smartParsed.confidence > 0.5 ? "text-amber-600 dark:text-amber-400" :
                                 "text-rose-600 dark:text-rose-400"
                               )}>
-                          
-                                   {/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
+                                  {/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
 
-{/* زر القلم - يبقى كما هو */}
-<motion.button
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  onClick={() => setIsAdding(true)}
-  className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
->
-  <Pencil className="w-8 h-8" />
-</motion.button>
+                                  {/* زر القلم - يبقى كما هو */}
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setIsAdding(true)}
+                                    className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                                  >
+                                    <Pencil className="w-8 h-8" />
+                                  </motion.button>
 
-{/* مكون النافذة المنبثقة - موضوع هنا بشكل منفصل */}
-<AddReminderModal
-  isOpen={isAdding}
-  onClose={() => setIsAdding(false)}
-  inputText={inputText}
-  setInputText={setInputText}
-  recurring={recurring}
-  setRecurring={setRecurring}
-  handleAddReminder={handleAddReminder}
-  t={t}
-  smartParsed={smartParsed}
-  activeSuggestions={activeSuggestions}
-  language={language}
-  getTimeBeforeLabel={getTimeBeforeLabel}
-  format={format}
-  arDZ={arDZ}
-/>
+                                  {/* مكون النافذة المنبثقة - موضوع هنا بشكل منفصل */}
+                                  <AddReminderModal
+                                    isOpen={isAdding}
+                                    onClose={() => setIsAdding(false)}
+                                    inputText={inputText}
+                                    setInputText={setInputText}
+                                    recurring={recurring}
+                                    setRecurring={setRecurring}
+                                    handleAddReminder={handleAddReminder}
+                                    t={t}
+                                    smartParsed={smartParsed}
+                                    activeSuggestions={activeSuggestions}
+                                    language={language}
+                                    getTimeBeforeLabel={getTimeBeforeLabel}
+                                    format={format}
+                                    arDZ={arDZ}
+                                  />
 
-{/* الفوتر */}
-<footer className="py-8 text-center bg-black/5">
-  {/* محتوى الفوتر إن وجد */}
-</footer>{/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
-
-                              {/* زر القلم - يبقى كما هو */}
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setIsAdding(true)}
-                                className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-                              >
-                                <Pencil className="w-8 h-8" />
-                              </motion.button>
-
-                              {/* مكون النافذة المنبثقة - موضوع هنا بشكل منفصل */}
-                              <AddReminderModal
-                                isOpen={isAdding}
-                                onClose={() => setIsAdding(false)}
-                                inputText={inputText}
-                                setInputText={setInputText}
-                                recurring={recurring}
-                                setRecurring={setRecurring}                                                        handleAddReminder={handleAddReminder}
-  t={t}
-  smartParsed={smartParsed}
-  activeSuggestions={activeSuggestions}
-  language={language}
-  getTimeBeforeLabel={getTimeBeforeLabel}
-  format={format}
-  arDZ={arDZ}
-/>
-
-{/* الفوتر */}
-<footer className="py-8 text-center bg-black/5">
-  {/* محتوى الفوتر إن وجد */}
-</footer>
+                                  {/* الفوتر */}
+                                  <footer className="py-8 text-center bg-black/5">
+                                    {/* محتوى الفوتر إن وجد */}
+                                  </footer>
+                              
