@@ -78,19 +78,19 @@ export default function ReminderApp() {
   const { t, isRTL, language } = useLanguage();
 
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
-  // تم تحويله إلى useMemo لضمان استجابة فورية وحل مشكلة الـ Build
-  const preview = useMemo(() => {
-    if (isSmartAnalysisEnabled && inputText.trim().length >= 2) {
-      try {
-        const analysis = parseSmartTime(inputText, language);
-        // إذا نجح التحليل واكتشف وقتاً، نعيد النتيجة فوراً للواجهة
-        return (analysis && analysis.isTimeDetected) ? analysis : null;
-      } catch (e) {
-        return null;
-      }
+const preview = useMemo(() => {
+  // زدنا الحساسية ليعمل المربع فوراً
+  if (isSmartAnalysisEnabled && inputText.trim().length >= 1) { 
+    try {
+      const analysis = parseSmartTime(inputText, language);
+      // المربع يظهر فقط إذا نجح العقل في قراءة وقت أو تاريخ
+      return analysis.isTimeDetected ? analysis : null;
+    } catch (e) {
+      return null;
     }
-    return null;
-  }, [inputText, isSmartAnalysisEnabled, language]);
+  }
+  return null;
+}, [inputText, isSmartAnalysisEnabled, language]);
 
   const activeSuggestions = useMemo(() => {
     if (!inputText.trim()) return [];
