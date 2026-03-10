@@ -171,40 +171,26 @@ export default function AddReminderModal({
   )}
 </AnimatePresence>
             
-            {/* الاقتراحات الذكية */}
-           <div className="mb-6 px-1">
-              {!inputText ? (
-                <div className="flex flex-wrap gap-2">
-                  <p className="w-full text-[10px] font-black text-[#E65100] mb-1 uppercase tracking-[0.2em] opacity-70">
-                    {t.smart_suggestions}
-                  </p>
-                  {["موعد الطبيب غداً", "أخذ الدواء 8 مساءً"].map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setInputText(suggestion)}
-                      className="text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:border-[#E65100] transition-all font-bold"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              ) : activeSuggestions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  <p className="w-full text-[10px] font-black text-emerald-500 mb-1 uppercase tracking-[0.2em] opacity-70">
-                    {t.smart_completion}
-                  </p>
-                  {activeSuggestions.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setInputText(suggestion)}
-                      className="text-xs bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-4 py-2 rounded-xl text-emerald-700 dark:text-emerald-400 transition-all font-bold"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+        {/* الاقتراحات الذكية - تظهر إذا كان الحقل فارغاً OR إذا لم يتم اكتشاف وقت محدد */}
+<div className="mb-6 px-1">
+  {(!inputText || (smartParsed && !smartParsed.isTimeDetected)) ? (
+    <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
+      <p className="w-full text-[10px] font-black text-[#E65100] mb-1 uppercase tracking-[0.2em] opacity-70">
+        {t.smart_suggestions}
+      </p>
+      {/* عرض اقتراحات تساعد المستخدم على تحديد وقت */}
+      {["غداً الساعة 9 صباحاً", "بعد ساعتين", "يوم الجمعة القادم"].map((suggestion, idx) => (
+        <button
+          key={idx}
+          onClick={() => setInputText(inputText + " " + suggestion)}
+          className="text-xs bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-4 py-2 rounded-xl text-zinc-600 dark:text-zinc-300 hover:border-[#E65100] transition-all font-bold"
+        >
+          + {suggestion}
+        </button>
+      ))}
+    </div>
+  ) : null}
+</div>
 
             {/* خيار التكرار */}
             <div className="mb-6">
