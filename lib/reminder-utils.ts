@@ -15,7 +15,7 @@ import {
 import { arSA, enUS } from 'date-fns/locale'; 
 import { LanguageCode, translations } from './translations';
 
-// ===================== الأنواع الأساسية =====================
+// ===================== الأنواع الأساسية (التي كانت مفقودة) =====================
 
 export type Priority = 1 | 2 | 3 | 4;
 
@@ -30,13 +30,17 @@ export enum EventType {
   OTHER = 'OTHER',
 }
 
+// تم إعادة تصدير ReminderStage لإصلاح خطأ الـ Build
+export enum ReminderStage {
+  WARNING = 'WARNING',
+  FINAL = 'FINAL',
+}
+
 export interface TimeParseResult {
   dateTime: Date | null;
   confidence: number;
   isTimeDetected: boolean;
 }
-
-// ===================== قاموس الأرقام والنصوص =====================
 
 const arabicNumbers: Record<string, number> = {
   'واحد': 1, 'اثنين': 2, 'ثلاثة': 3, 'اربعة': 4, 'خمسة': 5, 'ستة': 6, 'سبعة': 7, 'ثمانية': 8, 'تسعة': 9, 'عشرة': 10
@@ -54,7 +58,6 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   let isTimeDetected = false;
   let confidence = 0.4;
 
-  // 1. الأيام (غداً، Tomorrow, Demain)
   if (/(غداً|غدا|بكرة|tomorrow|demain)/i.test(lowerText)) {
     eventTime = addDays(now, 1);
     isTimeDetected = true;
@@ -65,8 +68,6 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
     confidence = 0.8;
   }
 
-  // 2. الوقت الرقمي الصريح (يدعم: 7:00, 7pm, 19h, الساعة 4، à 20h)
-  // النمط يدعم كلمات الربط: على، في، at, @, à
   const digitalTimeRegex = /(?:الساعة|الساعه|على|في|at|@|à|time|heure)\s*(\d{1,2}|واحد|اثنين|ثلاثة|اربعة|خمسة)(?::|h)?(\d{2})?\s*(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm|soir|matin)?/i;
   const timeMatch = lowerText.match(digitalTimeRegex);
 
@@ -77,12 +78,10 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
     const period = timeMatch[3];
 
     if (hours !== undefined) {
-      // تحويل الوقت بناءً على الفترة (صباحاً/مساءً/AM/PM/Soir)
       if (period) {
         if (/(مساءً|مساءا|م|pm|soir)/i.test(period) && hours < 12) hours += 12;
         if (/(صباحاً|صباحا|ص|am|matin)/i.test(period) && hours === 12) hours = 0;
       } else {
-        // ذكاء التوقيت القادم: إذا كانت الساعة أصغر من الحالية، نفترض المساء
         const targetDate = setHours(setMinutes(new Date(eventTime), minutes), hours);
         if (isBefore(targetDate, now) && hours < 12) hours += 12;
       }
@@ -94,7 +93,6 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
     }
   }
 
-  // 3. الأنماط النسبية (In 10 mins, بعد ساعة، Dans 30 min)
   const relativePatterns = [
     { p: /(?:بعد|in|dans|بعد)\s+(\d+)\s+(?:دقيقة|minutes?|min|دقائق)/i, fn: (d: Date, m: any) => addMinutes(d, parseInt(m[1])) },
     { p: /(?:بعد|after|dans)\s+(\d+)\s+(?:ساعة|hours?|heures?|ساعات)/i, fn: (d: Date, m: any) => addHours(d, parseInt(m[1])) },
@@ -109,17 +107,13 @@ export function extractTimeFromText(text: string, now: Date): TimeParseResult {
     }
   }
 
-  // وقت افتراضي
   return { dateTime: addMinutes(now, 15), confidence: 0.4, isTimeDetected: false };
 }
 
-// ===================== استخراج العنوان الذكي =====================
-
 export function extractSmartTitle(text: string): string {
-  // حذف كل الكلمات المتعلقة بالوقت واللغات الثلاث ليبقى "جوهر" التذكير
   return text
     .replace(/(غداً|غدا|بكرة|tomorrow|demain|بعد|خلال|in|dans|at|à|الساعة|الساعه|على|في)/gi, '')
-    .replace(/\d{1,2}(:|\s?h\s?)(\d{2})?/g, '') // حذف الوقت الرقمي
+    .replace(/\d{1,2}(:|\s?h\s?)(\d{2})?/g, '')
     .replace(/(صباحاً|صباحا|مساءً|مساءا|ص|م|am|pm|soir|matin)/gi, '')
     .replace(/\s+/g, ' ')
     .trim() || "...";
@@ -143,12 +137,30 @@ export function detectEventType(text: string): EventType {
   return EventType.OTHER;
 }
 
-// ===================== الدالة الأساسية (المخ) =====================
+// إعادة إضافة الدالة المفقودة getPriorityLabel
+export function getPriorityLabel(priority: Priority, lang: LanguageCode = 'ar'): string {
+  const t = translations[lang];
+  switch (priority) {
+    case 1: return t.priority_low;
+    case 4: return t.priority_critical;
+    case 3: return t.priority_high;
+    default: return t.priority_medium;
+  }
+}
+
+// إعادة إضافة الدالة المساعدة للألوان
+export function getPriorityColor(priority: Priority): string {
+  switch (priority) {
+    case 1: return 'bg-zinc-100 text-zinc-500';
+    case 4: return 'bg-red-100 text-red-600 dark:bg-red-900/30';
+    case 3: return 'bg-orange-100 text-orange-600 dark:bg-orange-900/30';
+    default: return 'bg-blue-100 text-blue-600 dark:bg-blue-900/30';
+  }
+}
 
 export function parseSmartTime(text: string, lang: LanguageCode = 'ar') {
   const now = new Date();
   const timeResult = extractTimeFromText(text, now);
-  
   const eventType = detectEventType(text);
   const priority = analyzePriority(text);
   const finalEventTime = timeResult.dateTime || addMinutes(now, 15);
