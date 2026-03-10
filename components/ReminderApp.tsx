@@ -80,17 +80,18 @@ export default function ReminderApp() {
 
   // --- منطق المعاينة الحية (Live Preview Logic) ---
   useEffect(() => {
-    if (isSmartAnalysisEnabled && inputText.trim().length > 3) {
-      try {
-        const analysis = parseSmartTime(inputText, language);
-        setPreview(analysis);
-      } catch (e) {
-        setPreview(null);
-      }
-    } else {
-      setPreview(null);
+  if (isSmartAnalysisEnabled && inputText.trim().length > 3) {
+    try {
+      const analysis = parseSmartTime(inputText, language);
+      // لفها داخل setTimeout لإصلاح خطأ الـ Build
+      setTimeout(() => setPreview(analysis), 0);
+    } catch (e) {
+      setTimeout(() => setPreview(null), 0);
     }
-  }, [inputText, isSmartAnalysisEnabled, language]);
+  } else {
+    setTimeout(() => setPreview(null), 0);
+  }
+}, [inputText, isSmartAnalysisEnabled, language]);
 
   const activeSuggestions = useMemo(() => {
     if (!inputText.trim()) return [];
