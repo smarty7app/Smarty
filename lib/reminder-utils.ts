@@ -280,8 +280,6 @@ const timePatterns: {
   }
 ];
 
-// ===================== الدالة الأساسية المحسنة =====================
-
 export function parseSmartTime(
   text: string,
   lang: LanguageCode = 'ar'
