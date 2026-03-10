@@ -140,53 +140,75 @@ interface TimeParseResult {
 }
 
 const timePatterns = [
-  // 1. معالجة "ساعتين" (أولوية قصوى)
+  
+  const timePatterns = [
+  // 1. الأنماط المركبة والمثنى (أولوية قصوى لأنها الأكثر تحديداً)
   {
     pattern: /(?:بعد|خلال)\s+ساعتين/i,
     parseFn: (now: Date) => addHours(now, 2),
     weight: 1.0
   },
-  // 2. معالجة "ساعة ونصف" 
   {
-    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)\s+(?:و|و\s+)?(?:نص|نصف)/i,
+    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)\s+(?:و\s+)?(?:نص|نصف)/i,
     parseFn: (now: Date) => addMinutes(now, 90),
-    weight: 0.99
+    weight: 1.0
   },
-  // 3. معالجة "ساعة وربع"
   {
-    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)\s+(?:و|و\s+)?(?:ربع)/i,
+    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)\s+(?:و\s+)?(?:ربع)/i,
     parseFn: (now: Date) => addMinutes(now, 75),
+    weight: 1.0
+  },
+
+  // 2. أنماط الأجزاء الصريحة (نصف ساعة، ربع ساعة، ثلث ساعة)
+  {
+    pattern: /(?:بعد|خلال)\s+(?:نص|نصف)\s+ساعة/i,
+    parseFn: (now: Date) => addMinutes(now, 30),
     weight: 0.99
   },
-  // 4. معالجة "ساعة" (مفرد) - نستخدم Lookahead للتأكد أنها ليست "ساعة ونصف"
   {
-    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)(?!\s+(?:و\s+)?(?:نص|نصف|ربع))/i,
-    parseFn: (now: Date) => addHours(now, 1),
-    weight: 0.98
+    pattern: /(?:بعد|خلال)\s+ثلث\s+ساعة/i, // إضافة الثلث (20 دقيقة)
+    parseFn: (now: Date) => addMinutes(now, 20),
+    weight: 0.99
   },
-  // 5. معالجة "نصف ساعة"
   {
-    pattern: /(?:بعد|خلال)\s+(?:نص|نصف)\s+(?:ساعة|ساعه)/i,
-    parseFn: (now: Date) => addMinutes(now, 30),
-    weight: 0.98
-  },
-  // 6. معالجة "ربع ساعة"
-  {
-    pattern: /(?:بعد|خلال)\s+(?:ربع)\s+(?:ساعة|ساعه)/i,
+    pattern: /(?:بعد|خلال)\s+ربع\s+ساعة/i,
     parseFn: (now: Date) => addMinutes(now, 15),
+    weight: 0.99
+  },
+
+  // 3. النمط الرقمي للدقائق (مثل: بعد 10 دقائق) 
+  // تم تقديمه ليتم فحص الأرقام قبل الساعات المفردة
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+(?:دقيقة|دقيقه|دقائق)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addMinutes(now, parseInt(m[1])),
     weight: 0.98
   },
-  // 7. الأنماط الرقمية (مثلاً: بعد 5 ساعات أو بعد 10 دقائق)
+
+  // 4. نمط الساعة المفردة (ساعة واحدة فقط)
   {
-    pattern: /(?:بعد|خلال)\s+(\d+)\s+(دقيقة|دقائق|ساعة|ساعات|ساعه)/i,
-    parseFn: (now: Date, m: RegExpMatchArray) => {
-      const val = parseInt(m[1]);
-      const unit = m[2];
-      return unit.includes('ساع') ? addHours(now, val) : addMinutes(now, val);
-    },
-    weight: 0.9
+    pattern: /(?:بعد|خلال)\s+(?:ساعة|ساعه)(?!\s+(?:و\s+)?(?:نص|نصف|ربع|ثلث))/i,
+    parseFn: (now: Date) => addHours(now, 1),
+    weight: 0.97
   },
-  // 8. المواعيد اليومية (غداً صباحاً / مساءً)
+
+  // 5. النمط الرقمي للساعات (مثل: بعد 5 ساعات)
+  {
+    pattern: /(?:بعد|خلال)\s+(\d+)\s+(?:ساعة|ساعه|ساعات)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => addHours(now, parseInt(m[1])),
+    weight: 0.96
+  },
+
+  // 6. كلمات الدقائق الوصفية (خمس دقائق، عشر دقائق)
+  {
+    pattern: /(?:بعد|خلال)\s+(عشر|خمس|عشرة|خمسة)\s+(?:دقائق|دقيقة|دقيقه)/i,
+    parseFn: (now: Date, m: RegExpMatchArray) => {
+      const mins = m[1].includes("خمس") ? 5 : 10;
+      return addMinutes(now, mins);
+    },
+    weight: 0.95
+  },
+
+  // 7. المواعيد اليومية الثابتة
   {
     pattern: /(?:غداً|غدا|بكرة)\s+(?:في\s+)?(?:صباح|الصباح)/i,
     parseFn: (now: Date) => setHours(setMinutes(addDays(now, 1), 0), 8),
@@ -198,6 +220,7 @@ const timePatterns = [
     weight: 0.9
   }
 ];
+
 
 export function extractTimeFromText(text: string, now: Date): TimeParseResult {
   const lowerText = text.toLowerCase();
