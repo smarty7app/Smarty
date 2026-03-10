@@ -976,99 +976,77 @@ export default function ReminderApp() {
                               <Sparkles className="w-5 h-5" />
                             </div>
                             <div>
+                              
                               <p className={cn(
                                 "text-[10px] font-black uppercase tracking-widest mb-0.5",
                                 smartParsed.confidence > 0.8 ? "text-emerald-600 dark:text-emerald-400" :
                                 smartParsed.confidence > 0.5 ? "text-amber-600 dark:text-amber-400" :
                                 "text-rose-600 dark:text-rose-400"
                               )}>
-                                🔍 {t.smart_analysis} ({(smartParsed.confidence * 100).toFixed(0)}%)
-                              </p>
-                              <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                {t.confidence}: {smartParsed.confidence > 0.8 ? (language === 'ar' ? 'عالية' : 'High') : smartParsed.confidence > 0.5 ? (language === 'ar' ? 'متوسطة' : 'Medium') : (language === 'ar' ? 'منخفضة' : 'Low')}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                          
+                                   {/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white/50 dark:bg-black/20 p-3 rounded-2xl border border-black/5 dark:border-white/5">
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">📅 {t.event_time}</p>
-                            <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
-                              {format(smartParsed.eventTime, 'eeee d MMMM, p', { locale: language === 'ar' ? arDZ : undefined })}
-                            </p>
-                          </div>
-                          <div className="bg-white/50 dark:bg-black/20 p-3 rounded-2xl border border-black/5 dark:border-white/5">
-                            <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">⏰ {t.remind_before}</p>
-                            <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
-                              {getTimeBeforeLabel(smartParsed.eventTime, smartParsed.reminderTimes[0])}
-                            </p>
-                          </div>
-                        </div>
+{/* زر القلم - يبقى كما هو */}
+<motion.button
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  onClick={() => setIsAdding(true)}
+  className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+>
+  <Pencil className="w-8 h-8" />
+</motion.button>
 
-                        <div className="bg-white/50 dark:bg-black/20 p-4 rounded-2xl border border-black/5 dark:border-white/5">
-                          <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">💬 {t.suggested_message}</p>
-                          <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200 italic leading-relaxed">
-                            &quot;{smartParsed.suggestedMessage}&quot;
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+{/* مكون النافذة المنبثقة - موضوع هنا بشكل منفصل */}
+<AddReminderModal
+  isOpen={isAdding}
+  onClose={() => setIsAdding(false)}
+  inputText={inputText}
+  setInputText={setInputText}
+  recurring={recurring}
+  setRecurring={setRecurring}
+  handleAddReminder={handleAddReminder}
+  t={t}
+  smartParsed={smartParsed}
+  activeSuggestions={activeSuggestions}
+  language={language}
+  getTimeBeforeLabel={getTimeBeforeLabel}
+  format={format}
+  arDZ={arDZ}
+/>
 
-                <div className="mb-10">
-                  <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 p-4 rounded-2xl group focus-within:border-[#E65100] transition-colors">
-                    <RefreshCw className="w-5 h-5 text-zinc-400 group-focus-within:text-[#E65100]" />
-                    <div className="flex-1">
-                      <p className="text-[10px] uppercase font-black text-zinc-400 tracking-widest mb-1">{t.recurring}</p>
-                      <select 
-                        value={recurring}
-                        onChange={(e) => setRecurring(e.target.value as any)}
-                        className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-black dark:text-white cursor-pointer appearance-none"
-                      >
-                        <option value="none">{t.once}</option>
-                        <option value="hourly">{t.hourly}</option>
-                        <option value="daily">{t.daily}</option>
-                        <option value="weekly">{t.weekly}</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+{/* الفوتر */}
+<footer className="py-8 text-center bg-black/5">
+  {/* محتوى الفوتر إن وجد */}
+</footer>{/* باقي محتوى الصفحة (قائمة التذكيرات) ... */}
 
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => setIsAdding(false)}
-                    className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-black py-4 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-sm uppercase tracking-widest"
-                  >
-                    {t.cancel}
-                  </button>
-                  <button
-                    onClick={handleAddReminder}
-                    disabled={!inputText.trim()}
-                    className="flex-[2] bg-[#E65100] text-white font-black py-4 rounded-2xl hover:bg-[#BF360C] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-[#E65100]/20 flex items-center justify-center gap-3 text-sm uppercase tracking-widest"
-                  >
-                    <CheckCircle2 className="w-6 h-6" />
-                    {t.save_reminder}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                              {/* زر القلم - يبقى كما هو */}
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setIsAdding(true)}
+                                className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+                              >
+                                <Pencil className="w-8 h-8" />
+                              </motion.button>
 
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsAdding(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-      >
-        <Pencil className="w-8 h-8" />
-      </motion.button>
+                              {/* مكون النافذة المنبثقة - موضوع هنا بشكل منفصل */}
+                              <AddReminderModal
+                                isOpen={isAdding}
+                                onClose={() => setIsAdding(false)}
+                                inputText={inputText}
+                                setInputText={setInputText}
+                                recurring={recurring}
+                                setRecurring={setRecurring}                                                        handleAddReminder={handleAddReminder}
+  t={t}
+  smartParsed={smartParsed}
+  activeSuggestions={activeSuggestions}
+  language={language}
+  getTimeBeforeLabel={getTimeBeforeLabel}
+  format={format}
+  arDZ={arDZ}
+/>
 
-      <footer className="py-8 text-center bg-black/5">
-      </footer>
-    </div>
-  );
-}
+{/* الفوتر */}
+<footer className="py-8 text-center bg-black/5">
+  {/* محتوى الفوتر إن وجد */}
+</footer>
