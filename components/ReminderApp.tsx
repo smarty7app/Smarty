@@ -850,16 +850,6 @@ export default function ReminderApp() {
         )}
       </main> 
 
-      {/* Floating Action Button - يبقى كما هو */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsAdding(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-[1.5rem] shadow-2xl flex items-center justify-center z-30 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-      >
-        <Pencil className="w-8 h-8" />
-      </motion.button>
-
       {/* نافذة إضافة التذكير - المكون الجديد */}
       <AddReminderModal
         isOpen={isAdding}
@@ -880,7 +870,11 @@ export default function ReminderApp() {
 
       {/* الفوتر */}
       <footer className="py-8 text-center bg-black/5">
-        {/* يمكن إضافة محتوى الفوتر هنا إذا أردت */}
+        <p className="text-white/20 text-[10px] font-black uppercase tracking-[0.2em]">
+          Smarty AI Reminder &copy; {new Date().getFullYear()}
+        </p>
       </footer>
     </div>
-         
+  );
+}
+
