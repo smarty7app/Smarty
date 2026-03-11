@@ -34,6 +34,19 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
       {/* App Bar */}
+        <header className="flex items-center gap-4 p-6 bg-black/20 backdrop-blur-xl sticky top-0 z-10 border-b border-white/5">
+        <button 
+          onClick={onBack} 
+          className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90 border border-white/5 text-white/70"
+        >
+          {isRTL ? <ChevronLeft className="w-6 h-6 rotate-180" /> : <ChevronLeft className="w-6 h-6" />}
+        </button>
+        <h1 className="text-xl font-bold tracking-tight text-white/90">{t.about}</h1>
+      </header>
+
+      <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
+        
+        {/ 1. قسم الشعار الموحد (The Core Identity) /}
         <motion.div 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
@@ -52,7 +65,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
     {t.version} 2.0 PREMIUM
   </p>
 </motion.div>
-        
+
         <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 w-full max-w-xs shadow-lg border border-black/5 dark:border-white/5 mb-4 text-center">
           <p className="text-zinc-900 dark:text-white text-sm font-medium">
             Never Forget Anything Again
