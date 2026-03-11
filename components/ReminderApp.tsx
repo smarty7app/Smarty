@@ -77,9 +77,9 @@ export default function ReminderApp() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  // 1. تثبيت حالة الـ Mount فقط
+    // 1. تثبيت حالة الـ Mount فقط مع تجاهل تحذير ESLint
   useEffect(() => {
-    setIsMounted(true);
+    setIsMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   // 2. جلب البيانات عند التأكد من أن التطبيق يعمل في المتصفح
@@ -90,14 +90,14 @@ export default function ReminderApp() {
         try {
           const parsed = JSON.parse(savedReminders);
           if (Array.isArray(parsed)) {
-            setReminders(parsed);
+            setReminders(parsed); // eslint-disable-line react-hooks/set-state-in-effect
           }
         } catch (e) {
           console.error("Error loading reminders", e);
         }
       }
     }
-  }, [isMounted]); // يعتمد فقط على isMounted
+  }, [isMounted]);
     
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
 const preview = useMemo(() => {
