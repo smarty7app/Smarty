@@ -203,47 +203,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </div>
         </section>
 
-        <footer className="text-center py-10">
+                <footer className="text-center py-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{t.app_name} v2.0.0</p>
         </footer>
-      </div>
-    </div>
-          {/* Reset Confirmation Modal - النافذة المنبثقة للتأكيد */}
+      </div> {/* نهاية حاوية التمرير */}
+
+      {/* 🟢 الـ Modal يجب أن يكون هنا (داخل الـ div الرئيسي) 🟢 */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm shadow-none">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
           >
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-              <RefreshCcw className="w-8 h-8 text-red-500 animate-spin-reverse" />
+              <RefreshCcw className="w-8 h-8 text-red-500" />
             </div>
             
             <h2 className="text-xl font-black mb-2 dark:text-white">
               {isRTL ? 'إعادة ضبط المصنع؟' : 'Factory Reset?'}
             </h2>
             
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold leading-relaxed mb-8">
-              {isRTL 
-                ? 'هل أنت متأكد؟ سيتم حذف جميع التذكيرات والإعدادات نهائياً.' 
-                : 'Are you sure? All reminders and settings will be permanently deleted.'}
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
+              {isRTL ? 'هل أنت متأكد؟ سيتم حذف كل البيانات.' : 'Are you sure? All data will be deleted.'}
             </p>
 
             <div className="flex flex-col gap-3">
               <button 
-                onClick={() => {
-                  localStorage.clear();
-                  window.location.reload();
-                }}
-                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/30 transition-all active:scale-95"
+                onClick={() => { localStorage.clear(); window.location.reload(); }}
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95"
               >
-                {isRTL ? 'نعم، احذف كل شيء' : 'Yes, Delete Everything'}
+                {isRTL ? 'نعم، احذف الكل' : 'Yes, Delete All'}
               </button>
-              
               <button 
                 onClick={() => setShowResetConfirm(false)}
-                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-300 rounded-2xl font-bold transition-all active:scale-95"
+                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold"
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </button>
@@ -251,5 +245,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </motion.div>
         </div>
       )}
+
+    </div> // <--- هذا هو الـ Div الرئيسي للمكون، يجب أن يبقى في الأخير دائماً
   );
 };
