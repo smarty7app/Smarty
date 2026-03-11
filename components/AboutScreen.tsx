@@ -34,7 +34,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
       {/* App Bar */}
-       <motion.div 
+        <motion.div 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
   className="flex flex-col items-center mb-10 select-none" // منع التحديد
