@@ -17,6 +17,7 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const [isDark, setIsDark] = React.useState(false);
   const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
+  const [showResetConfirm, setShowResetConfirm] = React.useState(false); 
   const { language, setLanguage, t, isRTL } = useLanguage();
 
   React.useEffect(() => {
