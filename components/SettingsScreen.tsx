@@ -22,7 +22,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
-    const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
+    const smartAnalysis = localStorage.getItem('');
     if (smartAnalysis !== null) {
       setIsSmartAnalysisEnabled(smartAnalysis === 'true');
     }
@@ -32,21 +32,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     };
     
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-  
-  const languages: { code: LanguageCode; label: string }[] = [
-    { code: 'ar', label: t.arabic },
-    { code: 'en', label: t.english },
-    { code: 'fr', label: t.french },
-    { code: 'zh', label: t.chinese },
-  ];
-
-  return (
-    <div className="flex flex-col h-full bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
-      {/* App Bar */}
-      <div className="flex items-center gap-4 p-6 bg-black/10 backdrop-blur-sm sticky top-0 z-10 border-b border-white/10">
-        {/* 🟢 الشعار الجديد المتكامل والعصري 🟢 */}
+    return () {/* 🟢 الشعار الجديد المتكامل والعصري 🟢 */}
   <div 
     className="flex items-center gap-2 select-none" // 🛑SELECT-NONE🛑 تمنع نسخ النص
     title="Smarty Reminders" // لمسة احترافية لإظهار الاسم عند الوقوف عليه
@@ -68,7 +54,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       Smarty
       <span className="text-[10px] font-black opacity-40 align-super ml-1">®</span>
     </h1>
-  </div> 
+  </div> => window.removeEventListener('storage', handleStorage);
+  }, []);
+  
+  const languages: { code: LanguageCode; label: string }[] = [
+    { code: 'ar', label: t.arabic },
+    { code: 'en', label: t.english },
+    { code: 'fr', label: t.french },
+    { code: 'zh', label: t.chinese },
+  ];
+
+  return (
+    <div className="flex flex-col h-full bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
+      {/* App Bar */}
+      <div className="flex items-center gap-4 p-6 bg-black/10 backdrop-blur-sm sticky top-0 z-10 border-b border-white/10">
         <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
           {isRTL ? <ChevronLeft className="w-6 h-6 rotate-180" /> : <ChevronLeft className="w-6 h-6" />}
         </button>
