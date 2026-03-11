@@ -73,7 +73,13 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         {/* 2. بطاقة الوصف (The Glass Card) */}
         <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-[2rem] p-6 backdrop-blur-md mb-8 text-center">
           <p className="text-white/80 font-medium leading-relaxed italic">
-            "Never Forget Anything Again"
+            {/* 2. بطاقة الوصف (The Glass Card) */}
+<div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-[2rem] p-6 backdrop-blur-md mb-8 text-center">
+  <p className="text-white/80 font-medium leading-relaxed italic">
+    &quot;Never Forget Anything Again&quot;
+  </p>
+</div>
+
           </p>
         </div>
         
