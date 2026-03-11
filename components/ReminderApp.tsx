@@ -76,7 +76,8 @@ export default function ReminderApp() {
   const [selectedDate, setSelectedDate] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
-     // 1. تثبيت حالة الـ Mount فقط
+   
+  // 1. تثبيت حالة الـ Mount فقط
   useEffect(() => {
     setIsMounted(true);
   }, []);
