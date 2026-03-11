@@ -173,31 +173,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         </section>
 
         {/* Danger Zone */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-black text-red-500/50 uppercase tracking-widest px-2 flex items-center gap-2">
-            <Trash2 className="w-4 h-4" />
+        <section className="space-y-3 pt-4">
+          <h3 className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
+            <Trash2 className="w-3 h-3" />
             {isRTL ? 'منطقة الخطر' : 'Danger Zone'}
           </h3>
           
-          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-lg border border-red-500/10">
+          <div className="bg-red-50/50 dark:bg-red-900/10 rounded-[1.5rem] overflow-hidden border border-red-500/10">
             <button 
-              onClick={() => {
-                if (confirm(isRTL ? 'هل أنت متأكد من حذف جميع البيانات؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to reset all data? This action cannot be undone.')) {
-                  localStorage.clear();
-                  window.location.reload();
-                }
-              }}
-              className="w-full flex items-center justify-between p-6 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group"
+              onClick={() => setShowResetConfirm(true)}
+              className="w-full flex items-center justify-between p-4 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-[0.98] group"
             >
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-500 group-hover:scale-110 transition-transform">
-                  <RefreshCcw className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white dark:bg-zinc-900 rounded-lg text-red-500 shadow-sm group-hover:rotate-12 transition-transform">
+                  <RefreshCcw className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="font-bold text-red-500">{isRTL ? 'إعادة ضبط المصنع' : 'Factory Reset'}</span>
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{isRTL ? 'حذف جميع التذكيرات والإعدادات' : 'Delete all reminders and settings'}</span>
+                  <span className="text-xs font-black text-red-600 dark:text-red-400">
+                    {isRTL ? 'إعادة ضبط المصنع' : 'Factory Reset'}
+                  </span>
+                  <span className="text-[9px] text-zinc-400 font-bold">
+                    {isRTL ? 'حذف كل البيانات' : 'Clear all data'}
+                  </span>
                 </div>
               </div>
+              <ChevronLeft className={`w-4 h-4 text-red-200 ${isRTL ? '' : 'rotate-180'}`} />
             </button>
           </div>
         </section>
