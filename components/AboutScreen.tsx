@@ -58,10 +58,10 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             </svg>
           </div>
           <h2 className="text-4xl font-black tracking-tighter text-white">
-            <Smarty<span className="text-orange-500">®</span>
+            Smarty<span className="text-orange-500">®</span>
           </h2>
           <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
-            {t.version} <2.0 PREMIUM
+            {t.version} 2.0 PREMIUM
           </p>
         </motion.div>
         
