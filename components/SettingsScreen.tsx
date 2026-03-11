@@ -176,7 +176,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         {/* Danger Zone */}
         <section className="space-y-3 pt-4">
           <h3 className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3 h-3" /> 
             {isRTL ? 'منطقة الخطر' : 'Danger Zone'}
           </h3>
           
@@ -208,5 +208,48 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         </footer>
       </div>
     </div>
+          {/* Reset Confirmation Modal - النافذة المنبثقة للتأكيد */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
+          >
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <RefreshCcw className="w-8 h-8 text-red-500 animate-spin-reverse" />
+            </div>
+            
+            <h2 className="text-xl font-black mb-2 dark:text-white">
+              {isRTL ? 'إعادة ضبط المصنع؟' : 'Factory Reset?'}
+            </h2>
+            
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold leading-relaxed mb-8">
+              {isRTL 
+                ? 'هل أنت متأكد؟ سيتم حذف جميع التذكيرات والإعدادات نهائياً.' 
+                : 'Are you sure? All reminders and settings will be permanently deleted.'}
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.reload();
+                }}
+                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-500/30 transition-all active:scale-95"
+              >
+                {isRTL ? 'نعم، احذف كل شيء' : 'Yes, Delete Everything'}
+              </button>
+              
+              <button 
+                onClick={() => setShowResetConfirm(false)}
+                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-300 rounded-2xl font-bold transition-all active:scale-95"
+              >
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
   );
 };
