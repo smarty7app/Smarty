@@ -374,28 +374,48 @@ const preview = useMemo(() => {
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col transition-colors duration-500">
       
-      {/* App Bar */}
-      <header className="sticky top-0 z-10 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white text-[#E65100] rounded-2xl flex items-center justify-center shadow-lg">
-            <ClipboardList className="w-6 h-6" />
+       {/* App Bar - الهوية البصرية لـ Smarty */}
+      <header className="sticky top-0 z-10 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10 select-none transform-gpu">
+        <div className="flex items-center gap-3 group cursor-default">
+          {/* أيقونة Smarty المائلة والمتحركة */}
+          <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl transform -rotate-6 transition-transform group-hover:rotate-0 duration-300">
+            <svg className="w-6 h-6 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
+            </svg>
           </div>
-          <h1 className="text-2xl font-black text-white">{t.app_name}</h1>
+          
+          {/* اسم التطبيق مع رمز الحقوق والنص الفرعي */}
+          <div className="flex flex-col -space-y-1">
+            <h1 className="text-2xl font-black text-white tracking-tighter">
+              Smarty<span className="text-[10px] opacity-40 ml-0.5 align-top">®</span>
+            </h1>
+            <span className="text-[8px] font-bold text-white/30 uppercase tracking-[0.2em]">
+              Premium Assistant
+            </span>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowAbout(true)} className="p-2 text-white"><Info /></button>
-          <button onClick={() => setShowSettings(true)} className="p-2 text-white"><Settings /></button>
-          <button onClick={toggleSound} className="p-2 text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
+
+        {/* أزرار التحكم السريعة */}
+        <div className="flex gap-1">
+          <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all active:scale-90">
+            <Info className="w-5 h-5" />
+          </button>
+          <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all active:scale-90">
+            <Settings className="w-5 h-5" />
+          </button>
+          <button onClick={toggleSound} className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all active:scale-90">
+            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
         </div>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
-        {/* Search */}
-        <div className="mb-8 relative">
-          <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40", isRTL ? "left-4" : "right-4")} />
+        {/* Search - شريط البحث الذكي */}
+        <div className="mb-8 relative group">
+          <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40 transition-colors group-focus-within:text-[#E65100]", isRTL ? "left-4" : "right-4")} />
           <input 
             placeholder={t.search_placeholder}
-            className="w-full bg-white/10 border border-white/10 rounded-2xl py-4 px-6 text-white font-bold outline-none"
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50 focus:bg-white/10 transition-all placeholder:text-white/20"
           />
         </div>
 
