@@ -53,48 +53,45 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         
-      {/* Language Section - المبدّل الانسيابي المطور */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
-            <Globe className="w-4 h-4" />
-            {t.language}
-          </h3>
-          
-          <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
-            {/* الخلفية المتحركة (Sliding Indicator) */}
-            <motion.div
-              initial={false}
-              animate={{
-                // حساب المسافة بناءً على ترتيب اللغة في المصفوفة
-                x: isRTL 
-                   ? (languages.findIndex(l => l.code === language) * -100) + '%' 
-                   : (languages.findIndex(l => l.code === language) * 100) + '%'
-              }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="absolute top-1.5 bottom-1.5 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
-              style={{ 
-                width: `calc(${100 / languages.length}% - 0.75rem)`,
-                left: isRTL ? 'auto' : '0.375rem',
-                right: isRTL ? '0.375rem' : 'auto'
-              }}
-            />
+      {/* Language Section */}
+<section className="space-y-4">
+  <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
+    <Globe className="w-4 h-4" />
+    {t.language}
+  </h3>
+  
+  {/* أضفنا dir="ltr" هنا لتوحيد منطق الحركة تقنياً مع الحفاظ على النصوص صحيحة */}
+  <div dir="ltr" className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
+    <motion.div
+      initial={false}
+      animate={{
+        // الآن الحركة دائماً موجبة لأننا ثبتنا الاتجاه لليسار تقنياً
+        x: (languages.findIndex(l => l.code === language) * 100) + '%'
+      }}
+      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+      className="absolute top-1.5 bottom-1.5 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
+      style={{ 
+        width: `calc(${100 / languages.length}% - 0.75rem)`,
+        left: '0.375rem'
+      }}
+    />
 
-            {/* الأزرار */}
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                className={`relative z-10 flex-1 h-full flex items-center justify-center font-black text-xs tracking-wider transition-colors duration-300 ${
-                  language === lang.code 
-                    ? 'text-white' 
-                    : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
-                }`}
-              >
-                {lang.label.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        </section>
+    {languages.map((lang) => (
+      <button
+        key={lang.code}
+        onClick={() => setLanguage(lang.code)}
+        className={`relative z-10 flex-1 h-full flex items-center justify-center font-black text-xs tracking-wider transition-colors duration-300 ${
+          language === lang.code 
+            ? 'text-white' 
+            : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+        }`}
+      >
+        {/* نستخدم النص كما هو أو نحوله لـ UpperCase إذا لم يكن عربياً فقط */}
+        {lang.code === 'ar' ? lang.label : lang.label.toUpperCase()}
+      </button>
+    ))}
+  </div>
+</section>
 
         {/* System Preferences */}
         <section className="space-y-4">
