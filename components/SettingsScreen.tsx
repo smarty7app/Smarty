@@ -46,34 +46,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     <div className="flex flex-col h-full bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
       {/* App Bar */}
       <div className="flex items-center gap-4 p-6 bg-black/10 backdrop-blur-sm sticky top-0 z-10 border-b border-white/10">
+        
         <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
           {isRTL ? <ChevronLeft className="w-6 h-6 rotate-180" /> : <ChevronLeft className="w-6 h-6" />}
         </button>
         <h1 className="text-2xl font-black tracking-tight text-white">{t.settings}</h1>
-      </div>
-        {/* 🟢 الشعار الجديد المتكامل والعصري 🟢 */}
-  <div 
-    className="flex items-center gap-2 select-none" // 🛑SELECT-NONE🛑 تمنع نسخ النص
-    title="Smarty Reminders" // لمسة احترافية لإظهار الاسم عند الوقوف عليه
-  >
-    {/* أيقونة الشعار (دمج بين حرف S و رمز التذكير) */}
-    <div className="p-2.5 bg-white rounded-2xl shadow-lg shadow-orange-500/30">
-      <svg 
-        className="w-5 h-5 text-[#E65100]" // نفس اللون البرتقالي للخلفية لتظهر كفراغ
-        viewBox="0 0 24 24" 
-        fill="currentColor"
-      >
-        {/* تصميم أيقونة S عصري وذكي */}
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
-      </svg>
-    </div>
-    
-    {/* اسم التطبيق كجزء من الشعار */}
-    <h1 className="text-2xl font-black tracking-tighter text-white">
-      Smarty
-      <span className="text-[10px] font-black opacity-40 align-super ml-1">®</span>
-    </h1>
-  </div> 
+      </div> 
       
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         
