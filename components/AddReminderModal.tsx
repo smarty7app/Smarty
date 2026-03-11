@@ -62,20 +62,25 @@ export default function AddReminderModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         // تعديل السرعة هنا 👇
-        transition={{ 
-          type: "spring", 
-          damping: 38,      // زيادة التخميد لمنع الارتداد الزائد عند السرعة العالية
-          stiffness: 600,   // رفع الصلابة من 200 إلى 450 يجعل الانطلاق فورياً
-          mass: 0.5         // جعل الكتلة أقل يعطي إحساساً بالخفة (اختياري)
-        }}
-        drag="y"
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.1}   // تقليل المرونة يجعل السحب للإغلاق يستجيب أسرع
-        onDragEnd={(event, info) => {
-          if (info.offset.y > DRAG_THRESHOLD) onClose();
-        }}
-        className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
-      >
+        // 🚀 سرعة احترافية وثبات تام بدون رمشة
+transition={{ 
+  type: "spring", 
+  damping: 45,       // رفع التخميد لامتصاص الصدمة عند التوقف
+  stiffness: 400,    // سرعة عالية ومستقرة (400 هي الرقم السحري)
+  mass: 1,           // العودة للكتلة الطبيعية تمنع "القفز" الزائد
+  velocity: 5,       // يعطي دفعة قوية في البداية لتعويض تقليل الـ stiffness
+  restDelta: 0.5,    // ينهي الحركة فوراً بمجرد الاقتراب من الهدف لمنع الاهتزاز
+  restSpeed: 0.5     // يقتل أي سرعة متبقية صغيرة تسبب "الرمشة"
+}}
+drag="y"
+dragConstraints={{ top: 0, bottom: 0 }}
+dragElastic={0.05}   // تقليل المرونة أكثر يجعلها تبدو متماسكة جداً
+onDragEnd={(event, info) => {
+  if (info.offset.y > DRAG_THRESHOLD) onClose();
+}}
+// أضف transform-gpu هنا لثبات الصورة 👇
+className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh] transform-gpu shadow-black/20"
+
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-6 cursor-grab active:cursor-grabbing shrink-0" />
           
           <div className="max-w-2xl mx-auto">
