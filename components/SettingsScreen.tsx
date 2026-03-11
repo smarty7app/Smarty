@@ -73,8 +73,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       Smarty
       <span className="text-[10px] font-black opacity-40 align-super ml-1">®</span>
     </h1>
-  </div>
-</div>
+  </div> 
+      
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         
       {/* Language Section */}
