@@ -56,29 +56,26 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        {/* الخلفية المعتمة */}
+           {/* جسم النافذة */}
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        />
-
-        {/* جسم النافذة */}
-        <motion.div 
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.2}
-          onDragEnd={(event, info) => {
-            if (info.offset.y > DRAG_THRESHOLD) onClose();
-          }}
-          className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
-        >
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        // تعديل السرعة هنا 👇
+        transition={{ 
+          type: "spring", 
+          damping: 35,      // زيادة التخميد لمنع الارتداد الزائد عند السرعة العالية
+          stiffness: 450,   // رفع الصلابة من 200 إلى 450 يجعل الانطلاق فورياً
+          mass: 0.5         // جعل الكتلة أقل يعطي إحساساً بالخفة (اختياري)
+        }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.1}   // تقليل المرونة يجعل السحب للإغلاق يستجيب أسرع
+        onDragEnd={(event, info) => {
+          if (info.offset.y > DRAG_THRESHOLD) onClose();
+        }}
+        className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
+      >
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-6 cursor-grab active:cursor-grabbing shrink-0" />
           
           <div className="max-w-2xl mx-auto">
