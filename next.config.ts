@@ -1,4 +1,9 @@
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // هذا السطر هو الأهم
-  images: { unoptimized: true } // لأن الأندرويد لا يدعم تحسين الصور التلقائي من Next
+  output: 'export', // هذا هو السطر السحري الذي سينشئ مجلد out
+  images: {
+    unoptimized: true, // ضروري للأندرويد
+  },
 };
+
+export default nextConfig;
