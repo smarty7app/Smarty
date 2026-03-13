@@ -11,7 +11,7 @@ const withPWA = require('next-pwa')({
         cacheName: 'smarty-static',
         expiration: {
           maxEntries: 100,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 يوم
+          maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
     },
@@ -30,5 +30,7 @@ const withPWA = require('next-pwa')({
 });
 
 module.exports = withPWA({
-  // إعدادات Next.js الحالية (مثل output: 'export'، i18n، إلخ)
+  // هنا ضع إعدادات Next.js الحالية (إذا كان لديك أي إعدادات)
+  // مثال: إذا كنت تستخدم i18n أو output: 'export' أضفها هنا
+  // i18n: { locales: ['ar', 'en'], defaultLocale: 'ar' },
 });
