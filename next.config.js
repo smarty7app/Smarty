@@ -1,43 +1,27 @@
-const withPWA = require('next-pwa')({
+const withPWA = require('@ducanh2912/next-pwa').default({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
   runtimeCaching: [
     {
-      // الصفحة الرئيسية والمسارات الأخرى (تخزينها مع أولوية الشبكة)
-      urlPattern: ({ url }) => {
-        return url.pathname === '/' || url.pathname.startsWith('/Settings');
-      },
+      urlPattern: /^https:\/\/smarty-lac\.vercel\.app\/.*/i,
       handler: 'NetworkFirst',
       options: {
-        cacheName: 'pages-cache',
+        cacheName: 'smarty-static',
         expiration: {
-          maxEntries: 20,
-          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 يوم
-        },
-      },
-    },
-    {
-      // ملفات JavaScript و CSS (تخزينها أولاً من الـ cache)
-      urlPattern: /\.(?:js|css|woff2|woff|ttf|png|jpg|jpeg|svg|gif|webp|ico)$/i,
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'assets-cache',
-        expiration: {
-          maxEntries: 200,
+          maxEntries: 100,
           maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
     },
     {
-      // باقي الطلبات (API، إلخ) - تعتمد على الشبكة أولاً
-      urlPattern: /^https:\/\/smarty-lac\.vercel\.app\/.*/i,
-      handler: 'NetworkFirst',
+      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|css|js|woff|woff2|ttf)$/i,
+      handler: 'CacheFirst',
       options: {
-        cacheName: 'others-cache',
+        cacheName: 'smarty-assets',
         expiration: {
-          maxEntries: 50,
+          maxEntries: 200,
           maxAgeSeconds: 30 * 24 * 60 * 60,
         },
       },
@@ -46,6 +30,5 @@ const withPWA = require('next-pwa')({
 });
 
 module.exports = withPWA({
-  // إعدادات Next.js الأخرى (إذا كان لديك)
-  // مثلاً: i18n, output: 'export', images, إلخ.
+  // أي إعدادات Next.js أخرى (مثل output: 'export' إن وجدت)
 });
