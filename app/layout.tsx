@@ -24,6 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
       <head>
+        {                 https://smarty-lac.vercel.app/}  <Head>
+        <link rel="manifest" href="/manifest.json" />
+       <meta name="theme-color" content="#000000" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
