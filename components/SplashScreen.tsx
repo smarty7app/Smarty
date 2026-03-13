@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Bell } from 'lucide-react'; // أيقونة الجرس
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -11,11 +12,10 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // إخفاء الشاشة بعد 2.5 ثانية
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onFinish, 500); // ننتظر انتهاء تأثير الاختفاء
-    }, 2500);
+      setTimeout(onFinish, 600); // ننتظر انتهاء تأثير الاختفاء
+    }, 2800); // زيادة طفيفة في المدة لتظهر الحركات الجديدة
 
     return () => clearTimeout(timer);
   }, [onFinish]);
@@ -27,38 +27,92 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.8 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#0B1120] via-[#0F172A] to-[#020617]"
+      transition={{ duration: 0.8, ease: 'easeInOut' }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#0A0F1E] via-[#0F172A] to-[#020617]"
     >
-      {/* الشعار مع تأثير تضخم */}
-      <motion.img
-        src="/icons/launchericon-512x512.png" // ضع مسار شعارك هنا
-        alt="Smarty Logo"
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 1, ease: 'easeOut' }}
-        className="w-32 h-32 md:w-48 md:h-48 drop-shadow-2xl"
-      />
+      {/* طبقة خلفية متحركة (جسيمات خفيفة) */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(15)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ x: '50%', y: '50%', opacity: 0 }}
+            animate={{
+              x: `${Math.random() * 200 - 100}%`,
+              y: `${Math.random() * 200 - 100}%`,
+              opacity: [0, 0.15, 0],
+            }}
+            transition={{
+              duration: 4 + Math.random() * 3,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+            className="absolute w-0.5 h-0.5 bg-white/10 rounded-full"
+          />
+        ))}
+      </div>
 
-      {/* اسم التطبيق يظهر ببطء */}
-      <motion.h1
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-        className="mt-4 text-3xl md:text-4xl font-bold text-white"
-      >
-        Smarty
-      </motion.h1>
+      {/* الحاوية الرئيسية */}
+      <div className="relative z-10 flex flex-col items-center">
+        {/* حلقة متوهجة خلف الشعار */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1.3, opacity: 0.2 }}
+          transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
+          className="absolute w-64 h-64 rounded-full bg-[#E65100]/20 blur-3xl"
+        />
 
-      {/* شعار Premium */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.8 }}
-        className="mt-2 text-sm text-amber-400 font-medium"
-      >
-        PREMIUM
-      </motion.p>
+        {/* الشعار بحجم أكبر وتأثير ثلاثي الأبعاد خفيف */}
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0, rotate: -5 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
+          transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1] }}
+          className="relative"
+        >
+          <motion.img
+            src="/icons/launchericon-512x512.png"
+            alt="Smarty Logo"
+            className="w-40 h-40 md:w-56 md:h-56 drop-shadow-2xl"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: 'spring', stiffness: 300 }}
+          />
+        </motion.div>
+
+        {/* اسم Smarty مع جرس صغير بجانبه */}
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.8, ease: 'easeOut' }}
+          className="flex items-center gap-3 mt-6"
+        >
+          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight">
+            Smarty
+          </h1>
+          <motion.div
+            animate={{ rotate: [0, 15, -15, 0] }}
+            transition={{ delay: 1.8, duration: 1, repeat: Infinity, repeatDelay: 3 }}
+          >
+            <Bell className="w-8 h-8 md:w-10 md:h-10 text-[#E65100] fill-[#E65100]/20" />
+          </motion.div>
+        </motion.div>
+
+        {/* العبارة الجديدة: Never Forget Anything Again */}
+        <motion.p
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.4, duration: 0.8 }}
+          className="mt-4 text-sm md:text-base text-zinc-300 font-light tracking-widest uppercase"
+        >
+          Never Forget Anything Again
+        </motion.p>
+
+        {/* خط فاصل أنيق يظهر في النهاية */}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: '40%' }}
+          transition={{ delay: 1.9, duration: 0.8 }}
+          className="mt-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        />
+      </div>
     </motion.div>
   );
 }
