@@ -135,6 +135,43 @@ const preview = useMemo(() => {
   }, []);
 
   const getTimeBeforeLabel = React.useCallback((eventTime: Date, reminderTime: Date) => {
+    // ========== دوال جديدة لتنسيق الوقت ==========
+const formatCreationDate = (isoString: string) => {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat(language === 'ar' ? 'ar' : 'en', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+};
+
+const getDetailedRemainingTime = (remindAtISO: string) => {
+  const remindAt = new Date(remindAtISO);
+  const now = new Date();
+  const diffMs = remindAt.getTime() - now.getTime();
+
+  if (diffMs <= 0) {
+    return language === 'ar' ? '⏰ مضى موعده' : '⏰ Passed';
+  }
+
+  const seconds = Math.floor((diffMs / 1000) % 60);
+  const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+  const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  const parts = [];
+  if (days > 0) parts.push(`${days} ${language === 'ar' ? 'يوم' : 'day'}${days !== 1 ? 's' : ''}`);
+  if (hours > 0) parts.push(`${hours} ${language === 'ar' ? 'ساعة' : 'hour'}${hours !== 1 ? 's' : ''}`);
+  if (minutes > 0) parts.push(`${minutes} ${language === 'ar' ? 'دقيقة' : 'minute'}${minutes !== 1 ? 's' : ''}`);
+  if (seconds > 0) parts.push(`${seconds} ${language === 'ar' ? 'ثانية' : 'second'}${seconds !== 1 ? 's' : ''}`);
+
+  const prefix = language === 'ar' ? '⏳ متبقي' : '⏳ Left';
+  return `${prefix}: ${parts.join(' و ')}`;
+};
+// =============================================
     const diffMinutes = Math.round((eventTime.getTime() - reminderTime.getTime()) / (60 * 1000));
     if (diffMinutes <= 0) return language === 'ar' ? 'في نفس الوقت' : 'At the same time';
     if (diffMinutes >= 60) {
