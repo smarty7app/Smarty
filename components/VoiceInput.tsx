@@ -161,4 +161,4 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
       {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
     </button>
   );
-    }
+}
