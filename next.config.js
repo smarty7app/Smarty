@@ -5,7 +5,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   skipWaiting: true,
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/smarty-lac\.vercel\.app\/.*/i,
+      urlPattern: ({ request, url }) => url.origin === self.location.origin,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'smarty-static',
@@ -29,6 +29,15 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   ],
 });
 
-module.exports = withPWA({
-  // أي إعدادات Next.js أخرى (مثل output: 'export' إن وجدت)
-});
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('@capacitor/core', 'capacitor-offline-speech-recognition', 'chrono-node');
+    }
+    return config;
+  },
+};
+
+module.exports = withPWA(nextConfig);
