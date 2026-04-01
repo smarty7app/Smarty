@@ -4,18 +4,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-// استيراد Capacitor Plugin بشكل آمن (لن ينفذ في الويب)
-let OfflineSpeechRecognition: any;
-let Capacitor: any;
-if (typeof window !== 'undefined') {
-  // التحقق مما إذا كان الكود يعمل داخل Capacitor
+// تعريف متغيرات Capacitor (سيتم تعبئتها لاحقًا)
+let OfflineSpeechRecognition: any = null;
+let Capacitor: any = null;
+
+// هذه الدالة تُستخدم لتحميل Capacitor فقط في المتصفح بعد التأكد من وجوده
+async function loadCapacitor() {
+  if (typeof window === 'undefined') return;
+  if (Capacitor) return; // تم التحميل مسبقًا
+
   try {
-    Capacitor = require('@capacitor/core').Capacitor;
-    if (Capacitor.isNativePlatform()) {
-      OfflineSpeechRecognition = require('capacitor-offline-speech-recognition').OfflineSpeechRecognition;
+    // استخدام import() مع webpackIgnore لمنع Webpack من محاولة حل الحزمة
+    const capacitorModule = await import(/* webpackIgnore: true */ '@capacitor/core');
+    Capacitor = capacitorModule.Capacitor;
+
+    if (Capacitor?.isNativePlatform()) {
+      const offlineModule = await import(/* webpackIgnore: true */ 'capacitor-offline-speech-recognition');
+      OfflineSpeechRecognition = offlineModule.OfflineSpeechRecognition;
     }
   } catch (e) {
-    // Capacitor غير موجود – طبيعي في الويب
     console.log('Capacitor not available, using web speech');
   }
 }
@@ -29,76 +36,78 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
 
-  // تحديد البيئة الحالية
-  const isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+  // تحديد ما إذا كنا في بيئة Capacitor أصلية (بعد تحميلها)
+  const [isNative, setIsNative] = useState(false);
 
-  // إعداد التعرف على الصوت (مرة واحدة)
+  useEffect(() => {
+    // نحاول تحميل Capacitor مرة واحدة عند تحميل المكون
+    loadCapacitor().then(() => {
+      setIsNative(!!(Capacitor && Capacitor.isNativePlatform()));
+    });
+  }, []);
+
+  // إعداد Web Speech API للمتصفح (عند عدم وجود Capacitor)
   useEffect(() => {
     if (isNative) {
-      // استخدام Capacitor Offline Plugin
-      // لا نحتاج إلى إعداد مسبق هنا، سيتم البدء مباشرة في toggleListening
-      // يمكن تحميل النموذج عند بدء الاستماع
-    } else {
-      // استخدام Web Speech API
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        console.warn('المتصفح لا يدعم التعرف على الكلام');
-        return;
-      }
-
-      const recognitionInstance = new SpeechRecognition();
-
-      // ضبط اللغة حسب إعدادات التطبيق
-      if (language === 'ar') {
-        recognitionInstance.lang = 'ar-DZ'; // الدارجة الجزائرية
-      } else if (language === 'fr') {
-        recognitionInstance.lang = 'fr-FR';
-      } else {
-        recognitionInstance.lang = 'en-US';
-      }
-
-      recognitionInstance.continuous = false;
-      recognitionInstance.interimResults = false;
-
-      recognitionInstance.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        onTranscript(transcript);
-        setIsListening(false);
-      };
-
-      recognitionInstance.onerror = (event: any) => {
-        console.error('Speech Recognition Error:', event.error);
-        setIsListening(false);
-      };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current = recognitionInstance;
-
-      return () => {
-        if (recognitionRef.current) {
-          recognitionRef.current.abort();
-        }
-      };
+      // لا نحتاج لإعداد Web Speech، لأننا سنستخدم Capacitor
+      return;
     }
-  }, [language, onTranscript, isNative]); // إعادة التشغيل عند تغيير اللغة
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('المتصفح لا يدعم التعرف على الكلام');
+      return;
+    }
+
+    const recognitionInstance = new SpeechRecognition();
+
+    // ضبط اللغة حسب إعدادات التطبيق
+    if (language === 'ar') {
+      recognitionInstance.lang = 'ar-DZ';
+    } else if (language === 'fr') {
+      recognitionInstance.lang = 'fr-FR';
+    } else {
+      recognitionInstance.lang = 'en-US';
+    }
+
+    recognitionInstance.continuous = false;
+    recognitionInstance.interimResults = false;
+
+    recognitionInstance.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      onTranscript(transcript);
+      setIsListening(false);
+    };
+
+    recognitionInstance.onerror = (event: any) => {
+      console.error('Speech Recognition Error:', event.error);
+      setIsListening(false);
+    };
+
+    recognitionInstance.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognitionInstance;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, [language, onTranscript, isNative]);
 
   const toggleListening = async () => {
-    if (isNative) {
+    if (isNative && OfflineSpeechRecognition) {
       // استخدام Capacitor Offline Plugin
       if (isListening) {
         await OfflineSpeechRecognition.stopRecognition();
         setIsListening(false);
       } else {
         try {
-          // تحميل نموذج اللغة (مرة واحدة فقط)
-          await OfflineSpeechRecognition.downloadLanguageModel({ language: 'ar' }); // يمكن استخدام language هنا
-
+          await OfflineSpeechRecognition.downloadLanguageModel({ language: 'ar' });
           await OfflineSpeechRecognition.startRecognition({ language: 'ar' });
 
-          // الاستماع للنتائج
           OfflineSpeechRecognition.addListener('recognitionResult', (result: any) => {
             onTranscript(result.text);
             setIsListening(false);
@@ -152,4 +161,4 @@ export default function VoiceInput({ onTranscript }: VoiceInputProps) {
       {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
     </button>
   );
-           }
+    }
