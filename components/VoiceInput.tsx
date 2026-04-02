@@ -11,9 +11,11 @@ async function loadCapacitor() {
   if (typeof window === 'undefined') return;
   if (Capacitor) return;
   try {
+    // @ts-ignore
     const capacitorModule = await import(/* webpackIgnore: true */ '@capacitor/core');
     Capacitor = capacitorModule.Capacitor;
     if (Capacitor?.isNativePlatform()) {
+      // @ts-ignore
       const offlineModule = await import(/* webpackIgnore: true */ 'capacitor-offline-speech-recognition');
       OfflineSpeechRecognition = offlineModule.OfflineSpeechRecognition;
     }
