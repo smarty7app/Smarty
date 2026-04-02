@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import VoiceInput from './VoiceInput';              // <-- تمت إضافته
+import VoiceInput from './VoiceInput';
 import AddReminderModal from './AddReminderModal';
 import {
   Bell, 
@@ -74,16 +74,16 @@ export default function ReminderApp() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
-  const [assistantMessage, setAssistantMessage] = useState('');      // <-- حالة الرسالة
+  const [assistantMessage, setAssistantMessage] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  // 1. تثبيت حالة الـ Mount فقط مع تجاهل تحذير ESLint
+  // 1. تثبيت حالة الـ Mount
   useEffect(() => {
-    setIsMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+    setIsMounted(true);
   }, []);
 
-  // 2. جلب البيانات عند التأكد من أن التطبيق يعمل في المتصفح
+  // 2. جلب البيانات من localStorage
   useEffect(() => {
     if (isMounted) {
       const savedReminders = localStorage.getItem('smarty_reminders');
@@ -91,7 +91,7 @@ export default function ReminderApp() {
         try {
           const parsed = JSON.parse(savedReminders);
           if (Array.isArray(parsed)) {
-            setReminders(parsed); // eslint-disable-line react-hooks/set-state-in-effect
+            setReminders(parsed);
           }
         } catch (e) {
           console.error("Error loading reminders", e);
@@ -100,7 +100,7 @@ export default function ReminderApp() {
     }
   }, [isMounted]);
     
-  // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
+  // --- منطق المعاينة الحية ---
   const preview = useMemo(() => {
     if (isSmartAnalysisEnabled && inputText.trim().length >= 1) { 
       try {
@@ -119,7 +119,6 @@ export default function ReminderApp() {
     const lastWord = words[words.length - 1];
     return (lastWord && SMART_SUGGESTIONS[lastWord]) ? SMART_SUGGESTIONS[lastWord] : [];
   }, [inputText]);
-
 
   const getTrueTime = React.useCallback(() => new Date(Date.now()), []);
 
@@ -249,7 +248,7 @@ export default function ReminderApp() {
     if (isMounted) localStorage.setItem('smart_reminders_cache', JSON.stringify(reminders));
   }, [reminders, isMounted]);
 
-  // Theme Logic - Fixed for Vercel Build
+  // Theme Logic
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -298,7 +297,7 @@ export default function ReminderApp() {
     });
   }, []);
 
-  // دالة إضافة التذكير اليدوي (من المودال)
+  // إضافة التذكير اليدوي
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
 
@@ -354,7 +353,7 @@ export default function ReminderApp() {
     setIsAdding(false);
   };
 
-  // === المساعد الذكي ===
+  // المساعد الذكي (معالجة الصوت)
   const handleVoiceInput = async (text: string) => {
     if (!text.trim()) return;
     setAssistantMessage('جاري معالجة طلبك...');
@@ -379,7 +378,6 @@ export default function ReminderApp() {
 
       switch (data.action) {
         case 'add':
-          // إضافة تذكير جديد من المساعد
           const newReminder: Reminder = {
             id: Math.random().toString(36).substr(2, 9),
             text: data.text,
@@ -461,7 +459,7 @@ export default function ReminderApp() {
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col transition-colors duration-500">
       
-       {/* App Bar - الهوية البصرية لـ Smarty */}
+      {/* App Bar */}
       <header className="sticky top-0 z-10 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10 select-none transform-gpu">
         <div className="flex items-center gap-3 group cursor-default">
           <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl transform -rotate-6 transition-transform group-hover:rotate-0 duration-300">
@@ -493,7 +491,7 @@ export default function ReminderApp() {
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
-        {/* Search - شريط البحث الذكي */}
+        {/* Search */}
         <div className="mb-8 relative group">
           <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40 transition-colors group-focus-within:text-[#E65100]", isRTL ? "left-4" : "right-4")} />
           <input 
@@ -502,7 +500,7 @@ export default function ReminderApp() {
           />
         </div>
 
-        {/* الميكروفون الرئيسي – المساعد الذكي */}
+        {/* الميكروفون الرئيسي */}
         <div className="flex flex-col items-center justify-center my-8">
           <VoiceInput onTranscript={handleVoiceInput} />
           <p className="text-center text-sm text-white/70 mt-2">
@@ -510,17 +508,24 @@ export default function ReminderApp() {
           </p>
         </div>
 
-        {/* عرض رد المساعد */}
+        {/* رد المساعد */}
         {assistantMessage && (
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 text-white p-4 rounded-2xl mb-6 whitespace-pre-wrap">
             {assistantMessage}
           </div>
         )}
 
-        {/* Reminders List */}
+        {/* قائمة التذكيرات */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
           </h3>
 
-   
+          <div className="flex flex-col gap-3">
+            <AnimatePresence>
+              {activeReminders.length === 0 ? (
+                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
+                  <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
+                </div>
+              ) : (
+     
