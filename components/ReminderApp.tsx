@@ -29,11 +29,23 @@ interface Reminder {
 }
 
 export default function ReminderApp() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  // تحميل البيانات من localStorage مباشرة عند إنشاء الحالة
+  const [reminders, setReminders] = useState<Reminder[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('smarty_reminders');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) { console.error(e); }
+      }
+    }
+    return [];
+  });
+
   const [inputText, setInputText] = useState('');
   const [recurring, setRecurring] = useState<string>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -41,25 +53,10 @@ export default function ReminderApp() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
+  // حفظ البيانات عند تغيير reminders
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      const saved = localStorage.getItem('smarty_reminders');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setReminders(parsed);
-        } catch (e) { console.error(e); }
-      }
-    }
-  }, [isMounted]);
-
-  useEffect(() => {
-    if (isMounted) localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-  }, [reminders, isMounted]);
+    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+  }, [reminders]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -102,12 +99,11 @@ export default function ReminderApp() {
 
   const handleVoiceInput = async (text: string) => {
     setAssistantMessage(`قال المستخدم: "${text}"\n(سيتم إضافة الذكاء الاصطناعي لاحقًا)`);
-    // هنا سنضيف لاحقاً الاتصال بـ API الذكاء الاصطناعي
   };
 
   const activeReminders = reminders.filter(r => !r.isCompleted);
 
-  if (!isMounted) return null;
+  // لم نعد بحاجة لـ isMounted، نعرض المكون مباشرة
   if (showSettings) return <SettingsScreen onBack={() => setShowSettings(false)} />;
   if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />;
 
@@ -230,4 +226,4 @@ export default function ReminderApp() {
       </footer>
     </div>
   );
-}
+    }
