@@ -13,7 +13,6 @@ import {
   Timer,
   Mic 
 } from 'lucide-react';
-import VoiceInput from './VoiceInput';
 import { cn } from '@/lib/utils';
 
 interface AddReminderModalProps {
