@@ -30,9 +30,14 @@ export default function ReminderApp() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setIsMounted(true); }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (isMounted) { const saved = localStorage.getItem('smarty_reminders'); if (saved) setReminders(JSON.parse(saved)); } }, [isMounted]);
+
   useEffect(() => { if (isMounted) localStorage.setItem('smarty_reminders', JSON.stringify(reminders)); }, [reminders, isMounted]);
+
   useEffect(() => { if (typeof window !== 'undefined') { const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); audio.muted = true; audioRef.current = audio; } }, []);
 
   const handleAddReminder = () => {
@@ -74,7 +79,6 @@ export default function ReminderApp() {
           <input placeholder="بحث في التذكيرات..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50" />
         </div>
 
-        {/* الميكروفون الكبير في المنتصف */}
         <div className="flex flex-col items-center justify-center my-8">
           <VoiceInput onTranscript={handleVoiceInput} />
           <p className="text-center text-sm text-white/70 mt-2">اضغط للتحدث مع المساعد الذكي</p>
@@ -116,4 +120,4 @@ export default function ReminderApp() {
       <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
     </div>
   );
-  }
+            }
