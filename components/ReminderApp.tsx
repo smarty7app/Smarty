@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import VoiceInput from './VoiceInput';
+import VoiceInput from './VoiceInput';              // <-- تمت إضافته
 import AddReminderModal from './AddReminderModal';
 import {
   Bell, 
@@ -74,10 +74,11 @@ export default function ReminderApp() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = useState(true);
   const [selectedDate, setSelectedDate] = useState('');
+  const [assistantMessage, setAssistantMessage] = useState('');      // <-- حالة الرسالة
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-    // 1. تثبيت حالة الـ Mount فقط مع تجاهل تحذير ESLint
+  // 1. تثبيت حالة الـ Mount فقط مع تجاهل تحذير ESLint
   useEffect(() => {
     setIsMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
@@ -100,19 +101,17 @@ export default function ReminderApp() {
   }, [isMounted]);
     
   // --- منطق المعاينة الحية المطور (Live Preview Engine) ---
-const preview = useMemo(() => {
-  // زدنا الحساسية ليعمل المربع فوراً
-  if (isSmartAnalysisEnabled && inputText.trim().length >= 1) { 
-    try {
-      const analysis = parseSmartTime(inputText, language);
-      // المربع يظهر فقط إذا نجح العقل في قراءة وقت أو تاريخ
-      return analysis.isTimeDetected ? analysis : null;
-    } catch (e) {
-      return null;
+  const preview = useMemo(() => {
+    if (isSmartAnalysisEnabled && inputText.trim().length >= 1) { 
+      try {
+        const analysis = parseSmartTime(inputText, language);
+        return analysis.isTimeDetected ? analysis : null;
+      } catch (e) {
+        return null;
+      }
     }
-  }
-  return null;
-}, [inputText, isSmartAnalysisEnabled, language]);
+    return null;
+  }, [inputText, isSmartAnalysisEnabled, language]);
 
   const activeSuggestions = useMemo(() => {
     if (!inputText.trim()) return [];
@@ -135,7 +134,6 @@ const preview = useMemo(() => {
   }, []);
 
   const getTimeBeforeLabel = React.useCallback((eventTime: Date, reminderTime: Date) => {
-    
     const diffMinutes = Math.round((eventTime.getTime() - reminderTime.getTime()) / (60 * 1000));
     if (diffMinutes <= 0) return language === 'ar' ? 'في نفس الوقت' : 'At the same time';
     if (diffMinutes >= 60) {
@@ -251,12 +249,11 @@ const preview = useMemo(() => {
     if (isMounted) localStorage.setItem('smart_reminders_cache', JSON.stringify(reminders));
   }, [reminders, isMounted]);
 
-    // Theme Logic - Fixed for Vercel Build
+  // Theme Logic - Fixed for Vercel Build
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     
-    // نستخدم التوقيت لضمان عدم حدوث Cascading Render
     const timer = setTimeout(() => {
       setTheme(initialTheme);
       document.documentElement.classList.toggle('dark', initialTheme === 'dark');
@@ -264,7 +261,6 @@ const preview = useMemo(() => {
 
     return () => clearTimeout(timer);
   }, []);
-
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -302,16 +298,15 @@ const preview = useMemo(() => {
     });
   }, []);
 
+  // دالة إضافة التذكير اليدوي (من المودال)
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
 
-    // 1. التحليل الذكي
     const currentSmartParsed = isSmartAnalysisEnabled ? parseSmartTime(inputText, language) : null;
 
     let eventTime = new Date();
     let isTimeDetected = false;
 
-    // 2. استخراج الوقت المكتشف
     if (isSmartAnalysisEnabled && currentSmartParsed && currentSmartParsed.isTimeDetected) {
       eventTime = currentSmartParsed.eventTime;
       isTimeDetected = true;
@@ -319,11 +314,9 @@ const preview = useMemo(() => {
       eventTime = new Date(selectedDate);
       isTimeDetected = true;
     } else {
-      // وقت افتراضي +15 دقيقة إذا لم يوجد مدخل
       eventTime = addMinutes(new Date(), 15);
     }
 
-    // 3. ضمان وجود مصفوفة أوقات صالحة
     const finalReminderTimes = (currentSmartParsed?.reminderTimes && currentSmartParsed.reminderTimes.length > 0) 
       ? currentSmartParsed.reminderTimes 
       : [eventTime];
@@ -355,11 +348,104 @@ const preview = useMemo(() => {
       });
     }
 
-    // تنظيف المدخلات
     setInputText('');
     setRecurring('none');
     setSelectedDate('');
     setIsAdding(false);
+  };
+
+  // === المساعد الذكي ===
+  const handleVoiceInput = async (text: string) => {
+    if (!text.trim()) return;
+    setAssistantMessage('جاري معالجة طلبك...');
+
+    try {
+      const response = await fetch('/api/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          reminders: reminders.map(r => ({
+            id: r.id,
+            text: r.text,
+            reminderTime: r.reminderTime,
+            isCompleted: r.isCompleted,
+            recurring: r.recurring,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      switch (data.action) {
+        case 'add':
+          // إضافة تذكير جديد من المساعد
+          const newReminder: Reminder = {
+            id: Math.random().toString(36).substr(2, 9),
+            text: data.text,
+            reminderTime: data.datetime || new Date().toISOString(),
+            reminderTimes: [data.datetime || new Date().toISOString()],
+            eventTime: data.datetime || new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            isCompleted: false,
+            recurring: data.repeat || 'none',
+            priority: 3,
+            eventType: EventType.OTHER,
+            confidence: 0.9,
+            suggestedMessage: data.text,
+            snoozeCount: 0,
+            maxSnooze: 3,
+            stage: ReminderStage.FINAL,
+          };
+          setReminders(prev => [newReminder, ...prev]);
+          if (notificationService) {
+            notificationService.scheduleReminder(newReminder, (id) => handleReminderDueRef.current(id));
+          }
+          setAssistantMessage(`✓ تمت إضافة التذكير: ${data.text}`);
+          break;
+
+        case 'list':
+          if (reminders.length === 0) {
+            setAssistantMessage('لا توجد تذكيرات نشطة.');
+          } else {
+            const listText = reminders.map((r, i) => `${i+1}. ${r.text} - ${new Date(r.reminderTime).toLocaleString()}`).join('\n');
+            setAssistantMessage(listText);
+          }
+          break;
+
+        case 'delete':
+          if (data.id !== undefined && reminders[data.id]) {
+            const deletedReminder = reminders[data.id];
+            setReminders(prev => prev.filter((_, idx) => idx !== data.id));
+            if (notificationService) notificationService.cancelReminder(deletedReminder.id);
+            setAssistantMessage(`✓ تم حذف التذكير: ${deletedReminder.text}`);
+          } else {
+            setAssistantMessage('لم أجد التذكير المطلوب للحذف.');
+          }
+          break;
+
+        case 'update':
+          if (data.id !== undefined && reminders[data.id]) {
+            setReminders(prev => prev.map((r, idx) =>
+              idx === data.id ? { ...r, text: data.text || r.text, reminderTime: data.datetime || r.reminderTime } : r
+            ));
+            setAssistantMessage(`✓ تم تحديث التذكير.`);
+          } else {
+            setAssistantMessage('لم أجد التذكير المطلوب للتحديث.');
+          }
+          break;
+
+        case 'reply':
+          setAssistantMessage(data.message);
+          break;
+
+        default:
+          setAssistantMessage('عذراً، لم أفهم طلبك. حاول مرة أخرى.');
+      }
+    } catch (error) {
+      console.error('AI Assistant error:', error);
+      setAssistantMessage('حدث خطأ في الاتصال بالمساعد. تأكد من اتصالك بالإنترنت.');
+    }
   };
 
   const activeReminders = reminders.filter(r => !r.isCompleted).sort((a, b) => 
@@ -378,14 +464,11 @@ const preview = useMemo(() => {
        {/* App Bar - الهوية البصرية لـ Smarty */}
       <header className="sticky top-0 z-10 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10 select-none transform-gpu">
         <div className="flex items-center gap-3 group cursor-default">
-          {/* أيقونة Smarty المائلة والمتحركة */}
           <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl transform -rotate-6 transition-transform group-hover:rotate-0 duration-300">
             <svg className="w-6 h-6 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
             </svg>
           </div>
-          
-          {/* اسم التطبيق مع رمز الحقوق والنص الفرعي */}
           <div className="flex flex-col -space-y-1">
             <h1 className="text-2xl font-black text-white tracking-tighter">
               Smarty<span className="text-[10px] opacity-40 ml-0.5 align-top">®</span>
@@ -396,7 +479,6 @@ const preview = useMemo(() => {
           </div>
         </div>
 
-        {/* أزرار التحكم السريعة */}
         <div className="flex gap-1">
           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all active:scale-90">
             <Info className="w-5 h-5" />
@@ -420,77 +502,25 @@ const preview = useMemo(() => {
           />
         </div>
 
+        {/* الميكروفون الرئيسي – المساعد الذكي */}
+        <div className="flex flex-col items-center justify-center my-8">
+          <VoiceInput onTranscript={handleVoiceInput} />
+          <p className="text-center text-sm text-white/70 mt-2">
+            اضغط للتحدث مع المساعد الذكي
+          </p>
+        </div>
+
+        {/* عرض رد المساعد */}
+        {assistantMessage && (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 text-white p-4 rounded-2xl mb-6 whitespace-pre-wrap">
+            {assistantMessage}
+          </div>
+        )}
+
         {/* Reminders List */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
             <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
           </h3>
 
-          <div className="flex flex-col gap-3">
-            <AnimatePresence>
-              {activeReminders.length === 0 ? (
-                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
-                  <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
-                </div>
-              ) : (
-                activeReminders.map((rem) => (
-                  <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
-                      <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </button>
-                      <div className="flex-1">
-                        <p className="text-xl font-black dark:text-white leading-tight">{rem.text}</p>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          <span className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-black text-zinc-500">
-                            {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
-                          </span>
-                          <span className={cn("px-3 py-1 rounded-full text-[10px] font-black text-white", rem.priority >= 3 ? "bg-orange-500" : "bg-blue-500")}>
-                            {getPriorityLabel(rem.priority, language)}
-                          </span>
-                        </div>
-                      </div>
-                      <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500"><Trash2 /></button>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
-      </main>
-
-      {/* Floating Button */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsAdding(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-2xl shadow-2xl flex items-center justify-center z-50 border border-black/5"
-      >
-        <Pencil className="w-8 h-8" />
-      </motion.button>
-
-      {/* Modal - نمرر له الـ preview ليعرض المعاينة الحية */}
-      <AddReminderModal
-        isOpen={isAdding}
-        onClose={() => setIsAdding(false)}
-        inputText={inputText}
-        setInputText={setInputText}
-        recurring={recurring}
-        setRecurring={(val: any) => setRecurring(val)}
-        handleAddReminder={handleAddReminder}
-        t={t}
-        smartParsed={preview} // نمرر المعاينة الحية هنا
-        activeSuggestions={activeSuggestions}
-        language={language}
-        getTimeBeforeLabel={getTimeBeforeLabel}
-        format={format}
-        arDZ={arDZ}
-      />
-      
-      <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">
-        Smarty AI Reminder &copy; {new Date().getFullYear()}
-      </footer>
-    </div>
-  );
-}
+   
