@@ -43,27 +43,31 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
   }, []);
 
   // استخدمنا useCallback لتفادي خطأ Missing Dependency في useEffect
-  const handleSmartyAI = useCallback(async (text: string) => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch('/api/smarty', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, lang: language }),
-      });
-      const data = await response.json();
-      
-      const utterance = new SpeechSynthesisUtterance(data.reply);
-      utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
-      window.speechSynthesis.speak(utterance);
-      
-      onTranscript(text);
-    } catch (error) {
-      console.error("Smarty Error:", error);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [language, onTranscript]);
+const handleSmartyAI = useCallback(async (text: string) => {
+  setIsProcessing(true);
+  try {
+    const response = await fetch('/api/smarty', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, lang: language }),
+    });
+    const data = await response.json();
+    
+    const utterance = new SpeechSynthesisUtterance(data.reply);
+    
+    // إجبار المساعد على النطق بالعربية الفصحى دائماً بغض النظر عن لغة الإدخال
+    utterance.lang = 'ar-SA'; 
+    
+    window.speechSynthesis.speak(utterance);
+    
+    onTranscript(text);
+  } catch (error) {
+    console.error("Smarty Error:", error);
+  } finally {
+    setIsProcessing(false);
+  }
+}, [language, onTranscript]);
+
 
   useEffect(() => {
     if (isNative) return;
