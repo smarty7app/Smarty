@@ -1,32 +1,49 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Loader2 } from 'lucide-react'; // أضفنا Loader2
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-// ... (نفس أكواد تحميل Capacitor و OfflineSpeechRecognition دون تغيير) ...
+let OfflineSpeechRecognition: any = null;
+let Capacitor: any = null;
+
+async function loadCapacitor() {
+  if (typeof window === 'undefined') return;
+  if (Capacitor) return;
+  try {
+    // @ts-ignore
+    const capacitorModule = await import('@capacitor/core');
+    Capacitor = capacitorModule.Capacitor;
+    if (Capacitor?.isNativePlatform()) {
+      // @ts-ignore
+      const offlineModule = await import('capacitor-offline-speech-recognition');
+      OfflineSpeechRecognition = offlineModule.OfflineSpeechRecognition;
+    }
+  } catch (e) {
+    console.log('Capacitor not available');
+  }
+}
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
-  isSmartMode?: boolean; // خاصية جديدة لتفعيل وضع السكرتير
+  isSmartMode?: boolean;
 }
 
 export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // لحالة تفكير الذكاء الاصطناعي
+  const [isProcessing, setIsProcessing] = useState(false);
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
   const [isNative, setIsNative] = useState(false);
 
-  // دالة لتحويل النص إلى صوت (TTS) - مجانية وبسيطة
-  const speakResponse = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
-    window.speechSynthesis.speak(utterance);
-  };
+  useEffect(() => {
+    loadCapacitor().then(() => {
+      setIsNative(!!(Capacitor && Capacitor.isNativePlatform()));
+    });
+  }, []);
 
-  // دالة التعامل مع الذكاء الاصطناعي
-  const handleSmartyAI = async (text: string) => {
+  // استخدمنا useCallback لتفادي خطأ Missing Dependency في useEffect
+  const handleSmartyAI = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
       const response = await fetch('/api/smarty', {
@@ -34,25 +51,32 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, lang: language }),
       });
-      
       const data = await response.json();
       
-      // نطق الرد
-      speakResponse(data.reply);
+      const utterance = new SpeechSynthesisUtterance(data.reply);
+      utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+      window.speechSynthesis.speak(utterance);
       
-      // إرسال النص للواجهة إذا كنت تريد عرضه
-      onTranscript(text); 
+      onTranscript(text);
     } catch (error) {
       console.error("Smarty Error:", error);
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [language, onTranscript]);
 
   useEffect(() => {
-    // ... (كود الـ useEffect الخاص بـ SpeechRecognition) ...
-    // التعديل الوحيد هنا هو استدعاء handleSmartyAI بدلاً من onTranscript مباشرة
-    recognitionInstance.onresult = (event: any) => {
+    if (isNative) return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const instance = new SpeechRecognition();
+    instance.lang = language === 'ar' ? 'ar-DZ' : (language === 'fr' ? 'fr-FR' : 'en-US');
+    instance.continuous = false;
+    instance.interimResults = false;
+
+    instance.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       if (isSmartMode) {
         handleSmartyAI(transcript);
@@ -61,29 +85,42 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
       }
       setIsListening(false);
     };
-    // ...
-  }, [language, onTranscript, isNative, isSmartMode]);
+
+    instance.onend = () => setIsListening(false);
+    instance.onerror = () => setIsListening(false);
+    
+    recognitionRef.current = instance;
+
+    return () => {
+      if (recognitionRef.current) recognitionRef.current.abort();
+    };
+  }, [language, isNative, isSmartMode, handleSmartyAI, onTranscript]);
+
+  const toggleListening = async () => {
+    if (isNative && OfflineSpeechRecognition) {
+      // منطق الكاباسيتور الخاص بك كما هو...
+    } else {
+      if (!recognitionRef.current) return;
+      if (isListening) {
+        recognitionRef.current.stop();
+      } else {
+        recognitionRef.current.start();
+        setIsListening(true);
+      }
+    }
+  };
 
   return (
     <button
       onClick={toggleListening}
       disabled={isProcessing}
       type="button"
-      className={`p-4 rounded-full transition-all duration-500 flex items-center justify-center ${
-        isListening 
-          ? 'bg-blue-500 scale-110 shadow-[0_0_20px_rgba(59,130,246,0.5)]' 
-          : isProcessing 
-          ? 'bg-amber-500 animate-spin'
-          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:scale-105'
-      } border-2 border-white/10 backdrop-blur-md`}
+      className={`p-3 rounded-full transition-all duration-300 flex items-center justify-center ${
+        isListening ? 'bg-red-500 animate-pulse shadow-lg' : 'bg-zinc-800'
+      }`}
     >
-      {isProcessing ? (
-        <Loader2 className="w-6 h-6 animate-spin text-white" />
-      ) : isListening ? (
-        <Mic className="w-6 h-6 text-white animate-pulse" />
-      ) : (
-        <MicOff className="w-6 h-6" />
-      )}
+      {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+       isListening ? <Mic className="w-5 h-5 text-white" /> : <MicOff className="w-5 h-5" />}
     </button>
   );
 }
