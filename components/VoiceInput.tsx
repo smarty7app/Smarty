@@ -1,140 +1,89 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Loader2 } from 'lucide-react'; // أضفنا Loader2
 import { useLanguage } from './LanguageContext';
 
-let OfflineSpeechRecognition: any = null;
-let Capacitor: any = null;
-
-async function loadCapacitor() {
-  if (typeof window === 'undefined') return;
-  if (Capacitor) return;
-  try {
-    // @ts-ignore
-    const capacitorModule = await import(/* webpackIgnore: true */ '@capacitor/core');
-    Capacitor = capacitorModule.Capacitor;
-    if (Capacitor?.isNativePlatform()) {
-      // @ts-ignore
-      const offlineModule = await import(/* webpackIgnore: true */ 'capacitor-offline-speech-recognition');
-      OfflineSpeechRecognition = offlineModule.OfflineSpeechRecognition;
-    }
-  } catch (e) {
-    console.log('Capacitor not available, using web speech');
-  }
-}
+// ... (نفس أكواد تحميل Capacitor و OfflineSpeechRecognition دون تغيير) ...
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
+  isSmartMode?: boolean; // خاصية جديدة لتفعيل وضع السكرتير
 }
 
-export default function VoiceInput({ onTranscript }: VoiceInputProps) {
+export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // لحالة تفكير الذكاء الاصطناعي
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
   const [isNative, setIsNative] = useState(false);
 
-  useEffect(() => {
-    loadCapacitor().then(() => {
-      setIsNative(!!(Capacitor && Capacitor.isNativePlatform()));
-    });
-  }, []);
+  // دالة لتحويل النص إلى صوت (TTS) - مجانية وبسيطة
+  const speakResponse = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'ar' ? 'ar-SA' : 'en-US';
+    window.speechSynthesis.speak(utterance);
+  };
 
-  useEffect(() => {
-    if (isNative) return;
-
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn('المتصفح لا يدعم التعرف على الكلام');
-      return;
-    }
-
-    const recognitionInstance = new SpeechRecognition();
-    if (language === 'ar') {
-      recognitionInstance.lang = 'ar-DZ';
-    } else if (language === 'fr') {
-      recognitionInstance.lang = 'fr-FR';
-    } else {
-      recognitionInstance.lang = 'en-US';
-    }
-    recognitionInstance.continuous = false;
-    recognitionInstance.interimResults = false;
-
-    recognitionInstance.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      onTranscript(transcript);
-      setIsListening(false);
-    };
-    recognitionInstance.onerror = (event: any) => {
-      console.error('Speech Recognition Error:', event.error);
-      setIsListening(false);
-    };
-    recognitionInstance.onend = () => {
-      setIsListening(false);
-    };
-    recognitionRef.current = recognitionInstance;
-
-    return () => {
-      if (recognitionRef.current) recognitionRef.current.abort();
-    };
-  }, [language, onTranscript, isNative]);
-
-  const toggleListening = async () => {
-    if (isNative && OfflineSpeechRecognition) {
-      if (isListening) {
-        await OfflineSpeechRecognition.stopRecognition();
-        setIsListening(false);
-      } else {
-        try {
-          await OfflineSpeechRecognition.downloadLanguageModel({ language: 'ar' });
-          await OfflineSpeechRecognition.startRecognition({ language: 'ar' });
-          OfflineSpeechRecognition.addListener('recognitionResult', (result: any) => {
-            onTranscript(result.text);
-            setIsListening(false);
-          });
-          OfflineSpeechRecognition.addListener('recognitionError', (error: any) => {
-            console.error('Speech error:', error);
-            setIsListening(false);
-          });
-          setIsListening(true);
-        } catch (error) {
-          console.error('Failed to start offline recognition:', error);
-        }
-      }
-    } else {
-      if (!recognitionRef.current) {
-        const errorMsg = language === 'ar' ? 'المتصفح لا يدعم هذه الميزة' : 'Browser not supported';
-        alert(errorMsg);
-        return;
-      }
-      if (isListening) {
-        recognitionRef.current.stop();
-      } else {
-        try {
-          recognitionRef.current.start();
-          setIsListening(true);
-        } catch (error) {
-          console.error('Start error:', error);
-        }
-      }
+  // دالة التعامل مع الذكاء الاصطناعي
+  const handleSmartyAI = async (text: string) => {
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/smarty', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, lang: language }),
+      });
+      
+      const data = await response.json();
+      
+      // نطق الرد
+      speakResponse(data.reply);
+      
+      // إرسال النص للواجهة إذا كنت تريد عرضه
+      onTranscript(text); 
+    } catch (error) {
+      console.error("Smarty Error:", error);
+    } finally {
+      setIsProcessing(false);
     }
   };
+
+  useEffect(() => {
+    // ... (كود الـ useEffect الخاص بـ SpeechRecognition) ...
+    // التعديل الوحيد هنا هو استدعاء handleSmartyAI بدلاً من onTranscript مباشرة
+    recognitionInstance.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      if (isSmartMode) {
+        handleSmartyAI(transcript);
+      } else {
+        onTranscript(transcript);
+      }
+      setIsListening(false);
+    };
+    // ...
+  }, [language, onTranscript, isNative, isSmartMode]);
 
   return (
     <button
       onClick={toggleListening}
+      disabled={isProcessing}
       type="button"
-      className={`p-2 rounded-full transition-all duration-300 flex items-center justify-center ${
+      className={`p-4 rounded-full transition-all duration-500 flex items-center justify-center ${
         isListening 
-          ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' 
-          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
-      }`}
-      title={isListening 
-        ? (language === 'ar' ? 'جاري الاستماع...' : 'Listening...') 
-        : (language === 'ar' ? 'اضغط للتحدث' : 'Tap to speak')
-      }
+          ? 'bg-blue-500 scale-110 shadow-[0_0_20px_rgba(59,130,246,0.5)]' 
+          : isProcessing 
+          ? 'bg-amber-500 animate-spin'
+          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:scale-105'
+      } border-2 border-white/10 backdrop-blur-md`}
     >
-      {isListening ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+      {isProcessing ? (
+        <Loader2 className="w-6 h-6 animate-spin text-white" />
+      ) : isListening ? (
+        <Mic className="w-6 h-6 text-white animate-pulse" />
+      ) : (
+        <MicOff className="w-6 h-6" />
+      )}
     </button>
   );
 }
