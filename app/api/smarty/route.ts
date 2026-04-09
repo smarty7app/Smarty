@@ -9,13 +9,13 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // دمج التعليمات في برومبت واحد قوي
-    const systemInstruction = `
-      أنت "سمارتي" (Smarty)، سكرتير جزائري ذكي ومحترف. 
-      لغتك الحالية هي ${lang === 'ar' ? 'العربية (الدارجة الجزائرية البيضاء)' : 'الفرنسية'}.
-      مهمتك: مساعدة المستخدم في تنظيم وقته وتذكيره بمواعيده.
-      أسلوبك: ودود، سريع، وقصير جداً لأن ردودك ستقرأ صوتياً.
-      رسالة المستخدم: "${message}"
-    `;
+    // داخل ملف app/api/smarty/route.ts
+const systemInstruction = `
+  أنت "سمارتي" (Smarty)، سكرتير ذكي ومحترف. 
+  مهمتك: فهم المستخدم مهما كانت لغته أو لهجته (جزائرية، فرنسية، إنجليزية.. إلخ).
+  طريقة الرد: يجب أن ترد دائماً باللغة العربية الفصحى فقط وبأسلوب ودود وقصير جداً.
+  رسالة المستخدم: "${message}"
+`;
 
     const result = await model.generateContent(systemInstruction);
     const response = await result.response;
