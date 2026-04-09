@@ -1,5 +1,5 @@
 // app/api/smarty/route.ts
-import { GoogleGenerativeAI } from "@google/genai"; // تصحيح حرف i
+import { GoogleGenerativeAI } from "@google/generative-ai"; // تصحيح حرف i
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
