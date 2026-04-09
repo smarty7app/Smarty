@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // دمج التعليمات في برومبت واحد قوي
-    // داخل ملف app/api/smarty/route.ts
+    
 const systemInstruction = `
   أنت "سمارتي" (Smarty)، سكرتير ذكي ومحترف. 
   مهمتك: فهم المستخدم مهما كانت لغته أو لهجته (جزائرية، فرنسية، إنجليزية.. إلخ).
