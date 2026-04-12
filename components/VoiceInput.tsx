@@ -47,8 +47,8 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
     setIsProcessing(true);
     try {
       // استخدم الرابط العام من Cloudflare Tunnel (تأكد من أنه لا يزال نشطاً)
-      const response = await fetch('https://grass-var-misc-symphony.trycloudflare.com/ask', {
-        method: 'POST',
+      const response = await fetch('https://theoretical-bathroom-dogs-frederick.trycloudflare.com/ask', {
+      method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: text }), // المتوقع من api.py هو "prompt"
       });
