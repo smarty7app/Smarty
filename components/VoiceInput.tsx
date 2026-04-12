@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-// لا نقوم باستيراد Capacitor بشكل ثابت (لا import في الأعلى)
-
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
   isSmartMode?: boolean;
@@ -16,42 +14,18 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
   const [isProcessing, setIsProcessing] = useState(false);
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
-  const [isNative, setIsNative] = useState(false);
-  const [capacitorModules, setCapacitorModules] = useState<any>({ OfflineSpeechRecognition: null, Capacitor: null });
-
-  // تحميل Capacitor ديناميكيًا فقط في المتصفح (وليس أثناء البناء)
-  useEffect(() => {
-    const loadCapacitor = async () => {
-      if (typeof window === 'undefined') return;
-      try {
-        const capacitorModule = await import('@capacitor/core');
-        const Capacitor = capacitorModule.Capacitor;
-        if (Capacitor?.isNativePlatform()) {
-          const offlineModule = await import('capacitor-offline-speech-recognition');
-          setCapacitorModules({
-            Capacitor,
-            OfflineSpeechRecognition: offlineModule.OfflineSpeechRecognition,
-          });
-          setIsNative(true);
-        }
-      } catch (e) {
-        console.log('Capacitor not available', e);
-      }
-    };
-    loadCapacitor();
-  }, []);
 
   const handleSmartyAI = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
-      // استخدم الرابط العام الحالي (تأكد من تحديثه)
+      // تحديث الرابط العام إلى الرابط الحالي
       const response = await fetch('https://their-wish-volumes-always.trycloudflare.com/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: text }),
       });
       const data = await response.json();
-      const reply = data.reply;
+      const reply = data.reply || data.error || "عذراً، لم أستطع فهمك.";
       const utterance = new SpeechSynthesisUtterance(reply);
       utterance.lang = 'ar-SA';
       window.speechSynthesis.speak(utterance);
@@ -65,8 +39,6 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
   }, [onTranscript]);
 
   useEffect(() => {
-    if (isNative) return;
-
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
@@ -93,42 +65,15 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
     return () => {
       if (recognitionRef.current) recognitionRef.current.abort();
     };
-  }, [language, isNative, isSmartMode, handleSmartyAI, onTranscript]);
+  }, [language, isSmartMode, handleSmartyAI, onTranscript]);
 
-  const toggleListening = async () => {
-    if (isNative && capacitorModules.OfflineSpeechRecognition) {
-      try {
-        if (isListening) {
-          await capacitorModules.OfflineSpeechRecognition.stopListening();
-          setIsListening(false);
-        } else {
-          await capacitorModules.OfflineSpeechRecognition.requestPermission();
-          await capacitorModules.OfflineSpeechRecognition.startListening({
-            language: language === 'ar' ? 'ar-DZ' : (language === 'fr' ? 'fr-FR' : 'en-US'),
-          });
-          setIsListening(true);
-          capacitorModules.OfflineSpeechRecognition.addListener('onResult', (result: any) => {
-            const transcript = result.text;
-            if (isSmartMode) {
-              handleSmartyAI(transcript);
-            } else {
-              onTranscript(transcript);
-            }
-            setIsListening(false);
-          });
-        }
-      } catch (err) {
-        console.error("Offline speech error:", err);
-        setIsListening(false);
-      }
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
     } else {
-      if (!recognitionRef.current) return;
-      if (isListening) {
-        recognitionRef.current.stop();
-      } else {
-        recognitionRef.current.start();
-        setIsListening(true);
-      }
+      recognitionRef.current.start();
+      setIsListening(true);
     }
   };
 
