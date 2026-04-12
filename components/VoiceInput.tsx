@@ -4,25 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
-let OfflineSpeechRecognition: any = null;
-let Capacitor: any = null;
-
-async function loadCapacitor() {
-  if (typeof window === 'undefined') return;
-  if (Capacitor) return;
-  try {
-    // @ts-ignore
-    const capacitorModule = await import('@capacitor/core');
-    Capacitor = capacitorModule.Capacitor;
-    if (Capacitor?.isNativePlatform()) {
-      // @ts-ignore
-      const offlineModule = await import('capacitor-offline-speech-recognition');
-      OfflineSpeechRecognition = offlineModule.OfflineSpeechRecognition;
-    }
-  } catch (e) {
-    console.log('Capacitor not available');
-  }
-}
+// لا نقوم باستيراد Capacitor بشكل ثابت (لا import في الأعلى)
 
 interface VoiceInputProps {
   onTranscript: (text: string) => void;
@@ -35,32 +17,44 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
   const [isNative, setIsNative] = useState(false);
+  const [capacitorModules, setCapacitorModules] = useState<any>({ OfflineSpeechRecognition: null, Capacitor: null });
 
+  // تحميل Capacitor ديناميكيًا فقط في المتصفح (وليس أثناء البناء)
   useEffect(() => {
-    loadCapacitor().then(() => {
-      setIsNative(!!(Capacitor && Capacitor.isNativePlatform()));
-    });
+    const loadCapacitor = async () => {
+      if (typeof window === 'undefined') return;
+      try {
+        const capacitorModule = await import('@capacitor/core');
+        const Capacitor = capacitorModule.Capacitor;
+        if (Capacitor?.isNativePlatform()) {
+          const offlineModule = await import('capacitor-offline-speech-recognition');
+          setCapacitorModules({
+            Capacitor,
+            OfflineSpeechRecognition: offlineModule.OfflineSpeechRecognition,
+          });
+          setIsNative(true);
+        }
+      } catch (e) {
+        console.log('Capacitor not available', e);
+      }
+    };
+    loadCapacitor();
   }, []);
 
-  // ✅ الدالة المعدلة للتواصل مع النفق العام (بدلاً من API الداخلي)
   const handleSmartyAI = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
-      // استخدم الرابط العام من Cloudflare Tunnel (تأكد من أنه لا يزال نشطاً)
-     const response = await fetch('https://their-wish-volumes-always.trycloudflare.com/ask', {
-      method: 'POST',
+      // استخدم الرابط العام الحالي (تأكد من تحديثه)
+      const response = await fetch('https://their-wish-volumes-always.trycloudflare.com/ask', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text }), // المتوقع من api.py هو "prompt"
+        body: JSON.stringify({ prompt: text }),
       });
       const data = await response.json();
-      const reply = data.reply; // الرد النصي من نموذج command-r7b-arabic
-
-      // نطق الرد بصوت المتصفح
+      const reply = data.reply;
       const utterance = new SpeechSynthesisUtterance(reply);
-      utterance.lang = 'ar-SA'; // نطق بالعربية الفصحى
+      utterance.lang = 'ar-SA';
       window.speechSynthesis.speak(utterance);
-
-      // إرسال الرد إلى دالة onTranscript (يمكن تعديلها حسب الحاجة)
       onTranscript(reply);
     } catch (error) {
       console.error("Smarty Error:", error);
@@ -102,20 +96,18 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
   }, [language, isNative, isSmartMode, handleSmartyAI, onTranscript]);
 
   const toggleListening = async () => {
-    if (isNative && OfflineSpeechRecognition) {
-      // المنطق الخاص بالكاباسيتور (يمكن تركه كما هو أو تحديثه لاستخدام النفق)
-      // نظراً لأنك ترغب بالحفاظ على الدوال الأخرى، سنبقي هذا الجزء كما هو.
+    if (isNative && capacitorModules.OfflineSpeechRecognition) {
       try {
         if (isListening) {
-          await OfflineSpeechRecognition.stopListening();
+          await capacitorModules.OfflineSpeechRecognition.stopListening();
           setIsListening(false);
         } else {
-          await OfflineSpeechRecognition.requestPermission();
-          await OfflineSpeechRecognition.startListening({
+          await capacitorModules.OfflineSpeechRecognition.requestPermission();
+          await capacitorModules.OfflineSpeechRecognition.startListening({
             language: language === 'ar' ? 'ar-DZ' : (language === 'fr' ? 'fr-FR' : 'en-US'),
           });
           setIsListening(true);
-          OfflineSpeechRecognition.addListener('onResult', (result: any) => {
+          capacitorModules.OfflineSpeechRecognition.addListener('onResult', (result: any) => {
             const transcript = result.text;
             if (isSmartMode) {
               handleSmartyAI(transcript);
