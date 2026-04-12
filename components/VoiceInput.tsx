@@ -42,32 +42,33 @@ export default function VoiceInput({ onTranscript, isSmartMode = true }: VoiceIn
     });
   }, []);
 
-  // استخدمنا useCallback لتفادي خطأ Missing Dependency في useEffect
-const handleSmartyAI = useCallback(async (text: string) => {
-  setIsProcessing(true);
-  try {
-    const response = await fetch('/api/smarty', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, lang: language }),
-    });
-    const data = await response.json();
-    
-    const utterance = new SpeechSynthesisUtterance(data.reply);
-    
-    // إجبار المساعد على النطق بالعربية الفصحى دائماً بغض النظر عن لغة الإدخال
-    utterance.lang = 'ar-SA'; 
-    
-    window.speechSynthesis.speak(utterance);
-    
-    onTranscript(text);
-  } catch (error) {
-    console.error("Smarty Error:", error);
-  } finally {
-    setIsProcessing(false);
-  }
-}, [language, onTranscript]);
+  // ✅ الدالة المعدلة للتواصل مع النفق العام (بدلاً من API الداخلي)
+  const handleSmartyAI = useCallback(async (text: string) => {
+    setIsProcessing(true);
+    try {
+      // استخدم الرابط العام من Cloudflare Tunnel (تأكد من أنه لا يزال نشطاً)
+      const response = await fetch('https://grass-var-misc-symphony.trycloudflare.com/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text }), // المتوقع من api.py هو "prompt"
+      });
+      const data = await response.json();
+      const reply = data.reply; // الرد النصي من نموذج command-r7b-arabic
 
+      // نطق الرد بصوت المتصفح
+      const utterance = new SpeechSynthesisUtterance(reply);
+      utterance.lang = 'ar-SA'; // نطق بالعربية الفصحى
+      window.speechSynthesis.speak(utterance);
+
+      // إرسال الرد إلى دالة onTranscript (يمكن تعديلها حسب الحاجة)
+      onTranscript(reply);
+    } catch (error) {
+      console.error("Smarty Error:", error);
+      onTranscript("عذراً، لم أستطع الاتصال بالمساعد.");
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [onTranscript]);
 
   useEffect(() => {
     if (isNative) return;
@@ -102,7 +103,32 @@ const handleSmartyAI = useCallback(async (text: string) => {
 
   const toggleListening = async () => {
     if (isNative && OfflineSpeechRecognition) {
-      // منطق الكاباسيتور الخاص بك كما هو...
+      // المنطق الخاص بالكاباسيتور (يمكن تركه كما هو أو تحديثه لاستخدام النفق)
+      // نظراً لأنك ترغب بالحفاظ على الدوال الأخرى، سنبقي هذا الجزء كما هو.
+      try {
+        if (isListening) {
+          await OfflineSpeechRecognition.stopListening();
+          setIsListening(false);
+        } else {
+          await OfflineSpeechRecognition.requestPermission();
+          await OfflineSpeechRecognition.startListening({
+            language: language === 'ar' ? 'ar-DZ' : (language === 'fr' ? 'fr-FR' : 'en-US'),
+          });
+          setIsListening(true);
+          OfflineSpeechRecognition.addListener('onResult', (result: any) => {
+            const transcript = result.text;
+            if (isSmartMode) {
+              handleSmartyAI(transcript);
+            } else {
+              onTranscript(transcript);
+            }
+            setIsListening(false);
+          });
+        }
+      } catch (err) {
+        console.error("Offline speech error:", err);
+        setIsListening(false);
+      }
     } else {
       if (!recognitionRef.current) return;
       if (isListening) {
