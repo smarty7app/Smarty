@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Info, Code, MessageCircle } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
-import { motion } from "framer-motion";
+import { motion } from "motion";
 interface AboutScreenProps {
   onBack: () => void;
 }
