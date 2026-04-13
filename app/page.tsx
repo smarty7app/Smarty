@@ -9,9 +9,9 @@ export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    // التحقق إذا كان المستخدم قد شاهد شاشة البداية في هذه الجلسة
     const hasSeenSplash = sessionStorage.getItem('smarty_splash_seen');
     if (hasSeenSplash) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSplash(false);
     }
   }, []);
