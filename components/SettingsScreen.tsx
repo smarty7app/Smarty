@@ -12,23 +12,25 @@ interface SettingsScreenProps {
   onBack: () => void;
 }
 
-/**
- * شاشة الإعدادات - نسخة الويب المستوحاة من SettingsScreen في أندرويد
- * Settings Screen - Web version inspired by the Android implementation
- */
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
-  const router = useRouter();
   const [isDark, setIsDark] = React.useState(false);
+  const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false); 
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const { language, setLanguage, t, isRTL } = useLanguage();
+  const router = useRouter();
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     await signOut({ redirect: false });
     router.push("/login");
   };
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
+    const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
+    if (smartAnalysis !== null) {
+      setIsSmartAnalysisEnabled(smartAnalysis === 'true');
+    }
     
     const handleStorage = () => {
       setIsDark(document.documentElement.classList.contains('dark'));
@@ -64,12 +66,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     {t.language}
   </h3>
   
-  {/* أضفنا dir="ltr" هنا لتوحيد منطق الحركة تقنياً مع الحفاظ على النصوص صحيحة */}
   <div dir="ltr" className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
     <motion.div
       initial={false}
       animate={{
-        // الآن الحركة دائماً موجبة لأننا ثبتنا الاتجاه لليسار تقنياً
         x: (languages.findIndex(l => l.code === language) * 100) + '%'
       }}
       transition={{ type: "spring", stiffness: 350, damping: 30 }}
@@ -90,7 +90,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
         }`}
       >
-        {/* نستخدم النص كما هو أو نحوله لـ UpperCase إذا لم يكن عربياً فقط */}
         {lang.code === 'ar' ? lang.label : lang.label.toUpperCase()}
       </button>
     ))}
@@ -147,15 +146,59 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               </div>
             </div>
 
-            {/* تم إزالة قسم Smart Analysis بالكامل */}
+            <div className="flex items-center justify-between p-6">
+              <div className="flex items-center gap-4">
+                <Sparkles className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+                <div className="flex flex-col">
+                  <span className="font-bold text-black dark:text-white">{t.smart_analysis}</span>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{t.smart_analysis_desc}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  const newState = !isSmartAnalysisEnabled;
+                  setIsSmartAnalysisEnabled(newState);
+                  localStorage.setItem('smart_analysis_enabled', newState.toString());
+                  window.dispatchEvent(new Event('storage'));
+                }}
+                className={`w-14 h-7 rounded-full relative transition-all duration-300 ${isSmartAnalysisEnabled ? 'bg-[#E65100] shadow-inner' : 'bg-zinc-100 dark:bg-zinc-800'}`}
+              >
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
+                  isSmartAnalysisEnabled 
+                    ? (isRTL ? 'right-8' : 'left-8') 
+                    : (isRTL ? 'right-1' : 'left-1')
+                }`}>
+                  {isSmartAnalysisEnabled ? <Sparkles className="w-3 h-3 text-[#E65100]" /> : <Sparkles className="w-3 h-3 text-zinc-300" />}
+                </div>
+              </button>
+            </div>
           </div>
         </section>
 
-        {/* Danger Zone */}
+        {/* Sign Out Section */}
+        <section className="space-y-4 pt-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-lg border border-white/10">
+            <button 
+              onClick={() => setShowLogoutConfirm(true)}
+              className="w-full flex items-center justify-between p-6 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <LogOut className="w-5 h-5 text-red-500" />
+                <div className="flex flex-col items-start">
+                  <span className="font-bold text-red-600 dark:text-red-400">تسجيل الخروج</span>
+                  <span className="text-[10px] text-zinc-400 font-bold">الخروج من حسابك</span>
+                </div>
+              </div>
+              <ChevronLeft className={`w-4 h-4 text-red-300 ${isRTL ? '' : 'rotate-180'}`} />
+            </button>
+          </div>
+        </section>
+
+        {/* Data Zone (formerly Danger Zone) */}
         <section className="space-y-3 pt-4">
           <h3 className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
             <Trash2 className="w-3 h-3" /> 
-            {isRTL ? 'منطقة الخطر' : 'Danger Zone'}
+            {isRTL ? 'البيانات' : 'Data Zone'}
           </h3>
           
           <div className="bg-red-50/50 dark:bg-red-900/10 rounded-[1.5rem] overflow-hidden border border-red-500/10">
@@ -178,36 +221,53 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               </div>
               <ChevronLeft className={`w-4 h-4 text-red-200 ${isRTL ? '' : 'rotate-180'}`} />
             </button>
-
-            {/* زر تسجيل الخروج */}
-            <button 
-              onClick={handleSignOut}
-              className="w-full flex items-center justify-between p-4 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-[0.98] group border-t border-red-500/10"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white dark:bg-zinc-900 rounded-lg text-red-500 shadow-sm group-hover:rotate-12 transition-transform">
-                  <LogOut className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col items-start">
-                  <span className="text-xs font-black text-red-600 dark:text-red-400">
-                    {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
-                  </span>
-                  <span className="text-[9px] text-zinc-400 font-bold">
-                    {isRTL ? 'الخروج من حسابك' : 'Exit your account'}
-                  </span>
-                </div>
-              </div>
-              <ChevronLeft className={`w-4 h-4 text-red-200 ${isRTL ? '' : 'rotate-180'}`} />
-            </button>
           </div>
         </section>
 
         <footer className="text-center py-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{t.app_name} v2.0.0</p>
         </footer>
-      </div> {/* نهاية حاوية التمرير */}
+      </div>
 
-      {/* 🟢 الـ Modal يجب أن يكون هنا (داخل الـ div الرئيسي) 🟢 */}
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm shadow-none">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
+          >
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LogOut className="w-8 h-8 text-red-500" />
+            </div>
+            
+            <h2 className="text-xl font-black mb-2 dark:text-white">
+              {isRTL ? 'تسجيل الخروج؟' : 'Sign Out?'}
+            </h2>
+            
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
+              {isRTL ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟' : 'Are you sure you want to sign out?'}
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={handleLogout}
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95"
+              >
+                {isRTL ? 'نعم، تسجيل الخروج' : 'Yes, Sign Out'}
+              </button>
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold"
+              >
+                {isRTL ? 'إلغاء' : 'Cancel'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Factory Reset Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm shadow-none">
           <motion.div 
@@ -245,6 +305,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         </div>
       )}
 
-    </div> // <--- هذا هو الـ Div الرئيسي للمكون، يجب أن يبقى في الأخير دائماً
+    </div>
   );
 };
