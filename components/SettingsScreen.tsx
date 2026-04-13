@@ -2,9 +2,11 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw } from 'lucide-react';
+import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { LanguageCode } from '@/lib/translations';
+import { signOut } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -15,17 +17,18 @@ interface SettingsScreenProps {
  * Settings Screen - Web version inspired by the Android implementation
  */
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
+  const router = useRouter();
   const [isDark, setIsDark] = React.useState(false);
-  const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false); 
   const { language, setLanguage, t, isRTL } = useLanguage();
 
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push("/login");
+  };
+
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
-    const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
-    if (smartAnalysis !== null) {
-      setIsSmartAnalysisEnabled(smartAnalysis === 'true');
-    }
     
     const handleStorage = () => {
       setIsDark(document.documentElement.classList.contains('dark'));
@@ -144,32 +147,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-6">
-              <div className="flex items-center gap-4">
-                <Sparkles className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
-                <div className="flex flex-col">
-                  <span className="font-bold text-black dark:text-white">{t.smart_analysis}</span>
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{t.smart_analysis_desc}</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => {
-                  const newState = !isSmartAnalysisEnabled;
-                  setIsSmartAnalysisEnabled(newState);
-                  localStorage.setItem('smart_analysis_enabled', newState.toString());
-                  window.dispatchEvent(new Event('storage'));
-                }}
-                className={`w-14 h-7 rounded-full relative transition-all duration-300 ${isSmartAnalysisEnabled ? 'bg-[#E65100] shadow-inner' : 'bg-zinc-100 dark:bg-zinc-800'}`}
-              >
-                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-                  isSmartAnalysisEnabled 
-                    ? (isRTL ? 'right-8' : 'left-8') 
-                    : (isRTL ? 'right-1' : 'left-1')
-                }`}>
-                  {isSmartAnalysisEnabled ? <Sparkles className="w-3 h-3 text-[#E65100]" /> : <Sparkles className="w-3 h-3 text-zinc-300" />}
-                </div>
-              </button>
-            </div>
+            {/* تم إزالة قسم Smart Analysis بالكامل */}
           </div>
         </section>
 
@@ -200,10 +178,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
               </div>
               <ChevronLeft className={`w-4 h-4 text-red-200 ${isRTL ? '' : 'rotate-180'}`} />
             </button>
+
+            {/* زر تسجيل الخروج */}
+            <button 
+              onClick={handleSignOut}
+              className="w-full flex items-center justify-between p-4 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all active:scale-[0.98] group border-t border-red-500/10"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white dark:bg-zinc-900 rounded-lg text-red-500 shadow-sm group-hover:rotate-12 transition-transform">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-xs font-black text-red-600 dark:text-red-400">
+                    {isRTL ? 'تسجيل الخروج' : 'Sign Out'}
+                  </span>
+                  <span className="text-[9px] text-zinc-400 font-bold">
+                    {isRTL ? 'الخروج من حسابك' : 'Exit your account'}
+                  </span>
+                </div>
+              </div>
+              <ChevronLeft className={`w-4 h-4 text-red-200 ${isRTL ? '' : 'rotate-180'}`} />
+            </button>
           </div>
         </section>
 
-                <footer className="text-center py-10">
+        <footer className="text-center py-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{t.app_name} v2.0.0</p>
         </footer>
       </div> {/* نهاية حاوية التمرير */}
