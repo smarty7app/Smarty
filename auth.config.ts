@@ -1,20 +1,21 @@
 // auth.config.ts
 import type { NextAuthConfig } from "next-auth";
- 
+
 export const authConfig = {
-  providers: [], // نضيفها في الملف الرئيسي
   pages: {
-    signIn: "/login", // سيتم توجيه المستخدمين غير المسجلين إلى هذه الصفحة
+    signIn: "/login",
   },
   callbacks: {
-    authorized({ auth, request }) {
+    authorized({ auth, request }: { auth: any; request: any }) {
       const isLoggedIn = !!auth?.user;
-      const isOnProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/';
+      const isOnProtectedRoute = request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/smart-voice");
+      
       if (isOnProtectedRoute) {
         if (isLoggedIn) return true;
-        return false; // إعادة التوجيه إلى صفحة تسجيل الدخول
+        return false;
       }
       return true;
     },
   },
+  providers: [], // سيتم إضافتها في auth.ts
 } satisfies NextAuthConfig;
