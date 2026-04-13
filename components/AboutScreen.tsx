@@ -114,13 +114,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider text-center">
           {new Date().getFullYear()} © Smarty
         </div>
-
-        {/* bay - الاسم الكامل */}
-        <div className="w-full max-w-md text-center mt-2">
-          <p className="text-white/20 text-[8px]">
-            Bay: Benabdallah Abdallah
-          </p>
-        </div>
       </div>
     </div>
   );
