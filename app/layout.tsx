@@ -52,7 +52,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </ErrorBoundary>
           </LanguageProvider>
         </AuthProvider>
-        <VisitorTracker />
       </body>
     </html>
   );
