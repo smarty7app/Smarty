@@ -4,7 +4,17 @@ import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import VisitorTracker from '@/components/VisitorTracker'; // <-- أضف هذا السطر
+import { SessionProvider } from "next-auth/react";
 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ar">
+      <body>
+        <SessionProvider>{children}</SessionProvider>
+      </body>
+    </html>
+  );
+}
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
