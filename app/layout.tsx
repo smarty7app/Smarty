@@ -4,7 +4,7 @@ import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import VisitorTracker from '@/components/VisitorTracker';
-import { SessionProvider } from "next-auth/react";
+import AuthProvider from '@/components/AuthProvider';  // <-- استيراد المكون الجديد
 
 const inter = Inter({
   subsets: ['latin'],
@@ -46,13 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning className="font-arabic antialiased bg-[#f8fafc] text-slate-900">
-        <SessionProvider>
+        <AuthProvider>  {/* <-- استخدم AuthProvider بدلاً من SessionProvider */}
           <LanguageProvider>
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
           </LanguageProvider>
-        </SessionProvider>
+        </AuthProvider>
         <VisitorTracker />
       </body>
     </html>
