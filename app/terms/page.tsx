@@ -1,4 +1,3 @@
-
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#E65100] p-6 md:p-10" dir="rtl">
@@ -44,7 +43,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-3">8. إخلاء المسؤولية عن الضمان</h2>
-            <p>يتم توفير التطبيق "كما هو" و"كما هو متاح" دون أي ضمانات من أي نوع، سواء كانت صريحة أو ضمنية.</p>
+            <p>يتم توفير التطبيق &quot;كما هو&quot; و&quot;كما هو متاح&quot; دون أي ضمانات من أي نوع، سواء كانت صريحة أو ضمنية.</p>
           </section>
 
           <section>
