@@ -14,7 +14,6 @@ export default function SmartVoicePage() {
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
 
-  // تهيئة التعرف على الصوت
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -84,11 +83,11 @@ export default function SmartVoicePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 to-zinc-800 text-white flex flex-col">
-      {/* شريط علوي مع زر العودة */}
-      <div className="p-4 flex items-center gap-4 border-b border-zinc-700">
+    <div className="min-h-screen bg-surface text-on-surface flex flex-col">
+      {/* شريط علوي */}
+      <div className="p-4 flex items-center gap-4 border-b border-outline">
         <Link href="/">
-          <ArrowLeft className="w-6 h-6 text-zinc-400 hover:text-white transition" />
+          <ArrowLeft className="w-6 h-6 text-on-surface-variant hover:text-primary transition" />
         </Link>
         <h1 className="text-xl font-semibold">سمارتي - المساعد الذكي</h1>
       </div>
@@ -101,49 +100,50 @@ export default function SmartVoicePage() {
           disabled={isProcessing}
           className={`
             w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300
-            ${isListening ? 'bg-red-500 scale-110 ring-4 ring-red-300' : ''}
-            ${isProcessing ? 'bg-yellow-500 animate-pulse' : ''}
-            ${isSpeaking ? 'bg-green-500' : ''}
-            ${!isListening && !isProcessing && !isSpeaking ? 'bg-zinc-700 hover:bg-zinc-600' : ''}
+            ${isListening ? 'bg-error scale-110 ring-4 ring-error-container' : ''}
+            ${isProcessing ? 'bg-tertiary animate-pulse' : ''}
+            ${isSpeaking ? 'bg-secondary' : ''}
+            ${!isListening && !isProcessing && !isSpeaking ? 'bg-primary hover:bg-primary-container hover:text-on-primary-container' : ''}
+            text-on-primary
           `}
         >
           {isProcessing ? (
             <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             (isListening || isSpeaking) ? (
-              <Mic className="w-12 h-12 text-white" />
+              <Mic className="w-12 h-12 text-on-primary" />
             ) : (
-              <MicOff className="w-12 h-12 text-zinc-400" />
+              <MicOff className="w-12 h-12 text-on-primary" />
             )
           )}
         </button>
 
         {/* حالة المساعد */}
         <div className="text-center space-y-2">
-          {isListening && <p className="text-red-400 animate-pulse">🎙️ جاري الاستماع...</p>}
-          {isProcessing && <p className="text-yellow-400">🤔 جاري التفكير...</p>}
-          {isSpeaking && <p className="text-green-400">🗣️ سمارتي يتحدث...</p>}
+          {isListening && <p className="text-error animate-pulse">🎙️ جاري الاستماع...</p>}
+          {isProcessing && <p className="text-tertiary">🤔 جاري التفكير...</p>}
+          {isSpeaking && <p className="text-secondary">🗣️ سمارتي يتحدث...</p>}
           {!isListening && !isProcessing && !isSpeaking && (
-            <p className="text-zinc-400">اضغط على الميكروفون وابدأ التحدث</p>
+            <p className="text-on-surface-variant">اضغط على الميكروفون وابدأ التحدث</p>
           )}
         </div>
 
         {/* عرض النص المُسمع والرد */}
         <div className="w-full max-w-md space-y-4 mt-8">
           {transcript && (
-            <div className="bg-zinc-800/50 rounded-xl p-4">
-              <p className="text-sm text-zinc-400">أنت:</p>
-              <p className="text-white">{transcript}</p>
+            <div className="bg-surface-variant rounded-xl p-4">
+              <p className="text-sm text-on-surface-variant">أنت:</p>
+              <p className="text-on-surface">{transcript}</p>
             </div>
           )}
           {response && (
-            <div className="bg-zinc-800/50 rounded-xl p-4">
-              <p className="text-sm text-zinc-400">سمارتي:</p>
-              <p className="text-white">{response}</p>
+            <div className="bg-primary-container rounded-xl p-4">
+              <p className="text-sm text-on-primary-container">سمارتي:</p>
+              <p className="text-on-primary-container">{response}</p>
             </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+          }
