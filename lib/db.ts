@@ -1,36 +1,23 @@
-// lib/db.ts
-import { MongoClient, ServerApiVersion } from "mongodb";
+import NextAuth from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import clientPromise from "@/lib/db";
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
-}
-
-const uri = process.env.MONGODB_URI;
-const options = {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
+const handler = NextAuth({
+  adapter: MongoDBAdapter(clientPromise),
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+  ],
+  pages: {
+    signIn: "/login",
   },
-  dbName: "smartyDB", // تأكد من أن هذا هو اسم قاعدة البيانات التي أعددتها
-};
+  session: {
+    strategy: "jwt",
+  },
+  secret: process.env.AUTH_SECRET,
+});
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
-}
-
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
-  }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
-}
-
-export default clientPromise;
+export { handler as GET, handler as POST };
