@@ -4,7 +4,14 @@ import React from 'react';
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
-export default function VoiceInput() {
+interface VoiceInputProps {
+  onTranscript?: (text: string) => void; // خاصية اختيارية للتوافق مع ReminderApp
+}
+
+export default function VoiceInput({ onTranscript }: VoiceInputProps) {
+  // في الصفحة الرئيسية (ReminderApp)، onTranscript ستقوم بعرض رسالة "✅ تم الاستماع...".
+  // لكننا نهملها لأن الزر أصبح ينقل إلى صفحة الصوت المتطورة.
+  // مع ذلك، وجودها يمنع خطأ TypeScript.
   return (
     <Link href="/smart-voice">
       <button
