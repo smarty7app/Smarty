@@ -83,67 +83,71 @@ export default function SmartVoicePage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface flex flex-col">
-      {/* شريط علوي */}
-      <div className="p-4 flex items-center gap-4 border-b border-outline">
+    <div className="min-h-screen bg-[#E65100] flex flex-col">
+      {/* شريط علوي شفاف */}
+      <div className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10">
         <Link href="/">
-          <ArrowLeft className="w-6 h-6 text-on-surface-variant hover:text-primary transition" />
+          <ArrowLeft className="w-6 h-6 text-white/70 hover:text-white transition" />
         </Link>
-        <h1 className="text-xl font-semibold">سمارتي - المساعد الذكي</h1>
+        <h1 className="text-xl font-black text-white">Smarty <span className="text-[10px] font-bold opacity-40">AI VOICE</span></h1>
       </div>
 
       {/* المحتوى الرئيسي */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-10">
         {/* زر الميكروفون الكبير */}
         <button
           onClick={toggleListening}
           disabled={isProcessing}
           className={`
-            w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300
-            ${isListening ? 'bg-error scale-110 ring-4 ring-error-container' : ''}
-            ${isProcessing ? 'bg-tertiary animate-pulse' : ''}
-            ${isSpeaking ? 'bg-secondary' : ''}
-            ${!isListening && !isProcessing && !isSpeaking ? 'bg-primary hover:bg-primary-container hover:text-on-primary-container' : ''}
-            text-on-primary
+            w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl
+            ${isListening ? 'bg-white scale-110 ring-4 ring-white/50' : ''}
+            ${isProcessing ? 'bg-white/80 animate-pulse' : ''}
+            ${isSpeaking ? 'bg-white/80' : ''}
+            ${!isListening && !isProcessing && !isSpeaking ? 'bg-white hover:scale-105' : ''}
           `}
         >
           {isProcessing ? (
-            <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 border-[#E65100] border-t-transparent rounded-full animate-spin" />
           ) : (
             (isListening || isSpeaking) ? (
-              <Mic className="w-12 h-12 text-on-primary" />
+              <Mic className="w-16 h-16 text-[#E65100]" />
             ) : (
-              <MicOff className="w-12 h-12 text-on-primary" />
+              <MicOff className="w-16 h-16 text-[#E65100]" />
             )
           )}
         </button>
 
         {/* حالة المساعد */}
         <div className="text-center space-y-2">
-          {isListening && <p className="text-error animate-pulse">🎙️ جاري الاستماع...</p>}
-          {isProcessing && <p className="text-tertiary">🤔 جاري التفكير...</p>}
-          {isSpeaking && <p className="text-secondary">🗣️ سمارتي يتحدث...</p>}
+          {isListening && <p className="text-white/90 font-bold animate-pulse">🎙️ جاري الاستماع...</p>}
+          {isProcessing && <p className="text-white/90 font-bold">🤔 جاري التفكير...</p>}
+          {isSpeaking && <p className="text-white/90 font-bold">🗣️ سمارتي يتحدث...</p>}
           {!isListening && !isProcessing && !isSpeaking && (
-            <p className="text-on-surface-variant">اضغط على الميكروفون وابدأ التحدث</p>
+            <p className="text-white/70 font-bold">اضغط على الميكروفون وابدأ التحدث</p>
           )}
         </div>
 
         {/* عرض النص المُسمع والرد */}
         <div className="w-full max-w-md space-y-4 mt-8">
           {transcript && (
-            <div className="bg-surface-variant rounded-xl p-4">
-              <p className="text-sm text-on-surface-variant">أنت:</p>
-              <p className="text-on-surface">{transcript}</p>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-5">
+              <p className="text-xs font-bold text-white/60 uppercase tracking-wider">أنت:</p>
+              <p className="text-white text-lg font-bold mt-1">{transcript}</p>
             </div>
           )}
           {response && (
-            <div className="bg-primary-container rounded-xl p-4">
-              <p className="text-sm text-on-primary-container">سمارتي:</p>
-              <p className="text-on-primary-container">{response}</p>
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-5">
+              <p className="text-xs font-bold text-white/60 uppercase tracking-wider">سمارتي:</p>
+              <p className="text-white text-lg font-bold mt-1">{response}</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* تذييل بسيط */}
+      <footer className="py-6 text-center">
+        <p className="text-[10px] font-black text-white/30 uppercase tracking-widest">Smarty AI Assistant • تحدث بطلاقة</p>
+      </footer>
     </div>
   );
-          }
+}
