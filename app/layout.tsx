@@ -3,7 +3,6 @@ import { Inter, Cairo } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
-import VisitorTracker from '@/components/VisitorTracker';
 import AuthProvider from '@/components/AuthProvider';  // <-- استيراد المكون الجديد
 
 const inter = Inter({
