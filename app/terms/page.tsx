@@ -9,7 +9,7 @@ export default function TermsPage() {
         <div className="space-y-6">
           <section>
             <h2 className="text-xl font-bold mb-3">1. الموافقة على الشروط</h2>
-            <p>باستخدامك لتطبيق Smarty، فإنك توافق على الالتزام بشروط الاستخدام هذه. إذا كنت لا توافق على أي جزء من هذه الشروط، يرجى عدم استخدام التطبيق.</p>
+            <p>باستخدامك لتطبيق Smarty، فإنك توافق على الالتزام بشروط الاستخدام هذه.</p>
           </section>
 
           <section>
@@ -59,7 +59,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-3">11. اتصل بنا</h2>
-            <p>إذا كان لديك أي استفسار بخصوص شروط الاستخدام، يرجى الاتصال بنا على البريد الإلكتروني: <a href="mailto:17benabdallah@gmail.com" className="text-[#E65100] hover:underline">17benabdallah@gmail.com</a></p>
+            <p>إذا كان لديك أي استفسار بخصوص شروط الاستخدام، يرجى الاتصال بنا على البريد الإلكتروني: <a href="mailto:smarty7app@gmail.com" className="text-[#E65100] hover:underline">smarty7app@gmail.com</a></p>
           </section>
         </div>
       </div>
