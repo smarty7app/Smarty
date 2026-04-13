@@ -1,22 +1,21 @@
-// middleware.ts
-import { withAuth } from "next-auth/middleware";
+// middleware.ts (بديل يعمل مع Next.js 15)
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token, // يسمح فقط إذا كان هناك رمز (token)
-    },
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
+  const isLoggedIn = !!token;
+  const isOnProtectedRoute = request.nextUrl.pathname === "/" || request.nextUrl.pathname.startsWith("/smart-voice");
+
+  if (isOnProtectedRoute && !isLoggedIn) {
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
   }
-);
 
-// تحديد المسارات التي تحتاج إلى حماية
+  return NextResponse.next();
+}
+
 export const config = {
-  matcher: [
-    "/",              // الصفحة الرئيسية
-    "/smart-voice",   // صفحة الذكاء الاصطناعي الصوتي
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
