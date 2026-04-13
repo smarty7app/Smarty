@@ -1,27 +1,18 @@
 // auth.config.ts
 import type { NextAuthConfig } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-
+ 
 export const authConfig = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
+  providers: [], // نضيفها في الملف الرئيسي
   pages: {
-    signIn: "/login",
+    signIn: "/login", // سيتم توجيه المستخدمين غير المسجلين إلى هذه الصفحة
   },
   callbacks: {
     authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user;
-      const isOnProtectedRoute =
-        request.nextUrl.pathname.startsWith('/dashboard') ||
-        request.nextUrl.pathname === '/';
-
+      const isOnProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname === '/';
       if (isOnProtectedRoute) {
         if (isLoggedIn) return true;
-        return false;
+        return false; // إعادة التوجيه إلى صفحة تسجيل الدخول
       }
       return true;
     },
