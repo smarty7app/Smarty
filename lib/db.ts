@@ -5,7 +5,8 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = { dbName: "smartyDB" };
+// استخدم كائن خيارات فارغ، أو قم بإزالة dbName من الخيارات
+const options = {};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
