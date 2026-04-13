@@ -1,7 +1,7 @@
 {
   "name": "Smarty - السكرتير الذكي",
   "short_name": "Smarty",
-  "description": "تذكيرات ذكية تعمل بدون إنترنت",
+  "description": "سكرتيرك الذكي",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
