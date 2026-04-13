@@ -14,22 +14,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-        {/* الشعار */}
-        <div className="mb-6">
-          <div className="w-20 h-20 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
-            </svg>
-          </div>
+        <div className="w-20 h-20 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-6">
+          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
+          </svg>
         </div>
-
         <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">Smarty</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">سجل دخولك للمتابعة</p>
-
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-xl py-3 px-4 text-gray-700 font-semibold hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-xl py-3 px-4 text-gray-700 font-semibold hover:bg-gray-50 transition disabled:opacity-50"
         >
           {isLoading ? (
             <div className="w-5 h-5 border-2 border-[#E65100] border-t-transparent rounded-full animate-spin" />
@@ -45,10 +40,6 @@ export default function LoginPage() {
             </>
           )}
         </button>
-
-        <p className="text-xs text-gray-500 dark:text-gray-500 mt-8">
-          بالتسجيل أنت توافق على شروط الاستخدام
-        </p>
       </div>
     </div>
   );
