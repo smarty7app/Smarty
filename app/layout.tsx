@@ -3,18 +3,9 @@ import { Inter, Cairo } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
-import VisitorTracker from '@/components/VisitorTracker'; // <-- أضف هذا السطر
+import VisitorTracker from '@/components/VisitorTracker';
 import { SessionProvider } from "next-auth/react";
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="ar">
-      <body>
-        <SessionProvider>{children}</SessionProvider>
-      </body>
-    </html>
-  );
-}
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -26,7 +17,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: 'Smatry',
+  title: 'Smarty',
   description: 'تطبيق ذكي لإدارة التذكيرات والمواعيد مع تحليل تلقائي للنصوص العربية',
 };
 
@@ -34,8 +25,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
       <head>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#000000" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -55,12 +46,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning className="font-arabic antialiased bg-[#f8fafc] text-slate-900">
-        <LanguageProvider>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </LanguageProvider>
-        <VisitorTracker /> {/* <-- أضف هذا السطر هنا */}
+        <SessionProvider>
+          <LanguageProvider>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </LanguageProvider>
+        </SessionProvider>
+        <VisitorTracker />
       </body>
     </html>
   );
