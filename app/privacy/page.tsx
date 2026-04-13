@@ -1,5 +1,7 @@
-
 export default function PrivacyPage() {
+  // يمكنك تغيير هذه القيم لاحقًا
+  const contactEmail = "smarty7app@gmail.com";
+
   return (
     <div className="min-h-screen bg-[#E65100] p-6 md:p-10" dir="rtl">
       <div className="max-w-4xl mx-auto bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl p-6 md:p-10 text-zinc-800 dark:text-zinc-200">
@@ -54,7 +56,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl font-bold mb-3">9. اتصل بنا</h2>
-            <p>إذا كان لديك أي أسئلة حول سياسة الخصوصية، يرجى الاتصال بنا على البريد الإلكتروني: <a href="mailto:17benabdallah@gmail.com" className="text-[#E65100] hover:underline">17benabdallah@gmail.com</a></p>
+            <p>إذا كان لديك أي أسئلة حول سياسة الخصوصية، يرجى الاتصال بنا على البريد الإلكتروني: <a href={`mailto:${contactEmail}`} className="text-[#E65100] hover:underline">{contactEmail}</a></p>
           </section>
         </div>
       </div>
