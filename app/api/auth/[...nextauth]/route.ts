@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "@/lib/db";
 
 const handler = NextAuth({
@@ -20,20 +20,14 @@ const handler = NextAuth({
   secret: process.env.AUTH_SECRET,
   callbacks: {
     async jwt({ token, user }) {
-      // إضافة بيانات المستخدم إلى الـ token عند أول تسجيل دخول
       if (user) {
         token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
       }
       return token;
     },
     async session({ session, token }) {
-      // نقل البيانات من الـ token إلى الـ session
       if (token.id) {
         session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
       }
       return session;
     },
