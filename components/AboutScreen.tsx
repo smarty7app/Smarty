@@ -39,7 +39,11 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           className="flex flex-col items-center mb-8"
         >
           <div className="w-28 h-28 bg-white dark:bg-zinc-900 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-orange-500/30 dark:shadow-black/50 mb-5 transform hover:rotate-3 transition-transform duration-500">
-            <svg className="w-14 h-14 text-[#E65100] dark:text-[#F97316]" viewBox="0 0 24 24" fill="currentColor">
+            <svg 
+              className="w-14 h-14 text-[#E65100] dark:text-white" 
+              viewBox="0 0 24 24" 
+              fill="currentColor"
+            >
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
             </svg>
           </div>
