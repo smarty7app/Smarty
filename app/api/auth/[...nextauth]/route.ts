@@ -4,15 +4,7 @@ import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import clientPromise from "@/lib/db";
 
 const handler = NextAuth({
-  adapter: MongoDBAdapter(clientPromise, {
-    databaseName: "smartyDB",
-    collections: {
-      Users: "users",
-      Accounts: "accounts",
-      Sessions: "sessions",
-      VerificationTokens: "verification_tokens",
-    },
-  }),
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -27,31 +19,19 @@ const handler = NextAuth({
   },
   secret: process.env.AUTH_SECRET,
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // إضافة تاريخ الإنشاء للمستخدم الجديد فقط
-      const db = (await clientPromise).db("smartyDB");
-      const usersCollection = db.collection("users");
-      
-      const existingUser = await usersCollection.findOne({ email: user.email });
-      if (!existingUser) {
-        await usersCollection.updateOne(
-          { email: user.email },
-          { 
-            $setOnInsert: { 
-              createdAt: new Date(),
-              updatedAt: new Date()
-            } 
-          },
-          { upsert: true }
-        );
-        console.log(`✅ تم إنشاء مستخدم جديد: ${user.email} في ${new Date().toISOString()}`);
+    // دالة jwt تُستخدم لتخزين البيانات في الـ token
+    async jwt({ token, user }) {
+      // إذا كان user موجودًا (يعني هذا هو أول تسجيل دخول)، نضيف user.id إلى token
+      if (user) {
+        token.id = user.id;
       }
-      return true;
+      return token;
     },
-    async session({ session, token, user }) {
-      // إضافة userId إلى جلسة المستخدم لتسهيل التعامل مع التذكيرات
-      if (session.user) {
-        session.user.id = token.sub || user?.id;
+    // دالة session تُستخدم لنقل البيانات من الـ token إلى الـ session
+    async session({ session, token }) {
+      // نضيف token.id إلى session.user.id لجعله متاحًا في الواجهة الأمامية
+      if (token.id) {
+        session.user.id = token.id;
       }
       return session;
     },
