@@ -3,7 +3,8 @@ import { Inter, Cairo } from 'next/font/google';
 import './globals.css';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
-import AuthProvider from '@/components/AuthProvider';  // <-- استيراد المكون الجديد
+import AuthProvider from '@/components/AuthProvider';
+import InstallPrompt from '@/components/InstallPrompt'; // <-- إضافة مكون التثبيت
 
 const inter = Inter({
   subsets: ['latin'],
@@ -45,10 +46,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning className="font-arabic antialiased bg-[#f8fafc] text-slate-900">
-        <AuthProvider>  {/* <-- استخدم AuthProvider بدلاً من SessionProvider */}
+        <AuthProvider>
           <LanguageProvider>
             <ErrorBoundary>
               {children}
+              <InstallPrompt /> {/* <-- عرض إشعار تثبيت التطبيق */}
             </ErrorBoundary>
           </LanguageProvider>
         </AuthProvider>
