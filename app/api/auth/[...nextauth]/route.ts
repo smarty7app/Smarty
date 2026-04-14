@@ -1,10 +1,8 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "@/lib/db";
 
 const handler = NextAuth({
-  adapter: MongoDBAdapter(clientPromise),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -19,15 +17,40 @@ const handler = NextAuth({
   },
   secret: process.env.AUTH_SECRET,
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // حفظ المستخدم في قاعدة البيانات يدوياً
+      try {
+        const db = (await clientPromise).db("smartyDB");
+        const usersCollection = db.collection("users");
+        
+        const existingUser = await usersCollection.findOne({ email: user.email });
+        if (!existingUser) {
+          await usersCollection.insertOne({
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            createdAt: new Date(),
+          });
+          console.log(`✅ تم إنشاء مستخدم جديد: ${user.email}`);
+        }
+      } catch (error) {
+        console.error("خطأ في حفظ المستخدم:", error);
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token.id) {
+      if (token) {
         session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
       }
       return session;
     },
@@ -35,3 +58,4 @@ const handler = NextAuth({
 });
 
 export { handler as GET, handler as POST };
+
