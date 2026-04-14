@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 
 // الرابط العام من Cloudflare Tunnel
-const API_URL = 'https://cleaners-promise-extended-herb.trycloudflare.com';
+const API_URL = 'https://cleaners-promise-extended-herb.trycloudflare.com/ask';
 
 export default function SmartVoicePage() {
   const router = useRouter();
