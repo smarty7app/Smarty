@@ -1,40 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, Code, MessageCircle } from 'lucide-react';
+import React from 'react';
+import { ChevronLeft, Code, MessageCircle } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from "motion/react";
+
 interface AboutScreenProps {
   onBack: () => void;
 }
 
 export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const { t, isRTL } = useLanguage();
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTotalVisitors = async () => {
-      try {
-        const res = await fetch('/api/get-total-visitors');
-        const data = await res.json();
-        if (data.success) {
-          setVisitorCount(data.total);
-        }
-      } catch (err) {
-        console.error('Failed to fetch visitor count:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchTotalVisitors();
-  }, []);
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
       {/* App Bar */}
-        <header className="flex items-center gap-4 p-6 bg-black/20 backdrop-blur-xl sticky top-0 z-10 border-b border-white/5">
+      <header className="flex items-center gap-4 p-6 bg-black/20 backdrop-blur-xl sticky top-0 z-10 border-b border-white/5">
         <button 
           onClick={onBack} 
           className="p-2 hover:bg-white/10 rounded-xl transition-all active:scale-90 border border-white/5 text-white/70"
@@ -46,7 +27,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
 
       <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
         
-        {/* 1. قسم الشعار الموحد (The Core Identity) */}
+        {/* Logo Section (تم الحفاظ عليه كما هو) */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -58,8 +39,8 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             </svg>
           </div>
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
-          Smarty<span className="text-orange-500">®</span>
-       </h2>
+            Smarty<span className="text-orange-500">®</span>
+          </h2>
           <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
             {t.version} 2.0 PREMIUM
           </p>
@@ -71,6 +52,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </div>
         
+        {/* Social Links */}
         <div className="flex gap-4 w-full max-w-md">
           <a 
             href="https://github.com/17benabdallah-hue" 
@@ -92,9 +74,15 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </a>
         </div>
 
-        {/* بصمة رقمية صغيرة */}
-        <div className="mt-4 text-white/30 text-[10px] font-mono tracking-wider text-center">
-          {new Date().getFullYear()} © Smarty
+        {/* Footer with Privacy & Terms (تمت الإضافة) */}
+        <div className="mt-10 w-full max-w-md text-center">
+          <div className="flex flex-wrap justify-center gap-4 text-white/60 text-xs font-medium">
+            <a href="/privacy" className="hover:text-white transition-colors">سياسة الخصوصية</a>
+            <span className="text-white/30">•</span>
+            <a href="/terms" className="hover:text-white transition-colors">شروط الخدمة</a>
+            <span className="text-white/30">•</span>
+            <span className="text-white/40">© {new Date().getFullYear()} Smarty</span>
+          </div>
         </div>
       </div>
     </div>
