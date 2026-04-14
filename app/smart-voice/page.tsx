@@ -19,7 +19,9 @@ export default function SmartVoicePage() {
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
-  const userId = session?.user?.id || session?.user?.email || 'anonymous';  
+  const userId = session?.user?.id || 'anonymous';
+  const userEmail = session?.user?.email || '';
+  const userName = session?.user?.name || '';  
   
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -47,9 +49,13 @@ export default function SmartVoicePage() {
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: text, userId: userId}),
+          body: JSON.stringify({ prompt: text, 
+          userId: userId, 
+          userEmail: userEmail,
+          userName: userName }),
           
-        });
+        }); 
+        
         const data = await res.json();
         const reply = data.reply || "عذراً، لم أستطع الرد.";
         setResponse(reply);
