@@ -5,6 +5,9 @@ import { Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
 
+// الرابط العام من Cloudflare Tunnel
+const API_URL = 'https://logged-imposed-ted-care.trycloudflare.com/ask';
+
 export default function SmartVoicePage() {
   const router = useRouter();
   const [isListening, setIsListening] = useState(false);
@@ -38,7 +41,8 @@ export default function SmartVoicePage() {
       setIsProcessing(true);
 
       try {
-        const res = await fetch('http://localhost:5000/ask', {
+        // استخدام الرابط العام بدلاً من localhost
+        const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: text }),
@@ -151,4 +155,4 @@ export default function SmartVoicePage() {
       </footer>
     </div>
   );
-            }
+}
