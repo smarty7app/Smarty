@@ -20,6 +20,7 @@ export default function SmartVoicePage() {
   const { language } = useLanguage();
   const { data: session } = useSession();
   const userId = session?.user?.id || session?.user?.email || 'anonymous';  
+  
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
