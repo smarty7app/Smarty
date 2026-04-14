@@ -1,7 +1,7 @@
 {
-  "name": "Smarty - السكرتير الذكي",
+  "name": "Smarty",
   "short_name": "Smarty",
-  "description": "سكرتيرك الذكي",
+  "description": "تطبيق ذكي لإدارة التذكيرات والمواعيد",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
