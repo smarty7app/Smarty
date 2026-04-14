@@ -67,9 +67,6 @@ export default function ReminderApp() {
           <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
         </div>
         <div className="flex gap-1">
-         <PWAInstallButton className="p-2.5 text-white/70 hover:text-white">
-             📲
-           </PWAInstallButton>
            <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white">
              <Info className="w-5 h-5" />
            </button>
