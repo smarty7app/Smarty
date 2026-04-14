@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import AuthProvider from '@/components/AuthProvider';
 import InstallPrompt from '@/components/InstallPrompt'; // <-- إضافة مكون التثبيت
+import { PWAProvider } from 'react-pwa-hazhtech';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,39 +23,40 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const theme = localStorage.getItem('theme');
-                  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (theme === 'dark' || (!theme && prefersDark)) {
-                    document.documentElement.classList.add('dark');
-                  } else {
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body suppressHydrationWarning className="font-arabic antialiased bg-[#f8fafc] text-slate-900">
-        <AuthProvider>
-          <LanguageProvider>
-            <ErrorBoundary>
+return (
+  <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
+    <head>
+      <link rel="manifest" href="/manifest.json" />
+      <meta name="theme-color" content="#000000" />
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                const theme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (theme === 'dark' || (!theme && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            })();
+          `,
+        }}
+      />
+    </head>
+    <body suppressHydrationWarning className="font-arabic antialiased bg-[#f8fafc] text-slate-900">
+      <AuthProvider>
+        <LanguageProvider>
+          <ErrorBoundary>
+            <PWAProvider>
               {children}
-              <InstallPrompt /> {/* <-- عرض إشعار تثبيت التطبيق */}
-            </ErrorBoundary>
-          </LanguageProvider>
-        </AuthProvider>
-      </body>
-    </html>
-  );
-}
+              <InstallPrompt />
+            </PWAProvider>
+          </ErrorBoundary>
+        </LanguageProvider>
+      </AuthProvider>
+    </body>
+  </html>
+);
