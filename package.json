@@ -26,7 +26,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "mongodb": "^6.5.0",
-    "react-pwa-hazhtech": "^1.0.0"
+    "react-pwa-hazhtech": "^1.0.0",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
