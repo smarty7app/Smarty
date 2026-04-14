@@ -11,7 +11,6 @@ import { AboutScreen } from './AboutScreen';
 import { motion, AnimatePresence } from 'motion/react';
 import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
-import { PWAInstallButton } from 'react-pwa-hazhtech';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
