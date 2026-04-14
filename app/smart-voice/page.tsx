@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 
 // الرابط العام من Cloudflare Tunnel
-const API_URL = 'https://css-among-essay-fruit.trycloudflare.com/ask';
+const API_URL = 'https://compression-weblog-girls-adventures.trycloudflare.com/ask';
 
 export default function SmartVoicePage() {
   const router = useRouter();
