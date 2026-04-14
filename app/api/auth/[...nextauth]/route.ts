@@ -19,19 +19,21 @@ const handler = NextAuth({
   },
   secret: process.env.AUTH_SECRET,
   callbacks: {
-    // دالة jwt تُستخدم لتخزين البيانات في الـ token
     async jwt({ token, user }) {
-      // إذا كان user موجودًا (يعني هذا هو أول تسجيل دخول)، نضيف user.id إلى token
+      // إضافة بيانات المستخدم إلى الـ token عند أول تسجيل دخول
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
       }
       return token;
     },
-    // دالة session تُستخدم لنقل البيانات من الـ token إلى الـ session
     async session({ session, token }) {
-      // نضيف token.id إلى session.user.id لجعله متاحًا في الواجهة الأمامية
+      // نقل البيانات من الـ token إلى الـ session
       if (token.id) {
-        session.user.id = token.id;
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
       }
       return session;
     },
