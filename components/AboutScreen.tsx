@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, Code, MessageCircle, Sparkles, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Code, MessageCircle, ExternalLink } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from "motion/react";
 
@@ -11,40 +11,6 @@ interface AboutScreenProps {
 
 export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const { t, isRTL } = useLanguage();
-  const [visitorCount, setVisitorCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTotalVisitors = async () => {
-      try {
-        const res = await fetch('/api/get-total-visitors');
-        const data = await res.json();
-        if (data.success) {
-          setVisitorCount(data.total);
-        }
-      } catch (err) {
-        console.error('Failed to fetch visitor count:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchTotalVisitors();
-  }, []);
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
-  };
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-gradient-to-br from-[#E65100] to-[#F97316] dark:from-black dark:to-zinc-900 text-black dark:text-white transition-all duration-500">
@@ -64,15 +30,12 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         <h1 className="text-xl font-bold tracking-tight text-white drop-shadow-sm">{t.about}</h1>
       </motion.header>
 
-      <motion.div 
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="flex-1 flex flex-col items-center p-6 pt-8 overflow-y-auto"
-      >
-        {/* Logo Section with enhanced animation */}
+      <div className="flex-1 flex flex-col items-center p-6 pt-8 overflow-y-auto">
+        {/* Logo Section */}
         <motion.div 
-          variants={itemVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 24 }}
           className="flex flex-col items-center mb-8"
         >
           <div className="w-28 h-28 bg-white dark:bg-zinc-900 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-orange-500/30 dark:shadow-black/50 mb-5 transform hover:rotate-3 transition-transform duration-500">
@@ -90,7 +53,9 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
 
         {/* Tagline Card */}
         <motion.div 
-          variants={itemVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 300 }}
           className="bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl p-5 w-full max-w-xs shadow-xl border border-white/20 dark:border-white/10 mb-6 text-center"
         >
           <p className="text-white text-base font-semibold tracking-wide">
@@ -98,13 +63,15 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </motion.div>
 
-        {/* Social Links - Modern & Glossy */}
+        {/* Social Links */}
         <motion.div 
-          variants={itemVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
           className="flex gap-4 w-full max-w-md"
         >
           <a 
-            href="https://github.com/17benabdallah-hue" 
+            href="https://github.com/smarty7app" 
             target="_blank" 
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 py-4 rounded-2xl font-bold hover:scale-[1.02] transition-all shadow-lg hover:shadow-xl active:scale-95 group"
@@ -125,40 +92,21 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </a>
         </motion.div>
 
-        {/* Visitor Counter - Modernized */}
-        <motion.div 
-          variants={itemVariants}
-          className="mt-10 w-full max-w-md"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20 dark:border-white/10"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <div className="bg-white/10 dark:bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 border border-white/20 dark:border-white/10">
-                <span className="text-white/80 text-sm font-medium">👥 عدد الزوار</span>
-                <div className="h-5 w-px bg-white/30 mx-1"></div>
-                <span className="text-white font-black text-xl tabular-nums">
-                  {loading ? (
-                    <span className="inline-block w-12 h-6 bg-white/20 rounded animate-pulse" />
-                  ) : (
-                    (visitorCount ?? 0).toLocaleString()
-                  )}
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
         {/* Footer */}
         <motion.div 
-          variants={itemVariants}
-          className="mt-8 text-white/40 text-[10px] font-mono tracking-wider text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="mt-10 text-white/40 text-[10px] font-mono tracking-wider text-center"
         >
           <p>© {new Date().getFullYear()} Smarty • {t.version} 2.0</p>
-          <p className="mt-1 text-[9px] opacity-50">Made with ❤️ for smart reminders</p>
+          <div className="flex gap-4 justify-center mt-2">
+            <a href="/privacy" className="hover:text-white/70 transition">سياسة الخصوصية</a>
+            <span>•</span>
+            <a href="/terms" className="hover:text-white/70 transition">شروط الخدمة</a>
+          </div>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 };
