@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 
 // الرابط العام من Cloudflare Tunnel
 const API_URL = 'https://logged-imposed-ted-care.trycloudflare.com/ask';
@@ -17,7 +18,9 @@ export default function SmartVoicePage() {
   const [response, setResponse] = useState('');
   const recognitionRef = useRef<any>(null);
   const { language } = useLanguage();
-
+  const { data: session } = useSession();
+  const userId = session?.user?.email || session?.user?.id || 'anonymous';
+  
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -44,7 +47,8 @@ export default function SmartVoicePage() {
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: text }),
+          body: JSON.stringify({ prompt: text, userId: userId}),
+          
         });
         const data = await res.json();
         const reply = data.reply || "عذراً، لم أستطع الرد.";
