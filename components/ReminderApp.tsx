@@ -11,6 +11,7 @@ import { AboutScreen } from './AboutScreen';
 import { motion, AnimatePresence } from 'motion/react';
 import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
+import { PWAInstallButton } from 'react-pwa-hazhtech';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
@@ -67,10 +68,19 @@ export default function ReminderApp() {
           <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
         </div>
         <div className="flex gap-1">
-          <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
-          <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
-          <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
-        </div>
+         <PWAInstallButton className="p-2.5 text-white/70 hover:text-white">
+             📲
+           </PWAInstallButton>
+           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white">
+             <Info className="w-5 h-5" />
+           </button>
+           <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white">
+             <Settings className="w-5 h-5" />
+           </button>
+           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">
+             {soundEnabled ? <Volume2 /> : <VolumeX />}
+           </button>
+         </div>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
