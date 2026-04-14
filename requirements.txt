@@ -1,0 +1,6 @@
+flask
+flask_cors
+requests
+edge-tts
+pymongo
+python-dotenv
