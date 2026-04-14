@@ -41,7 +41,6 @@ export default function SmartVoicePage() {
       setIsProcessing(true);
 
       try {
-        // استخدام الرابط العام بدلاً من localhost
         const res = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -50,13 +49,50 @@ export default function SmartVoicePage() {
         const data = await res.json();
         const reply = data.reply || "عذراً، لم أستطع الرد.";
         setResponse(reply);
-        setIsProcessing(false);
-        setIsSpeaking(true);
-
-        const utterance = new SpeechSynthesisUtterance(reply);
-        utterance.lang = 'ar-SA';
-        utterance.onend = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
+        
+        // استخدام الصوت من API (Edge-TTS) إذا كان موجوداً
+        if (data.audio) {
+          const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
+          audio.onplay = () => {
+            setIsSpeaking(true);
+            setIsProcessing(false);
+          };
+          audio.onended = () => setIsSpeaking(false);
+          audio.onerror = (e) => {
+            console.error("Audio playback error:", e);
+            // fallback: استخدام SpeechSynthesis إذا فشل تشغيل الصوت
+            const utterance = new SpeechSynthesisUtterance(reply);
+            utterance.lang = 'ar-SA';
+            utterance.onstart = () => {
+              setIsSpeaking(true);
+              setIsProcessing(false);
+            };
+            utterance.onend = () => setIsSpeaking(false);
+            window.speechSynthesis.speak(utterance);
+          };
+          audio.play().catch(e => {
+            console.error("Audio play error:", e);
+            // fallback: استخدام SpeechSynthesis إذا فشل التشغيل
+            const utterance = new SpeechSynthesisUtterance(reply);
+            utterance.lang = 'ar-SA';
+            utterance.onstart = () => {
+              setIsSpeaking(true);
+              setIsProcessing(false);
+            };
+            utterance.onend = () => setIsSpeaking(false);
+            window.speechSynthesis.speak(utterance);
+          });
+        } else {
+          // استخدام SpeechSynthesis كبديل إذا لم يكن هناك صوت من API
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'ar-SA';
+          utterance.onstart = () => {
+            setIsSpeaking(true);
+            setIsProcessing(false);
+          };
+          utterance.onend = () => setIsSpeaking(false);
+          window.speechSynthesis.speak(utterance);
+        }
       } catch (error) {
         console.error(error);
         setResponse("حدث خطأ في الاتصال بالمساعد.");
@@ -89,7 +125,7 @@ export default function SmartVoicePage() {
 
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
-      {/* شريط علوي شفاف - يتكيف مع الوضع الليلي */}
+      {/* شريط علوي شفاف */}
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5">
         <button onClick={() => router.back()} className="p-1">
           <ArrowLeft className="w-6 h-6 text-white/70 dark:text-white/70 hover:text-white dark:hover:text-white transition" />
@@ -125,8 +161,8 @@ export default function SmartVoicePage() {
         {/* حالة المساعد */}
         <div className="text-center space-y-2">
           {isListening && <p className="text-white/90 dark:text-white/90 font-bold animate-pulse">🎙️ جاري الاستماع...</p>}
-          {isProcessing && <p className="text-white/90 dark:text-white/90 font-bold"> جاري التفكير...</p>}
-          {isSpeaking && <p className="text-white/90 dark:text-white/90 font-bold"> سمارتي يتحدث...</p>}
+          {isProcessing && <p className="text-white/90 dark:text-white/90 font-bold">🤔 جاري التفكير...</p>}
+          {isSpeaking && <p className="text-white/90 dark:text-white/90 font-bold">🗣️ سمارتي يتحدث...</p>}
           {!isListening && !isProcessing && !isSpeaking && (
             <p className="text-white/70 dark:text-white/70 font-bold">اضغط على الميكروفون وابدأ التحدث</p>
           )}
