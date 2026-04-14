@@ -125,8 +125,8 @@ export default function SmartVoicePage() {
         {/* حالة المساعد */}
         <div className="text-center space-y-2">
           {isListening && <p className="text-white/90 dark:text-white/90 font-bold animate-pulse">🎙️ جاري الاستماع...</p>}
-          {isProcessing && <p className="text-white/90 dark:text-white/90 font-bold">🤔 جاري التفكير...</p>}
-          {isSpeaking && <p className="text-white/90 dark:text-white/90 font-bold">🗣️ سمارتي يتحدث...</p>}
+          {isProcessing && <p className="text-white/90 dark:text-white/90 font-bold"> جاري التفكير...</p>}
+          {isSpeaking && <p className="text-white/90 dark:text-white/90 font-bold"> سمارتي يتحدث...</p>}
           {!isListening && !isProcessing && !isSpeaking && (
             <p className="text-white/70 dark:text-white/70 font-bold">اضغط على الميكروفون وابدأ التحدث</p>
           )}
