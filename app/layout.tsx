@@ -5,7 +5,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import AuthProvider from '@/components/AuthProvider';
 import InstallPrompt from '@/components/InstallPrompt';
-import { PWAProvider } from 'react-pwa-hazhtech';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -14,7 +13,7 @@ const inter = Inter({
 
 const cairo = Cairo({
   subsets: ['arabic'],
- variable: '--font-arabic',
+  variable: '--font-arabic',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#E65100" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Smarty" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -50,10 +52,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <LanguageProvider>
             <ErrorBoundary>
-              <PWAProvider>
-                {children}
-                <InstallPrompt />
-              </PWAProvider>
+              {children}
+              <InstallPrompt />
             </ErrorBoundary>
           </LanguageProvider>
         </AuthProvider>
