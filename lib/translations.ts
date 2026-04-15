@@ -109,7 +109,7 @@ export const translations: Record<LanguageCode, Translations> = {
     all_alerts: "جميع التنبيهات"
   },
   en: {
-    app_name: "Smatry",
+    app_name: "Smarty",
     add_reminder: "Add Reminder",
     settings: "Settings",
     dark_mode: "Dark Mode",
@@ -161,7 +161,7 @@ export const translations: Record<LanguageCode, Translations> = {
     all_alerts: "All Alerts"
   },
   fr: {
-    app_name: "Smatry",
+    app_name: "Smarty",
     add_reminder: "Ajouter un rappel",
     settings: "Paramètres",
     dark_mode: "Mode sombre",
@@ -213,7 +213,7 @@ export const translations: Record<LanguageCode, Translations> = {
     all_alerts: "Toutes les alertes"
   },
   zh: {
-    app_name: "Smatry",
+    app_name: "Smarty",
     add_reminder: "添加提醒",
     settings: "设置",
     dark_mode: "夜间模式",
