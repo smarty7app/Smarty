@@ -1,6 +1,13 @@
 'use client';
 
-import { Reminder } from '@/lib/reminder-utils';
+// ✅ تمت إزالة الاستيراد المتعارض من '@/lib/reminder-utils'
+// ✅ تعريف واجهة Reminder محلية متطابقة مع ReminderApp.tsx
+interface Reminder {
+  id: string;
+  text: string;
+  reminderTime: string;   // وقت واحد فقط
+  isCompleted: boolean;
+}
 
 class NotificationService {
   private timers: Map<string, NodeJS.Timeout[]> = new Map();
@@ -60,7 +67,8 @@ class NotificationService {
     const now = Date.now();
     const reminderTimers: NodeJS.Timeout[] = [];
 
-    const times = reminder.reminderTimes || [reminder.reminderTime];
+    // ✅ استخدام reminderTime مباشرة (وقت واحد فقط)
+    const times = [reminder.reminderTime];
     
     times.forEach((timeStr: string) => {
       const triggerTime = new Date(timeStr).getTime();
@@ -110,63 +118,63 @@ class NotificationService {
   }
 
   private async showNotification(reminder: Reminder, isEarly: boolean = false): Promise<void> {
-  const title = isEarly ? 'تذكير مبكر - Smarty' : 'حان الموعد - Smarty';
-  const body = isEarly 
-    ? `باقي 5 دقائق على: ${reminder.text}` 
-    : reminder.text;
+    const title = isEarly ? 'تذكير مبكر - Smarty' : 'حان الموعد - Smarty';
+    const body = isEarly 
+      ? `باقي 5 دقائق على: ${reminder.text}` 
+      : reminder.text;
 
-  const options = {
-    body,
-    icon: '/web-app-manifest-192x192.png',
-    badge: '/web-app-manifest-192x192.png',
-    tag: reminder.id,
-    requireInteraction: !isEarly,
-    silent: false,
-    vibrate: [200, 100, 200],
-    data: {
-      reminderId: reminder.id,
-      reminderText: reminder.text,
-      url: '/',
-      timestamp: new Date().toISOString(),
-    },
-    actions: [
-      {
-        action: 'complete',
-        title: 'تم',
+    const options = {
+      body,
+      icon: '/web-app-manifest-192x192.png',
+      badge: '/web-app-manifest-192x192.png',
+      tag: reminder.id,
+      requireInteraction: !isEarly,
+      silent: false,
+      vibrate: [200, 100, 200],
+      data: {
+        reminderId: reminder.id,
+        reminderText: reminder.text,
+        url: '/',
+        timestamp: new Date().toISOString(),
       },
-      {
-        action: 'snooze',
-        title: 'تذكير لاحق',
-      },
-      {
-        action: 'open',
-        title: 'فتح التطبيق',
-      },
-    ],
-  } as NotificationOptions;
+      actions: [
+        {
+          action: 'complete',
+          title: 'تم',
+        },
+        {
+          action: 'snooze',
+          title: 'تذكير لاحق',
+        },
+        {
+          action: 'open',
+          title: 'فتح التطبيق',
+        },
+      ],
+    } as NotificationOptions;
 
-  try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      await navigator.serviceWorker.ready;
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        await registration.showNotification(title, options);
-        return;
+    try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        await navigator.serviceWorker.ready;
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.showNotification(title, options);
+          return;
+        }
       }
-    }
 
-    if (this.permission === 'granted') {
-      const notification = new Notification(title, options);
-      
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
+      if (this.permission === 'granted') {
+        const notification = new Notification(title, options);
+        
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
+      }
+    } catch (error) {
+      console.error('Failed to show notification:', error);
     }
-  } catch (error) {
-    console.error('Failed to show notification:', error);
   }
-    }
 
   private playSound(): void {
     if (this.audio) {
