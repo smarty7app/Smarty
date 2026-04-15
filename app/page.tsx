@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import InstallPrompt from '@/components/InstallPrompt';
 import SplashScreen from '@/components/SplashScreen';
 import ReminderApp from '@/components/ReminderApp';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -30,7 +29,6 @@ export default function Home() {
     <ErrorBoundary>
       <main className="min-h-screen bg-surface text-on-surface">
         <ReminderApp />
-        <InstallPrompt />
       </main>
     </ErrorBoundary>
   );
