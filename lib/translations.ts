@@ -106,6 +106,13 @@ export const translations: Record<LanguageCode, Translations> = {
     suggested_message: "رسالة مقترحة",
     details: "تفاصيل",
     next_alert: "التنبيه القادم",
+    premium_assistant: "Premium Assistant",
+    search_reminders_placeholder: "بحث في التذكيرات...",
+    tap_to_speak: "اضغط للتحدث مع المساعد الذكي",
+    active_reminders: "التذكيرات النشطة",
+    no_active_reminders: "لا توجد تذكيرات نشطة",
+    footer_copyright: "Smarty AI Reminder",
+    voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً),
     all_alerts: "جميع التنبيهات"
   },
   en: {
