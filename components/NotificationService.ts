@@ -117,10 +117,9 @@ class NotificationService {
 
     const options: NotificationOptions = {
       body,
-      icon: '/web-app-manifest-192x192.png',      // تم تحديث المسار
-      badge: '/web-app-manifest-192x192.png',     // تم تحديث المسار
+      icon: '/web-app-manifest-192x192.png',
+      badge: '/web-app-manifest-192x192.png',
       tag: reminder.id,
-      renotify: true,
       requireInteraction: !isEarly,
       silent: false,
       vibrate: [200, 100, 200],
