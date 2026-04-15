@@ -183,33 +183,31 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     { regex: new RegExp(`next\\s+(${Object.keys(englishDayMap).join('|')})`, 'i'), handler: (m) => { const d = new Date(now); const targetDay = englishDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
   ];
 
-  // فحص الأنماط بالترتيب: عربي -> فرنسي -> إنجليزي
-  const allPatterns = [...arPatterns, ...frPatterns, ...enPatterns];
-  
-  for (const pattern of allPatterns) {
-    const match = text.match(pattern.regex);
-    if (match) {
-      const dateTime = pattern.handler(match);
-      const detectedLang = pattern === arPatterns.find(p => p.regex === pattern.regex) ? 'ar' :
-                           pattern === frPatterns.find(p => p.regex === pattern.regex) ? 'fr' : 'en';
-      
-      const candidate: ParseResult = {
-        dateTime,
-        confidence: pattern.confidence,
-        detectedLanguage: detectedLang,
-        matchedPattern: match[0]
-      };
-
-      if (!bestMatch || candidate.confidence > bestMatch.confidence) {
-        bestMatch = candidate;
+  // دالة مساعدة لفحص مجموعة أنماط مع تحديد اللغة
+  const checkPatterns = (
+    patterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }>,
+    lang: 'ar' | 'fr' | 'en'
+  ): ParseResult | null => {
+    for (const pattern of patterns) {
+      const match = text.match(pattern.regex);
+      if (match) {
+        return {
+          dateTime: pattern.handler(match),
+          confidence: pattern.confidence,
+          detectedLanguage: lang,
+          matchedPattern: match[0]
+        };
       }
-      break; // نأخذ أول تطابق (حسب الأولوية)
     }
-  }
+    return null;
+  };
 
-  return bestMatch;
-}
+// الأولوية: العربية أولاً، ثم الفرنسية، ثم الإنجليزية
+let result = checkPatterns(arPatterns, 'ar');
+if (!result) result = checkPatterns(frPatterns, 'fr');
+if (!result) result = checkPatterns(enPatterns, 'en');
 
+return result;
 /**
  * دالة شاملة: تحلل النص وتعيد نتيجة نظيفة جاهزة للاستخدام.
  */
