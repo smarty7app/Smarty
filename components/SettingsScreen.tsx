@@ -59,51 +59,52 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* ========== Profile Section (New) ========== */}
-        {session?.user && (
-          <section className="space-y-4">
-            <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
-              <div className="flex items-center gap-4">
-                {/* Avatar */}
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
-                    {session.user.image ? (
-                      <img
-                        src={session.user.image}
-                        alt="avatar"
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      session.user.name?.charAt(0) || 'U'
-                    )}
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
-                </div>
+        {/* ========== Profile Section (Responsive Fix) ========== */}
+{session?.user && (
+  <section className="space-y-4">
+    <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
+      {/* استخدام flex-col على الشاشات الصغيرة، و flex-row على المتوسطة فما فوق */}
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        {/* Avatar */}
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
+            {session.user.image ? (
+              <img
+                src={session.user.image}
+                alt="avatar"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              session.user.name?.charAt(0) || 'U'
+            )}
+          </div>
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
+        </div>
 
-                {/* User Info */}
-                <div className="flex-1">
-                  <h3 className="font-bold text-black dark:text-white">
-                    {session.user.name || 'مستخدم Google'}
-                  </h3>
-                  <div className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
-                    <Mail className="w-3 h-3" />
-                    <span>{session.user.email || 'user@gmail.com'}</span>
-                  </div>
-                </div>
+        {/* User Info - يتمدد ليملأ المساحة المتاحة */}
+        <div className="flex-1 text-center sm:text-right min-w-0">
+          <h3 className="font-bold text-black dark:text-white truncate">
+            {session.user.name || 'مستخدم Google'}
+          </h3>
+          <div className="flex items-center justify-center sm:justify-end gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
+            <Mail className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
+          </div>
+        </div>
 
-                {/* Logout Button */}
-                <button
-                  onClick={() => setShowLogoutConfirm(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  {isRTL ? 'خروج' : 'Logout'}
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
+        {/* Logout Button - عرض كامل على الموبايل */}
+        <button
+          onClick={() => setShowLogoutConfirm(true)}
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          {isRTL ? 'خروج' : 'Logout'}
+        </button>
+      </div>
+    </div>
+  </section>
+)}
 
         {/* Language Section */}
         <section className="space-y-4">
