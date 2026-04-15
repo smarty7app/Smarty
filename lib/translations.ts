@@ -112,7 +112,7 @@ export const translations: Record<LanguageCode, Translations> = {
     active_reminders: "التذكيرات النشطة",
     no_active_reminders: "لا توجد تذكيرات نشطة",
     footer_copyright: "Smarty AI Reminder",
-    voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً),
+    voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً)",
     all_alerts: "جميع التنبيهات"
   },
   en: {
