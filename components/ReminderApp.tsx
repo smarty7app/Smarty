@@ -42,49 +42,57 @@ export default function ReminderApp() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  useEffect(() => { 
-    setIsMounted(true); 
-  }, []);
+  // ✅ 1. تفعيل isMounted
+useEffect(() => {
+  const timer = setTimeout(() => setIsMounted(true), 0);
+  return () => clearTimeout(timer);
+}, []);
 
-  useEffect(() => {
-    if (isMounted && notificationService) {
-      notificationService.requestPermission().then((permission) => {
-        setNotificationsEnabled(permission === 'granted');
-        if (permission === 'granted') {
-          console.log('Notifications enabled');
-        }
+// ✅ 2. طلب إذن الإشعارات
+useEffect(() => {
+  if (isMounted && notificationService) {
+    notificationService.requestPermission().then((permission) => {
+      setNotificationsEnabled(permission === 'granted');
+    });
+  }
+}, [isMounted]);
+
+// ✅ 3. تحميل التذكيرات من localStorage
+useEffect(() => {
+  if (isMounted) {
+    const saved = localStorage.getItem('smarty_reminders');
+    if (saved) {
+      const timer = setTimeout(() => {
+        setReminders(JSON.parse(saved));
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }
+}, [isMounted]);
+
+// ✅ 4. حفظ التذكيرات وجدولة الإشعارات
+useEffect(() => {
+  if (isMounted) {
+    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+    
+    if (notificationService) {
+      notificationService.rescheduleAll(reminders, (id) => {
+        setReminders(prev => prev.map(r =>
+          r.id === id ? { ...r, isCompleted: true } : r
+        ));
       });
     }
-  }, [isMounted]);
+  }
+}, [reminders, isMounted]);
 
-  useEffect(() => { 
-    if (isMounted) { 
-      const saved = localStorage.getItem('smarty_reminders'); 
-      if (saved) setReminders(JSON.parse(saved)); 
-    } 
-  }, [isMounted]);
-
-  useEffect(() => { 
-    if (isMounted) {
-      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-      
-      if (notificationService) {
-        notificationService.rescheduleAll(reminders, (id) => {
-          setReminders(prev => prev.map(r => 
-            r.id === id ? { ...r, isCompleted: true } : r
-          ));
-        });
-      }
-    }
-  }, [reminders, isMounted]);
-
-  useEffect(() => { 
-    if (typeof window !== 'undefined') { 
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
-      audio.muted = true; 
-      audioRef.current = audio; 
-    } 
-  }, []);
+// ✅ 5. تهيئة الصوت
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+    audio.muted = true;
+    audioRef.current = audio;
+  }
+}, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setIsMounted(true); }, []);
