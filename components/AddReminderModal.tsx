@@ -354,4 +354,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-      }
+  }
