@@ -65,15 +65,14 @@ export default function ReminderApp() {
   }, [isMounted]);
 
   useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-      if (notificationService) {
-        notificationService.rescheduleAll(reminders, (id) => {
-          setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: true } : r));
-        });
-      }
+  if (isMounted) {
+    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+    if (notificationService) {
+      // مرر دالة فارغة بدلاً من تحديث isCompleted
+      notificationService.rescheduleAll(reminders, () => {});
     }
-  }, [reminders, isMounted]);
+  }
+}, [reminders, isMounted]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
