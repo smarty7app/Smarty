@@ -295,7 +295,8 @@ export default function AddReminderModal({
   format,
   arDZ,
   onReminderTimeDetected,
-}: AddReminderModalProps) {
+  AddReminderModalProps) {
+  }:
   
   // ✅ تحليل النص أثناء الكتابة
   useEffect(() => {
