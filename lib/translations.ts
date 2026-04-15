@@ -106,7 +106,6 @@ export const translations: Record<LanguageCode, Translations> = {
     suggested_message: "رسالة مقترحة",
     details: "تفاصيل",
     next_alert: "التنبيه القادم",
-    tap_to_speak: 'اضغط للتحدث مع المساعد الذكي',
     active_reminders: 'التذكيرات النشطة',
     no_active_reminders: 'لا توجد تذكيرات نشطة',
     copyright: 'جميع الحقوق محفوظة',
