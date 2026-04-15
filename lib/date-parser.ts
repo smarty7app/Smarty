@@ -72,7 +72,7 @@ export interface ParseResult {
 
 export interface CleanResult {
   parsedText: string;
-  reminderTime: Date;
+  reminderTime: string;
   detectedLanguage: 'ar' | 'fr' | 'en';
   confidence: number;
   originalText: string;
@@ -218,10 +218,9 @@ export function analyzeReminderInput(text: string): CleanResult | null {
 
   const parseResult = parseSmartDateTime(text);
   if (!parseResult) {
-    // إذا لم نجد وقتاً، نعيد الوقت الحالي مع ثقة منخفضة
     return {
       parsedText: cleanReminderText(text, 'ar'),
-      reminderTime: new Date(),
+      reminderTime: new Date().toISOString(),   // تحويل إلى string
       detectedLanguage: 'ar',
       confidence: 0.5,
       originalText: text
@@ -232,17 +231,14 @@ export function analyzeReminderInput(text: string): CleanResult | null {
   
   return {
     parsedText: cleaned,
-    reminderTime: parseResult.dateTime,
+    reminderTime: parseResult.dateTime.toISOString(),   // تحويل إلى string
     detectedLanguage: parseResult.detectedLanguage,
     confidence: parseResult.confidence,
     originalText: text
   };
 }
-// في نهاية ملف date-parser.ts، بعد دالة analyzeReminderInput
+
 export type SmartParsedResult = CleanResult;
-
-// ==================== دوال تنسيق الوقت للعرض ====================
-
 /**
  * تنسيق وقت التذكير للعرض مع اسم اليوم والوقت.
  */
