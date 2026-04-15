@@ -1,11 +1,9 @@
 'use client';
 
-// ✅ تمت إزالة الاستيراد المتعارض من '@/lib/reminder-utils'
-// ✅ تعريف واجهة Reminder محلية متطابقة مع ReminderApp.tsx
 interface Reminder {
   id: string;
   text: string;
-  reminderTime: string;   // وقت واحد فقط
+  reminderTime: string;
   isCompleted: boolean;
 }
 
@@ -67,7 +65,6 @@ class NotificationService {
     const now = Date.now();
     const reminderTimers: NodeJS.Timeout[] = [];
 
-    // ✅ استخدام reminderTime مباشرة (وقت واحد فقط)
     const times = [reminder.reminderTime];
     
     times.forEach((timeStr: string) => {
@@ -118,23 +115,24 @@ class NotificationService {
   }
 
   private async showNotification(reminder: Reminder, isEarly: boolean = false): Promise<void> {
-    const title = isEarly ? 'تذكير مبكر - Smarty' : 'حان الموعد - Smarty';
+    // عنوان مختصر بدون تكرار اسم التطبيق
+    const title = isEarly ? 'تذكير مبكر' : 'تذكير';
     const body = isEarly 
-      ? `باقي 5 دقائق على: ${reminder.text}` 
+      ? `باقي 5 دقائق: ${reminder.text}` 
       : reminder.text;
 
     const options = {
       body,
       icon: '/web-app-manifest-192x192.png',
-      badge: '/web-app-manifest-192x192.png',
+      // تمت إزالة badge لتجنب الأيقونة المزدوجة
       tag: reminder.id,
-      requireInteraction: !isEarly,
+      requireInteraction: true,   // الإشعار يبقى حتى يتفاعل المستخدم
       silent: false,
       vibrate: [200, 100, 200],
       data: {
         reminderId: reminder.id,
         reminderText: reminder.text,
-        url: '/',
+        // url محذوفة حتى لا يظهر الرابط في الإشعار
         timestamp: new Date().toISOString(),
       },
       actions: [
