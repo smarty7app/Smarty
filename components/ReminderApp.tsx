@@ -147,7 +147,7 @@ export default function ReminderApp() {
     setInputText(parsedText);
     setReminderDateTime(reminderTime);
     setIsAdding(true);
-    setAssistantMessage(`✅ تم الفهم: "${parsedText}" | ${formatReminderTime(reminderTime).countdown}`);
+    setAssistantMessage(`✅: "${parsedText}" | ${formatReminderTime(reminderTime).countdown}`);
   };
 
   // ✅ دالة إغلاق المودال مع إعادة تعيين التحليل الذكي
