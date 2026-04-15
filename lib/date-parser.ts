@@ -238,6 +238,8 @@ export function analyzeReminderInput(text: string): CleanResult | null {
     originalText: text
   };
 }
+// في نهاية ملف date-parser.ts، بعد دالة analyzeReminderInput
+export type SmartParsedResult = CleanResult;
 
 // ==================== دوال تنسيق الوقت للعرض ====================
 
