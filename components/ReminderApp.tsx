@@ -1,4 +1,4 @@
-'use client';
+'use 'use client';
 
 import React, { useState, useEffect } from 'react';
 import VoiceInput from './VoiceInput';
@@ -9,15 +9,15 @@ import { useLanguage } from './LanguageContext';
 import { SettingsScreen } from './SettingsScreen';
 import { AboutScreen } from './AboutScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar, AlertCircle, Bell, BellOff } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { notificationService } from './NotificationService';
 
 function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
 interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
 
-// ✅ واجهة نتيجة التحليل الذكي
 export interface SmartParsedResult {
   parsedText: string;
   reminderTime: string;
@@ -37,10 +37,54 @@ export default function ReminderApp() {
   const [showAbout, setShowAbout] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState('');
   const [reminderDateTime, setReminderDateTime] = useState<string>('');
-  // ✅ State للتحليل الذكي أثناء الكتابة
   const [smartParsed, setSmartParsed] = useState<SmartParsedResult | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false); // ✅ أضف هذا
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
+   
+  useEffect(() => { 
+    setIsMounted(true); 
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && notificationService) {
+      notificationService.requestPermission().then((permission) => {
+        setNotificationsEnabled(permission === 'granted');
+        if (permission === 'granted') {
+          console.log('Notifications enabled');
+        }
+      });
+    }
+  }, [isMounted]);
+
+  useEffect(() => { 
+    if (isMounted) { 
+      const saved = localStorage.getItem('smarty_reminders'); 
+      if (saved) setReminders(JSON.parse(saved)); 
+    } 
+  }, [isMounted]);
+
+  useEffect(() => { 
+    if (isMounted) {
+      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+      
+      if (notificationService) {
+        notificationService.rescheduleAll(reminders, (id) => {
+          setReminders(prev => prev.map(r => 
+            r.id === id ? { ...r, isCompleted: true } : r
+          ));
+        });
+      }
+    }
+  }, [reminders, isMounted]);
+
+  useEffect(() => { 
+    if (typeof window !== 'undefined') { 
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
+      audio.muted = true; 
+      audioRef.current = audio; 
+    } 
+  }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setIsMounted(true); }, []);
