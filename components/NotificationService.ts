@@ -110,63 +110,63 @@ class NotificationService {
   }
 
   private async showNotification(reminder: Reminder, isEarly: boolean = false): Promise<void> {
-    const title = isEarly ? 'تذكير مبكر - Smarty' : 'حان الموعد - Smarty';
-    const body = isEarly 
-      ? `باقي 5 دقائق على: ${reminder.text}` 
-      : reminder.text;
+  const title = isEarly ? 'تذكير مبكر - Smarty' : 'حان الموعد - Smarty';
+  const body = isEarly 
+    ? `باقي 5 دقائق على: ${reminder.text}` 
+    : reminder.text;
 
-    const options: NotificationOptions = {
-      body,
-      icon: '/web-app-manifest-192x192.png',
-      badge: '/web-app-manifest-192x192.png',
-      tag: reminder.id,
-      requireInteraction: !isEarly,
-      silent: false,
-      vibrate: [200, 100, 200],
-      data: {
-        reminderId: reminder.id,
-        reminderText: reminder.text,
-        url: '/',
-        timestamp: new Date().toISOString(),
+  const options = {
+    body,
+    icon: '/web-app-manifest-192x192.png',
+    badge: '/web-app-manifest-192x192.png',
+    tag: reminder.id,
+    requireInteraction: !isEarly,
+    silent: false,
+    vibrate: [200, 100, 200],
+    data: {
+      reminderId: reminder.id,
+      reminderText: reminder.text,
+      url: '/',
+      timestamp: new Date().toISOString(),
+    },
+    actions: [
+      {
+        action: 'complete',
+        title: 'تم',
       },
-      actions: [
-        {
-          action: 'complete',
-          title: 'تم',
-        },
-        {
-          action: 'snooze',
-          title: 'تذكير لاحق',
-        },
-        {
-          action: 'open',
-          title: 'فتح التطبيق',
-        },
-      ],
-    };
+      {
+        action: 'snooze',
+        title: 'تذكير لاحق',
+      },
+      {
+        action: 'open',
+        title: 'فتح التطبيق',
+      },
+    ],
+  } as NotificationOptions;
 
-    try {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        await navigator.serviceWorker.ready;
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          await registration.showNotification(title, options);
-          return;
-        }
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.showNotification(title, options);
+        return;
       }
-
-      if (this.permission === 'granted') {
-        const notification = new Notification(title, options);
-        
-        notification.onclick = () => {
-          window.focus();
-          notification.close();
-        };
-      }
-    } catch (error) {
-      console.error('Failed to show notification:', error);
     }
+
+    if (this.permission === 'granted') {
+      const notification = new Notification(title, options);
+      
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    }
+  } catch (error) {
+    console.error('Failed to show notification:', error);
   }
+    }
 
   private playSound(): void {
     if (this.audio) {
