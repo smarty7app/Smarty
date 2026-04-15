@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
@@ -48,16 +48,24 @@ export default function AddReminderModal({
   arDZ,
   onReminderTimeDetected,
 }: AddReminderModalProps) {
-  
+
+  const [error, setError] = useState<string | null>(null); // ✅ حالة الخطأ
+
   useEffect(() => {
     if (inputText.trim()) {
       const result = analyzeReminderInput(inputText);
       setSmartParsed(result);
-      if (result && onReminderTimeDetected) {
-        onReminderTimeDetected(result.reminderTime);
+      if (result) {
+        setError(null);
+        if (onReminderTimeDetected) {
+          onReminderTimeDetected(result.reminderTime);
+        }
+      } else {
+        setError('لا يمكن إنشاء تذكير في وقت سابق');
       }
     } else {
       setSmartParsed(null);
+      setError(null);
     }
   }, [inputText, setSmartParsed, onReminderTimeDetected]);
 
@@ -99,6 +107,13 @@ export default function AddReminderModal({
                 />
               </div>
             </div>
+
+            {/* ✅ عرض رسالة الخطأ */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl">
+                <p className="text-sm font-bold text-red-600 dark:text-red-400 text-center">{error}</p>
+              </div>
+            )}
 
             <AnimatePresence>
               {smartParsed && (
@@ -172,4 +187,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-    }
+}
