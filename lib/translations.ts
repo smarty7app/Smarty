@@ -56,6 +56,7 @@ export interface Translations {
 }
 
 export const translations: Record<LanguageCode, Translations> = {
+  
   ar: {
     app_name: "Smarty",
     add_reminder: "إضافة تذكير",
@@ -69,7 +70,7 @@ export const translations: Record<LanguageCode, Translations> = {
     french: "الفرنسية",
     chinese: "الصينية",
     language_changed: "تم تغيير اللغة، يرجى إعادة تشغيل التطبيق",
-    active_reminders: "قائمة التذكيرات",
+    active_reminders: "التذكيرات النشطة",
     no_active_reminders: "لا توجد تذكيرات نشطة",
     completed_recently: "المنتهية مؤخراً",
     clear_all: "مسح الكل",
@@ -108,8 +109,6 @@ export const translations: Record<LanguageCode, Translations> = {
     next_alert: "التنبيه القادم",
     search_reminders_placeholder: "بحث في التذكيرات...",
     tap_to_speak: "اضغط للتحدث مع المساعد الذكي",
-    active_reminders: "التذكيرات النشطة",
-    no_active_reminders: "لا توجد تذكيرات نشطة",
     footer_copyright: "Smarty AI Reminder",
     voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً)",
     all_alerts: "جميع التنبيهات"
