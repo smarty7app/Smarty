@@ -9,7 +9,7 @@ import { useLanguage } from './LanguageContext';
 import { SettingsScreen } from './SettingsScreen';
 import { AboutScreen } from './AboutScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -208,27 +208,42 @@ export default function ReminderApp() {
                 activeReminders.map((rem) => {
                   const { exactTime, countdown } = formatReminderTime(rem.reminderTime);
                   return (
-                    <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
-                        <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500"><CheckCircle2 className="w-5 h-5" /></button>
-                        <div className="flex-1">
-                          <p className="text-xl font-black dark:text-white">{rem.text}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-full text-[10px] font-black text-orange-700 dark:text-orange-300">
-                              🕐 {exactTime}
-                            </span>
-                            <span className="bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full text-[10px] font-black text-blue-700 dark:text-blue-300">
-                              ⏳ {countdown}
-                            </span>
-                            <span className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-black text-zinc-500">
-                              {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
-                            </span>
-                          </div>
-                        </div>
-                        <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500"><Trash2 /></button>
-                      </div>
-                    </motion.div>
-                  );
+                   <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
+                       <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
+                         <CheckCircle2 className="w-5 h-5" />
+                       </button>
+      
+                       <div className="flex-1">
+                         <p className="text-xl font-black dark:text-white">{rem.text}</p>
+        
+                         <div className="flex flex-wrap gap-2 mt-2">
+                           {/* الوقت المحدد */}
+                           <span className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
+                             <Clock className="w-3 h-3" />
+                             {exactTime}
+                           </span>
+          
+                           {/* العد التنازلي */}
+                           <span className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                             <Timer className="w-3 h-3" />
+                             {countdown}
+                           </span>
+          
+                           {/* وقت الإنشاء */}
+                           <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                             <Calendar className="w-3 h-3" />
+                             {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                           </span>
+                         </div>
+                       </div>
+      
+                       <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
+                         <Trash2 className="w-5 h-5" />
+                       </button>
+                     </div>
+                   </motion.div>
+                 );
                 })
               )}
             </AnimatePresence>
