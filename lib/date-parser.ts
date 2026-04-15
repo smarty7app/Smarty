@@ -177,11 +177,19 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     }
     return null;
   };
-
-  // الأولوية: العربية أولاً، ثم الفرنسية، ثم الإنجليزية
+    // الأولوية: العربية أولاً، ثم الفرنسية، ثم الإنجليزية
   let result = checkPatterns(arPatterns, 'ar');
   if (!result) result = checkPatterns(frPatterns, 'fr');
   if (!result) result = checkPatterns(enPatterns, 'en');
+
+  // ✅ رفض الوقت إذا كان في الماضي
+  if (result) {
+    const now = new Date();
+    // نسمح بهامش 5 ثوانٍ فقط (للأوقات التي تمر أثناء التحليل)
+    if (result.dateTime.getTime() < now.getTime() - 5000) {
+      return null; // وقت غير صالح
+    }
+  }
 
   return result;
 }
