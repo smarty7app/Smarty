@@ -54,18 +54,55 @@ const analyzeReminderText = (text: string): SmartParsedResult | null => {
   let confidence = 0;
   let matchedPattern = '';
 
-  // الأنماط العربية
+  // ================ أنماط الوقت العربية (محسّنة) ================
   const arPatterns: { regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }[] = [
+    // --- أوقات رقمية مع فترات ---
     { regex: /(\d{1,2}):(\d{2})\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(); let hour = parseInt(m[1]); const minute = parseInt(m[2]); const period = m[3]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.98 },
     { regex: /(\d{1,2})\s*(صباحا|مساء|ص|م)/i, handler: (m) => { const d = new Date(); let hour = parseInt(m[1]); const period = m[2]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, 0, 0, 0); return d; }, confidence: 0.95 },
-    { regex: /(غدا|غداً).*?(\d{1,2}(:\d{2})?)\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(); d.setDate(d.getDate() + 1); const timeMatch = m[0].match(/(\d{1,2})(:(\d{2}))?/); if (timeMatch) { let hour = parseInt(timeMatch[1]); const minute = timeMatch[3] ? parseInt(timeMatch[3]) : 0; const period = m[4]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } d.setHours(hour, minute, 0, 0); } return d; }, confidence: 0.96 },
+
+    // --- أيام محددة (مثل "يوم الإثنين") ---
+    { regex: /(?:يوم\s+)?(الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت|الأحد)\s*(?:القادم|الجاي|المقبل)?/i, handler: (m) => { const d = new Date(); const dayMap: Record<string, number> = { 'الاثنين':1, 'الإثنين':1, 'الثلاثاء':2, 'الأربعاء':3, 'الاربعاء':3, 'الخميس':4, 'الجمعة':5, 'السبت':6, 'الأحد':0 }; const targetDay = dayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); return d; }, confidence: 0.9 },
+
+    // --- غداً مع وقت اختياري ---
+    { regex: /(غدا|غداً).*?(\d{1,2}(?::\d{2})?)?\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(); d.setDate(d.getDate() + 1); const timeMatch = m[2]; const period = m[3]; if (timeMatch) { let hour = parseInt(timeMatch.split(':')[0]); const minute = timeMatch.includes(':') ? parseInt(timeMatch.split(':')[1]) : 0; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); } else { d.setHours(9, 0, 0, 0); } return d; }, confidence: 0.96 },
     { regex: /(غدا|غداً)/i, handler: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+
+    // --- بعد غد ---
     { regex: /بعد\s+غد/i, handler: () => { const d = new Date(); d.setDate(d.getDate() + 2); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+
+    // --- فترات نسبية (بعد X دقيقة/ساعة/يوم/أسبوع) ---
     { regex: /بعد\s+(\d+)\s+دقيقة/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
     { regex: /بعد\s+(\d+)\s+ساعة/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
     { regex: /بعد\s+(\d+)\s+يوم/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+    { regex: /بعد\s+(\d+)\s+أسبوع|اسبوع/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 7 * 86400000), confidence: 0.95 },
+
+    // --- كلمات مثل "بعد ساعتين" بدون رقم ---
+    { regex: /بعد\s+ساعتين/i, handler: () => new Date(now.getTime() + 2 * 3600000), confidence: 0.9 },
+    { regex: /بعد\s+ساعة/i, handler: () => new Date(now.getTime() + 1 * 3600000), confidence: 0.9 },
+    { regex: /بعد\s+دقيقتين/i, handler: () => new Date(now.getTime() + 2 * 60000), confidence: 0.9 },
+    { regex: /بعد\s+دقيقة/i, handler: () => new Date(now.getTime() + 1 * 60000), confidence: 0.9 },
   ];
 
+  // ================ أنماط فرنسية أساسية ================
+  const frPatterns: { regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }[] = [
+    { regex: /demain\s+à\s+(\d{1,2})[h:](\d{2})?/i, handler: (m) => { const d = new Date(); d.setDate(d.getDate() + 1); const hour = parseInt(m[1]); const minute = m[2] ? parseInt(m[2]) : 0; d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /demain/i, handler: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+minutes?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+heures?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+jours?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+  ];
+
+  // ================ أنماط إنجليزية أساسية ================
+  const enPatterns: { regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }[] = [
+    { regex: /tomorrow\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i, handler: (m) => { const d = new Date(); d.setDate(d.getDate() + 1); let hour = parseInt(m[1]); const minute = m[2] ? parseInt(m[2]) : 0; const period = m[3]; if (period && period.toLowerCase() === 'pm' && hour < 12) hour += 12; if (period && period.toLowerCase() === 'am' && hour === 12) hour = 0; d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /tomorrow/i, handler: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+minutes?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+hours?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+days?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+  ];
+
+  // ================ فحص الأنماط حسب اللغة ================
+  // نبدأ بالعربية لأنها الأساس
   for (const { regex, handler, confidence: conf } of arPatterns) {
     const match = text.match(regex);
     if (match) {
@@ -77,19 +114,73 @@ const analyzeReminderText = (text: string): SmartParsedResult | null => {
     }
   }
 
-  if (matchedPattern) {
-    parsedText = text.replace(matchedPattern, '').trim();
-    parsedText = parsedText.replace(/^(في|على|تذكير|ذكرني|موعد)\s*/gi, '').trim();
-    parsedText = parsedText.replace(/\s+/g, ' ').trim();
+  // إذا لم نجد تطابقاً عربياً، نفحص الفرنسية
+  if (confidence === 0) {
+    for (const { regex, handler, confidence: conf } of frPatterns) {
+      const match = text.match(regex);
+      if (match) {
+        reminderTime = handler(match);
+        detectedLanguage = 'fr';
+        confidence = conf;
+        matchedPattern = match[0];
+        break;
+      }
+    }
   }
 
+  // ثم الإنجليزية
+  if (confidence === 0) {
+    for (const { regex, handler, confidence: conf } of enPatterns) {
+      const match = text.match(regex);
+      if (match) {
+        reminderTime = handler(match);
+        detectedLanguage = 'en';
+        confidence = conf;
+        matchedPattern = match[0];
+        break;
+      }
+    }
+  }
+
+  // ================ تنظيف النص بشكل متقدم ================
+  if (matchedPattern) {
+    // إزالة النمط المطابق
+    parsedText = text.replace(matchedPattern, '').trim();
+    
+    // قائمة كلمات الوقت التي يجب إزالتها (عربية، فرنسية، إنجليزية)
+    const timeKeywords = [
+      'غدا', 'غداً', 'بعد غد', 'بعد غداً', 'اليوم', 'صباحا', 'مساء', 'صباحاً', 'مساءً',
+      'الساعة', 'على الساعة', 'في الساعة', 'دقيقة', 'دقائق', 'دقيقتين', 'ساعة', 'ساعتين', 'ساعات',
+      'يوم', 'أيام', 'اسبوع', 'أسبوع', 'بعد', 'خلال', 'الاثنين', 'الإثنين', 'الثلاثاء', 'الأربعاء',
+      'الاربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد', 'القادم', 'الجاي', 'المقبل',
+      'tomorrow', 'today', 'am', 'pm', 'o\'clock', 'hour', 'minute', 'hours', 'minutes', 'in', 'at',
+      'demain', 'aujourd\'hui', 'après-demain', 'heure', 'heures', 'minutes', 'dans', 'à'
+    ];
+    
+    timeKeywords.forEach(keyword => {
+      parsedText = parsedText.replace(new RegExp(keyword, 'gi'), '').trim();
+    });
+
+    // إزالة كلمات الأمر
+    const commandWords = ['ذكرني', 'تذكير', 'تذكر', 'ذكر', 'أذكر', 'remind', 'rappel', 'rappelle'];
+    commandWords.forEach(word => {
+      parsedText = parsedText.replace(new RegExp(word, 'gi'), '').trim();
+    });
+
+    // إزالة الأرقام المتبقية (ربما بقايا وقت)
+    parsedText = parsedText.replace(/\d+/g, '').trim();
+
+    // تنظيف الفراغات والفواصل الزائدة
+    parsedText = parsedText.replace(/\s+/g, ' ').replace(/^[\s,،]+|[\s,،]+$/g, '').trim();
+  }
+
+  // إذا بقي النص فارغاً، استخدم قيمة افتراضية
   if (!parsedText) {
-    parsedText = text.replace(/(غدا|غداً|اليوم|تذكير|ذكرني|موعد|\d{1,2}(:\d{2})?\s*(صباحا|مساء)?)/gi, '').trim();
-    if (!parsedText) parsedText = text;
+    parsedText = 'مهمة'; // أو اتركه فارغاً حسب الرغبة
   }
 
   return {
-    parsedText: parsedText || text,
+    parsedText: parsedText,
     reminderTime: reminderTime.toISOString(),
     detectedLanguage,
     confidence,
