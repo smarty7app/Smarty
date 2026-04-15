@@ -57,7 +57,7 @@ export interface Translations {
 
 export const translations: Record<LanguageCode, Translations> = {
   ar: {
-    app_name: "Smatry",
+    app_name: "Smarty",
     add_reminder: "إضافة تذكير",
     settings: "الإعدادات",
     dark_mode: "الوضع الليلي",
