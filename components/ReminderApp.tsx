@@ -27,6 +27,7 @@ export default function ReminderApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState('');
+  const [reminderDateTime, setReminderDateTime] = useState<string>('');
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
@@ -40,17 +41,84 @@ export default function ReminderApp() {
 
   useEffect(() => { if (typeof window !== 'undefined') { const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); audio.muted = true; audioRef.current = audio; } }, []);
 
+  // دالة تحليل الوقت من النص العربي
+  const parseArabicTime = (text: string): { parsedText: string; reminderTime: string } => {
+    const now = new Date();
+    let reminderTime = now.toISOString();
+    let parsedText = text;
+
+    const patterns: { regex: RegExp; handler: (m: RegExpMatchArray) => Date }[] = [
+      { regex: /بعد (\d+) دقيقة/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000) },
+      { regex: /بعد (\d+) ساعة/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000) },
+      { regex: /بعد (\d+) يوم/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000) },
+      { regex: /بعد (\d+) أسبوع|بعد (\d+) اسبوع/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 7 * 86400000) },
+      { regex: /غدا|غداً/, handler: () => new Date(now.setDate(now.getDate() + 1)) },
+      { regex: /بعد غد|بعد غداً/, handler: () => new Date(now.setDate(now.getDate() + 2)) },
+      { regex: /الساعة (\d+)/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), 0, 0, 0); return d; } },
+      { regex: /الساعة (\d+) و (\d+) دقيقة/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0); return d; } },
+      { regex: /الساعة (\d+) والنصف/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), 30, 0, 0); return d; } },
+    ];
+
+    for (const { regex, handler } of patterns) {
+      const match = text.match(regex);
+      if (match) {
+        reminderTime = handler(match).toISOString();
+        parsedText = text.replace(match[0], '').trim();
+        break;
+      }
+    }
+
+    return { parsedText: parsedText || text, reminderTime };
+  };
+
+  // دالة تنسيق وقت التذكير للعرض
+  const formatReminderTime = (isoString: string): string => {
+    const date = parseISO(isoString);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMinutes < 0) return 'انتهى الوقت';
+    if (diffMinutes < 60) return `بعد ${diffMinutes} دقيقة`;
+    if (diffHours < 24) return `بعد ${diffHours} ساعة`;
+    if (diffDays === 0) return 'اليوم';
+    if (diffDays === 1) return 'غداً';
+    if (diffDays === 2) return 'بعد غد';
+    if (diffDays < 7) return `بعد ${diffDays} أيام`;
+    if (diffDays < 30) return `بعد ${Math.floor(diffDays / 7)} أسبوع`;
+
+    return date.toLocaleDateString('ar-DZ', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
-    const newReminder: Reminder = { id: Math.random().toString(36).substr(2, 9), text: inputText, reminderTime: new Date().toISOString(), isCompleted: false };
+    const newReminder: Reminder = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: inputText,
+      reminderTime: reminderDateTime || new Date().toISOString(),
+      isCompleted: false
+    };
     setReminders(prev => [newReminder, ...prev]);
     setInputText('');
+    setReminderDateTime('');
     setRecurring('none');
     setIsAdding(false);
   };
+
   const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
+  
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
-  const handleVoiceInput = (text: string) => setAssistantMessage(`✅ تم الاستماع: "${text}"\n(سيتم ربطه بالذكاء الاصطناعي قريباً)`);
+  
+  const handleVoiceInput = (text: string) => {
+    const { parsedText, reminderTime } = parseArabicTime(text);
+    setInputText(parsedText);
+    setReminderDateTime(reminderTime);
+    setIsAdding(true);
+    setAssistantMessage(`✅ تم الفهم: "${parsedText}" | ${formatReminderTime(reminderTime)}`);
+  };
+
   const activeReminders = reminders.filter(r => !r.isCompleted);
 
   if (!isMounted) return null;
@@ -90,7 +158,7 @@ export default function ReminderApp() {
           <p className="text-center text-sm text-white/70 mt-2">اضغط للتحدث مع المساعد الذكي</p>
         </div>
 
-        {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6">{assistantMessage}</div>}
+        {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6 text-center">{assistantMessage}</div>}
 
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4" /> التذكيرات النشطة ({activeReminders.length})</h3>
@@ -103,7 +171,17 @@ export default function ReminderApp() {
                   <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
                       <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500"><CheckCircle2 className="w-5 h-5" /></button>
-                      <div className="flex-1"><p className="text-xl font-black dark:text-white">{rem.text}</p><div className="flex flex-wrap gap-2 mt-2"><span className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-black text-zinc-500">{formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}</span></div></div>
+                      <div className="flex-1">
+                        <p className="text-xl font-black dark:text-white">{rem.text}</p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <span className="bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-full text-[10px] font-black text-orange-700 dark:text-orange-300">
+                            {formatReminderTime(rem.reminderTime)}
+                          </span>
+                          <span className="bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full text-[10px] font-black text-zinc-500">
+                            {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                          </span>
+                        </div>
+                      </div>
                       <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500"><Trash2 /></button>
                     </div>
                   </motion.div>
@@ -126,4 +204,4 @@ export default function ReminderApp() {
       <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
     </div>
   );
-            }
+                            }
