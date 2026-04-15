@@ -241,21 +241,24 @@ export default function ReminderApp() {
       </motion.button>
 
       <AddReminderModal
-        isOpen={isAdding}
-        onClose={handleCloseModal}
-        inputText={inputText}
-        setInputText={setInputText}
-        recurring={recurring}
-        setRecurring={setRecurring}
-        handleAddReminder={handleAddReminder}
-        t={t}
-        smartParsed={smartParsed}
-        setSmartParsed={setSmartParsed}
-        language={language}
-        arDZ={arDZ}
-        onReminderTimeDetected={setReminderDateTime}
-      />
-      <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
-    </div>
+  isOpen={isAdding}
+  onClose={handleCloseModal}
+  inputText={inputText}
+  setInputText={setInputText}
+  recurring={recurring}
+  setRecurring={setRecurring}
+  handleAddReminder={handleAddReminder}
+  t={t}
+  smartParsed={smartParsed}
+  setSmartParsed={setSmartParsed}
+  activeSuggestions={[]}
+  language={language}
+  getTimeBeforeLabel={() => ''}
+  format={formatDistanceToNow}
+  arDZ={arDZ}
+  onReminderTimeDetected={setReminderDateTime}
+/>
+   <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
+ </div>
   );
                       }
