@@ -13,18 +13,17 @@ import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { notificationService } from './NotificationService';
+import { 
+  analyzeReminderInput, 
+  formatDetectedTime, 
+  formatCountdown, 
+  cleanReminderText,
+  type SmartParsedResult 
+} from '@/lib/date-parser';
 
 function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
 interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
-
-export interface SmartParsedResult {
-  parsedText: string;
-  reminderTime: string;
-  detectedLanguage: 'ar' | 'fr' | 'en';
-  confidence: number;
-  originalText: string;
-}
 
 export default function ReminderApp() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -38,140 +37,73 @@ export default function ReminderApp() {
   const [assistantMessage, setAssistantMessage] = useState('');
   const [reminderDateTime, setReminderDateTime] = useState<string>('');
   const [smartParsed, setSmartParsed] = useState<SmartParsedResult | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false); // ✅ أضف هذا
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  // ✅ 1. تفعيل isMounted
-useEffect(() => {
-  const timer = setTimeout(() => setIsMounted(true), 0);
-  return () => clearTimeout(timer);
-}, []);
+  // 1. تفعيل isMounted
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
-// ✅ 2. طلب إذن الإشعارات
-useEffect(() => {
-  if (isMounted && notificationService) {
-    notificationService.requestPermission().then((permission) => {
-      setNotificationsEnabled(permission === 'granted');
-    });
-  }
-}, [isMounted]);
-
-// ✅ 3. تحميل التذكيرات من localStorage
-useEffect(() => {
-  if (isMounted) {
-    const saved = localStorage.getItem('smarty_reminders');
-    if (saved) {
-      const timer = setTimeout(() => {
-        setReminders(JSON.parse(saved));
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }
-}, [isMounted]);
-
-// ✅ 4. حفظ التذكيرات وجدولة الإشعارات
-useEffect(() => {
-  if (isMounted) {
-    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-    
-    if (notificationService) {
-      notificationService.rescheduleAll(reminders, (id) => {
-        setReminders(prev => prev.map(r =>
-          r.id === id ? { ...r, isCompleted: true } : r
-        ));
+  // 2. طلب إذن الإشعارات
+  useEffect(() => {
+    if (isMounted && notificationService) {
+      notificationService.requestPermission().then((permission) => {
+        setNotificationsEnabled(permission === 'granted');
       });
     }
-  }
-}, [reminders, isMounted]);
+  }, [isMounted]);
 
-// ✅ 5. تهيئة الصوت
-useEffect(() => {
-  if (typeof window !== 'undefined') {
-    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-    audio.muted = true;
-    audioRef.current = audio;
-  }
-}, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setIsMounted(true); }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (isMounted) { const saved = localStorage.getItem('smarty_reminders'); if (saved) setReminders(JSON.parse(saved)); } }, [isMounted]);
-
-  useEffect(() => { if (isMounted) localStorage.setItem('smarty_reminders', JSON.stringify(reminders)); }, [reminders, isMounted]);
-
-  useEffect(() => { if (typeof window !== 'undefined') { const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); audio.muted = true; audioRef.current = audio; } }, []);
-
-  // ✅ دالة تحليل الوقت من النص العربي (للاستخدام الصوتي)
-  const parseArabicTime = (text: string): { parsedText: string; reminderTime: string } => {
-    const now = new Date();
-    let reminderTime = now.toISOString();
-    let parsedText = text;
-
-    const patterns: { regex: RegExp; handler: (m: RegExpMatchArray) => Date }[] = [
-      { regex: /بعد (\d+) دقيقة/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000) },
-      { regex: /بعد (\d+) ساعة/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000) },
-      { regex: /بعد (\d+) يوم/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000) },
-      { regex: /بعد (\d+) أسبوع|بعد (\d+) اسبوع/, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 7 * 86400000) },
-      { regex: /غدا|غداً/, handler: () => new Date(now.setDate(now.getDate() + 1)) },
-      { regex: /بعد غد|بعد غداً/, handler: () => new Date(now.setDate(now.getDate() + 2)) },
-      { regex: /الساعة (\d+)/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), 0, 0, 0); return d; } },
-      { regex: /الساعة (\d+) و (\d+) دقيقة/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), parseInt(m[2]), 0, 0); return d; } },
-      { regex: /الساعة (\d+) والنصف/, handler: (m) => { const d = new Date(); d.setHours(parseInt(m[1]), 30, 0, 0); return d; } },
-    ];
-
-    for (const { regex, handler } of patterns) {
-      const match = text.match(regex);
-      if (match) {
-        reminderTime = handler(match).toISOString();
-        parsedText = text.replace(match[0], '').trim();
-        break;
+  // 3. تحميل التذكيرات من localStorage
+  useEffect(() => {
+    if (isMounted) {
+      const saved = localStorage.getItem('smarty_reminders');
+      if (saved) {
+        const timer = setTimeout(() => setReminders(JSON.parse(saved)), 0);
+        return () => clearTimeout(timer);
       }
     }
+  }, [isMounted]);
 
-    return { parsedText: parsedText || text, reminderTime };
-  };
-
-  // ✅ دالة تنسيق وقت التذكير للعرض مع العد التنازلي
-  const formatReminderTime = (isoString: string): { exactTime: string; countdown: string } => {
-    const date = parseISO(isoString);
-    const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-
-    const exactTime = date.toLocaleTimeString('ar-DZ', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-
-    let countdown = '';
-    const absDiffMs = Math.abs(diffMs);
-    const diffMinutes = Math.floor(absDiffMs / 60000);
-    const diffHours = Math.floor(absDiffMs / 3600000);
-    const diffDays = Math.floor(absDiffMs / 86400000);
-
-    if (diffMs < 0) {
-      if (diffMinutes < 1) countdown = 'الآن';
-      else if (diffMinutes < 60) countdown = `منذ ${diffMinutes} دقيقة`;
-      else if (diffHours < 24) countdown = `منذ ${diffHours} ساعة`;
-      else if (diffDays === 1) countdown = 'منذ يوم';
-      else if (diffDays === 2) countdown = 'منذ يومين';
-      else if (diffDays < 11) countdown = `منذ ${diffDays} أيام`;
-      else countdown = `منذ ${diffDays} يوم`;
-    } else {
-      if (diffMinutes < 1) countdown = 'أقل من دقيقة';
-      else if (diffMinutes < 60) countdown = `متبقي ${diffMinutes} دقيقة`;
-      else if (diffHours < 24) countdown = `متبقي ${diffHours} ساعة`;
-      else if (diffDays === 0) countdown = 'اليوم';
-      else if (diffDays === 1) countdown = 'غداً';
-      else if (diffDays === 2) countdown = 'بعد غد';
-      else if (diffDays < 11) countdown = `متبقي ${diffDays} أيام`;
-      else countdown = `متبقي ${diffDays} يوم`;
+  // 4. حفظ التذكيرات وجدولة الإشعارات
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+      if (notificationService) {
+        notificationService.rescheduleAll(reminders, (id) => {
+          setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: true } : r));
+        });
+      }
     }
+  }, [reminders, isMounted]);
 
-    return { exactTime, countdown };
+  // 5. تهيئة الصوت
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.muted = true;
+      audioRef.current = audio;
+    }
+  }, []);
+
+  // معالج الإدخال الصوتي باستخدام المحلل المركزي
+  const handleVoiceInput = (text: string) => {
+    const result = analyzeReminderInput(text);
+    if (result) {
+      setInputText(result.parsedText);
+      setReminderDateTime(result.reminderTime.toISOString());
+      setIsAdding(true);
+      const { text: countdownText } = formatCountdown(result.reminderTime.toISOString(), result.detectedLanguage);
+      setAssistantMessage(`✅: "${result.parsedText}" | ${countdownText}`);
+    } else {
+      // fallback بسيط
+      setInputText(text);
+      setReminderDateTime(new Date().toISOString());
+      setIsAdding(true);
+      setAssistantMessage(`✅: "${text}"`);
+    }
   };
 
   const handleAddReminder = () => {
@@ -186,23 +118,13 @@ useEffect(() => {
     setInputText('');
     setReminderDateTime('');
     setRecurring('none');
-    setSmartParsed(null); // ✅ إعادة تعيين التحليل الذكي
+    setSmartParsed(null);
     setIsAdding(false);
   };
 
   const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
-
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
 
-  const handleVoiceInput = (text: string) => {
-    const { parsedText, reminderTime } = parseArabicTime(text);
-    setInputText(parsedText);
-    setReminderDateTime(reminderTime);
-    setIsAdding(true);
-    setAssistantMessage(`✅: "${parsedText}" | ${formatReminderTime(reminderTime).countdown}`);
-  };
-
-  // ✅ دالة إغلاق المودال مع إعادة تعيين التحليل الذكي
   const handleCloseModal = () => {
     setIsAdding(false);
     setSmartParsed(null);
@@ -225,16 +147,11 @@ useEffect(() => {
           <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
         </div>
         <div className="flex gap-1">
-           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white">
-             <Info className="w-5 h-5" />
-           </button>
-           <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white">
-             <Settings className="w-5 h-5" />
-           </button>
-           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">
-             {soundEnabled ? <Volume2 /> : <VolumeX />}
-           </button>
-         </div>
+           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
+           <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
+           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
+           <button onClick={() => notificationService?.requestPermission()} className="p-2.5 text-white/70 hover:text-white">{notificationsEnabled ? <Bell /> : <BellOff />}</button>
+        </div>
       </header>
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
@@ -258,44 +175,41 @@ useEffect(() => {
                 <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10"><p className="text-white/40 font-black text-xs uppercase">لا توجد تذكيرات نشطة</p></div>
               ) : (
                 activeReminders.map((rem) => {
-                  const { exactTime, countdown } = formatReminderTime(rem.reminderTime);
+                  const exactTime = formatDetectedTime(rem.reminderTime, 'ar');
+                  const { text: countdown, isPast } = formatCountdown(rem.reminderTime, 'ar');
+                  const cleanedText = cleanReminderText(rem.text, 'ar');
                   return (
-                   <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4">
-                       <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
-                         <CheckCircle2 className="w-5 h-5" />
-                       </button>
-      
-                       <div className="flex-1">
-                         <p className="text-xl font-black dark:text-white">{rem.text}</p>
-        
-                         <div className="flex flex-wrap gap-2 mt-2">
-                           {/* الوقت المحدد */}
-                           <span className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
-                             <Clock className="w-3 h-3" />
-                             {exactTime}
-                           </span>
-          
-                           {/* العد التنازلي */}
-                           <span className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
-                             <Timer className="w-3 h-3" />
-                             {countdown}
-                           </span>
-          
-                           {/* وقت الإنشاء */}
-                           <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                             <Calendar className="w-3 h-3" />
-                             {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
-                           </span>
-                         </div>
-                       </div>
-      
-                       <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
-                         <Trash2 className="w-5 h-5" />
-                       </button>
-                     </div>
-                   </motion.div>
-                 );
+                    <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", isPast && "opacity-70")}>
+                        <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
+                          <CheckCircle2 className="w-5 h-5" />
+                        </button>
+                        <div className="flex-1">
+                          <p className="text-xl font-black dark:text-white">{cleanedText}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
+                              <Clock className="w-3 h-3" />
+                              {exactTime}
+                            </span>
+                            <span className={cn(
+                              "px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5",
+                              isPast ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300" : "bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300"
+                            )}>
+                              {isPast ? <AlertCircle className="w-3 h-3" /> : <Timer className="w-3 h-3" />}
+                              {countdown}
+                            </span>
+                            <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                              <Calendar className="w-3 h-3" />
+                              {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                            </span>
+                          </div>
+                        </div>
+                        <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
                 })
               )}
             </AnimatePresence>
@@ -308,24 +222,24 @@ useEffect(() => {
       </motion.button>
 
       <AddReminderModal
-  isOpen={isAdding}
-  onClose={handleCloseModal}
-  inputText={inputText}
-  setInputText={setInputText}
-  recurring={recurring}
-  setRecurring={setRecurring}
-  handleAddReminder={handleAddReminder}
-  t={t}
-  smartParsed={smartParsed}
-  setSmartParsed={setSmartParsed}
-  activeSuggestions={[]}
-  language={language}
-  getTimeBeforeLabel={() => ''}
-  format={formatDistanceToNow}
-  arDZ={arDZ}
-  onReminderTimeDetected={setReminderDateTime}
-/>
-   <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
- </div>
+        isOpen={isAdding}
+        onClose={handleCloseModal}
+        inputText={inputText}
+        setInputText={setInputText}
+        recurring={recurring}
+        setRecurring={setRecurring}
+        handleAddReminder={handleAddReminder}
+        t={t}
+        smartParsed={smartParsed}
+        setSmartParsed={setSmartParsed}
+        activeSuggestions={[]}
+        language={language}
+        getTimeBeforeLabel={() => ''}
+        format={formatDistanceToNow}
+        arDZ={arDZ}
+        onReminderTimeDetected={setReminderDateTime}
+      />
+      <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
+    </div>
   );
-                      }
+}
