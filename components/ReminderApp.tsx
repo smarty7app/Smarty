@@ -13,7 +13,11 @@ import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { notificationService } from './NotificationService';
-import { analyzeReminderInput, formatDetectedTime, formatCountdown,  cleanReminderText,
+import { 
+  analyzeReminderInput, 
+  formatDetectedTime, 
+  formatCountdown, 
+  cleanReminderText,
   type SmartParsedResult 
 } from '@/lib/date-parser';
 
@@ -37,13 +41,11 @@ export default function ReminderApp() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  // 1. تفعيل isMounted
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // 2. طلب إذن الإشعارات
   useEffect(() => {
     if (isMounted && notificationService) {
       notificationService.requestPermission().then((permission) => {
@@ -52,7 +54,6 @@ export default function ReminderApp() {
     }
   }, [isMounted]);
 
-  // 3. تحميل التذكيرات من localStorage
   useEffect(() => {
     if (isMounted) {
       const saved = localStorage.getItem('smarty_reminders');
@@ -63,7 +64,6 @@ export default function ReminderApp() {
     }
   }, [isMounted]);
 
-  // 4. حفظ التذكيرات وجدولة الإشعارات
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
@@ -75,7 +75,6 @@ export default function ReminderApp() {
     }
   }, [reminders, isMounted]);
 
-  // 5. تهيئة الصوت
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
@@ -84,17 +83,16 @@ export default function ReminderApp() {
     }
   }, []);
 
-  // معالج الإدخال الصوتي باستخدام المحلل المركزي
+  // معالج الإدخال الصوتي - تم التصحيح
   const handleVoiceInput = (text: string) => {
     const result = analyzeReminderInput(text);
     if (result) {
       setInputText(result.parsedText);
-      setReminderDateTime(result.reminderTime.toISOString());
+      setReminderDateTime(result.reminderTime); // reminderTime هو string
       setIsAdding(true);
-      const { text: countdownText } = formatCountdown(result.reminderTime.toISOString(), result.detectedLanguage);
+      const { text: countdownText } = formatCountdown(result.reminderTime, result.detectedLanguage);
       setAssistantMessage(`✅: "${result.parsedText}" | ${countdownText}`);
     } else {
-      // fallback بسيط
       setInputText(text);
       setReminderDateTime(new Date().toISOString());
       setIsAdding(true);
