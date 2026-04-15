@@ -106,8 +106,6 @@ export const translations: Record<LanguageCode, Translations> = {
     suggested_message: "رسالة مقترحة",
     details: "تفاصيل",
     next_alert: "التنبيه القادم",
-    copyright: 'جميع الحقوق محفوظة',
-    ai_reminder: 'تذكير بالذكاء الاصطناعي',
     all_alerts: "جميع التنبيهات"
   },
   en: {
