@@ -215,47 +215,47 @@ export default function SmartVoicePage() {
     clearSilenceTimer();
   }, [language]);
 
-  const toggleListening = () => {
-    // إذا كان يتحدث، أوقف الكلام أولاً
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-
-    // إذا كان هناك جلسة استماع نشطة، أوقفها
-    if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      clearSilenceTimer();
-      return;
-    }
-
-    // إذا كان قيد المعالجة، لا تفعل شيئًا
-    if (isProcessing) return;
-
-    // التحقق من الاتصال
-    if (!isOnline) {
-      setResponse('لا يوجد اتصال بالإنترنت');
-      return;
-    }
-
-    // إنشاء كائن جديد
-    recognitionRef.current = createRecognition();
-
+  const toggleListening = async () => {
+  // إذا كان هناك جلسة استماع نشطة، أوقفها
+  if (isListening) {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Failed to start recognition:', error);
-        // إعادة المحاولة مرة واحدة
+      recognitionRef.current.stop();
+    }
+    return;
+  }
+
+  // إذا كان قيد المعالجة، لا تفعل شيئًا
+  if (isProcessing) return;
+
+  // ✅ طلب صلاحية الميكروفون أولاً (مهم للجوال)
+  try {
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    console.error('Microphone permission denied:', err);
+    setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
+    return;
+  }
+
+  // إنشاء كائن جديد إذا لم يكن موجودًا
+  if (!recognitionRef.current) {
+    recognitionRef.current = createRecognition();
+  }
+
+  if (recognitionRef.current) {
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Failed to start recognition:', error);
+      // إعادة إنشاء الكائن إذا فشل البدء
+      recognitionRef.current = createRecognition();
+      if (recognitionRef.current) {
         setTimeout(() => {
-          recognitionRef.current = createRecognition();
           recognitionRef.current?.start();
-        }, 100);
+        }, 50);
       }
     }
-  };
+  }
+};
 
   // حساب حجم النبض حسب الحالة
   const getPulseScale = () => {
