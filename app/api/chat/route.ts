@@ -20,5 +20,6 @@ export async function POST(req: Request) {
     prompt: prompt,
   });
 
-  return result.toDataStreamResponse();
+  // ✅ استخدام toTextStreamResponse بدلاً من toDataStreamResponse
+  return result.toTextStreamResponse();
 }
