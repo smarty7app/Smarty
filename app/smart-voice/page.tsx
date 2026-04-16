@@ -219,15 +219,23 @@ export default function SmartVoicePage() {
   // إذا كان هناك جلسة استماع نشطة، أوقفها
   if (isListening) {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+        // ✅ إيقاف أي مسارات صوتية مفتوحة (مهم للهاتف)
+        const tracks = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tracks.getTracks().forEach(track => track.stop());
+      } catch (e) {
+        // تجاهل الأخطاء
+      }
     }
+    setIsListening(false);
     return;
   }
 
   // إذا كان قيد المعالجة، لا تفعل شيئًا
   if (isProcessing) return;
 
-  // ✅ طلب صلاحية الميكروفون أولاً (مهم للجوال)
+  // ✅ طلب صلاحية الميكروفون أولاً
   try {
     await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
