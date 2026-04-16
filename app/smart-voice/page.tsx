@@ -163,64 +163,83 @@ export default function SmartVoicePage() {
 
   // دالة إنشاء كائن SpeechRecognition (Web Speech API)
   const createRecognition = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('متصفحك لا يدعم التعرف على الصوت');
-      return null;
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('متصفحك لا يدعم التعرف على الصوت');
+    return null;
+  }
+
+  const instance = new SpeechRecognition();
+  instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
+  instance.continuous = true;   // ✅ تغيير إلى true
+  instance.interimResults = true; // ✅ يبقى true
+
+  instance.onstart = () => {
+    setIsListening(true);
+    setTranscript('');
+    setResponse('');
+    setRetryCount(0);
+    clearSilenceTimer();
+    silenceTimerRef.current = setTimeout(() => {
+      if (isListening) {
+        recognitionRef.current?.stop();
+        setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
+      }
+    }, 10000);
+  };
+
+  instance.onaudiostart = () => clearSilenceTimer();
+  instance.onaudioend = () => clearSilenceTimer();
+
+  instance.onresult = (event: any) => {
+    clearSilenceTimer();
+    
+    let interimTranscript = '';
+    let finalTranscript = '';
+    
+    // تجميع جميع النتائج
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcriptPart = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscript += transcriptPart;
+      } else {
+        interimTranscript += transcriptPart;
+      }
     }
-
-    const instance = new SpeechRecognition();
-    instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
-    instance.continuous = false;
-    instance.interimResults = true;
-
-    instance.onstart = () => {
-      setIsListening(true);
-      setTranscript('');
-      setResponse('');
-      setRetryCount(0);
-      clearSilenceTimer();
-      silenceTimerRef.current = setTimeout(() => {
-        if (isListening) {
-          recognitionRef.current?.stop();
-          setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
-        }
-      }, 10000);
-    };
-
-    instance.onaudiostart = () => clearSilenceTimer();
-    instance.onaudioend = () => clearSilenceTimer();
-
-    instance.onresult = async (event: any) => {
-      clearSilenceTimer();
-      const text = event.results[0][0].transcript;
-      setTranscript(text);
-      if (event.results[0].isFinal) {
-        setIsListening(false);
-        await processText(text);
-      }
-    };
-
-    instance.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
+    
+    // عرض النص المؤقت (أثناء الكلام)
+    if (interimTranscript) {
+      setTranscript(interimTranscript);
+    }
+    
+    // عند انتهاء الكلام (نتيجة نهائية)
+    if (finalTranscript) {
+      setTranscript(finalTranscript);
       setIsListening(false);
-      setIsProcessing(false);
-      clearSilenceTimer();
-      switch (event.error) {
-        case 'not-allowed': setResponse('الرجاء السماح بالوصول إلى الميكروفون.'); break;
-        case 'no-speech': setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.'); break;
-        case 'network': setResponse('خطأ في الشبكة، تحقق من اتصالك.'); break;
-        default: setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
-      }
-    };
+      processText(finalTranscript);
+    }
+  };
 
-    instance.onend = () => {
-      setIsListening(false);
-      clearSilenceTimer();
-    };
+  instance.onerror = (event: any) => {
+    console.error('Speech recognition error:', event.error);
+    setIsListening(false);
+    setIsProcessing(false);
+    clearSilenceTimer();
+    switch (event.error) {
+      case 'not-allowed': setResponse('الرجاء السماح بالوصول إلى الميكروفون.'); break;
+      case 'no-speech': setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.'); break;
+      case 'network': setResponse('خطأ في الشبكة، تحقق من اتصالك.'); break;
+      default: setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
+    }
+  };
 
-    return instance;
-  }, [language, userId, userEmail, userName, isOnline, retryCount, processText, clearSilenceTimer]);
+  instance.onend = () => {
+    setIsListening(false);
+    clearSilenceTimer();
+  };
+
+  return instance;
+}, [language, processText, clearSilenceTimer, isListening]);
 
   // تنظيف الكائن القديم عند تغيير اللغة
   useEffect(() => {
