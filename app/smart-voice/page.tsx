@@ -4,9 +4,17 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, Wifi, WifiOff } from 'lucide-react';
 import { transcribeLocal } from '@/lib/local-whisper';
-import {ArrowLeft, Wifi, WifiOff, Loader2, Mic, Volume2, Sparkles, MessageCircle } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Wifi, 
+  WifiOff, 
+  Loader2, 
+  Mic, 
+  Volume2, 
+  Sparkles, 
+  MessageCircle 
+} from 'lucide-react';
 
 export default function SmartVoicePage() {
   const router = useRouter();
