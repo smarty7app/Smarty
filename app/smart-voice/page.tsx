@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { Mic, ArrowLeft, Volume2 } from 'lucide-react';
-
 // الرابط العام من Cloudflare Tunnel
 const API_URL = 'https://mart-north-yacht-eat.trycloudflare.com/ask';
 
