@@ -338,62 +338,80 @@ export default function SmartVoicePage() {
             {(isProcessing || isModelLoading) && <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
           </button>
-
-          {/* حالة الكائن */}
-        <div className="mt-6 text-center min-h-[24px]">
-  {/* لا يوجد اتصال بالإنترنت */}
-  {!isOnline && (
-    <div className="flex items-center justify-center gap-2 text-red-400">
-      <WifiOff className="w-4 h-4" />
-      <p className="text-sm font-medium">لا يوجد اتصال بالإنترنت</p>
-    </div>
-  )}
-
-  {/* تحميل النموذج المحلي */}
-  {isModelLoading && (
-    <div className="flex items-center justify-center gap-2 text-purple-300">
-      <Loader2 className="w-4 h-4 animate-spin" />
-      <p className="text-sm font-medium">تحميل النموذج المحلي...</p>
-    </div>
-  )}
-
-  {/* حالة الاستماع */}
-  {isListening && (
-    <div className="flex items-center justify-center gap-2">
-      <Mic className="w-4 h-4 text-white/70 animate-pulse" />
-      <p className="text-white/70 text-sm font-medium">
-        {useLocalWhisper ? 'جاري التسجيل...' : 'يستمع إليك الآن...'}
-      </p>
-    </div>
-  )}
-
-  {/* حالة المعالجة / التفكير */}
-  {isProcessing && !isModelLoading && (
-    <div className="flex items-center justify-center gap-2">
-      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-      <p className="text-white/70 text-sm font-medium">يفكر...</p>
-    </div>
-  )}
-
-  {/* حالة التحدث */}
-  {isSpeaking && (
-    <div className="flex items-center justify-center gap-2">
-      <Volume2 className="w-4 h-4 text-emerald-300" />
-      <p className="text-white/70 text-sm font-medium">يتحدث...</p>
-    </div>
-  )}
-
-  {/* حالة السكون (جاهز للتحدث) */}
-  {!isListening && !isProcessing && !isSpeaking && !isModelLoading && isOnline && (
-    <div className="flex items-center justify-center gap-2">
-      <MessageCircle className="w-4 h-4 text-white/40" />
-      <p className="text-white/40 text-xs font-medium tracking-wide">
-        اضغط على الشعار للتحدث مع المساعد الذكي
-      </p>
-    </div>
-  )}
-</div> 
           
+          {/* حالة الكائن */}
+          <div className="mt-6 text-center min-h-[24px]">
+            {/* لا يوجد اتصال بالإنترنت */}
+            {!isOnline && (
+              <div className="flex items-center justify-center gap-2 text-red-400">
+                <WifiOff className="w-4 h-4" />
+                <p className="text-sm font-medium">لا يوجد اتصال بالإنترنت</p>
+              </div>
+            )}
+
+            {/* تحميل النموذج المحلي */}
+            {isModelLoading && (
+              <div className="flex items-center justify-center gap-2 text-purple-300">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <p className="text-sm font-medium">تحميل النموذج المحلي...</p>
+              </div>
+            )}
+
+            {/* حالة الاستماع */}
+            {isListening && (
+              <div className="flex items-center justify-center gap-2">
+                <Mic className="w-4 h-4 text-white/70 animate-pulse" />
+                <p className="text-white/70 text-sm font-medium">
+                  {useLocalWhisper ? 'جاري التسجيل...' : 'يستمع إليك الآن...'}
+                </p>
+              </div>
+            )}
+
+            {/* حالة المعالجة / التفكير */}
+            {isProcessing && !isModelLoading && (
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                <p className="text-white/70 text-sm font-medium">يفكر...</p>
+              </div>
+            )}
+
+            {/* حالة التحدث */}
+            {isSpeaking && (
+              <div className="flex items-center justify-center gap-2">
+                <Volume2 className="w-4 h-4 text-emerald-300" />
+                <p className="text-white/70 text-sm font-medium">يتحدث...</p>
+              </div>
+            )}
+
+            {/* حالة السكون (جاهز للتحدث) */}
+            {!isListening && !isProcessing && !isSpeaking && !isModelLoading && isOnline && (
+              <div className="flex items-center justify-center gap-2">
+                <MessageCircle className="w-4 h-4 text-white/40" />
+                <p className="text-white/40 text-xs font-medium tracking-wide">
+                  اضغط على الشعار للتحدث مع المساعد الذكي
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* عرض النص المُسمع والرد */}
+        <div className="w-full max-w-md space-y-4 mt-10">
+          {transcript && (
+            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+              <p className="text-xs font-bold text-white/40 uppercase tracking-wider">أنت</p>
+              <p className="text-white text-lg font-medium mt-1">{transcript}</p>
+            </div>
+          )}
+          {response && (
+            <div className="bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+              <p className="text-xs font-bold text-white/40 uppercase tracking-wider">سمارتي</p>
+              <p className="text-white text-lg font-medium mt-1">{response}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* تذييل */}
       <footer className="py-6 text-center">
         <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">
