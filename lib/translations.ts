@@ -74,6 +74,7 @@ export interface Translations {
   tap_to_speak: string;
   voice_listen_success: string;
   premium_assistant: string;
+  logout: string;
   
   // Footer
   footer_copyright: string;
@@ -97,10 +98,7 @@ export const translations: Record<LanguageCode, Translations> = {
     english: "الإنجليزية",
     french: "الفرنسية",
     chinese: "الصينية",
-    
-    // Messages
-    language_changed: "تم تغيير اللغة، يرجى إعادة تشغيل التطبيق",
-    
+        
     // Reminders
     add_reminder: "إضافة تذكير",
     active_reminders: "التذكيرات النشطة",
@@ -154,7 +152,7 @@ export const translations: Record<LanguageCode, Translations> = {
     tap_to_speak: "اضغط للتحدث مع المساعد الذكي",
     voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً)",
     premium_assistant: "Premium Assistant",
-    
+    logout: 'تسجيل الخروج',
     // Footer
     footer_copyright: "Smarty AI Reminder"
   },
@@ -233,7 +231,7 @@ export const translations: Record<LanguageCode, Translations> = {
     tap_to_speak: "Tap to speak with smart assistant",
     voice_listen_success: "✅ Heard: \"{{text}}\"\n(Will be connected to AI soon)",
     premium_assistant: "Premium Assistant",
-    
+    logout: 'Logout', 
     // Footer
     footer_copyright: "Smarty AI Reminder"
   },
@@ -312,7 +310,7 @@ export const translations: Record<LanguageCode, Translations> = {
     tap_to_speak: "Appuyez pour parler à l'assistant intelligent",
     voice_listen_success: "✅ Écoute : \"{{text}}\"\n(Bientôt connecté à l'IA)",
     premium_assistant: "Assistant Premium",
-    
+    logout: 'Déconnexion',
     // Footer
     footer_copyright: "Smarty AI Rappel"
   },
@@ -391,6 +389,7 @@ export const translations: Record<LanguageCode, Translations> = {
     tap_to_speak: "点击与智能助手对话",
     voice_listen_success: "✅ 已听到：\"{{text}}\"\n(即将连接人工智能)",
     premium_assistant: "高级助手",
+    logout: '退出',
     
     // Footer
     footer_copyright: "Smarty AI 提醒"
