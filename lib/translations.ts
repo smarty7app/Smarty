@@ -77,7 +77,6 @@ export interface Translations {
   logout: string;
   
   // About screen
-  never_forget: string;
   privacy_policy: string;
   terms_of_service: string;
   telegram: string;  
@@ -164,7 +163,6 @@ export const translations: Record<LanguageCode, Translations> = {
     logout: 'تسجيل الخروج',
 
     // About screen
-    never_forget: "لا تنسى أبداً",
     privacy_policy: "سياسة الخصوصية",
     terms_of_service: "شروط الخدمة",
     telegram: "تيليجرام",
@@ -250,10 +248,9 @@ export const translations: Record<LanguageCode, Translations> = {
     logout: 'Logout', 
     
     // About screen
-    never_forget: "Never Forget Anything Again",
-  privacy_policy: "Privacy Policy",
-  terms_of_service: "Terms of Service",
-  telegram: "Telegram",
+    privacy_policy: "Privacy Policy",
+    terms_of_service: "Terms of Service",
+    telegram: "Telegram",
     
     // Footer
     footer_copyright: "Smarty AI Reminder"
@@ -336,10 +333,9 @@ export const translations: Record<LanguageCode, Translations> = {
     logout: 'Déconnexion',
 
     // About screen
-    never_forget: "Ne jamais rien oublier",
-  privacy_policy: "Politique de confidentialité",
-  terms_of_service: "Conditions d'utilisation",
-  telegram: "Telegram",
+    privacy_policy: "Politique de confidentialité",
+    terms_of_service: "Conditions d'utilisation",
+    telegram: "Telegram",
     
     // Footer
     footer_copyright: "Smarty AI Rappel"
@@ -422,10 +418,9 @@ export const translations: Record<LanguageCode, Translations> = {
     logout: '退出',
 
     // About screen
-    never_forget: "永不忘事",
-  privacy_policy: "隐私政策",
-  terms_of_service: "服务条款",
-  telegram: "电报",
+    privacy_policy: "隐私政策",
+    terms_of_service: "服务条款",
+    telegram: "电报",
     
     // Footer
     footer_copyright: "Smarty AI 提醒"
