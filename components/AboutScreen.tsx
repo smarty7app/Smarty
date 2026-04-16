@@ -45,12 +45,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </motion.div>
 
-        <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 w-full max-w-xs shadow-lg border border-black/5 dark:border-white/5 mb-4 text-center">
-          <p className="text-zinc-900 dark:text-white text-sm font-medium">
-            {t.never_forget}
-          </p>
-        </div>
-
         {/* Social Links */}
         <div className="flex gap-4 w-full max-w-md">
           <a
