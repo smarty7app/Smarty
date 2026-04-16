@@ -14,12 +14,28 @@ export default function SmartVoicePage() {
   const [transcript, setTranscript] = useState('');
   const [response, setResponse] = useState('');
   const [pulsePhase, setPulsePhase] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(true);
   const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
   const userId = session?.user?.id || 'anonymous';
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
+
+  // مراقبة حالة الاتصال بالإنترنت
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // تأثير النبض المستمر (التنفس)
   useEffect(() => {
@@ -28,6 +44,14 @@ export default function SmartVoicePage() {
     }, 50);
     return () => clearInterval(interval);
   }, []);
+
+  // تنظيف مؤقت الصمت
+  const clearSilenceTimer = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  };
 
   // دالة إنشاء كائن SpeechRecognition
   const createRecognition = useCallback(() => {
@@ -40,72 +64,146 @@ export default function SmartVoicePage() {
     const instance = new SpeechRecognition();
     instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
     instance.continuous = false;
-    instance.interimResults = false;
+    instance.interimResults = true; // تفعيل النتائج المؤقتة
 
-instance.onresult = async (event: any) => {
-  const text = event.results[0][0].transcript;
-  setTranscript(text);
-  setIsListening(false);
-  setIsProcessing(true);
-
-  try {
-    // ✅ استخدام API Route المحلي (Google Gemini)
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: text,
-        userId: userId,
-        userEmail: userEmail,
-        userName: userName,
-      }),
-    });
-
-    if (!res.ok) throw new Error('API request failed');
-    
-    const reply = await res.text();
-    setResponse(reply);
-
-    const utterance = new SpeechSynthesisUtterance(reply);
-    utterance.lang = 'ar-SA';
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsProcessing(false);
+    instance.onstart = () => {
+      setIsListening(true);
+      setTranscript('');
+      setResponse('');
+      setRetryCount(0);
+      clearSilenceTimer();
+      
+      // إيقاف تلقائي بعد 10 ثوانٍ من الصمت
+      silenceTimerRef.current = setTimeout(() => {
+        if (isListening) {
+          recognitionRef.current?.stop();
+          setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
+        }
+      }, 10000);
     };
-    utterance.onend = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
-  } catch (error) {
-    console.error(error);
-    setResponse('حدث خطأ في الاتصال بالمساعد.');
-    setIsProcessing(false);
-  }
-};
+
+    instance.onaudiostart = () => {
+      clearSilenceTimer();
+    };
+
+    instance.onaudioend = () => {
+      clearSilenceTimer();
+    };
+
+    instance.onresult = async (event: any) => {
+      clearSilenceTimer();
+      
+      const text = event.results[0][0].transcript;
+      setTranscript(text);
+      
+      // إذا كانت نتيجة نهائية
+      if (event.results[0].isFinal) {
+        setIsListening(false);
+        setIsProcessing(true);
+
+        try {
+          if (!isOnline) {
+            throw new Error('لا يوجد اتصال بالإنترنت');
+          }
+
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: text,
+              userId: userId,
+              userEmail: userEmail,
+              userName: userName,
+            }),
+          });
+
+          if (!res.ok) {
+            if (res.status === 429) {
+              throw new Error('تم تجاوز الحد اليومي للطلبات');
+            }
+            throw new Error(`API error: ${res.status}`);
+          }
+
+          const reply = await res.text();
+          setResponse(reply);
+
+          // إلغاء أي كلام سابق قبل البدء
+          window.speechSynthesis.cancel();
+          
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'ar-SA';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.onstart = () => {
+            setIsSpeaking(true);
+            setIsProcessing(false);
+          };
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            setRetryCount(0);
+          };
+          utterance.onerror = () => {
+            setIsSpeaking(false);
+            setIsProcessing(false);
+            setResponse('عذراً، لم أستطع نطق الرد.');
+          };
+          
+          window.speechSynthesis.speak(utterance);
+        } catch (error: any) {
+          console.error('Chat error:', error);
+          
+          // محاولة إعادة الاتصال (حد أقصى 3 مرات)
+          if (retryCount < 3 && error.message.includes('fetch')) {
+            setRetryCount(prev => prev + 1);
+            setResponse(`محاولة إعادة الاتصال (${retryCount + 1}/3)...`);
+            setTimeout(() => {
+              if (recognitionRef.current) {
+                // إعادة المحاولة
+                instance.onresult(event);
+              }
+            }, 2000);
+          } else {
+            setResponse(error.message || 'حدث خطأ في الاتصال بالمساعد.');
+            setIsProcessing(false);
+          }
+        }
+      }
+    };
 
     instance.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
       setIsProcessing(false);
+      clearSilenceTimer();
       
-      // رسائل خطأ أكثر وضوحًا
-      if (event.error === 'not-allowed') {
-        setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
-      } else if (event.error === 'no-speech') {
-        setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.');
-      } else {
-        setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
+      switch (event.error) {
+        case 'not-allowed':
+          setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
+          break;
+        case 'no-speech':
+          setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.');
+          break;
+        case 'network':
+          setResponse('خطأ في الشبكة، تحقق من اتصالك.');
+          break;
+        case 'aborted':
+          // تجاهل الخطأ عند الإيقاف اليدوي
+          break;
+        default:
+          setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
       }
     };
 
     instance.onend = () => {
       setIsListening(false);
+      clearSilenceTimer();
     };
 
     return instance;
-  }, [language, userId, userEmail, userName]);
+  }, [language, userId, userEmail, userName, isOnline, retryCount]);
 
   // تنظيف الكائن القديم عند تغيير اللغة
   useEffect(() => {
-    // إيقاف أي جلسة استماع نشطة
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
@@ -114,37 +212,47 @@ instance.onresult = async (event: any) => {
       }
     }
     recognitionRef.current = null;
+    clearSilenceTimer();
   }, [language]);
 
   const toggleListening = () => {
+    // إذا كان يتحدث، أوقف الكلام أولاً
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+
     // إذا كان هناك جلسة استماع نشطة، أوقفها
     if (isListening) {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      clearSilenceTimer();
       return;
     }
 
     // إذا كان قيد المعالجة، لا تفعل شيئًا
     if (isProcessing) return;
 
-    // إنشاء كائن جديد إذا لم يكن موجودًا
-    if (!recognitionRef.current) {
-      recognitionRef.current = createRecognition();
+    // التحقق من الاتصال
+    if (!isOnline) {
+      setResponse('لا يوجد اتصال بالإنترنت');
+      return;
     }
+
+    // إنشاء كائن جديد
+    recognitionRef.current = createRecognition();
 
     if (recognitionRef.current) {
       try {
         recognitionRef.current.start();
       } catch (error) {
         console.error('Failed to start recognition:', error);
-        // إعادة إنشاء الكائن إذا فشل البدء
-        recognitionRef.current = createRecognition();
-        if (recognitionRef.current) {
-          setTimeout(() => {
-            recognitionRef.current?.start();
-          }, 50);
-        }
+        // إعادة المحاولة مرة واحدة
+        setTimeout(() => {
+          recognitionRef.current = createRecognition();
+          recognitionRef.current?.start();
+        }, 100);
       }
     }
   };
@@ -175,6 +283,12 @@ instance.onresult = async (event: any) => {
         <h1 className="text-xl font-black text-white dark:text-white">
           Smarty <span className="text-[10px] font-bold opacity-40">AI VOICE</span>
         </h1>
+        {/* مؤشر الاتصال */}
+        {!isOnline && (
+          <span className="ml-auto text-[10px] font-bold text-red-400 bg-red-500/20 px-2 py-1 rounded-full">
+            غير متصل
+          </span>
+        )}
       </div>
 
       {/* المحتوى الرئيسي */}
@@ -214,7 +328,7 @@ instance.onresult = async (event: any) => {
           {/* الشعار الرئيسي - الكائن الحي */}
           <button
             onClick={toggleListening}
-            disabled={isProcessing}
+            disabled={isProcessing && !isSpeaking}
             className="relative w-44 h-44 rounded-full flex items-center justify-center focus:outline-none group cursor-pointer"
             style={{
               transform: `scale(${getPulseScale()})`,
@@ -252,20 +366,31 @@ instance.onresult = async (event: any) => {
               </svg>
             </div>
 
+            {/* مؤشر التقدم الدائري أثناء المعالجة */}
+            {isProcessing && (
+              <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />
+            )}
+
             {/* تأثير hover */}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
           </button>
 
           {/* حالة الكائن */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center min-h-[24px]">
+            {!isOnline && (
+              <p className="text-red-400 text-sm font-medium">⚠️ لا يوجد اتصال بالإنترنت</p>
+            )}
             {isListening && (
-              <p className="text-white/70 text-sm font-medium animate-pulse">أستمع إليك...</p>
+              <p className="text-white/70 text-sm font-medium animate-pulse">🎙️ أستمع إليك...</p>
             )}
             {isProcessing && (
-              <p className="text-white/70 text-sm font-medium">أفكر...</p>
+              <p className="text-white/70 text-sm font-medium">🤔 أفكر...</p>
             )}
             {isSpeaking && (
-              <p className="text-white/70 text-sm font-medium">أتحدث...</p>
+              <p className="text-white/70 text-sm font-medium">🗣️ أتحدث...</p>
+            )}
+            {!isListening && !isProcessing && !isSpeaking && isOnline && (
+              <p className="text-white/40 text-xs font-medium">اضغط على الشعار للتحدث</p>
             )}
           </div>
         </div>
@@ -295,4 +420,4 @@ instance.onresult = async (event: any) => {
       </footer>
     </div>
   );
-      }
+}
