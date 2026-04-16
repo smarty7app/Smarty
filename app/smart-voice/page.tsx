@@ -236,42 +236,60 @@ export default function SmartVoicePage() {
   }, [language, clearSilenceTimer]);
 
   const toggleListening = () => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
+  // إذا كان المساعد يتحدث، أوقف الكلام أولاً
+  if (isSpeaking) {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }
 
-    if (isListening) {
-      if (useLocalWhisper) {
-        mediaRecorderRef.current?.stop();
-      } else {
-        recognitionRef.current?.stop();
-      }
+  // إذا كان جاري التسجيل/الاستماع، قم بإيقافه
+  if (isListening) {
+    // إيقاف التسجيل المحلي (Whisper)
+    if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
       clearSilenceTimer();
+      setIsListening(false);
       return;
     }
-
-    if (isProcessing) return;
-
-    if (useLocalWhisper) {
-      startLocalRecording();
-    } else {
-      if (!isOnline) {
-        setResponse('لا يوجد اتصال بالإنترنت');
-        return;
-      }
-      recognitionRef.current = createRecognition();
+    
+    // إيقاف التعرف على الصوت (Web Speech API)
+    if (recognitionRef.current) {
       try {
-        recognitionRef.current?.start();
-      } catch (error) {
-        console.error('Failed to start recognition:', error);
-        setTimeout(() => {
-          recognitionRef.current = createRecognition();
-          recognitionRef.current?.start();
-        }, 100);
+        recognitionRef.current.stop();
+      } catch (e) {
+        // قد يظهر خطأ إذا كان متوقفاً بالفعل
+        console.log("Recognition already stopped");
       }
     }
-  };
+    clearSilenceTimer();
+    setIsListening(false);
+    return;
+  }
+
+  // إذا كان جاري المعالجة، لا تفعل شيئاً
+  if (isProcessing) return;
+
+  // بدء التسجيل/الاستماع
+  if (useLocalWhisper) {
+    startLocalRecording();
+  } else {
+    if (!isOnline) {
+      setResponse('لا يوجد اتصال بالإنترنت');
+      return;
+    }
+    // إنشاء كائن التعرف من جديد (للتأكد من أنه نظيف)
+    recognitionRef.current = createRecognition();
+    try {
+      recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Failed to start recognition:', error);
+      setTimeout(() => {
+        recognitionRef.current = createRecognition();
+        recognitionRef.current?.start();
+      }, 100);
+    }
+  }
+};
 
   // حساب حجم النبض حسب الحالة
   const getPulseScale = () => {
