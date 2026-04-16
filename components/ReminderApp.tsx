@@ -164,12 +164,16 @@ export default function ReminderApp() {
         {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6 text-center">{assistantMessage}</div>}
 
         <section className="space-y-4">
-          <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4" /> التذكيرات النشطة ({activeReminders.length})</h3>
+          <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+           <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
+          </h3>
           <div className="flex flex-col gap-3">
             <AnimatePresence>
               {activeReminders.length === 0 ? (
-                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10"><p className="text-white/40 font-black text-xs uppercase">لا توجد تذكيرات نشطة</p></div>
-              ) : (
+                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
+                  <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
+                </div>
+                ) : (
                 activeReminders.map((rem) => {
                   const exactTime = formatDetectedTime(rem.reminderTime, 'ar');
                   const { text: countdown, isPast } = formatCountdown(rem.reminderTime, 'ar');
