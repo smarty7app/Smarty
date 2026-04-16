@@ -9,11 +9,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.64",
     "@auth/mongodb-adapter": "^2.4.0",
     "@ducanh2912/next-pwa": "^10.0.0",
     "@google/generative-ai": "^0.21.0",
     "@hookform/resolvers": "^5.2.1",
     "@supabase/supabase-js": "^2.98.0",
+    "ai": "^6.0.167",
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
