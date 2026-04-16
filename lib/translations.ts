@@ -76,6 +76,12 @@ export interface Translations {
   premium_assistant: string;
   logout: string;
   
+  // About screen
+  never_forget: string;
+  privacy_policy: string;
+  terms_of_service: string;
+  telegram: string;  
+  
   // Footer
   footer_copyright: string;
 }
