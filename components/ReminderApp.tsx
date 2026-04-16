@@ -155,7 +155,7 @@ export default function ReminderApp() {
 
         <div className="flex flex-col items-center justify-center my-8">
           <VoiceInput onTranscript={handleVoiceInput} />
-          <p className="text-center text-sm text-white/70 mt-2">اضغط للتحدث مع المساعد الذكي</p>
+        <p className="text-center text-sm text-white/70 mt-2">{t.tap_to_speak}</p>
         </div>
 
         {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6 text-center">{assistantMessage}</div>}
