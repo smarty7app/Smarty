@@ -98,6 +98,9 @@ export const translations: Record<LanguageCode, Translations> = {
     english: "الإنجليزية",
     french: "الفرنسية",
     chinese: "الصينية",
+    
+    // Messages
+    language_changed: "تم تغيير اللغة",
         
     // Reminders
     add_reminder: "إضافة تذكير",
