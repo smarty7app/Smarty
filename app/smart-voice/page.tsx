@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, Wifi, WifiOff } from 'lucide-react';
 import { transcribeLocal } from '@/lib/local-whisper';
+import {ArrowLeft, Wifi, WifiOff, Loader2, Mic, Volume2, Sparkles, MessageCircle } from 'lucide-react';
 
 export default function SmartVoicePage() {
   const router = useRouter();
@@ -331,7 +332,7 @@ export default function SmartVoicePage() {
           </button>
 
           {/* حالة الكائن */}
-          <div className="mt-6 text-center min-h-[24px]">
+        <div className="mt-6 text-center min-h-[24px]">
   {/* لا يوجد اتصال بالإنترنت */}
   {!isOnline && (
     <div className="flex items-center justify-center gap-2 text-red-400">
@@ -383,25 +384,8 @@ export default function SmartVoicePage() {
       </p>
     </div>
   )}
-</div>
-
-        {/* عرض النص المُسمع والرد */}
-        <div className="w-full max-w-md space-y-4 mt-10">
-          {transcript && (
-            <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-              <p className="text-xs font-bold text-white/40 uppercase tracking-wider">أنت</p>
-              <p className="text-white text-lg font-medium mt-1">{transcript}</p>
-            </div>
-          )}
-          {response && (
-            <div className="bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 backdrop-blur-md rounded-2xl p-5 border border-white/10">
-              <p className="text-xs font-bold text-white/40 uppercase tracking-wider">سمارتي</p>
-              <p className="text-white text-lg font-medium mt-1">{response}</p>
-            </div>
-          )}
-        </div>
-      </div>
-
+</div> 
+          
       {/* تذييل */}
       <footer className="py-6 text-center">
         <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">
