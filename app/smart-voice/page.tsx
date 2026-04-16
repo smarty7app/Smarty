@@ -146,55 +146,50 @@ export default function SmartVoicePage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-10">
         {/* زر الميكروفون الفخم */}
 <div className="relative flex flex-col items-center">
-  {/* حلقات النبض */}
+
+  {/* الهالة الخارجية الغامضة */}
   {(isListening || isProcessing) && (
     <>
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#E65100] to-amber-500 blur-xl opacity-40 animate-pulse" />
-      <div className="absolute inset-0 rounded-full bg-[#E65100] blur-2xl opacity-20 animate-ping" />
+      <div className="absolute w-52 h-52 rounded-full bg-[#E65100]/20 blur-3xl animate-pulse" />
+      <div className="absolute w-60 h-60 rounded-full bg-amber-500/10 blur-[80px] animate-ping" />
     </>
   )}
 
   <button
     onClick={toggleListening}
     disabled={isProcessing}
-    className="relative w-36 h-36 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-[#E65100]/30 group"
+    className="relative w-40 h-40 rounded-full flex items-center justify-center focus:outline-none group"
   >
-    {/* خلفية داكنة متدرجة */}
-    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-black shadow-2xl border border-white/10" />
-    
-    {/* طبقة شفافة من لون التطبيق */}
-    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/20 to-amber-500/20 backdrop-blur-[2px]" />
-    
-    {/* أيقونة التطبيق شفافة في المنتصف */}
-    <div className="absolute inset-0 rounded-full flex items-center justify-center opacity-25 group-hover:opacity-35 transition-opacity duration-500">
-      <svg className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
-      </svg>
+    {/* الخلفية الداكنة العميقة */}
+    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-black via-zinc-900 to-black shadow-[0_0_60px_rgba(0,0,0,0.9)]" />
+
+    {/* طبقة زجاجية خفيفة */}
+    <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-md border border-white/10" />
+
+    {/* توهج داخلي فاخر */}
+    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/20 to-transparent opacity-70" />
+
+    {/* الشعار في المنتصف */}
+    <div className="relative z-10 flex items-center justify-center">
+      <img
+        src="/logo.png" // ← ضع مسار شعارك هنا
+        alt="logo"
+        className="w-20 h-20 object-contain opacity-80 group-hover:opacity-100 transition duration-500"
+      />
     </div>
 
-    {/* الأيقونة في المقدمة */}
-    <div className="relative z-10">
-      {isProcessing ? (
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
-      ) : isListening ? (
-        <Mic className="w-14 h-14 text-white drop-shadow-lg" />
-      ) : isSpeaking ? (
-        <Volume2 className="w-14 h-14 text-white drop-shadow-lg" />
-      ) : (
-        <Mic className="w-14 h-14 text-white drop-shadow-lg group-hover:text-amber-300 transition-colors duration-300" />
-      )}
-    </div>
+    {/* تأثير hover غامض */}
+    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
 
-    {/* تأثير توهج عند hover */}
-    <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-[#E65100]/30 to-amber-500/30 blur-md" />
+    {/* نبض خفيف دائم (حياة) */}
+    <div className="absolute inset-0 rounded-full animate-[pulse_4s_ease-in-out_infinite] bg-[#E65100]/10 blur-2xl" />
   </button>
 
-  {/* النص أسفل الزر */}
-  <p className="mt-6 text-white/40 text-[10px] font-bold uppercase tracking-[0.3em]">
+  {/* النص السفلي */}
+  <p className="mt-6 text-white/30 text-[10px] font-bold uppercase tracking-[0.4em]">
     SMARTY AI ASSISTANT
   </p>
 </div>
-
         {/* عرض النص المُسمع والرد */}
         <div className="w-full max-w-md space-y-4 mt-8">
           {transcript && (
