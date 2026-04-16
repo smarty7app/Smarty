@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: google('gemini-1.5-flash'),
-    system: `أنت سمارتي، مساعد ذكي متخصص في إدارة التذكيرات والمواعيد. 
+    system: `أنت Smarty، مساعد ذكي متخصص في إدارة التذكيرات والمواعيد. 
              أنت تتحدث العربية بطلاقة، ودود ومفيد. إجاباتك مختصرة ومباشرة.
              المستخدم الحالي: ${userName || 'مستخدم'} (${userEmail || ''})`,
     prompt: prompt,
