@@ -378,19 +378,19 @@ export default function SmartVoicePage() {
           {/* حالة الكائن */}
           <div className="mt-6 text-center min-h-[24px]">
             {!isOnline && (
-              <p className="text-red-400 text-sm font-medium">⚠️ لا يوجد اتصال بالإنترنت</p>
+              <p className="text-red-400 text-sm font-medium"> لا يوجد اتصال بالإنترنت</p>
             )}
             {isListening && (
-              <p className="text-white/70 text-sm font-medium animate-pulse">🎙️ أستمع إليك...</p>
+              <p className="text-white/70 text-sm font-medium animate-pulse"> يستمع الاَن...</p>
             )}
             {isProcessing && (
-              <p className="text-white/70 text-sm font-medium">🤔 أفكر...</p>
+              <p className="text-white/70 text-sm font-medium"> يفكر...</p>
             )}
             {isSpeaking && (
-              <p className="text-white/70 text-sm font-medium">🗣️ أتحدث...</p>
+              <p className="text-white/70 text-sm font-medium">يتحدث...</p>
             )}
             {!isListening && !isProcessing && !isSpeaking && isOnline && (
-              <p className="text-white/40 text-xs font-medium">اضغط على الشعار للتحدث</p>
+              <p className="text-white/40 text-xs font-medium">اضغط على الشعار للتحدث مع المساعد الذكي</p>
             )}
           </div>
         </div>
