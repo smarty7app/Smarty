@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft } from 'lucide-react';
 
-const API_URL = 'https://mart-north-yacht-eat.trycloudflare.com/ask';
-
 export default function SmartVoicePage() {
   const router = useRouter();
   const [isListening, setIsListening] = useState(false);
@@ -44,76 +42,44 @@ export default function SmartVoicePage() {
     instance.continuous = false;
     instance.interimResults = false;
 
-    instance.onstart = () => {
-      setIsListening(true);
-      setTranscript('');
+instance.onresult = async (event: any) => {
+  const text = event.results[0][0].transcript;
+  setTranscript(text);
+  setIsListening(false);
+  setIsProcessing(true);
+
+  try {
+    // ✅ استخدام API Route المحلي (Google Gemini)
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: text,
+        userId: userId,
+        userEmail: userEmail,
+        userName: userName,
+      }),
+    });
+
+    if (!res.ok) throw new Error('API request failed');
+    
+    const reply = await res.text();
+    setResponse(reply);
+
+    const utterance = new SpeechSynthesisUtterance(reply);
+    utterance.lang = 'ar-SA';
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsProcessing(false);
     };
-
-    instance.onresult = async (event: any) => {
-      const text = event.results[0][0].transcript;
-      setTranscript(text);
-      setIsListening(false);
-      setIsProcessing(true);
-
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: text,
-            userId: userId,
-            userEmail: userEmail,
-            userName: userName,
-          }),
-        });
-
-        const data = await res.json();
-        const reply = data.reply || 'عذراً، لم أستطع الرد.';
-        setResponse(reply);
-
-        if (data.audio) {
-          const audio = new Audio(`data:audio/mp3;base64,${data.audio}`);
-          audio.onplay = () => {
-            setIsSpeaking(true);
-            setIsProcessing(false);
-          };
-          audio.onended = () => setIsSpeaking(false);
-          audio.onerror = () => {
-            const utterance = new SpeechSynthesisUtterance(reply);
-            utterance.lang = 'ar-SA';
-            utterance.onstart = () => {
-              setIsSpeaking(true);
-              setIsProcessing(false);
-            };
-            utterance.onend = () => setIsSpeaking(false);
-            window.speechSynthesis.speak(utterance);
-          };
-          audio.play().catch(() => {
-            const utterance = new SpeechSynthesisUtterance(reply);
-            utterance.lang = 'ar-SA';
-            utterance.onstart = () => {
-              setIsSpeaking(true);
-              setIsProcessing(false);
-            };
-            utterance.onend = () => setIsSpeaking(false);
-            window.speechSynthesis.speak(utterance);
-          });
-        } else {
-          const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.lang = 'ar-SA';
-          utterance.onstart = () => {
-            setIsSpeaking(true);
-            setIsProcessing(false);
-          };
-          utterance.onend = () => setIsSpeaking(false);
-          window.speechSynthesis.speak(utterance);
-        }
-      } catch (error) {
-        console.error(error);
-        setResponse('حدث خطأ في الاتصال بالمساعد.');
-        setIsProcessing(false);
-      }
-    };
+    utterance.onend = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.error(error);
+    setResponse('حدث خطأ في الاتصال بالمساعد.');
+    setIsProcessing(false);
+  }
+};
 
     instance.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
