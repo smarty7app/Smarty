@@ -150,7 +150,10 @@ export default function ReminderApp() {
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
         <div className="mb-8 relative group">
           <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40", isRTL ? "left-4" : "right-4")} />
-          <input placeholder="بحث في التذكيرات..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50" />
+          <input
+            placeholder={t.search_reminders_placeholder}
+            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50"
+          /> 
         </div>
 
         <div className="flex flex-col items-center justify-center my-8">
