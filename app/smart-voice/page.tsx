@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Wifi, WifiOff } from 'lucide-react';
+import { transcribeLocal } from '@/lib/local-whisper';
 
 export default function SmartVoicePage() {
   const router = useRouter();
@@ -16,7 +17,11 @@ export default function SmartVoicePage() {
   const [pulsePhase, setPulsePhase] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
+  const [useLocalWhisper, setUseLocalWhisper] = useState(false); // ✅ خيار جديد
+  const [isModelLoading, setIsModelLoading] = useState(false); // ✅ مؤشر تحميل النموذج
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // ✅ للتسجيل المحلي
+  const audioChunksRef = useRef<Blob[]>([]); // ✅ للتسجيل المحلي
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
@@ -46,14 +51,108 @@ export default function SmartVoicePage() {
   }, []);
 
   // تنظيف مؤقت الصمت
-  const clearSilenceTimer = () => {
+  const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
-  };
+  }, []);
 
-  // دالة إنشاء كائن SpeechRecognition
+  // ✅ دالة بدء التسجيل المحلي (Whisper)
+  const startLocalRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        
+        setIsListening(false);
+        setIsProcessing(true);
+        setIsModelLoading(true);
+        setResponse('جاري تحميل نموذج الذكاء الاصطناعي المحلي...');
+        
+        try {
+          const text = await transcribeLocal(audioBlob);
+          setTranscript(text);
+          await processText(text);
+        } catch (error) {
+          console.error('Local transcription error:', error);
+          setResponse('فشل التفريغ المحلي. تأكد من اتصالك بالإنترنت للتحميل الأولي.');
+          setIsProcessing(false);
+        } finally {
+          setIsModelLoading(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsListening(true);
+      setTranscript('');
+      setResponse('');
+      clearSilenceTimer();
+      
+      silenceTimerRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
+        }
+      }, 10000);
+    } catch (error) {
+      console.error('Mic error:', error);
+      setResponse('فشل الوصول إلى الميكروفون.');
+    }
+  }, [clearSilenceTimer]);
+
+  // ✅ دالة معالجة النص (مشتركة بين Web Speech و Whisper)
+  const processText = useCallback(async (text: string) => {
+    setIsProcessing(true);
+    try {
+      if (!isOnline) throw new Error('لا يوجد اتصال بالإنترنت');
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text, userId, userEmail, userName }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 429) throw new Error('تم تجاوز الحد اليومي للطلبات');
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      const reply = await res.text();
+      setResponse(reply);
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(reply);
+      utterance.lang = 'ar-SA';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.onstart = () => { setIsSpeaking(true); setIsProcessing(false); };
+      utterance.onend = () => { setIsSpeaking(false); setRetryCount(0); };
+      utterance.onerror = () => { setIsSpeaking(false); setIsProcessing(false); setResponse('عذراً، لم أستطع نطق الرد.'); };
+      window.speechSynthesis.speak(utterance);
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      if (retryCount < 3 && error.message.includes('fetch')) {
+        setRetryCount(prev => prev + 1);
+        setResponse(`محاولة إعادة الاتصال (${retryCount + 1}/3)...`);
+        setTimeout(() => processText(text), 2000);
+      } else {
+        setResponse(error.message || 'حدث خطأ في الاتصال بالمساعد.');
+        setIsProcessing(false);
+      }
+    }
+  }, [isOnline, userId, userEmail, userName, retryCount]);
+
+  // دالة إنشاء كائن SpeechRecognition (Web Speech API)
   const createRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -64,7 +163,7 @@ export default function SmartVoicePage() {
     const instance = new SpeechRecognition();
     instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
     instance.continuous = false;
-    instance.interimResults = true; // تفعيل النتائج المؤقتة
+    instance.interimResults = true;
 
     instance.onstart = () => {
       setIsListening(true);
@@ -72,8 +171,6 @@ export default function SmartVoicePage() {
       setResponse('');
       setRetryCount(0);
       clearSilenceTimer();
-      
-      // إيقاف تلقائي بعد 10 ثوانٍ من الصمت
       silenceTimerRef.current = setTimeout(() => {
         if (isListening) {
           recognitionRef.current?.stop();
@@ -82,91 +179,16 @@ export default function SmartVoicePage() {
       }, 10000);
     };
 
-    instance.onaudiostart = () => {
-      clearSilenceTimer();
-    };
-
-    instance.onaudioend = () => {
-      clearSilenceTimer();
-    };
+    instance.onaudiostart = () => clearSilenceTimer();
+    instance.onaudioend = () => clearSilenceTimer();
 
     instance.onresult = async (event: any) => {
       clearSilenceTimer();
-      
       const text = event.results[0][0].transcript;
       setTranscript(text);
-      
-      // إذا كانت نتيجة نهائية
       if (event.results[0].isFinal) {
         setIsListening(false);
-        setIsProcessing(true);
-
-        try {
-          if (!isOnline) {
-            throw new Error('لا يوجد اتصال بالإنترنت');
-          }
-
-          const res = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt: text,
-              userId: userId,
-              userEmail: userEmail,
-              userName: userName,
-            }),
-          });
-
-          if (!res.ok) {
-            if (res.status === 429) {
-              throw new Error('تم تجاوز الحد اليومي للطلبات');
-            }
-            throw new Error(`API error: ${res.status}`);
-          }
-
-          const reply = await res.text();
-          setResponse(reply);
-
-          // إلغاء أي كلام سابق قبل البدء
-          window.speechSynthesis.cancel();
-          
-          const utterance = new SpeechSynthesisUtterance(reply);
-          utterance.lang = 'ar-SA';
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.onstart = () => {
-            setIsSpeaking(true);
-            setIsProcessing(false);
-          };
-          utterance.onend = () => {
-            setIsSpeaking(false);
-            setRetryCount(0);
-          };
-          utterance.onerror = () => {
-            setIsSpeaking(false);
-            setIsProcessing(false);
-            setResponse('عذراً، لم أستطع نطق الرد.');
-          };
-          
-          window.speechSynthesis.speak(utterance);
-        } catch (error: any) {
-          console.error('Chat error:', error);
-          
-          // محاولة إعادة الاتصال (حد أقصى 3 مرات)
-          if (retryCount < 3 && error.message.includes('fetch')) {
-            setRetryCount(prev => prev + 1);
-            setResponse(`محاولة إعادة الاتصال (${retryCount + 1}/3)...`);
-            setTimeout(() => {
-              if (recognitionRef.current) {
-                // إعادة المحاولة
-                instance.onresult(event);
-              }
-            }, 2000);
-          } else {
-            setResponse(error.message || 'حدث خطأ في الاتصال بالمساعد.');
-            setIsProcessing(false);
-          }
-        }
+        await processText(text);
       }
     };
 
@@ -175,22 +197,11 @@ export default function SmartVoicePage() {
       setIsListening(false);
       setIsProcessing(false);
       clearSilenceTimer();
-      
       switch (event.error) {
-        case 'not-allowed':
-          setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
-          break;
-        case 'no-speech':
-          setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.');
-          break;
-        case 'network':
-          setResponse('خطأ في الشبكة، تحقق من اتصالك.');
-          break;
-        case 'aborted':
-          // تجاهل الخطأ عند الإيقاف اليدوي
-          break;
-        default:
-          setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
+        case 'not-allowed': setResponse('الرجاء السماح بالوصول إلى الميكروفون.'); break;
+        case 'no-speech': setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.'); break;
+        case 'network': setResponse('خطأ في الشبكة، تحقق من اتصالك.'); break;
+        default: setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
       }
     };
 
@@ -200,75 +211,63 @@ export default function SmartVoicePage() {
     };
 
     return instance;
-  }, [language, userId, userEmail, userName, isOnline, retryCount]);
+  }, [language, userId, userEmail, userName, isOnline, retryCount, processText, clearSilenceTimer]);
 
   // تنظيف الكائن القديم عند تغيير اللغة
   useEffect(() => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch (e) {
-        // تجاهل الأخطاء
-      }
+      try { recognitionRef.current.abort(); } catch (e) {}
+    }
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
     }
     recognitionRef.current = null;
+    mediaRecorderRef.current = null;
     clearSilenceTimer();
-  }, [language]);
+  }, [language, clearSilenceTimer]);
 
-  const toggleListening = async () => {
-  // إذا كان هناك جلسة استماع نشطة، أوقفها
-  if (isListening) {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-        // ✅ إيقاف أي مسارات صوتية مفتوحة (مهم للهاتف)
-        const tracks = await navigator.mediaDevices.getUserMedia({ audio: true });
-        tracks.getTracks().forEach(track => track.stop());
-      } catch (e) {
-        // تجاهل الأخطاء
-      }
+  const toggleListening = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
-    setIsListening(false);
-    return;
-  }
 
-  // إذا كان قيد المعالجة، لا تفعل شيئًا
-  if (isProcessing) return;
+    if (isListening) {
+      if (useLocalWhisper) {
+        mediaRecorderRef.current?.stop();
+      } else {
+        recognitionRef.current?.stop();
+      }
+      clearSilenceTimer();
+      return;
+    }
 
-  // ✅ طلب صلاحية الميكروفون أولاً
-  try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (err) {
-    console.error('Microphone permission denied:', err);
-    setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
-    return;
-  }
+    if (isProcessing) return;
 
-  // إنشاء كائن جديد إذا لم يكن موجودًا
-  if (!recognitionRef.current) {
-    recognitionRef.current = createRecognition();
-  }
-
-  if (recognitionRef.current) {
-    try {
-      recognitionRef.current.start();
-    } catch (error) {
-      console.error('Failed to start recognition:', error);
-      // إعادة إنشاء الكائن إذا فشل البدء
+    if (useLocalWhisper) {
+      startLocalRecording();
+    } else {
+      if (!isOnline) {
+        setResponse('لا يوجد اتصال بالإنترنت');
+        return;
+      }
       recognitionRef.current = createRecognition();
-      if (recognitionRef.current) {
+      try {
+        recognitionRef.current?.start();
+      } catch (error) {
+        console.error('Failed to start recognition:', error);
         setTimeout(() => {
+          recognitionRef.current = createRecognition();
           recognitionRef.current?.start();
-        }, 50);
+        }, 100);
       }
     }
-  }
-};
+  };
 
   // حساب حجم النبض حسب الحالة
   const getPulseScale = () => {
     if (isListening) return 1.12 + Math.sin(pulsePhase * 0.25) * 0.04;
-    if (isProcessing) return 1.08 + Math.sin(pulsePhase * 0.2) * 0.03;
+    if (isProcessing || isModelLoading) return 1.08 + Math.sin(pulsePhase * 0.2) * 0.03;
     if (isSpeaking) return 1.06 + Math.sin(pulsePhase * 0.15) * 0.02;
     return 1 + Math.sin(pulsePhase * 0.12) * 0.025;
   };
@@ -276,7 +275,7 @@ export default function SmartVoicePage() {
   // حساب شفافية الشعار حسب الحالة
   const getLogoOpacity = () => {
     if (isListening) return 0.95 + Math.sin(pulsePhase * 0.3) * 0.05;
-    if (isProcessing) return 0.85;
+    if (isProcessing || isModelLoading) return 0.85;
     if (isSpeaking) return 0.8;
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
@@ -291,113 +290,54 @@ export default function SmartVoicePage() {
         <h1 className="text-xl font-black text-white dark:text-white">
           Smarty <span className="text-[10px] font-bold opacity-40">AI VOICE</span>
         </h1>
-        {/* مؤشر الاتصال */}
-        {!isOnline && (
-          <span className="ml-auto text-[10px] font-bold text-red-400 bg-red-500/20 px-2 py-1 rounded-full">
-            غير متصل
-          </span>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {!isOnline && <WifiOff className="w-4 h-4 text-red-400" />}
+          {/* ✅ زر التبديل بين السحابي والمحلي */}
+          <button
+            onClick={() => setUseLocalWhisper(!useLocalWhisper)}
+            className={`text-[10px] font-bold px-2 py-1 rounded-full transition ${useLocalWhisper ? 'bg-purple-500/30 text-purple-200' : 'bg-white/10 text-white/60'}`}
+          >
+            {useLocalWhisper ? 'محلي' : 'سحابي'}
+          </button>
+        </div>
       </div>
 
       {/* المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {/* الكائن الحي - الشعار النابض */}
         <div className="relative flex flex-col items-center justify-center">
-          {/* هالة خارجية كبيرة */}
-          <div
-            className="absolute w-80 h-80 rounded-full bg-gradient-to-r from-[#E65100]/30 via-amber-500/20 to-[#E65100]/30 blur-3xl"
-            style={{
-              opacity: isListening ? 0.7 : isProcessing ? 0.5 : isSpeaking ? 0.4 : 0.25,
-              transform: `scale(${getPulseScale() * 1.1})`,
-              transition: 'opacity 0.5s ease, transform 0.4s ease-out',
-            }}
-          />
-
-          {/* هالة متوسطة */}
-          <div
-            className="absolute w-64 h-64 rounded-full bg-[#E65100]/40 blur-2xl"
-            style={{
-              opacity: isListening ? 0.5 : isSpeaking ? 0.35 : 0.2,
-              transform: `scale(${getPulseScale() * 1.05})`,
-              transition: 'opacity 0.5s ease, transform 0.4s ease-out',
-            }}
-          />
-
-          {/* هالة داخلية */}
-          <div
-            className="absolute w-52 h-52 rounded-full bg-amber-500/30 blur-xl"
-            style={{
-              opacity: isListening ? 0.4 : 0.15,
-              transform: `scale(${getPulseScale()})`,
-              transition: 'opacity 0.5s ease, transform 0.4s ease-out',
-            }}
-          />
+          {/* هالات */}
+          <div className="absolute w-80 h-80 rounded-full bg-gradient-to-r from-[#E65100]/30 via-amber-500/20 to-[#E65100]/30 blur-3xl" style={{ opacity: isListening ? 0.7 : isProcessing ? 0.5 : isSpeaking ? 0.4 : 0.25, transform: `scale(${getPulseScale() * 1.1})`, transition: 'opacity 0.5s ease, transform 0.4s ease-out' }} />
+          <div className="absolute w-64 h-64 rounded-full bg-[#E65100]/40 blur-2xl" style={{ opacity: isListening ? 0.5 : isSpeaking ? 0.35 : 0.2, transform: `scale(${getPulseScale() * 1.05})`, transition: 'opacity 0.5s ease, transform 0.4s ease-out' }} />
+          <div className="absolute w-52 h-52 rounded-full bg-amber-500/30 blur-xl" style={{ opacity: isListening ? 0.4 : 0.15, transform: `scale(${getPulseScale()})`, transition: 'opacity 0.5s ease, transform 0.4s ease-out' }} />
 
           {/* الشعار الرئيسي - الكائن الحي */}
           <button
             onClick={toggleListening}
             disabled={isProcessing && !isSpeaking}
             className="relative w-44 h-44 rounded-full flex items-center justify-center focus:outline-none group cursor-pointer"
-            style={{
-              transform: `scale(${getPulseScale()})`,
-              transition: 'transform 0.4s ease-out',
-            }}
+            style={{ transform: `scale(${getPulseScale()})`, transition: 'transform 0.4s ease-out' }}
           >
-            {/* الجسم الداكن */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-black via-zinc-900 to-black shadow-[0_0_80px_rgba(0,0,0,0.8)]" />
-
-            {/* طبقة زجاجية */}
             <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-xl border border-white/10" />
-
-            {/* الدم - اللون البرتقالي النابض */}
-            <div
-              className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30"
-              style={{
-                opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25,
-                transition: 'opacity 0.5s ease',
-              }}
-            />
-
-            {/* شعار Smarty */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
-              <svg
-                className="w-24 h-24 text-white drop-shadow-2xl"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                style={{
-                  opacity: getLogoOpacity(),
-                  filter: isListening ? 'drop-shadow(0 0 25px #E65100)' : 'drop-shadow(0 0 10px rgba(230,81,0,0.3))',
-                  transition: 'opacity 0.3s ease, filter 0.3s ease',
-                }}
-              >
+              <svg className="w-24 h-24 text-white drop-shadow-2xl" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: getLogoOpacity(), filter: isListening ? 'drop-shadow(0 0 25px #E65100)' : 'drop-shadow(0 0 10px rgba(230,81,0,0.3))', transition: 'opacity 0.3s ease, filter 0.3s ease' }}>
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
               </svg>
             </div>
-
-            {/* مؤشر التقدم الدائري أثناء المعالجة */}
-            {isProcessing && (
-              <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />
-            )}
-
-            {/* تأثير hover */}
+            {(isProcessing || isModelLoading) && <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
           </button>
 
           {/* حالة الكائن */}
           <div className="mt-6 text-center min-h-[24px]">
-            {!isOnline && (
-              <p className="text-red-400 text-sm font-medium"> لا يوجد اتصال بالإنترنت</p>
-            )}
-            {isListening && (
-              <p className="text-white/70 text-sm font-medium animate-pulse"> يستمع الاَن...</p>
-            )}
-            {isProcessing && (
-              <p className="text-white/70 text-sm font-medium"> يفكر...</p>
-            )}
-            {isSpeaking && (
-              <p className="text-white/70 text-sm font-medium">يتحدث...</p>
-            )}
-            {!isListening && !isProcessing && !isSpeaking && isOnline && (
+            {!isOnline && <p className="text-red-400 text-sm font-medium">⚠️ لا يوجد اتصال بالإنترنت</p>}
+            {isModelLoading && <p className="text-purple-300 text-sm font-medium">⬇️ تحميل النموذج المحلي...</p>}
+            {isListening && <p className="text-white/70 text-sm font-medium animate-pulse">🎙️ {useLocalWhisper ? 'أسجل...' : 'يستمع الآن...'}</p>}
+            {isProcessing && !isModelLoading && <p className="text-white/70 text-sm font-medium">🤔 يفكر...</p>}
+            {isSpeaking && <p className="text-white/70 text-sm font-medium">🗣️ يتحدث...</p>}
+            {!isListening && !isProcessing && !isSpeaking && !isModelLoading && isOnline && (
               <p className="text-white/40 text-xs font-medium">اضغط على الشعار للتحدث مع المساعد الذكي</p>
             )}
           </div>
