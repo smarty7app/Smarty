@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -31,14 +31,28 @@ export default function SmartVoicePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // دالة إنشاء كائن SpeechRecognition
-  const createRecognition = useCallback(() => {
+  // حساب حجم النبض حسب الحالة
+  const getPulseScale = () => {
+    if (isListening) return 1.12 + Math.sin(pulsePhase * 0.25) * 0.04;
+    if (isProcessing) return 1.08 + Math.sin(pulsePhase * 0.2) * 0.03;
+    if (isSpeaking) return 1.06 + Math.sin(pulsePhase * 0.15) * 0.02;
+    return 1 + Math.sin(pulsePhase * 0.12) * 0.025;
+  };
+
+  // حساب شفافية الشعار حسب الحالة
+  const getLogoOpacity = () => {
+    if (isListening) return 0.95 + Math.sin(pulsePhase * 0.3) * 0.05;
+    if (isProcessing) return 0.85;
+    if (isSpeaking) return 0.8;
+    return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
+  };
+
+  useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('متصفحك لا يدعم التعرف على الصوت');
-      return null;
+      return;
     }
-
     const instance = new SpeechRecognition();
     instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
     instance.continuous = false;
@@ -115,88 +129,27 @@ export default function SmartVoicePage() {
       }
     };
 
-    instance.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
+    instance.onerror = () => {
       setIsListening(false);
       setIsProcessing(false);
-      
-      // رسائل خطأ أكثر وضوحًا
-      if (event.error === 'not-allowed') {
-        setResponse('الرجاء السماح بالوصول إلى الميكروفون.');
-      } else if (event.error === 'no-speech') {
-        setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.');
-      } else {
-        setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
-      }
+      setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
     };
 
     instance.onend = () => {
       setIsListening(false);
     };
 
-    return instance;
+    recognitionRef.current = instance;
+
+    return () => instance.abort();
   }, [language, userId, userEmail, userName]);
 
-  // تنظيف الكائن القديم عند تغيير اللغة
-  useEffect(() => {
-    // إيقاف أي جلسة استماع نشطة
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.abort();
-      } catch (e) {
-        // تجاهل الأخطاء
-      }
-    }
-    recognitionRef.current = null;
-  }, [language]);
-
   const toggleListening = () => {
-    // إذا كان هناك جلسة استماع نشطة، أوقفها
     if (isListening) {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      return;
+      recognitionRef.current?.stop();
+    } else {
+      recognitionRef.current?.start();
     }
-
-    // إذا كان قيد المعالجة، لا تفعل شيئًا
-    if (isProcessing) return;
-
-    // إنشاء كائن جديد إذا لم يكن موجودًا
-    if (!recognitionRef.current) {
-      recognitionRef.current = createRecognition();
-    }
-
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Failed to start recognition:', error);
-        // إعادة إنشاء الكائن إذا فشل البدء
-        recognitionRef.current = createRecognition();
-        if (recognitionRef.current) {
-          setTimeout(() => {
-            recognitionRef.current?.start();
-          }, 50);
-        }
-      }
-    }
-  };
-
-  // حساب حجم النبض حسب الحالة
-  const getPulseScale = () => {
-    if (isListening) return 1.12 + Math.sin(pulsePhase * 0.25) * 0.04;
-    if (isProcessing) return 1.08 + Math.sin(pulsePhase * 0.2) * 0.03;
-    if (isSpeaking) return 1.06 + Math.sin(pulsePhase * 0.15) * 0.02;
-    return 1 + Math.sin(pulsePhase * 0.12) * 0.025;
-  };
-
-  // حساب شفافية الشعار حسب الحالة
-  const getLogoOpacity = () => {
-    if (isListening) return 0.95 + Math.sin(pulsePhase * 0.3) * 0.05;
-    if (isProcessing) return 0.85;
-    if (isSpeaking) return 0.8;
-    return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
   return (
@@ -329,4 +282,4 @@ export default function SmartVoicePage() {
       </footer>
     </div>
   );
-      }
+}
