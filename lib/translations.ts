@@ -162,6 +162,13 @@ export const translations: Record<LanguageCode, Translations> = {
     voice_listen_success: "✅ تم الاستماع: \"{{text}}\"\n(سيتم ربطه بالذكاء الاصطناعي قريباً)",
     premium_assistant: "Premium Assistant",
     logout: 'تسجيل الخروج',
+
+    // About screen
+    never_forget: "لا تنسى أبداً",
+    privacy_policy: "سياسة الخصوصية",
+    terms_of_service: "شروط الخدمة",
+    telegram: "تيليجرام",
+    
     // Footer
     footer_copyright: "Smarty AI Reminder"
   },
@@ -241,6 +248,13 @@ export const translations: Record<LanguageCode, Translations> = {
     voice_listen_success: "✅ Heard: \"{{text}}\"\n(Will be connected to AI soon)",
     premium_assistant: "Premium Assistant",
     logout: 'Logout', 
+    
+    // About screen
+    never_forget: "Never Forget Anything Again",
+  privacy_policy: "Privacy Policy",
+  terms_of_service: "Terms of Service",
+  telegram: "Telegram",
+    
     // Footer
     footer_copyright: "Smarty AI Reminder"
   },
@@ -320,6 +334,13 @@ export const translations: Record<LanguageCode, Translations> = {
     voice_listen_success: "✅ Écoute : \"{{text}}\"\n(Bientôt connecté à l'IA)",
     premium_assistant: "Assistant Premium",
     logout: 'Déconnexion',
+
+    // About screen
+    never_forget: "Ne jamais rien oublier",
+  privacy_policy: "Politique de confidentialité",
+  terms_of_service: "Conditions d'utilisation",
+  telegram: "Telegram",
+    
     // Footer
     footer_copyright: "Smarty AI Rappel"
   },
@@ -399,6 +420,12 @@ export const translations: Record<LanguageCode, Translations> = {
     voice_listen_success: "✅ 已听到：\"{{text}}\"\n(即将连接人工智能)",
     premium_assistant: "高级助手",
     logout: '退出',
+
+    // About screen
+    never_forget: "永不忘事",
+  privacy_policy: "隐私政策",
+  terms_of_service: "服务条款",
+  telegram: "电报",
     
     // Footer
     footer_copyright: "Smarty AI 提醒"
