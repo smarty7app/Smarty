@@ -95,12 +95,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
         {/* Logout Button - عرض كامل على الموبايل */}
         <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-          {isRTL ? 'خروج' : 'Logout'}
-        </button>
+        onClick={() => setShowLogoutConfirm(true)}
+        className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
+      >
+        <LogOut className="w-4 h-4" />
+        {t.logout}
+      </button>
       </div>
     </div>
   </section>
