@@ -190,6 +190,7 @@ export default function SmartVoicePage() {
     SMARTY AI ASSISTANT
   </p>
 </div>
+        
         {/* عرض النص المُسمع والرد */}
         <div className="w-full max-w-md space-y-4 mt-8">
           {transcript && (
