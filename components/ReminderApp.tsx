@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import VoiceInput from './VoiceInput';
 import AddReminderModal from './AddReminderModal';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
+import { safeParseISO, formatSafeDistance } from '@/lib/safe-date';
 import { arDZ } from 'date-fns/locale';
 import { useLanguage } from './LanguageContext';
 import { SettingsScreen } from './SettingsScreen';
