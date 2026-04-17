@@ -11,6 +11,17 @@ import {
   type SmartParsedResult 
 } from '@/lib/date-parser';
 
+// ✅ دالة مساعدة للتحقق من صحة التاريخ
+function isValidDateString(dateString: string): boolean {
+  if (!dateString || typeof dateString !== 'string') return false;
+  try {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  } catch {
+    return false;
+  }
+}
+
 interface AddReminderModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -49,19 +60,37 @@ export default function AddReminderModal({
   onReminderTimeDetected,
 }: AddReminderModalProps) {
 
-  const [error, setError] = useState<string | null>(null); // ✅ حالة الخطأ
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (inputText.trim()) {
       const result = analyzeReminderInput(inputText);
-      setSmartParsed(result);
+      
       if (result) {
-        setError(null);
-        if (onReminderTimeDetected) {
-          onReminderTimeDetected(result.reminderTime);
+        // ✅ التحقق من صحة التاريخ قبل تمريره
+        const isValidDate = isValidDateString(result.reminderTime);
+        
+        if (isValidDate) {
+          setSmartParsed(result);
+          setError(null);
+          if (onReminderTimeDetected) {
+            onReminderTimeDetected(result.reminderTime);
+          }
+        } else {
+          // ✅ التاريخ غير صالح - لا تمرره واستخدم الوقت الحالي بدلاً من ذلك
+          setSmartParsed(null);
+          setError('التاريخ المستخرج غير صالح، سيتم استخدام الوقت الحالي');
+          if (onReminderTimeDetected) {
+            onReminderTimeDetected(new Date().toISOString());
+          }
         }
       } else {
+        setSmartParsed(null);
         setError('لا يمكن إنشاء تذكير في وقت سابق');
+        // ✅ في حالة الفشل، استخدم الوقت الحالي كقيمة افتراضية
+        if (onReminderTimeDetected) {
+          onReminderTimeDetected(new Date().toISOString());
+        }
       }
     } else {
       setSmartParsed(null);
@@ -108,7 +137,7 @@ export default function AddReminderModal({
               </div>
             </div>
 
-            {/* ✅ عرض رسالة الخطأ */}
+            {/* عرض رسالة الخطأ */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl">
                 <p className="text-sm font-bold text-red-600 dark:text-red-400 text-center">{error}</p>
@@ -157,18 +186,15 @@ export default function AddReminderModal({
             <div className="mb-6">
               <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <div className="flex items-center gap-4 px-5 py-4">
-                  {/* أيقونة التكرار */}
                   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#E65100]/10 to-amber-500/10 flex items-center justify-center">
                     <RefreshCw className="w-5 h-5 text-[#E65100] dark:text-amber-400" />
                   </div>
                   
-                  {/* النص والقائمة المنسدلة */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-0.5">
                       {t.recurring || 'تكرار'}
                     </p>
                     
-                    {/* قائمة منسدلة مخصصة */}
                     <div className="relative">
                       <select 
                         value={recurring}
@@ -180,7 +206,6 @@ export default function AddReminderModal({
                         <option value="daily">{t.daily || 'يومياً'}</option>
                         <option value="weekly">{t.weekly || 'أسبوعياً'}</option>
                       </select>
-                      {/* سهم سفلي مخصص */}
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -213,4 +238,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-                      }
+}
