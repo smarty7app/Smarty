@@ -103,14 +103,14 @@ function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: 
   let days = 0;
   let hours = 0;
   let minutes = 0;
-  let found = false; // لتتبع ما إذا تم العثور على أي مدة صالحة
+  let found = false;
 
   const patterns: Record<string, Array<{ regex: RegExp; unit: 'days' | 'hours' | 'minutes' }>> = {
     ar: [
-      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(يوم|أيام|يومين)\s*/i, unit: 'days' },
-      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(ساعة|ساعات|ساعتين)\s*/i, unit: 'hours' },
-      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(دقيقة|دقائق|دقيقتين)\s*/i, unit: 'minutes' },
-      { regex: /(?:و)?\s*(واحد|اثنان|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(?!يوم|أيام|ساعة|ساعات|دقيقة|دقائق)/i, unit: 'minutes' }
+      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(يوم|أيام|يومين)\s*/i, unit: 'days' },
+      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(ساعة|ساعات|ساعتين)\s*/i, unit: 'hours' },
+      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(دقيقة|دقائق|دقيقتين)\s*/i, unit: 'minutes' },
+      { regex: /(?:و)?\s*(واحد|واحدة|اثنان|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(?!يوم|أيام|ساعة|ساعات|دقيقة|دقائق)/i, unit: 'minutes' }
     ],
     fr: [
       { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(jour|jours)\s*/i, unit: 'days' },
@@ -215,13 +215,29 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
 
   // ========== الأنماط العربية ==========
   const arPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
+    // دعم "بعد دقيقة واحدة" و "بعد ساعة واحدة" و "بعد يوم واحد" و "بعد أسبوع واحد" (باستخدام الكلمات)
+    { regex: /بعد\s+(دقيقة|دقيقتين|دقائق)\s+واحدة?/i, handler: () => new Date(now.getTime() + 1 * 60000), confidence: 0.96 },
+    { regex: /بعد\s+(ساعة|ساعتين|ساعات)\s+واحدة?/i, handler: () => new Date(now.getTime() + 1 * 3600000), confidence: 0.96 },
+    { regex: /بعد\s+(يوم|يومين|أيام)\s+واحد/i, handler: () => new Date(now.getTime() + 1 * 86400000), confidence: 0.96 },
+    { regex: /بعد\s+(أسبوع|اسبوع)\s+واحد/i, handler: () => new Date(now.getTime() + 7 * 86400000), confidence: 0.96 },
+    // دعم "بعد دقيقتين"، "بعد ساعتين"، "بعد يومين"
+    { regex: /بعد\s+دقيقتين/i, handler: () => new Date(now.getTime() + 2 * 60000), confidence: 0.95 },
+    { regex: /بعد\s+ساعتين/i, handler: () => new Date(now.getTime() + 2 * 3600000), confidence: 0.95 },
+    { regex: /بعد\s+يومين/i, handler: () => new Date(now.getTime() + 2 * 86400000), confidence: 0.95 },
+    { regex: /بعد\s+أسبوعين/i, handler: () => new Date(now.getTime() + 14 * 86400000), confidence: 0.95 },
+    // دعم "بعد دقيقة" (بدون رقم) – افتراضي دقيقة واحدة
+    { regex: /بعد\s+دقيقة(?!\s+واحدة)/i, handler: () => new Date(now.getTime() + 1 * 60000), confidence: 0.9 },
+    { regex: /بعد\s+ساعة(?!\s+واحدة)/i, handler: () => new Date(now.getTime() + 1 * 3600000), confidence: 0.9 },
     // دعم "اسبوع" بدون "بعد" (مثل كتابة "اسبوع" فقط)
     { regex: /(?:في\s*)?(اسبوع|أسبوع)(?:\s*من الآن)?/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 7); return d; }, confidence: 0.85 },
+    // النمط العام للمدة
     { regex: /(?:بعد|خلال|في)\s*(.+?)(?:\s*مقدما|\s*من الآن)?$/i, handler: (m) => { 
       const duration = parseDurationFromText(m[1], 'ar');
       if (duration) return handleDuration(duration);
+      // افتراضي: أسبوع
       return new Date(now.getTime() + 7 * 86400000);
     }, confidence: 0.92 },
+    // الأنماط المركبة (أيام وساعات ودقائق)
     { regex: /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(يوم|أيام|يومين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(ساعة|ساعات|ساعتين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
       const parseNum = (s: string): number => /^\d+$/.test(s) ? parseInt(s) : (parseArabicNumberWord(s) || 0);
       const days = parseNum(m[1]);
@@ -251,6 +267,7 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
       targetDate.setMinutes(targetDate.getMinutes() + minutes);
       return targetDate;
     }, confidence: 0.95 },
+    // دعم "و خمسون دقيقة" بدون ذكر ساعات
     { regex: /و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة|خمسون|خمسين)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
       const parseNum = (s: string): number => {
         if (s === 'خمسون' || s === 'خمسين') return 50;
@@ -262,6 +279,7 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
       targetDate.setMinutes(targetDate.getMinutes() + minutes);
       return targetDate;
     }, confidence: 0.93 },
+    // الأنماط الأصلية
     { regex: /(\d{1,2}):(\d{2})\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const minute = parseInt(m[2]); const period = m[3]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.98 },
     { regex: /(\d{1,2})\s*(صباحا|مساء|ص|م)/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const period = m[2]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, 0, 0, 0); return d; }, confidence: 0.95 },
     { regex: /(?:يوم\s+)?(الأحد|الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت)\s*(?:القادم|الجاي|المقبل)?/i, handler: (m) => { const d = new Date(now); const targetDay = arabicDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
@@ -329,12 +347,19 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     for (const pattern of patterns) {
       const match = text.match(pattern.regex);
       if (match) {
-        return {
-          dateTime: pattern.handler(match),
-          confidence: pattern.confidence,
-          detectedLanguage: lang,
-          matchedPattern: match[0]
-        };
+        try {
+          const dateTime = pattern.handler(match);
+          if (isNaN(dateTime.getTime())) continue; // تجاهل التاريخ غير الصالح
+          return {
+            dateTime,
+            confidence: pattern.confidence,
+            detectedLanguage: lang,
+            matchedPattern: match[0]
+          };
+        } catch (e) {
+          console.warn(`Pattern handler failed for pattern ${pattern.regex}:`, e);
+          continue;
+        }
       }
     }
     return null;
@@ -368,7 +393,6 @@ export function analyzeReminderInput(text: string): CleanResult | null {
     };
   }
 
-  // التحقق من صحة التاريخ
   const date = parseResult.dateTime;
   if (isNaN(date.getTime())) {
     console.warn('[date-parser] Invalid date parsed, falling back to current time');
@@ -394,7 +418,6 @@ export function analyzeReminderInput(text: string): CleanResult | null {
 export type SmartParsedResult = CleanResult;
 
 export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): string {
-  // التحقق من صحة الإدخال
   if (!isoString || typeof isoString !== 'string') {
     return lang === 'ar' ? 'وقت غير محدد' : (lang === 'fr' ? 'Heure non définie' : 'Time not set');
   }
