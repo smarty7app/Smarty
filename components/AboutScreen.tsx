@@ -48,7 +48,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         {/* Social Links */}
         <div className="flex gap-4 w-full max-w-md">
           <a
-            href="https://github.com/17benabdallah-hue"
+            href="https://github.com/smarty7app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
