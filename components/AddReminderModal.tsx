@@ -52,6 +52,7 @@ export default function AddReminderModal({
 
   const [error, setError] = useState<string | null>(null);
   const [showRecurringOptions, setShowRecurringOptions] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
   const recurringButtonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
@@ -66,14 +67,31 @@ export default function AddReminderModal({
     }
   }, []);
 
+  // دالة تحريك المودال للأعلى لإفساح مجال للقائمة
+  const scrollModalForDropdown = useCallback(() => {
+    if (modalRef.current && recurringButtonRef.current) {
+      const modal = modalRef.current;
+      const buttonRect = recurringButtonRef.current.getBoundingClientRect();
+      // المساحة التقريبية اللازمة للقائمة (4 عناصر + حشوة)
+      const neededSpace = 220;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      
+      if (spaceBelow < neededSpace) {
+        const scrollAmount = neededSpace - spaceBelow + 20; // مسافة إضافية للراحة
+        modal.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+      }
+    }
+  }, []);
+
   const handleToggleDropdown = () => {
     if (!showRecurringOptions) {
       updateDropdownPosition();
+      scrollModalForDropdown(); // ← تحريك المودال للأعلى
     }
     setShowRecurringOptions(prev => !prev);
   };
 
-  // إغلاق القائمة عند النقر خارجها (بما في ذلك البوابة)
+  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
     if (!showRecurringOptions) return;
     
@@ -132,7 +150,8 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        <motion.div                   
+        <motion.div
+          ref={modalRef} // ← تم ربط ref
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
@@ -309,4 +328,4 @@ export default function AddReminderModal({
       )}
     </AnimatePresence>
   );
-            }
+}
