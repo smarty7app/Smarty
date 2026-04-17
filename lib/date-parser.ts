@@ -103,14 +103,13 @@ function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: 
   let days = 0;
   let hours = 0;
   let minutes = 0;
-  
-  // الأنماط حسب اللغة
+  let found = false; // لتتبع ما إذا تم العثور على أي مدة صالحة
+
   const patterns: Record<string, Array<{ regex: RegExp; unit: 'days' | 'hours' | 'minutes' }>> = {
     ar: [
       { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(يوم|أيام|يومين)\s*/i, unit: 'days' },
       { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(ساعة|ساعات|ساعتين)\s*/i, unit: 'hours' },
       { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(دقيقة|دقائق|دقيقتين)\s*/i, unit: 'minutes' },
-      // دعم "و اثنان" بدون وحدة زمنية واضحة (تعتبر دقائق)
       { regex: /(?:و)?\s*(واحد|اثنان|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(?!يوم|أيام|ساعة|ساعات|دقيقة|دقائق)/i, unit: 'minutes' }
     ],
     fr: [
@@ -125,7 +124,6 @@ function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: 
     ]
   };
 
-  // دالة مساعدة لتحويل الكلمة إلى رقم
   const parseNumber = (numStr: string, lang: string): number => {
     if (/^\d+$/.test(numStr)) return parseInt(numStr);
     if (lang === 'ar') return parseArabicNumberWord(numStr) || 0;
@@ -137,6 +135,8 @@ function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: 
     let match;
     while ((match = pattern.regex.exec(text)) !== null) {
       const value = parseNumber(match[1], lang);
+      if (isNaN(value)) continue;
+      found = true;
       if (pattern.unit === 'days') days += value;
       else if (pattern.unit === 'hours') hours += value;
       else if (pattern.unit === 'minutes') minutes += value;
@@ -147,12 +147,18 @@ function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: 
   const combinedPattern = /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+يوم\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+ساعة\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+دقيقة/i;
   const combinedMatch = text.match(combinedPattern);
   if (combinedMatch) {
-    days = parseNumber(combinedMatch[1], lang);
-    hours = parseNumber(combinedMatch[2], lang);
-    minutes = parseNumber(combinedMatch[3], lang);
+    const d = parseNumber(combinedMatch[1], lang);
+    const h = parseNumber(combinedMatch[2], lang);
+    const m = parseNumber(combinedMatch[3], lang);
+    if (!isNaN(d) && !isNaN(h) && !isNaN(m)) {
+      days = d;
+      hours = h;
+      minutes = m;
+      found = true;
+    }
   }
 
-  if (days === 0 && hours === 0 && minutes === 0) return null;
+  if (!found) return null;
   return { days, hours, minutes };
 }
 
@@ -199,7 +205,6 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
 
   const now = new Date(baseDate);
 
-  // ========== دالة معالجة المدة الزمنية ==========
   const handleDuration = (duration: { days: number; hours: number; minutes: number }): Date => {
     const targetDate = new Date(now);
     targetDate.setDate(targetDate.getDate() + duration.days);
@@ -210,11 +215,12 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
 
   // ========== الأنماط العربية ==========
   const arPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
-    // ✅ دعم المدة الزمنية بالحروف (مثل "ثلاث ايام واربع ساعات و اثنان و خمسون دقيقة")
+    // دعم "اسبوع" بدون "بعد" (مثل كتابة "اسبوع" فقط)
+    { regex: /(?:في\s*)?(اسبوع|أسبوع)(?:\s*من الآن)?/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 7); return d; }, confidence: 0.85 },
     { regex: /(?:بعد|خلال|في)\s*(.+?)(?:\s*مقدما|\s*من الآن)?$/i, handler: (m) => { 
       const duration = parseDurationFromText(m[1], 'ar');
       if (duration) return handleDuration(duration);
-      return new Date(now.getTime() + 7 * 86400000); // افتراضي: أسبوع
+      return new Date(now.getTime() + 7 * 86400000);
     }, confidence: 0.92 },
     { regex: /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(يوم|أيام|يومين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(ساعة|ساعات|ساعتين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
       const parseNum = (s: string): number => /^\d+$/.test(s) ? parseInt(s) : (parseArabicNumberWord(s) || 0);
@@ -245,7 +251,6 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
       targetDate.setMinutes(targetDate.getMinutes() + minutes);
       return targetDate;
     }, confidence: 0.95 },
-    // دعم "و خمسون دقيقة" بدون ذكر ساعات
     { regex: /و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة|خمسون|خمسين)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
       const parseNum = (s: string): number => {
         if (s === 'خمسون' || s === 'خمسين') return 50;
@@ -257,7 +262,6 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
       targetDate.setMinutes(targetDate.getMinutes() + minutes);
       return targetDate;
     }, confidence: 0.93 },
-    // الأنماط الأصلية
     { regex: /(\d{1,2}):(\d{2})\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const minute = parseInt(m[2]); const period = m[3]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.98 },
     { regex: /(\d{1,2})\s*(صباحا|مساء|ص|م)/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const period = m[2]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, 0, 0, 0); return d; }, confidence: 0.95 },
     { regex: /(?:يوم\s+)?(الأحد|الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت)\s*(?:القادم|الجاي|المقبل)?/i, handler: (m) => { const d = new Date(now); const targetDay = arabicDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
@@ -318,7 +322,6 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     { regex: new RegExp(`next\\s+(${Object.keys(englishDayMap).join('|')})`, 'i'), handler: (m) => { const d = new Date(now); const targetDay = englishDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
   ];
 
-  // دالة مساعدة لفحص مجموعة من الأنماط مع تحديد اللغة
   const checkPatterns = (
     patterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }>,
     lang: 'ar' | 'fr' | 'en'
@@ -337,17 +340,14 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     return null;
   };
 
-  // الأولوية: العربية أولاً، ثم الفرنسية، ثم الإنجليزية
   let result = checkPatterns(arPatterns, 'ar');
   if (!result) result = checkPatterns(frPatterns, 'fr');
   if (!result) result = checkPatterns(enPatterns, 'en');
 
-  // رفض الوقت إذا كان في الماضي
   if (result) {
     const nowTime = new Date();
-    // نسمح بهامش 5 ثوانٍ فقط (للأوقات التي تمر أثناء التحليل)
     if (result.dateTime.getTime() < nowTime.getTime() - 5000) {
-      return null; // وقت غير صالح
+      return null;
     }
   }
 
@@ -368,11 +368,23 @@ export function analyzeReminderInput(text: string): CleanResult | null {
     };
   }
 
-  const cleaned = cleanReminderText(text, parseResult.detectedLanguage);
+  // التحقق من صحة التاريخ
+  const date = parseResult.dateTime;
+  if (isNaN(date.getTime())) {
+    console.warn('[date-parser] Invalid date parsed, falling back to current time');
+    return {
+      parsedText: cleanReminderText(text, 'ar'),
+      reminderTime: new Date().toISOString(),
+      detectedLanguage: 'ar',
+      confidence: 0.5,
+      originalText: text
+    };
+  }
 
+  const cleaned = cleanReminderText(text, parseResult.detectedLanguage);
   return {
     parsedText: cleaned,
-    reminderTime: parseResult.dateTime.toISOString(),
+    reminderTime: date.toISOString(),
     detectedLanguage: parseResult.detectedLanguage,
     confidence: parseResult.confidence,
     originalText: text
@@ -382,7 +394,15 @@ export function analyzeReminderInput(text: string): CleanResult | null {
 export type SmartParsedResult = CleanResult;
 
 export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): string {
+  // التحقق من صحة الإدخال
+  if (!isoString || typeof isoString !== 'string') {
+    return lang === 'ar' ? 'وقت غير محدد' : (lang === 'fr' ? 'Heure non définie' : 'Time not set');
+  }
   const date = new Date(isoString);
+  if (isNaN(date.getTime())) {
+    return lang === 'ar' ? 'وقت غير محدد' : (lang === 'fr' ? 'Date invalide' : 'Invalid time');
+  }
+
   const now = new Date();
   const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -391,7 +411,7 @@ export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' =
   const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   let dayStr = '';
-  if (diffDays === 0) dayStr = lang === 'ar' ? 'اليوم' : lang === 'fr' ? 'aujourd\'hui' : 'today';
+  if (diffDays === 0) dayStr = lang === 'ar' ? 'اليوم' : lang === 'fr' ? "aujourd'hui" : 'today';
   else if (diffDays === 1) dayStr = lang === 'ar' ? 'غداً' : lang === 'fr' ? 'demain' : 'tomorrow';
   else if (diffDays === 2) dayStr = lang === 'ar' ? 'بعد غد' : lang === 'fr' ? 'après-demain' : 'day after tomorrow';
   else if (diffDays < 7 && lang === 'ar') dayStr = arabicDays[date.getDay()];
@@ -410,7 +430,14 @@ export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' =
 }
 
 export function formatCountdown(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): { text: string; isPast: boolean } {
+  if (!isoString || typeof isoString !== 'string') {
+    return { text: lang === 'ar' ? 'وقت غير محدد' : 'Invalid time', isPast: false };
+  }
   const date = new Date(isoString);
+  if (isNaN(date.getTime())) {
+    return { text: lang === 'ar' ? 'وقت غير محدد' : 'Invalid time', isPast: false };
+  }
+
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const isPast = diffMs < 0;
