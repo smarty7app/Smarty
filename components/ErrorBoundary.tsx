@@ -1,97 +1,116 @@
 'use client';
 
-import React, { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
+  fallback?: ReactNode; // اختياري: يمكن تمرير مكون بديل إذا أردت
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
   showDetails: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null, showDetails: false };
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      showDetails: false,
+    };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, showDetails: false };
+  static getDerivedStateFromError(error: Error): Partial<State> {
+    return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // تسجيل الخطأ في وحدة التحكم فقط (للمطور)
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.setState({ errorInfo });
+    // يمكنك هنا إرسال الخطأ إلى خدمة خارجية (مثل Sentry)
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, showDetails: false });
-    window.location.reload();
+    this.setState({ hasError: false, error: null, errorInfo: null, showDetails: false });
+    // يمكنك إعادة تحميل الصفحة أو إعادة تعيين الحالة حسب احتياجك
+    // window.location.reload(); // اختياري
   };
 
   toggleDetails = () => {
-    this.setState(prev => ({ showDetails: !prev.showDetails }));
+    this.setState((prev) => ({ showDetails: !prev.showDetails }));
   };
 
   render() {
     if (this.state.hasError) {
-      // إذا كان هناك fallback مخصص، استخدمه
+      // إذا تم تمرير fallback مخصص، استخدمه
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      const { error, showDetails } = this.state;
-
+      // إشعار بسيط في أعلى الصفحة (بدون إغلاق التطبيق)
       return (
-        <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col items-center justify-center p-6 text-center">
-          {/* أيقونة الخطأ */}
-          <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
-            <AlertTriangle className="w-12 h-12 text-white" />
-          </div>
-
-          {/* العنوان */}
-          <h1 className="text-2xl font-black text-white mb-2">عذراً، حدث خطأ</h1>
+        <>
+          {/* عرض المحتوى الأصلي (مع إمكانية استمرار التطبيق) */}
+          {this.props.children}
           
-          {/* رسالة ودية */}
-          <p className="text-white/80 text-sm mb-6 max-w-xs">
-            حدث خطأ غير متوقع. يمكنك محاولة تحديث الصفحة أو العودة لاحقاً.
-          </p>
-
-          {/* زر إعادة المحاولة */}
-          <button
-            onClick={this.handleRetry}
-            className="flex items-center gap-2 bg-white text-[#E65100] px-6 py-3 rounded-full font-bold shadow-lg hover:bg-white/90 transition"
-          >
-            <RefreshCw className="w-4 h-4" />
-            إعادة المحاولة
-          </button>
-
-          {/* زر عرض التفاصيل (للمطور) */}
-          <button
-            onClick={this.toggleDetails}
-            className="mt-4 text-white/50 text-xs flex items-center gap-1 hover:text-white/70 transition"
-          >
-            {showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {showDetails ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
-          </button>
-
-          {/* التفاصيل التقنية (تظهر فقط عند الضغط) */}
-          {showDetails && error && (
-            <div className="mt-4 p-3 bg-black/30 rounded-xl text-left max-w-md w-full overflow-auto">
-              <p className="text-white/60 text-[10px] font-mono break-all">
-                {error.message}
-              </p>
+          {/* الإشعار العائم في أعلى الصفحة */}
+          <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto md:left-auto md:right-4 md:left-auto">
+            <div className="bg-red-50 dark:bg-red-950/80 border-l-4 border-red-500 rounded-lg shadow-lg p-4 flex items-start gap-3 backdrop-blur-sm">
+              <div className="flex-shrink-0">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-red-800 dark:text-red-200">
+                  حدث خطأ غير متوقع
+                </h3>
+                <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                  يمكنك متابعة استخدام التطبيق، ولكن قد تتأثر بعض الوظائف.
+                </p>
+                
+                {/* زر إظهار التفاصيل */}
+                <button
+                  onClick={this.toggleDetails}
+                  className="text-xs text-red-600 dark:text-red-400 hover:underline mt-2 inline-flex items-center gap-1"
+                >
+                  {this.state.showDetails ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                  {this.state.showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                
+                {this.state.showDetails && this.state.error && (
+                  <div className="mt-2 text-xs font-mono bg-red-100 dark:bg-red-900/50 p-2 rounded overflow-auto max-h-32">
+                    <p className="font-bold text-red-800 dark:text-red-200">
+                      {this.state.error.name}: {this.state.error.message}
+                    </p>
+                    {this.state.errorInfo && (
+                      <pre className="text-red-700 dark:text-red-300 whitespace-pre-wrap mt-1">
+                        {this.state.errorInfo.componentStack}
+                      </pre>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={this.handleRetry}
+                className="flex-shrink-0 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition"
+                title="إعادة المحاولة"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        </>
       );
     }
 
     return this.props.children;
   }
 }
+
+// تصدير المكون كـ default للاستخدام في layout
+export default ErrorBoundary;
