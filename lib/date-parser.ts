@@ -136,6 +136,9 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     { regex: /بعد\s+(\d+)\s+أسبوع|اسبوع/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 7 * 86400000), confidence: 0.95 },
     { regex: /بعد\s+(ساعة|ساعتين)/i, handler: (m) => new Date(now.getTime() + (m[1] === 'ساعتين' ? 2 : 1) * 3600000), confidence: 0.9 },
     { regex: /بعد\s+(دقيقة|دقيقتين)/i, handler: (m) => new Date(now.getTime() + (m[1] === 'دقيقتين' ? 2 : 1) * 60000), confidence: 0.9 },
+    // إضافة دعم "دقيقة" و "دقيقتين"
+    { regex: /بعد\s+نصف\s+ساعة/i, handler: () => new Date(now.getTime() + 30 * 60000), confidence: 0.9 },
+    { regex: /بعد\s+ربع\s+ساعة/i, handler: () => new Date(now.getTime() + 15 * 60000), confidence: 0.9 }, 
   ];
 
   // ========== الأنماط الفرنسية ==========
