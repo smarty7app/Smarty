@@ -25,6 +25,27 @@ function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
 interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
 
+// ✅ دالة مساعدة للتحقق من صحة التاريخ
+function isValidReminderTime(dateString: string): boolean {
+  if (!dateString || typeof dateString !== 'string') return false;
+  try {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  } catch {
+    return false;
+  }
+}
+
+// ✅ دالة آمنة لعرض الوقت النسبي (تجنب parseISO المباشر)
+function safeFormatDistanceToNow(dateString: string, locale: any): string {
+  if (!isValidReminderTime(dateString)) return 'تاريخ غير صالح';
+  try {
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale });
+  } catch {
+    return 'تاريخ غير صالح';
+  }
+}
+
 export default function ReminderApp() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [inputText, setInputText] = useState('');
@@ -54,25 +75,30 @@ export default function ReminderApp() {
     }
   }, [isMounted]);
 
+  // ✅ تعديل: تصفية التذكيرات غير الصالحة عند التحميل من localStorage
   useEffect(() => {
     if (isMounted) {
       const saved = localStorage.getItem('smarty_reminders');
       if (saved) {
-        const timer = setTimeout(() => setReminders(JSON.parse(saved)), 0);
-        return () => clearTimeout(timer);
+        try {
+          const parsed = JSON.parse(saved);
+          const validReminders = parsed.filter((rem: Reminder) => isValidReminderTime(rem.reminderTime));
+          setReminders(validReminders);
+        } catch (e) {
+          console.error('Failed to load reminders', e);
+        }
       }
     }
   }, [isMounted]);
 
   useEffect(() => {
-  if (isMounted) {
-    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-    if (notificationService) {
-      // مرر دالة فارغة بدلاً من تحديث isCompleted
-      notificationService.rescheduleAll(reminders, () => {});
+    if (isMounted) {
+      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+      if (notificationService) {
+        notificationService.rescheduleAll(reminders, () => {});
+      }
     }
-  }
-}, [reminders, isMounted]);
+  }, [reminders, isMounted]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,12 +108,12 @@ export default function ReminderApp() {
     }
   }, []);
 
-  // معالج الإدخال الصوتي - تم التصحيح
+  // معالج الإدخال الصوتي
   const handleVoiceInput = (text: string) => {
     const result = analyzeReminderInput(text);
     if (result) {
       setInputText(result.parsedText);
-      setReminderDateTime(result.reminderTime); // reminderTime هو string
+      setReminderDateTime(result.reminderTime);
       setIsAdding(true);
       const { text: countdownText } = formatCountdown(result.reminderTime, result.detectedLanguage);
       setAssistantMessage(`✅: "${result.parsedText}" | ${countdownText}`);
@@ -99,12 +125,17 @@ export default function ReminderApp() {
     }
   };
 
+  // ✅ تعديل: التحقق من صحة reminderDateTime قبل إضافة التذكير
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
+    let finalTime = reminderDateTime;
+    if (!isValidReminderTime(finalTime)) {
+      finalTime = new Date().toISOString();
+    }
     const newReminder: Reminder = {
       id: Math.random().toString(36).substr(2, 9),
       text: inputText,
-      reminderTime: reminderDateTime || new Date().toISOString(),
+      reminderTime: finalTime,
       isCompleted: false
     };
     setReminders(prev => [newReminder, ...prev]);
@@ -175,12 +206,14 @@ export default function ReminderApp() {
                 </div>
                 ) : (
                 activeReminders.map((rem) => {
-                  const exactTime = formatDetectedTime(rem.reminderTime, 'ar');
-                  const { text: countdown, isPast } = formatCountdown(rem.reminderTime, 'ar');
+                  // ✅ حماية عرض التواريخ: إذا كان التاريخ غير صالح نعرض رسائل افتراضية
+                  const isValid = isValidReminderTime(rem.reminderTime);
+                  const exactTime = isValid ? formatDetectedTime(rem.reminderTime, 'ar') : (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date');
+                  const countdownObj = isValid ? formatCountdown(rem.reminderTime, 'ar') : { text: (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date'), isPast: false };
                   const cleanedText = cleanReminderText(rem.text, 'ar');
                   return (
                     <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", isPast && "opacity-70")}>
+                      <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", countdownObj.isPast && "opacity-70")}>
                         <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
                           <CheckCircle2 className="w-5 h-5" />
                         </button>
@@ -193,14 +226,14 @@ export default function ReminderApp() {
                             </span>
                             <span className={cn(
                               "px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5",
-                              isPast ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300" : "bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300"
+                              countdownObj.isPast ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300" : "bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300"
                             )}>
-                              {isPast ? <AlertCircle className="w-3 h-3" /> : <Timer className="w-3 h-3" />}
-                              {countdown}
+                              {countdownObj.isPast ? <AlertCircle className="w-3 h-3" /> : <Timer className="w-3 h-3" />}
+                              {countdownObj.text}
                             </span>
                             <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                               <Calendar className="w-3 h-3" />
-                              {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                              {safeFormatDistanceToNow(rem.reminderTime, arDZ)}
                             </span>
                           </div>
                         </div>
