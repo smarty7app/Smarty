@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import VoiceInput from './VoiceInput';
 import AddReminderModal from './AddReminderModal';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { arDZ } from 'date-fns/locale';
 import { useLanguage } from './LanguageContext';
 import { SettingsScreen } from './SettingsScreen';
@@ -24,6 +24,35 @@ import {
 function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
 interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
+
+// دالة مساعدة للتحقق من صحة التاريخ
+function isValidDateString(dateString: string): boolean {
+  if (!dateString || typeof dateString !== 'string') return false;
+  try {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+  } catch {
+    return false;
+  }
+}
+
+// مكون منفصل لعرض التاريخ بشكل آمن (لتجنب try/catch مع JSX)
+function SafeDateDisplay({ dateString }: { dateString: string }) {
+  // التحقق من صحة التاريخ خارج الـ return
+  const isValid = isValidDateString(dateString);
+  
+  if (!isValid) {
+    return <span>تاريخ غير صالح</span>;
+  }
+  
+  try {
+    const date = new Date(dateString);
+    const formattedDate = formatDistanceToNow(date, { addSuffix: true, locale: arDZ });
+    return <span>{formattedDate}</span>;
+  } catch {
+    return <span>خطأ في التاريخ</span>;
+  }
+}
 
 export default function ReminderApp() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -58,21 +87,28 @@ export default function ReminderApp() {
     if (isMounted) {
       const saved = localStorage.getItem('smarty_reminders');
       if (saved) {
-        const timer = setTimeout(() => setReminders(JSON.parse(saved)), 0);
-        return () => clearTimeout(timer);
+        try {
+          const parsedReminders = JSON.parse(saved);
+          // تصفية التذكيرات ذات التواريخ غير الصالحة
+          const validReminders = parsedReminders.filter((r: Reminder) => isValidDateString(r.reminderTime));
+          // استخدام setTimeout لتجنب التحذير
+          setTimeout(() => setReminders(validReminders), 0);
+        } catch (e) {
+          console.error('Failed to load reminders', e);
+          setTimeout(() => setReminders([]), 0);
+        }
       }
     }
   }, [isMounted]);
 
   useEffect(() => {
-  if (isMounted) {
-    localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-    if (notificationService) {
-      // مرر دالة فارغة بدلاً من تحديث isCompleted
-      notificationService.rescheduleAll(reminders, () => {});
+    if (isMounted) {
+      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
+      if (notificationService) {
+        notificationService.rescheduleAll(reminders, () => {});
+      }
     }
-  }
-}, [reminders, isMounted]);
+  }, [reminders, isMounted]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -82,29 +118,37 @@ export default function ReminderApp() {
     }
   }, []);
 
-  // معالج الإدخال الصوتي - تم التصحيح
+  // معالج الإدخال الصوتي - مع التحقق من صحة التاريخ
   const handleVoiceInput = (text: string) => {
     const result = analyzeReminderInput(text);
-    if (result) {
+    if (result && result.reminderTime && isValidDateString(result.reminderTime)) {
       setInputText(result.parsedText);
-      setReminderDateTime(result.reminderTime); // reminderTime هو string
+      setReminderDateTime(result.reminderTime);
       setIsAdding(true);
-      const { text: countdownText } = formatCountdown(result.reminderTime, result.detectedLanguage);
+      const { text: countdownText } = formatCountdown(result.reminderTime, result.detectedLanguage || 'ar');
       setAssistantMessage(`✅: "${result.parsedText}" | ${countdownText}`);
     } else {
       setInputText(text);
-      setReminderDateTime(new Date().toISOString());
+      const defaultTime = new Date().toISOString();
+      setReminderDateTime(defaultTime);
       setIsAdding(true);
-      setAssistantMessage(`✅: "${text}"`);
+      setAssistantMessage(`✅: "${text}" (تم التعيين للوقت الحالي)`);
     }
   };
 
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
+    
+    // التحقق من صحة التاريخ قبل الإضافة
+    let validReminderTime = reminderDateTime;
+    if (!validReminderTime || !isValidDateString(validReminderTime)) {
+      validReminderTime = new Date().toISOString();
+    }
+    
     const newReminder: Reminder = {
       id: Math.random().toString(36).substr(2, 9),
       text: inputText,
-      reminderTime: reminderDateTime || new Date().toISOString(),
+      reminderTime: validReminderTime,
       isCompleted: false
     };
     setReminders(prev => [newReminder, ...prev]);
@@ -175,9 +219,28 @@ export default function ReminderApp() {
                 </div>
                 ) : (
                 activeReminders.map((rem) => {
-                  const exactTime = formatDetectedTime(rem.reminderTime, 'ar');
-                  const { text: countdown, isPast } = formatCountdown(rem.reminderTime, 'ar');
-                  const cleanedText = cleanReminderText(rem.text, 'ar');
+                  // التحقق من صحة التاريخ مع قيمة افتراضية آمنة
+                  const isValidDate = isValidDateString(rem.reminderTime);
+                  const safeReminderTime = isValidDate ? rem.reminderTime : new Date().toISOString();
+                  
+                  // استخدم safeReminderTime فقط إذا كان التاريخ صالحًا
+                  let exactTime = 'وقت غير محدد';
+                  let countdown = 'وقت غير محدد';
+                  let isPast = false;
+                  let cleanedText = rem.text;
+                  
+                  if (isValidDate) {
+                    try {
+                      exactTime = formatDetectedTime(safeReminderTime, 'ar');
+                      const countdownResult = formatCountdown(safeReminderTime, 'ar');
+                      countdown = countdownResult.text;
+                      isPast = countdownResult.isPast;
+                      cleanedText = cleanReminderText(rem.text, 'ar');
+                    } catch (e) {
+                      console.error('Error formatting reminder:', e);
+                    }
+                  }
+
                   return (
                     <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                       <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", isPast && "opacity-70")}>
@@ -200,7 +263,7 @@ export default function ReminderApp() {
                             </span>
                             <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
                               <Calendar className="w-3 h-3" />
-                              {formatDistanceToNow(parseISO(rem.reminderTime), { addSuffix: true, locale: arDZ })}
+                              <SafeDateDisplay dateString={safeReminderTime} />
                             </span>
                           </div>
                         </div>
