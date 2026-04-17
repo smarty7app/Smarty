@@ -175,11 +175,27 @@ export default function ReminderApp() {
                   <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
                 </div>
                 ) : (
-                activeReminders.map((rem) => {
-                  const exactTime = formatDetectedTime(rem.reminderTime, 'ar');
-                  const { text: countdown, isPast } = formatCountdown(rem.reminderTime, 'ar');
-                  const cleanedText = cleanReminderText(rem.text, 'ar');
-                  return (
+               activeReminders.map((rem) => {
+                // ✅ أضف هذا التحقق في بداية المقطع
+                 let isValidDate = false;
+                 let reminderDate: Date | null = null;
+  
+                 try {
+                   reminderDate = new Date(rem.reminderTime);
+                   isValidDate = !isNaN(reminderDate.getTime());
+                 } catch (e) {
+                   isValidDate = false;
+                 }
+  
+                 // إذا كان التاريخ غير صالح، استخدم الوقت الحالي كقيمة افتراضية آمنة
+                 const safeReminderTime = isValidDate ? rem.reminderTime : new Date().toISOString();
+  
+                 // استخدم safeReminderTime بدلاً من rem.reminderTime
+                 const exactTime = formatDetectedTime(safeReminderTime, 'ar');
+                 const { text: countdown, isPast } = formatCountdown(safeReminderTime, 'ar');
+                 const cleanedText = cleanReminderText(rem.text, 'ar');
+  
+                 return (
                     <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                       <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", isPast && "opacity-70")}>
                         <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
