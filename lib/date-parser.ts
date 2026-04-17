@@ -1,308 +1,449 @@
-'use client';
+// lib/date-parser.ts
 
-import React, { useState, useEffect } from 'react';
-import VoiceInput from './VoiceInput';
-import AddReminderModal from './AddReminderModal';
-import { formatDistanceToNow } from 'date-fns';
-import { arDZ } from 'date-fns/locale';
-import { useLanguage } from './LanguageContext';
-import { SettingsScreen } from './SettingsScreen';
-import { AboutScreen } from './AboutScreen';
-import { motion, AnimatePresence } from 'motion/react';
-import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar, AlertCircle, Bell, BellOff } from 'lucide-react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { notificationService } from './NotificationService';
-import { 
-  analyzeReminderInput, 
-  formatDetectedTime, 
-  formatCountdown, 
-  cleanReminderText,
-  type SmartParsedResult 
-} from '@/lib/date-parser';
+// ==================== الخرائط اللغوية ====================
 
-function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
+// --- العربية ---
+export const arabicDayMap: Record<string, number> = {
+  'الأحد': 0, 'الاثنين': 1, 'الإثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3,
+  'الخميس': 4, 'الجمعة': 5, 'السبت': 6
+};
 
-interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
+export const arabicMonthMap: Record<string, number> = {
+  'يناير': 0, 'كانون الثاني': 0,
+  'فبراير': 1, 'شباط': 1,
+  'مارس': 2, 'آذار': 2,
+  'أبريل': 3, 'نيسان': 3,
+  'مايو': 4, 'أيار': 4,
+  'يونيو': 5, 'حزيران': 5,
+  'يوليو': 6, 'تموز': 6,
+  'أغسطس': 7, 'آب': 7,
+  'سبتمبر': 8, 'أيلول': 8,
+  'أكتوبر': 9, 'تشرين الأول': 9,
+  'نوفمبر': 10, 'تشرين الثاني': 10,
+  'ديسمبر': 11, 'كانون الأول': 11
+};
 
-// دالة مساعدة للتحقق من صحة التاريخ
-function isValidDateString(dateString: string): boolean {
-  if (!dateString || typeof dateString !== 'string') return false;
-  try {
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-  } catch {
-    return false;
-  }
+export const arabicNumeralMap: Record<string, number> = {
+  'واحد': 1, 'واحدة': 1, 'اثنين': 2, 'اثنان': 2, 'اثنتين': 2, 'ثلاثة': 3, 'ثلاث': 3,
+  'اربعة': 4, 'أربعة': 4, 'خمسة': 5, 'ستة': 6, 'سبعة': 7, 'ثمانية': 8, 'تسعة': 9, 'عشرة': 10,
+  'احدى عشر': 11, 'احد عشر': 11, 'اثنا عشر': 12, 'اثني عشر': 12,
+  'نصف': 0.5, 'نص': 0.5, 'ربع': 0.25, 'ثلث': 0.33
+};
+
+// --- الفرنسية ---
+export const frenchDayMap: Record<string, number> = {
+  'dimanche': 0, 'lundi': 1, 'mardi': 2, 'mercredi': 3, 'jeudi': 4, 'vendredi': 5, 'samedi': 6
+};
+
+export const frenchMonthMap: Record<string, number> = {
+  'janvier': 0, 'février': 1, 'fevrier': 1, 'mars': 2, 'avril': 3, 'mai': 4, 'juin': 5,
+  'juillet': 6, 'août': 7, 'aout': 7, 'septembre': 8, 'octobre': 9, 'novembre': 10, 'décembre': 11, 'decembre': 11
+};
+
+export const frenchNumeralMap: Record<string, number> = {
+  'un': 1, 'une': 1, 'deux': 2, 'trois': 3, 'quatre': 4, 'cinq': 5,
+  'six': 6, 'sept': 7, 'huit': 8, 'neuf': 9, 'dix': 10,
+  'onze': 11, 'douze': 12,
+  'demi': 0.5, 'demie': 0.5, 'quart': 0.25, 'tiers': 0.33
+};
+
+// --- الإنجليزية ---
+export const englishDayMap: Record<string, number> = {
+  'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6
+};
+
+export const englishMonthMap: Record<string, number> = {
+  'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+  'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+};
+
+export const englishNumeralMap: Record<string, number> = {
+  'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+  'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+  'eleven': 11, 'twelve': 12,
+  'half': 0.5, 'quarter': 0.25, 'third': 0.33
+};
+
+// ==================== أنواع النتائج ====================
+
+export interface ParseResult {
+  dateTime: Date;
+  confidence: number;
+  detectedLanguage: 'ar' | 'fr' | 'en';
+  matchedPattern: string;
 }
 
-// مكون منفصل لعرض التاريخ بشكل آمن (لتجنب try/catch مع JSX)
-function SafeDateDisplay({ dateString }: { dateString: string }) {
-  // التحقق من صحة التاريخ خارج الـ return
-  const isValid = isValidDateString(dateString);
-  
-  if (!isValid) {
-    return <span>تاريخ غير صالح</span>;
-  }
-  
-  try {
-    const date = new Date(dateString);
-    const formattedDate = formatDistanceToNow(date, { addSuffix: true, locale: arDZ });
-    return <span>{formattedDate}</span>;
-  } catch {
-    return <span>خطأ في التاريخ</span>;
-  }
+export interface CleanResult {
+  parsedText: string;
+  reminderTime: string;
+  detectedLanguage: 'ar' | 'fr' | 'en';
+  confidence: number;
+  originalText: string;
 }
 
-export default function ReminderApp() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [recurring, setRecurring] = useState<string>('none');
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [assistantMessage, setAssistantMessage] = useState('');
-  const [reminderDateTime, setReminderDateTime] = useState<string>('');
-  const [smartParsed, setSmartParsed] = useState<SmartParsedResult | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const { t, isRTL, language } = useLanguage();
-   
-  useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
+// ==================== دوال مساعدة لتحويل الأرقام النصية ====================
 
-  useEffect(() => {
-    if (isMounted && notificationService) {
-      notificationService.requestPermission().then((permission) => {
-        setNotificationsEnabled(permission === 'granted');
-      });
-    }
-  }, [isMounted]);
+function parseArabicNumberWord(word: string): number | null {
+  const normalized = word.toLowerCase().replace(/[ًٌٍَُِّْ]/g, '');
+  return arabicNumeralMap[normalized] || null;
+}
 
-  useEffect(() => {
-    if (isMounted) {
-      const saved = localStorage.getItem('smarty_reminders');
-      if (saved) {
-        try {
-          const parsedReminders = JSON.parse(saved);
-          // تصفية التذكيرات ذات التواريخ غير الصالحة
-          const validReminders = parsedReminders.filter((r: Reminder) => isValidDateString(r.reminderTime));
-          // استخدام setTimeout لتجنب التحذير
-          setTimeout(() => setReminders(validReminders), 0);
-        } catch (e) {
-          console.error('Failed to load reminders', e);
-          setTimeout(() => setReminders([]), 0);
-        }
-      }
-    }
-  }, [isMounted]);
+function parseFrenchNumberWord(word: string): number | null {
+  const normalized = word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return frenchNumeralMap[normalized] || null;
+}
 
-  useEffect(() => {
-    if (isMounted) {
-      localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
-      if (notificationService) {
-        notificationService.rescheduleAll(reminders, () => {});
-      }
-    }
-  }, [reminders, isMounted]);
+function parseEnglishNumberWord(word: string): number | null {
+  const normalized = word.toLowerCase();
+  return englishNumeralMap[normalized] || null;
+}
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.muted = true;
-      audioRef.current = audio;
-    }
-  }, []);
-
-  // معالج الإدخال الصوتي - مع التحقق من صحة التاريخ
-  const handleVoiceInput = (text: string) => {
-    const result = analyzeReminderInput(text);
-    if (result && result.reminderTime && isValidDateString(result.reminderTime)) {
-      setInputText(result.parsedText);
-      setReminderDateTime(result.reminderTime);
-      setIsAdding(true);
-      const { text: countdownText } = formatCountdown(result.reminderTime, result.detectedLanguage || 'ar');
-      setAssistantMessage(`✅: "${result.parsedText}" | ${countdownText}`);
-    } else {
-      setInputText(text);
-      const defaultTime = new Date().toISOString();
-      setReminderDateTime(defaultTime);
-      setIsAdding(true);
-      setAssistantMessage(`✅: "${text}" (تم التعيين للوقت الحالي)`);
-    }
+// دالة لاستخراج المدة الزمنية من النص (مثل "ثلاث ايام واربع ساعات و اثنان و خمسون دقيقة")
+function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: number; hours: number; minutes: number } | null {
+  let days = 0;
+  let hours = 0;
+  let minutes = 0;
+  
+  // الأنماط حسب اللغة
+  const patterns: Record<string, Array<{ regex: RegExp; unit: 'days' | 'hours' | 'minutes' }>> = {
+    ar: [
+      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(يوم|أيام|يومين)\s*/i, unit: 'days' },
+      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(ساعة|ساعات|ساعتين)\s*/i, unit: 'hours' },
+      { regex: /(?:و)?\s*(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(دقيقة|دقائق|دقيقتين)\s*/i, unit: 'minutes' },
+      // دعم "و اثنان" بدون وحدة زمنية واضحة (تعتبر دقائق)
+      { regex: /(?:و)?\s*(واحد|اثنان|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(?!يوم|أيام|ساعة|ساعات|دقيقة|دقائق)/i, unit: 'minutes' }
+    ],
+    fr: [
+      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(jour|jours)\s*/i, unit: 'days' },
+      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(heure|heures)\s*/i, unit: 'hours' },
+      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(minute|minutes)\s*/i, unit: 'minutes' }
+    ],
+    en: [
+      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(day|days)\s*/i, unit: 'days' },
+      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(hour|hours)\s*/i, unit: 'hours' },
+      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(minute|minutes)\s*/i, unit: 'minutes' }
+    ]
   };
 
-  const handleAddReminder = () => {
-    if (!inputText.trim()) return;
-    
-    // التحقق من صحة التاريخ قبل الإضافة
-    let validReminderTime = reminderDateTime;
-    if (!validReminderTime || !isValidDateString(validReminderTime)) {
-      validReminderTime = new Date().toISOString();
+  // دالة مساعدة لتحويل الكلمة إلى رقم
+  const parseNumber = (numStr: string, lang: string): number => {
+    if (/^\d+$/.test(numStr)) return parseInt(numStr);
+    if (lang === 'ar') return parseArabicNumberWord(numStr) || 0;
+    if (lang === 'fr') return parseFrenchNumberWord(numStr) || 0;
+    return parseEnglishNumberWord(numStr) || 0;
+  };
+
+  for (const pattern of patterns[lang]) {
+    let match;
+    while ((match = pattern.regex.exec(text)) !== null) {
+      const value = parseNumber(match[1], lang);
+      if (pattern.unit === 'days') days += value;
+      else if (pattern.unit === 'hours') hours += value;
+      else if (pattern.unit === 'minutes') minutes += value;
     }
-    
-    const newReminder: Reminder = {
-      id: Math.random().toString(36).substr(2, 9),
-      text: inputText,
-      reminderTime: validReminderTime,
-      isCompleted: false
+  }
+
+  // دعم صيغة "ثلاثة أيام و أربع ساعات و خمسون دقيقة"
+  const combinedPattern = /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+يوم\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+ساعة\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+دقيقة/i;
+  const combinedMatch = text.match(combinedPattern);
+  if (combinedMatch) {
+    days = parseNumber(combinedMatch[1], lang);
+    hours = parseNumber(combinedMatch[2], lang);
+    minutes = parseNumber(combinedMatch[3], lang);
+  }
+
+  if (days === 0 && hours === 0 && minutes === 0) return null;
+  return { days, hours, minutes };
+}
+
+// ==================== دوال التنظيف المشتركة ====================
+
+export function cleanReminderText(text: string, language: 'ar' | 'fr' | 'en' = 'ar'): string {
+  let cleaned = text;
+
+  const commandWords: Record<'ar' | 'fr' | 'en', string[]> = {
+    ar: ['ذكرني', 'تذكير', 'تذكر', 'ذكر', 'أذكر', 'نذكر', 'موعد', 'حدث', 'مهمة'],
+    fr: ['rappelle', 'rappel', 'rappeler', 'tâche', 'rendez-vous', 'rdv'],
+    en: ['remind', 'reminder', 'remember', 'task', 'appointment', 'event']
+  };
+
+  const timeKeywords = [
+    'غدا', 'غداً', 'بعد غد', 'اليوم', 'صباحا', 'مساء', 'صباحاً', 'مساءً',
+    'الساعة', 'على الساعة', 'في الساعة', 'دقيقة', 'دقائق', 'دقيقتين', 'ساعة', 'ساعتين', 'ساعات',
+    'يوم', 'أيام', 'اسبوع', 'أسبوع', 'بعد', 'خلال', 'القادم', 'الجاي', 'المقبل',
+    ...Object.keys(arabicDayMap), ...Object.keys(arabicMonthMap),
+    'tomorrow', 'today', 'am', 'pm', 'o\'clock', 'hour', 'minute', 'hours', 'minutes', 'in', 'at', 'next',
+    ...Object.keys(englishDayMap), ...Object.keys(englishMonthMap),
+    'demain', 'aujourd\'hui', 'après-demain', 'heure', 'heures', 'minutes', 'dans', 'à', 'prochain',
+    ...Object.keys(frenchDayMap), ...Object.keys(frenchMonthMap)
+  ];
+
+  commandWords[language].forEach(word => {
+    cleaned = cleaned.replace(new RegExp(word, 'gi'), '').trim();
+  });
+
+  timeKeywords.forEach(keyword => {
+    cleaned = cleaned.replace(new RegExp(keyword, 'gi'), '').trim();
+  });
+
+  cleaned = cleaned.replace(/\d+/g, '').trim();
+  cleaned = cleaned.replace(/\s+/g, ' ').replace(/^[\s,،]+|[\s,،]+$/g, '').trim();
+
+  return cleaned || (language === 'ar' ? 'مهمة' : language === 'fr' ? 'Tâche' : 'Task');
+}
+
+// ==================== دالة التحليل الرئيسية ====================
+
+export function parseSmartDateTime(text: string, baseDate: Date = new Date()): ParseResult | null {
+  if (!text.trim()) return null;
+
+  const now = new Date(baseDate);
+
+  // ========== دالة معالجة المدة الزمنية ==========
+  const handleDuration = (duration: { days: number; hours: number; minutes: number }): Date => {
+    const targetDate = new Date(now);
+    targetDate.setDate(targetDate.getDate() + duration.days);
+    targetDate.setHours(targetDate.getHours() + duration.hours);
+    targetDate.setMinutes(targetDate.getMinutes() + duration.minutes);
+    return targetDate;
+  };
+
+  // ========== الأنماط العربية ==========
+  const arPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
+    // ✅ دعم المدة الزمنية بالحروف (مثل "ثلاث ايام واربع ساعات و اثنان و خمسون دقيقة")
+    { regex: /(?:بعد|خلال|في)\s*(.+?)(?:\s*مقدما|\s*من الآن)?$/i, handler: (m) => { 
+      const duration = parseDurationFromText(m[1], 'ar');
+      if (duration) return handleDuration(duration);
+      return new Date(now.getTime() + 7 * 86400000); // افتراضي: أسبوع
+    }, confidence: 0.92 },
+    { regex: /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(يوم|أيام|يومين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(ساعة|ساعات|ساعتين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
+      const parseNum = (s: string): number => /^\d+$/.test(s) ? parseInt(s) : (parseArabicNumberWord(s) || 0);
+      const days = parseNum(m[1]);
+      const hours = parseNum(m[3]);
+      const minutes = parseNum(m[5]);
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() + days);
+      targetDate.setHours(targetDate.getHours() + hours);
+      targetDate.setMinutes(targetDate.getMinutes() + minutes);
+      return targetDate;
+    }, confidence: 0.96 },
+    { regex: /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(يوم|أيام|يومين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(ساعة|ساعات|ساعتين)/i, handler: (m) => {
+      const parseNum = (s: string): number => /^\d+$/.test(s) ? parseInt(s) : (parseArabicNumberWord(s) || 0);
+      const days = parseNum(m[1]);
+      const hours = parseNum(m[3]);
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() + days);
+      targetDate.setHours(targetDate.getHours() + hours);
+      return targetDate;
+    }, confidence: 0.95 },
+    { regex: /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(ساعة|ساعات|ساعتين)\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
+      const parseNum = (s: string): number => /^\d+$/.test(s) ? parseInt(s) : (parseArabicNumberWord(s) || 0);
+      const hours = parseNum(m[1]);
+      const minutes = parseNum(m[3]);
+      const targetDate = new Date(now);
+      targetDate.setHours(targetDate.getHours() + hours);
+      targetDate.setMinutes(targetDate.getMinutes() + minutes);
+      return targetDate;
+    }, confidence: 0.95 },
+    // دعم "و خمسون دقيقة" بدون ذكر ساعات
+    { regex: /و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة|خمسون|خمسين)\s+(دقيقة|دقائق|دقيقتين)/i, handler: (m) => {
+      const parseNum = (s: string): number => {
+        if (s === 'خمسون' || s === 'خمسين') return 50;
+        if (/^\d+$/.test(s)) return parseInt(s);
+        return parseArabicNumberWord(s) || 0;
+      };
+      const minutes = parseNum(m[1]);
+      const targetDate = new Date(now);
+      targetDate.setMinutes(targetDate.getMinutes() + minutes);
+      return targetDate;
+    }, confidence: 0.93 },
+    // الأنماط الأصلية
+    { regex: /(\d{1,2}):(\d{2})\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const minute = parseInt(m[2]); const period = m[3]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.98 },
+    { regex: /(\d{1,2})\s*(صباحا|مساء|ص|م)/i, handler: (m) => { const d = new Date(now); let hour = parseInt(m[1]); const period = m[2]; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /(?:يوم\s+)?(الأحد|الاثنين|الإثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت)\s*(?:القادم|الجاي|المقبل)?/i, handler: (m) => { const d = new Date(now); const targetDay = arabicDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
+    { regex: new RegExp(`(?:في\\s+)?(${Object.keys(arabicMonthMap).join('|')})\\s*(?:(?:عام|سنة)\\s*(\\d{4}))?\\s*(?:القادم|المقبل)?`, 'i'), handler: (m) => { const d = new Date(now); const month = arabicMonthMap[m[1].toLowerCase()]; const year = m[2] ? parseInt(m[2]) : d.getFullYear(); d.setFullYear(year, month, 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.88 },
+    { regex: /(غدا|غداً).*?(\d{1,2}(?::\d{2})?)?\s*(صباحا|مساء|ص|م)?/i, handler: (m) => { const d = new Date(now); d.setDate(d.getDate() + 1); const timeMatch = m[2]; const period = m[3]; if (timeMatch) { let hour = parseInt(timeMatch.split(':')[0]); const minute = timeMatch.includes(':') ? parseInt(timeMatch.split(':')[1]) : 0; if (period && (period.includes('مساء') || period === 'م')) { if (hour < 12) hour += 12; } else if (period && (period.includes('صباحا') || period === 'ص')) { if (hour === 12) hour = 0; } d.setHours(hour, minute, 0, 0); } else { d.setHours(9, 0, 0, 0); } return d; }, confidence: 0.96 },
+    { regex: /(غدا|غداً)/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /بعد\s+غد/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 2); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /بعد\s+(\d+)\s+دقيقة/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
+    { regex: /بعد\s+(\d+)\s+ساعة/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
+    { regex: /بعد\s+(\d+)\s+يوم/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+    { regex: /بعد\s+(\d+)\s+أسبوع|اسبوع/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 7 * 86400000), confidence: 0.95 },
+    { regex: /بعد\s+(ساعة|ساعتين)/i, handler: (m) => new Date(now.getTime() + (m[1] === 'ساعتين' ? 2 : 1) * 3600000), confidence: 0.9 },
+    { regex: /بعد\s+(دقيقة|دقيقتين)/i, handler: (m) => new Date(now.getTime() + (m[1] === 'دقيقتين' ? 2 : 1) * 60000), confidence: 0.9 },
+    { regex: /بعد\s+نصف\s+ساعة/i, handler: () => new Date(now.getTime() + 30 * 60000), confidence: 0.9 },
+    { regex: /بعد\s+ربع\s+ساعة/i, handler: () => new Date(now.getTime() + 15 * 60000), confidence: 0.9 },
+  ];
+
+  // ========== الأنماط الفرنسية ==========
+  const frPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
+    { regex: /dans\s+(.+?)(?:\s*à partir de maintenant)?$/i, handler: (m) => {
+      const duration = parseDurationFromText(m[1], 'fr');
+      if (duration) {
+        const targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + duration.days);
+        targetDate.setHours(targetDate.getHours() + duration.hours);
+        targetDate.setMinutes(targetDate.getMinutes() + duration.minutes);
+        return targetDate;
+      }
+      return new Date(now.getTime() + 7 * 86400000);
+    }, confidence: 0.92 },
+    { regex: /demain\s+à\s+(\d{1,2})[h:](\d{2})?/i, handler: (m) => { const d = new Date(now); d.setDate(d.getDate() + 1); const hour = parseInt(m[1]); const minute = m[2] ? parseInt(m[2]) : 0; d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /demain/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /après-demain/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 2); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+minutes?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+heures?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
+    { regex: /dans\s+(\d+)\s+jours?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+    { regex: new RegExp(`(${Object.keys(frenchDayMap).join('|')})\\s*(prochain|suivant)?`, 'i'), handler: (m) => { const d = new Date(now); const targetDay = frenchDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
+  ];
+
+  // ========== الأنماط الإنجليزية ==========
+  const enPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
+    { regex: /in\s+(.+?)(?:\s*from now)?$/i, handler: (m) => {
+      const duration = parseDurationFromText(m[1], 'en');
+      if (duration) {
+        const targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + duration.days);
+        targetDate.setHours(targetDate.getHours() + duration.hours);
+        targetDate.setMinutes(targetDate.getMinutes() + duration.minutes);
+        return targetDate;
+      }
+      return new Date(now.getTime() + 7 * 86400000);
+    }, confidence: 0.92 },
+    { regex: /tomorrow\s+at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i, handler: (m) => { const d = new Date(now); d.setDate(d.getDate() + 1); let hour = parseInt(m[1]); const minute = m[2] ? parseInt(m[2]) : 0; const period = m[3]; if (period && period.toLowerCase() === 'pm' && hour < 12) hour += 12; if (period && period.toLowerCase() === 'am' && hour === 12) hour = 0; d.setHours(hour, minute, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /tomorrow/i, handler: () => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+minutes?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 60000), confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+hours?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 3600000), confidence: 0.95 },
+    { regex: /in\s+(\d+)\s+days?/i, handler: (m) => new Date(now.getTime() + parseInt(m[1]) * 86400000), confidence: 0.95 },
+    { regex: new RegExp(`next\\s+(${Object.keys(englishDayMap).join('|')})`, 'i'), handler: (m) => { const d = new Date(now); const targetDay = englishDayMap[m[1].toLowerCase()]; const currentDay = d.getDay(); let daysToAdd = targetDay - currentDay; if (daysToAdd <= 0) daysToAdd += 7; d.setDate(d.getDate() + daysToAdd); d.setHours(9, 0, 0, 0); return d; }, confidence: 0.92 },
+  ];
+
+  // دالة مساعدة لفحص مجموعة من الأنماط مع تحديد اللغة
+  const checkPatterns = (
+    patterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }>,
+    lang: 'ar' | 'fr' | 'en'
+  ): ParseResult | null => {
+    for (const pattern of patterns) {
+      const match = text.match(pattern.regex);
+      if (match) {
+        return {
+          dateTime: pattern.handler(match),
+          confidence: pattern.confidence,
+          detectedLanguage: lang,
+          matchedPattern: match[0]
+        };
+      }
+    }
+    return null;
+  };
+
+  // الأولوية: العربية أولاً، ثم الفرنسية، ثم الإنجليزية
+  let result = checkPatterns(arPatterns, 'ar');
+  if (!result) result = checkPatterns(frPatterns, 'fr');
+  if (!result) result = checkPatterns(enPatterns, 'en');
+
+  // رفض الوقت إذا كان في الماضي
+  if (result) {
+    const nowTime = new Date();
+    // نسمح بهامش 5 ثوانٍ فقط (للأوقات التي تمر أثناء التحليل)
+    if (result.dateTime.getTime() < nowTime.getTime() - 5000) {
+      return null; // وقت غير صالح
+    }
+  }
+
+  return result;
+}
+
+export function analyzeReminderInput(text: string): CleanResult | null {
+  if (!text.trim()) return null;
+
+  const parseResult = parseSmartDateTime(text);
+  if (!parseResult) {
+    return {
+      parsedText: cleanReminderText(text, 'ar'),
+      reminderTime: new Date().toISOString(),
+      detectedLanguage: 'ar',
+      confidence: 0.5,
+      originalText: text
     };
-    setReminders(prev => [newReminder, ...prev]);
-    setInputText('');
-    setReminderDateTime('');
-    setRecurring('none');
-    setSmartParsed(null);
-    setIsAdding(false);
+  }
+
+  const cleaned = cleanReminderText(text, parseResult.detectedLanguage);
+
+  return {
+    parsedText: cleaned,
+    reminderTime: parseResult.dateTime.toISOString(),
+    detectedLanguage: parseResult.detectedLanguage,
+    confidence: parseResult.confidence,
+    originalText: text
   };
+}
 
-  const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
-  const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
+export type SmartParsedResult = CleanResult;
 
-  const handleCloseModal = () => {
-    setIsAdding(false);
-    setSmartParsed(null);
-    setReminderDateTime('');
-  };
+export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  const activeReminders = reminders.filter(r => !r.isCompleted);
+  const arabicDays = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const frenchDays = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  if (!isMounted) return null;
-  if (showSettings) return <SettingsScreen onBack={() => setShowSettings(false)} />;
-  if (showAbout) return <AboutScreen onBack={() => setShowAbout(false)} />;
+  let dayStr = '';
+  if (diffDays === 0) dayStr = lang === 'ar' ? 'اليوم' : lang === 'fr' ? 'aujourd\'hui' : 'today';
+  else if (diffDays === 1) dayStr = lang === 'ar' ? 'غداً' : lang === 'fr' ? 'demain' : 'tomorrow';
+  else if (diffDays === 2) dayStr = lang === 'ar' ? 'بعد غد' : lang === 'fr' ? 'après-demain' : 'day after tomorrow';
+  else if (diffDays < 7 && lang === 'ar') dayStr = arabicDays[date.getDay()];
+  else if (diffDays < 7 && lang === 'fr') dayStr = frenchDays[date.getDay()];
+  else if (diffDays < 7 && lang === 'en') dayStr = englishDays[date.getDay()];
+  else dayStr = date.toLocaleDateString(lang === 'ar' ? 'ar-DZ' : lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  return (
-    <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col">
-      <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl -rotate-6">
-            <svg className="w-6 h-6 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/></svg>
-          </div>
-          <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
-        </div>
-        <div className="flex gap-1">
-           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
-           <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
-           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
-           <button onClick={() => notificationService?.requestPermission()} className="p-2.5 text-white/70 hover:text-white">{notificationsEnabled ? <Bell /> : <BellOff />}</button>
-        </div>
-      </header>
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? (lang === 'ar' ? 'مساءً' : lang === 'fr' ? 'soir' : 'PM') : (lang === 'ar' ? 'صباحاً' : lang === 'fr' ? 'matin' : 'AM');
+  if (hours > 12) hours -= 12;
+  if (hours === 0) hours = 12;
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-6 pb-32">
-        <div className="mb-8 relative group">
-          <Search className={cn("absolute top-1/2 -translate-y-1/2 text-white/40", isRTL ? "left-4" : "right-4")} />
-          <input
-            placeholder={t.search_reminders_placeholder}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50"
-          /> 
-        </div>
+  const timeStr = minutes > 0 ? `${hours}:${minutes.toString().padStart(2, '0')} ${period}` : `${hours}:00 ${period}`;
+  return `${dayStr}، ${timeStr}`;
+}
 
-        <div className="flex flex-col items-center justify-center my-8">
-          <VoiceInput onTranscript={handleVoiceInput} />
-        <p className="text-center text-sm text-white/70 mt-2">{t.tap_to_speak}</p>
-        </div>
+export function formatCountdown(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): { text: string; isPast: boolean } {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const isPast = diffMs < 0;
+  const absDiffMs = Math.abs(diffMs);
 
-        {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6 text-center">{assistantMessage}</div>}
+  const diffMinutes = Math.floor(absDiffMs / 60000);
+  const diffHours = Math.floor(absDiffMs / 3600000);
+  const diffDays = Math.floor(absDiffMs / 86400000);
 
-        <section className="space-y-4">
-          <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-           <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
-          </h3>
-          <div className="flex flex-col gap-3">
-            <AnimatePresence>
-              {activeReminders.length === 0 ? (
-                <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
-                  <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
-                </div>
-                ) : (
-                activeReminders.map((rem) => {
-                  // التحقق من صحة التاريخ مع قيمة افتراضية آمنة
-                  const isValidDate = isValidDateString(rem.reminderTime);
-                  const safeReminderTime = isValidDate ? rem.reminderTime : new Date().toISOString();
-                  
-                  // استخدم safeReminderTime فقط إذا كان التاريخ صالحًا
-                  let exactTime = 'وقت غير محدد';
-                  let countdown = 'وقت غير محدد';
-                  let isPast = false;
-                  let cleanedText = rem.text;
-                  
-                  if (isValidDate) {
-                    try {
-                      exactTime = formatDetectedTime(safeReminderTime, 'ar');
-                      const countdownResult = formatCountdown(safeReminderTime, 'ar');
-                      countdown = countdownResult.text;
-                      isPast = countdownResult.isPast;
-                      cleanedText = cleanReminderText(rem.text, 'ar');
-                    } catch (e) {
-                      console.error('Error formatting reminder:', e);
-                    }
-                  }
+  let text = '';
 
-                  return (
-                    <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", isPast && "opacity-70")}>
-                        <button onClick={() => handleToggleComplete(rem.id)} className="mt-1 w-8 h-8 rounded-2xl border-2 border-zinc-100 flex items-center justify-center text-emerald-500">
-                          <CheckCircle2 className="w-5 h-5" />
-                        </button>
-                        <div className="flex-1">
-                          <p className="text-xl font-black dark:text-white">{cleanedText}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            <span className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/50 px-3 py-1.5 rounded-full text-[10px] font-bold text-orange-700 dark:text-orange-300 flex items-center gap-1.5">
-                              <Clock className="w-3 h-3" />
-                              {exactTime}
-                            </span>
-                            <span className={cn(
-                              "px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1.5",
-                              isPast ? "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300" : "bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300"
-                            )}>
-                              {isPast ? <AlertCircle className="w-3 h-3" /> : <Timer className="w-3 h-3" />}
-                              {countdown}
-                            </span>
-                            <span className="bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 rounded-full text-[10px] font-medium text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                              <Calendar className="w-3 h-3" />
-                              <SafeDateDisplay dateString={safeReminderTime} />
-                            </span>
-                          </div>
-                        </div>
-                        <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                })
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
-      </main>
+  if (lang === 'ar') {
+    if (isPast) {
+      if (diffMinutes < 1) text = 'الآن';
+      else if (diffMinutes < 60) text = `منذ ${diffMinutes} دقيقة`;
+      else if (diffHours < 24) text = `منذ ${diffHours} ساعة`;
+      else if (diffDays === 1) text = 'منذ يوم';
+      else if (diffDays === 2) text = 'منذ يومين';
+      else text = `منذ ${diffDays} يوم`;
+    } else {
+      if (diffMinutes < 1) text = 'أقل من دقيقة';
+      else if (diffMinutes < 60) text = `متبقي ${diffMinutes} دقيقة`;
+      else if (diffHours < 24) text = `متبقي ${diffHours} ساعة`;
+      else if (diffDays === 0) text = 'اليوم';
+      else if (diffDays === 1) text = 'غداً';
+      else if (diffDays === 2) text = 'بعد غد';
+      else text = `متبقي ${diffDays} يوم`;
+    }
+  } else if (lang === 'fr') {
+    text = isPast ? `il y a ${diffMinutes} min` : `dans ${diffMinutes} min`;
+  } else {
+    text = isPast ? `${diffMinutes} min ago` : `in ${diffMinutes} min`;
+  }
 
-      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setIsAdding(true)} className="fixed bottom-8 right-8 w-16 h-16 bg-white dark:bg-zinc-900 text-[#E65100] rounded-2xl shadow-2xl flex items-center justify-center z-50">
-        <Pencil className="w-8 h-8" />
-      </motion.button>
-
-      <AddReminderModal
-        isOpen={isAdding}
-        onClose={handleCloseModal}
-        inputText={inputText}
-        setInputText={setInputText}
-        recurring={recurring}
-        setRecurring={setRecurring}
-        handleAddReminder={handleAddReminder}
-        t={t}
-        smartParsed={smartParsed}
-        setSmartParsed={setSmartParsed}
-        activeSuggestions={[]}
-        language={language}
-        getTimeBeforeLabel={() => ''}
-        format={formatDistanceToNow}
-        arDZ={arDZ}
-        onReminderTimeDetected={setReminderDateTime}
-      />
-      <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
-    </div>
-  );
+  return { text, isPast };
 }
