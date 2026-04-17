@@ -152,33 +152,59 @@ export default function AddReminderModal({
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
+</AnimatePresence>
 
             <div className="mb-6">
-              <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 p-4 rounded-2xl">
-                <RefreshCw className="w-5 h-5 text-zinc-400" />
-                <div className="flex-1">
-                  <p className="text-[10px] uppercase font-black text-zinc-400 mb-1">{t.recurring || 'تكرار'}</p>
-                  <select 
-                    value={recurring}
-                    onChange={(e) => setRecurring(e.target.value)}
-                    className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-black dark:text-white"
-                  >
-                    <option value="none">{t.once || 'مرة واحدة'}</option>
-                    <option value="hourly">{t.hourly || 'كل ساعة'}</option>
-                    <option value="daily">{t.daily || 'يومياً'}</option>
-                    <option value="weekly">{t.weekly || 'أسبوعياً'}</option>
-                  </select>
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 overflow-hidden shadow-sm">
+                <div className="flex items-center gap-4 px-5 py-4">
+                  {/* أيقونة التكرار */}
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#E65100]/10 to-amber-500/10 flex items-center justify-center">
+                    <RefreshCw className="w-5 h-5 text-[#E65100] dark:text-amber-400" />
+                  </div>
+                  
+                  {/* النص والقائمة المنسدلة */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-0.5">
+                      {t.recurring || 'تكرار'}
+                    </p>
+                    
+                    {/* قائمة منسدلة مخصصة */}
+                    <div className="relative">
+                      <select 
+                        value={recurring}
+                        onChange={(e) => setRecurring(e.target.value)}
+                        className="w-full appearance-none bg-transparent border-none p-0 text-base font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-0 cursor-pointer pr-6"
+                      >
+                        <option value="none">{t.once || 'مرة واحدة'}</option>
+                        <option value="hourly">{t.hourly || 'كل ساعة'}</option>
+                        <option value="daily">{t.daily || 'يومياً'}</option>
+                        <option value="weekly">{t.weekly || 'أسبوعياً'}</option>
+                      </select>
+                      {/* سهم سفلي مخصص */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="flex gap-3">
-              <button onClick={onClose} className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-black py-4 rounded-2xl">
+              <button 
+                onClick={onClose} 
+                className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold py-4 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
                 {t.cancel || 'إلغاء'}
               </button>
-              <button onClick={handleAddReminder} disabled={!inputText.trim()} className="flex-[2] bg-[#E65100] text-white font-black py-4 rounded-2xl disabled:opacity-50 flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
+              <button 
+                onClick={handleAddReminder} 
+                disabled={!inputText.trim()} 
+                className="flex-[2] bg-gradient-to-r from-[#E65100] to-amber-500 text-white font-bold py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#E65100]/20 hover:shadow-xl hover:shadow-[#E65100]/30 transition-all"
+              >
+                <CheckCircle2 className="w-5 h-5" />
                 {t.save_reminder || 'حفظ التذكير'}
               </button>
             </div>
@@ -187,4 +213,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-}
+                      }
