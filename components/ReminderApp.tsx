@@ -46,8 +46,24 @@ function safeFormatDistanceToNow(dateString: string, locale: any): string {
   }
 }
 
+// ✅ دالة لتحميل التذكيرات من localStorage (للاستخدام في lazy initialization)
+function loadRemindersFromStorage(): Reminder[] {
+  if (typeof window === 'undefined') return [];
+  const saved = localStorage.getItem('smarty_reminders');
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    // تصفية التذكيرات ذات التاريخ غير الصالح
+    return parsed.filter((rem: Reminder) => isValidReminderTime(rem.reminderTime));
+  } catch (e) {
+    console.error('Failed to load reminders', e);
+    return [];
+  }
+}
+
 export default function ReminderApp() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  // ✅ استخدام lazy initialization لتجنب useEffect للتحميل الأولي
+  const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
   const [inputText, setInputText] = useState('');
   const [recurring, setRecurring] = useState<string>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -75,22 +91,7 @@ export default function ReminderApp() {
     }
   }, [isMounted]);
 
-  // ✅ تعديل: تصفية التذكيرات غير الصالحة عند التحميل من localStorage
-  useEffect(() => {
-    if (isMounted) {
-      const saved = localStorage.getItem('smarty_reminders');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          const validReminders = parsed.filter((rem: Reminder) => isValidReminderTime(rem.reminderTime));
-          setReminders(validReminders);
-        } catch (e) {
-          console.error('Failed to load reminders', e);
-        }
-      }
-    }
-  }, [isMounted]);
-
+  // ✅ حفظ التذكيرات في localStorage عند تغييرها (بدون تحميل أولي)
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
