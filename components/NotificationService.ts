@@ -5,7 +5,7 @@ interface Reminder {
   text: string;
   reminderTime: string;
   isCompleted: boolean;
-  recurring?: 'none' | 'hourly' | 'daily' | 'weekly'; // دعم التكرار
+  recurring?: 'none' | 'hourly' | 'daily' | 'weekly';
 }
 
 class NotificationService {
@@ -26,7 +26,7 @@ class NotificationService {
     try {
       this.audio = new Audio('/sounds/notification.mp3');
       this.audio.volume = 0.7;
-      this.audio.load(); // محاولة تحميل الملف
+      this.audio.load();
     } catch (e) {
       console.warn('Could not load notification sound', e);
       this.audio = null;
@@ -93,20 +93,15 @@ class NotificationService {
     const reminderTimers: NodeJS.Timeout[] = [];
     let triggerTime = new Date(reminder.reminderTime).getTime();
 
-    // إذا كان الوقت في الماضي، نعيد حسابه للتكرار
     if (triggerTime <= now && reminder.recurring && reminder.recurring !== 'none') {
       triggerTime = this.getNextRecurringTime(triggerTime, reminder.recurring);
     }
 
-    if (triggerTime <= now) {
-      // إذا كان الوقت لا يزال في الماضي (لا يمكن جدولته)، نتجاهل
-      return;
-    }
+    if (triggerTime <= now) return;
 
     const delay = triggerTime - now;
     const earlyDelay = delay - 5 * 60 * 1000;
 
-    // تذكير مبكر قبل 5 دقائق
     if (earlyDelay > 0) {
       const earlyTimer = setTimeout(() => {
         this.showNotification(reminder, true);
@@ -114,12 +109,10 @@ class NotificationService {
       reminderTimers.push(earlyTimer);
     }
 
-    // التذكير الرئيسي
     const timer = setTimeout(() => {
       this.showNotification(reminder, false);
       this.playSound();
       if (onComplete) onComplete(reminder.id);
-      // جدولة التكرار إذا كان مطلوباً
       if (reminder.recurring && reminder.recurring !== 'none') {
         const nextReminder = { ...reminder };
         const nextTime = this.getNextRecurringTime(triggerTime, reminder.recurring);
@@ -167,12 +160,6 @@ class NotificationService {
   }
 
   private getActiveReminders(): Reminder[] {
-    const active: Reminder[] = [];
-    for (const [id] of this.timers) {
-      // لا يمكن استعادة النص والوقت من المؤقتات، لذا نعتمد على localStorage منفصل
-      // هنا نستخدم localStorage المخزن مسبقاً
-    }
-    // نرجع التذكيرات من localStorage (يتم تحديثها عند كل جدولة)
     try {
       const saved = localStorage.getItem(this.storageKey);
       return saved ? JSON.parse(saved) : [];
@@ -197,20 +184,20 @@ class NotificationService {
     const title = isEarly ? 'تذكير مبكر' : 'تذكير';
     const body = isEarly ? `باقي 5 دقائق: ${reminder.text}` : reminder.text;
 
-    const options: NotificationOptions = {
+    // استخدام any لتجنب أخطاء TypeScript حول actions وغيرها من الخيارات غير القياسية
+    const options: any = {
       body,
       icon: '/web-app-manifest-192x192.png',
       tag: reminder.id,
       requireInteraction: true,
       silent: false,
-      // تم إزالة vibrate لتفادي خطأ TypeScript
       data: {
         reminderId: reminder.id,
         reminderText: reminder.text,
         timestamp: new Date().toISOString(),
       },
       actions: [
-       { action: 'complete', title: 'تم' },
+        { action: 'complete', title: 'تم' },
         { action: 'snooze', title: 'تذكير لاحق' },
         { action: 'open', title: 'فتح التطبيق' },
       ],
@@ -235,21 +222,18 @@ class NotificationService {
     if (this.audio) {
       this.audio.play().catch(e => console.warn('Cannot play notification sound:', e));
     } else {
-      // محاولة إنشاء صوت افتراضي
       try {
-        const beep = new Audio('data:audio/wav;base64,U3RlYWx0aCB3YXZl...'); // beep قصير
+        const beep = new Audio('data:audio/wav;base64,U3RlYWx0aCB3YXZl...');
         beep.play().catch(() => {});
       } catch {}
     }
   }
 
   rescheduleAll(reminders: Reminder[], onComplete?: (id: string) => void): void {
-    // إلغاء جميع المؤقتات الحالية
     for (const timers of this.timers.values()) {
       timers.forEach(timer => clearTimeout(timer));
     }
     this.timers.clear();
-    // جدولة التذكيرات النشطة
     reminders.forEach(reminder => {
       if (!reminder.isCompleted) {
         this.scheduleReminder(reminder, onComplete);
