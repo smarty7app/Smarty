@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
@@ -50,77 +49,7 @@ export default function AddReminderModal({
   onReminderTimeDetected,
 }: AddReminderModalProps) {
 
-  const [error, setError] = useState<string | null>(null);
-  const [showRecurringOptions, setShowRecurringOptions] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const recurringButtonRef = useRef<HTMLButtonElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-
-  const updateDropdownPosition = useCallback(() => {
-    if (recurringButtonRef.current) {
-      const rect = recurringButtonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, []);
-
-  const scrollModalForDropdown = useCallback(() => {
-    if (modalRef.current && recurringButtonRef.current) {
-      const modal = modalRef.current;
-      const buttonRect = recurringButtonRef.current.getBoundingClientRect();
-      const neededSpace = 220; // مساحة تقديرية للقائمة
-      const spaceBelow = window.innerHeight - buttonRect.bottom;
-      
-      if (spaceBelow < neededSpace) {
-        const scrollAmount = neededSpace - spaceBelow + 20;
-        modal.scrollBy({ top: scrollAmount, behavior: 'smooth' });
-      }
-    }
-  }, []);
-
-  const handleToggleDropdown = () => {
-    if (!showRecurringOptions) {
-      updateDropdownPosition();
-      scrollModalForDropdown();
-    }
-    setShowRecurringOptions(prev => !prev);
-  };
-
-  useEffect(() => {
-    if (!showRecurringOptions) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      if (recurringButtonRef.current && !recurringButtonRef.current.contains(e.target as Node)) {
-        setShowRecurringOptions(false);
-      }
-    };
-    
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowRecurringOptions(false);
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [showRecurringOptions]);
-
-  useLayoutEffect(() => {
-    if (showRecurringOptions) {
-      updateDropdownPosition();
-      window.addEventListener('scroll', updateDropdownPosition, true);
-      window.addEventListener('resize', updateDropdownPosition);
-      return () => {
-        window.removeEventListener('scroll', updateDropdownPosition, true);
-        window.removeEventListener('resize', updateDropdownPosition);
-      };
-    }
-  }, [showRecurringOptions, updateDropdownPosition]);
+  const [error, setError] = useState<string | null>(null); // ✅ حالة الخطأ
 
   useEffect(() => {
     if (inputText.trim()) {
@@ -146,8 +75,7 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        <motion.div
-          ref={modalRef}
+        <motion.div                   
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
@@ -180,6 +108,7 @@ export default function AddReminderModal({
               </div>
             </div>
 
+            {/* ✅ عرض رسالة الخطأ */}
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl">
                 <p className="text-sm font-bold text-red-600 dark:text-red-400 text-center">{error}</p>
@@ -223,39 +152,40 @@ export default function AddReminderModal({
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
+           </AnimatePresence>
 
             <div className="mb-6">
               <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <div className="flex items-center gap-4 px-5 py-4">
+                  {/* أيقونة التكرار */}
                   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#E65100]/10 to-amber-500/10 flex items-center justify-center">
                     <RefreshCw className="w-5 h-5 text-[#E65100] dark:text-amber-400" />
                   </div>
                   
+                  {/* النص والقائمة المنسدلة */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-0.5">
                       {t.recurring || 'تكرار'}
                     </p>
                     
+                    {/* قائمة منسدلة مخصصة */}
                     <div className="relative">
-                      <button
-                        ref={recurringButtonRef}
-                        type="button"
-                        onClick={handleToggleDropdown}
-                        aria-expanded={showRecurringOptions}
-                        aria-haspopup="listbox"
-                        className="w-full flex items-center justify-between text-base font-bold text-zinc-900 dark:text-white focus:outline-none"
+                      <select 
+                        value={recurring}
+                        onChange={(e) => setRecurring(e.target.value)}
+                        className="w-full appearance-none bg-transparent border-none p-0 text-base font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-0 cursor-pointer pr-6"
                       >
-                        <span>
-                          {recurring === 'none' && (t.once || 'مرة واحدة')}
-                          {recurring === 'hourly' && (t.hourly || 'كل ساعة')}
-                          {recurring === 'daily' && (t.daily || 'يومياً')}
-                          {recurring === 'weekly' && (t.weekly || 'أسبوعياً')}
-                        </span>
-                        <svg className={`w-4 h-4 text-zinc-400 transition-transform ${showRecurringOptions ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <option value="none">{t.once || 'مرة واحدة'}</option>
+                        <option value="hourly">{t.hourly || 'كل ساعة'}</option>
+                        <option value="daily">{t.daily || 'يومياً'}</option>
+                        <option value="weekly">{t.weekly || 'أسبوعياً'}</option>
+                      </select>
+                      {/* سهم سفلي مخصص */}
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
-                      </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -281,46 +211,6 @@ export default function AddReminderModal({
           </div>
         </motion.div>
       </div>
-
-      {showRecurringOptions && typeof document !== 'undefined' && createPortal(
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          style={{
-            position: 'absolute',
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
-            zIndex: 9999,
-          }}
-          className="bg-white dark:bg-zinc-800 rounded-xl shadow-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden"
-        >
-          <div role="listbox">
-            {['none', 'hourly', 'daily', 'weekly'].map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="option"
-                aria-selected={recurring === value}
-                onClick={() => {
-                  setRecurring(value);
-                  setShowRecurringOptions(false);
-                }}
-                className={`w-full px-4 py-3 text-left text-sm font-bold hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors ${
-                  recurring === value ? 'text-[#E65100] bg-[#E65100]/5' : 'text-zinc-700 dark:text-zinc-300'
-                }`}
-              >
-                {value === 'none' && (t.once || 'مرة واحدة')}
-                {value === 'hourly' && (t.hourly || 'كل ساعة')}
-                {value === 'daily' && (t.daily || 'يومياً')}
-                {value === 'weekly' && (t.weekly || 'أسبوعياً')}
-              </button>
-            ))}
-          </div>
-        </motion.div>,
-        document.body
-      )}
     </AnimatePresence>
   );
-}
+                      }
