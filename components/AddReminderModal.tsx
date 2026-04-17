@@ -67,17 +67,15 @@ export default function AddReminderModal({
     }
   }, []);
 
-  // دالة تحريك المودال للأعلى لإفساح مجال للقائمة
   const scrollModalForDropdown = useCallback(() => {
     if (modalRef.current && recurringButtonRef.current) {
       const modal = modalRef.current;
       const buttonRect = recurringButtonRef.current.getBoundingClientRect();
-      // المساحة التقريبية اللازمة للقائمة (4 عناصر + حشوة)
-      const neededSpace = 220;
+      const neededSpace = 220; // مساحة تقديرية للقائمة
       const spaceBelow = window.innerHeight - buttonRect.bottom;
       
       if (spaceBelow < neededSpace) {
-        const scrollAmount = neededSpace - spaceBelow + 20; // مسافة إضافية للراحة
+        const scrollAmount = neededSpace - spaceBelow + 20;
         modal.scrollBy({ top: scrollAmount, behavior: 'smooth' });
       }
     }
@@ -86,12 +84,11 @@ export default function AddReminderModal({
   const handleToggleDropdown = () => {
     if (!showRecurringOptions) {
       updateDropdownPosition();
-      scrollModalForDropdown(); // ← تحريك المودال للأعلى
+      scrollModalForDropdown();
     }
     setShowRecurringOptions(prev => !prev);
   };
 
-  // إغلاق القائمة عند النقر خارجها
   useEffect(() => {
     if (!showRecurringOptions) return;
     
@@ -113,7 +110,6 @@ export default function AddReminderModal({
     };
   }, [showRecurringOptions]);
 
-  // تحديث الموقع عند الفتح وأثناء التمرير/تغيير الحجم
   useLayoutEffect(() => {
     if (showRecurringOptions) {
       updateDropdownPosition();
@@ -151,7 +147,7 @@ export default function AddReminderModal({
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
         <motion.div
-          ref={modalRef} // ← تم ربط ref
+          ref={modalRef}
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "100%" }}
@@ -286,7 +282,6 @@ export default function AddReminderModal({
         </motion.div>
       </div>
 
-      {/* Portal: قائمة منسدلة تظهر خارج المودال */}
       {showRecurringOptions && typeof document !== 'undefined' && createPortal(
         <motion.div
           initial={{ opacity: 0, y: -10 }}
