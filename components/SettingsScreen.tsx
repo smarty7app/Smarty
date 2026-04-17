@@ -17,20 +17,102 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const [isResetting, setIsResetting] = React.useState(false);
   const { language, setLanguage, t, isRTL } = useLanguage();
   const router = useRouter();
   const { data: session } = useSession();
 
   const handleLogout = async () => {
-  try {
-    await signOut({ redirect: false });
-    router.push('/login');
-  } catch (error) {
-    // قوة: حتى لو فشل الاتصال، نظف البيانات محليًا
-    localStorage.removeItem('nextauth.message');
-    router.push('/login');
-  }
-};
+    try {
+      await signOut({ redirect: false });
+      router.push('/login');
+    } catch (error) {
+      // قوة: حتى لو فشل الاتصال، نظف البيانات محليًا
+      localStorage.removeItem('nextauth.message');
+      router.push('/login');
+    }
+  };
+
+  // دالة إعادة الضبط المتطورة
+  const factoryReset = async () => {
+    setIsResetting(true);
+    
+    try {
+      // 1. مسح localStorage
+      localStorage.clear();
+      
+      // 2. مسح sessionStorage
+      sessionStorage.clear();
+      
+      // 3. مسح IndexedDB
+      if ('indexedDB' in window) {
+        try {
+          const databases = await indexedDB.databases();
+          databases.forEach(db => {
+            if (db.name) indexedDB.deleteDatabase(db.name);
+          });
+        } catch (error) {
+          console.warn('IndexedDB cleanup warning:', error);
+          // طريقة بديلة للمتصفحات القديمة
+          const knownDatabases = ['SmartyDB', 'VoiceDB', 'RemindersDB', 'firebaseLocalStorageDb'];
+          knownDatabases.forEach(dbName => {
+            try {
+              indexedDB.deleteDatabase(dbName);
+            } catch (e) {
+              // تجاهل الأخطاء
+            }
+          });
+        }
+      }
+      
+      // 4. مسح Cookies
+      try {
+        document.cookie.split(";").forEach(c => {
+          if (c.trim()) {
+            document.cookie = c.replace(/^ +/, "")
+              .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+          }
+        });
+      } catch (error) {
+        console.warn('Cookie cleanup warning:', error);
+      }
+      
+      // 5. مسح Cache API
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(key => caches.delete(key)));
+        } catch (error) {
+          console.warn('Cache cleanup warning:', error);
+        }
+      }
+      
+      // 6. مسح Service Worker registrations
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(reg => reg.unregister()));
+        } catch (error) {
+          console.warn('ServiceWorker cleanup warning:', error);
+        }
+      }
+      
+      // 7. تسجيل الخروج من المصادقة
+      try {
+        await signOut({ redirect: false });
+      } catch (error) {
+        console.warn('Sign out warning:', error);
+      }
+      
+      // 8. إعادة التحميل
+      window.location.href = '/login';
+      
+    } catch (error) {
+      console.error('Factory reset error:', error);
+      // حتى لو فشل البعض، حاول إعادة التحميل
+      window.location.reload();
+    }
+  };
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -66,52 +148,55 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* ========== Profile Section (Responsive Fix) ========== */}
-             {session?.user && (
-               <section className="space-y-4">
-                 <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
-                   {/* استخدام flex-col على الشاشات الصغيرة، و flex-row على المتوسطة فما فوق */}
-                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                     {/* Avatar */}
-                     <div className="relative">
-                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
-                         {session.user.image ? (
-                          <img 
-                            src={session.user.image || '/default-avatar.png'} 
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              e.currentTarget.src = '/default-avatar.png';
-                            }}
-                          />
-                         ) : (
-                           session.user.name?.charAt(0) || 'U'
-                         )}
-                       </div>
-                       <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
-                     </div>
+        {session?.user && (
+          <section className="space-y-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
+              {/* استخدام flex-col على الشاشات الصغيرة، و flex-row على المتوسطة فما فوق */}
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* Avatar */}
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
+                    {session.user.image ? (
+                      <img
+                        src={session.user.image}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = '';
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      session.user.name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
+                </div>
 
-                     {/* User Info - يتمدد ليملأ المساحة المتاحة */}
-                     <div className="flex-1 text-center sm:text-right min-w-0">
-                       <h3 className="font-bold text-black dark:text-white truncate">
-                         {session.user.name || 'مستخدم Google'}
-                       </h3>
-                       <div className="flex items-center justify-center sm:justify-end gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
-                         <Mail className="w-3 h-3 flex-shrink-0" />
-                         <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
-                       </div>
-                     </div>
+                {/* User Info - يتمدد ليملأ المساحة المتاحة */}
+                <div className="flex-1 text-center sm:text-right min-w-0">
+                  <h3 className="font-bold text-black dark:text-white truncate">
+                    {session.user.name || 'مستخدم Google'}
+                  </h3>
+                  <div className="flex items-center justify-center sm:justify-end gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
+                    <Mail className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
+                  </div>
+                </div>
 
-                     {/* Logout Button - عرض كامل على الموبايل */}
-                     <button
-                     onClick={() => setShowLogoutConfirm(true)}
-                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
-                   >
-                     <LogOut className="w-4 h-4" />
-                     {t.logout}
-                   </button>
-                   </div>
-                 </div>
-               </section>
-             )}
+                {/* Logout Button - عرض كامل على الموبايل */}
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t.logout}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Language Section */}
         <section className="space-y-4">
@@ -120,7 +205,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             {t.language}
           </h3>
 
-          <div dir="ltr" className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
+          <div dir={isRTL ? 'rtl' : 'ltr'} className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
             <motion.div
               initial={false}
               animate={{
@@ -245,7 +330,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         <section className="space-y-3 pt-4">
           <h3 className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
             <Trash2 className="w-3 h-3" />
-            {isRTL ? 'البيانات' : 'Data Zone'}
+            {isRTL ? 'منطقة البيانات' : 'Data Zone'}
           </h3>
 
           <div className="bg-red-50/50 dark:bg-red-900/10 rounded-[1.5rem] overflow-hidden border border-red-500/10">
@@ -323,7 +408,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
           >
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-              <RefreshCcw className="w-8 h-8 text-red-500" />
+              {isResetting ? (
+                <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <RefreshCcw className="w-8 h-8 text-red-500" />
+              )}
             </div>
 
             <h2 className="text-xl font-black mb-2 dark:text-white">
@@ -337,16 +426,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
-                  localStorage.clear();
-                  window.location.reload();
+                  setShowResetConfirm(false);
+                  factoryReset();
                 }}
-                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95"
+                disabled={isResetting}
+                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95 disabled:opacity-50 disabled:active:scale-100"
               >
-                {isRTL ? 'نعم، احذف الكل' : 'Yes, Delete All'}
+                {isResetting 
+                  ? (isRTL ? 'جاري المسح...' : 'Clearing...') 
+                  : (isRTL ? 'حذف الكل' : 'Yes, Delete All')}
               </button>
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold"
+                disabled={isResetting}
+                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold disabled:opacity-50"
               >
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </button>
