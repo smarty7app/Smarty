@@ -152,22 +152,22 @@ export default function AddReminderModal({
                   </div>
                 </motion.div>
               )}
-</AnimatePresence>
+            </AnimatePresence>
 
             <div className="mb-6">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="flex items-center gap-4 px-5 py-4">
-                  {/* أيقونة التكرار */}
+              <div className="bg-zinc-50 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden backdrop-blur-sm">
+                <div className="flex items-center gap-4 px-5 py-4 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-colors duration-200">
+                  {/* أيقونة التكرار مع خلفية دائرية */}
                   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#E65100]/10 to-amber-500/10 flex items-center justify-center">
                     <RefreshCw className="w-5 h-5 text-[#E65100] dark:text-amber-400" />
                   </div>
-                  
+      
                   {/* النص والقائمة المنسدلة */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-0.5">
                       {t.recurring || 'تكرار'}
                     </p>
-                    
+        
                     {/* قائمة منسدلة مخصصة */}
                     <div className="relative">
                       <select 
@@ -190,7 +190,7 @@ export default function AddReminderModal({
                   </div>
                 </div>
               </div>
-            </div>
+            </div> 
 
             <div className="flex gap-3">
               <button 
