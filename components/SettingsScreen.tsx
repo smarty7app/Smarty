@@ -22,9 +22,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const { data: session } = useSession();
 
   const handleLogout = async () => {
+  try {
     await signOut({ redirect: false });
     router.push('/login');
-  };
+  } catch (error) {
+    // قوة: حتى لو فشل الاتصال، نظف البيانات محليًا
+    localStorage.removeItem('nextauth.message');
+    router.push('/login');
+  }
+};
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
