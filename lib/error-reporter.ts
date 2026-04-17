@@ -45,7 +45,7 @@ export const ErrorReporter = {
    */
   sendEmailReport(error: Error | string) {
     const throwable = error instanceof Error ? error : new Error(String(error));
-    const recipient = 'support@smartreminder.dz';
+    const recipient = 'smarty7@gmail.com';
     const subject = encodeURIComponent('تقرير خطأ - التذكير الذكي (نسخة الويب)');
     const body = encodeURIComponent(this.buildEmailBody(throwable));
     
