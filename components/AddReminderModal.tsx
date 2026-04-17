@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -55,7 +55,6 @@ export default function AddReminderModal({
   const recurringButtonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  // تحديث موقع القائمة بناءً على الزر
   const updateDropdownPosition = useCallback(() => {
     if (recurringButtonRef.current) {
       const rect = recurringButtonRef.current.getBoundingClientRect();
@@ -67,7 +66,6 @@ export default function AddReminderModal({
     }
   }, []);
 
-  // فتح/إغلاق القائمة مع تحديث الموقع
   const handleToggleDropdown = () => {
     if (!showRecurringOptions) {
       updateDropdownPosition();
@@ -75,7 +73,7 @@ export default function AddReminderModal({
     setShowRecurringOptions(prev => !prev);
   };
 
-  // إغلاق القائمة عند النقر خارجها
+  // إغلاق القائمة عند النقر خارجها (بما في ذلك البوابة)
   useEffect(() => {
     if (!showRecurringOptions) return;
     
@@ -97,9 +95,10 @@ export default function AddReminderModal({
     };
   }, [showRecurringOptions]);
 
-  // تحديث الموقع عند التمرير أو تغيير الحجم
-  useEffect(() => {
+  // تحديث الموقع عند الفتح وأثناء التمرير/تغيير الحجم
+  useLayoutEffect(() => {
     if (showRecurringOptions) {
+      updateDropdownPosition();
       window.addEventListener('scroll', updateDropdownPosition, true);
       window.addEventListener('resize', updateDropdownPosition);
       return () => {
@@ -269,7 +268,7 @@ export default function AddReminderModal({
       </div>
 
       {/* Portal: قائمة منسدلة تظهر خارج المودال */}
-      {showRecurringOptions && createPortal(
+      {showRecurringOptions && typeof document !== 'undefined' && createPortal(
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -310,4 +309,4 @@ export default function AddReminderModal({
       )}
     </AnimatePresence>
   );
-}
+            }
