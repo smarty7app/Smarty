@@ -14,9 +14,6 @@ interface ShareResult {
 export const ShareHelper = {
   /**
    * مشاركة تذكير عبر Web Share API أو نسخه إلى الحافظة
-   * @param reminderText - نص التذكير المراد مشاركته
-   * @param customUrl - رابط إضافي للمشاركة (اختياري)
-   * @returns وعد يحتوي على نتيجة العملية (نجاح/فشل ورسالة)
    */
   shareReminder: async (reminderText: string, customUrl?: string): Promise<ShareResult> => {
     const formattedDate = new Date().toLocaleString('ar-EG', {
@@ -38,7 +35,7 @@ export const ShareHelper = {
       shareData.url = customUrl;
     }
 
-    // 1. استخدام Web Share API (يفضل على الأجهزة المحمولة)
+    // 1. استخدام Web Share API
     if (navigator.share && navigator.canShare?.(shareData)) {
       try {
         await navigator.share(shareData);
@@ -48,19 +45,17 @@ export const ShareHelper = {
           return { success: false, message: 'تم إلغاء المشاركة' };
         }
         console.error('Share error:', error);
-        // في حالة فشل المشاركة، ننتقل إلى النسخ كحل بديل
-        return this.copyToClipboard(textToShare);
+        // الانتقال إلى النسخ كحل بديل
+        return ShareHelper.copyToClipboard(textToShare);
       }
     }
     
     // 2. الحل البديل: نسخ إلى الحافظة
-    return this.copyToClipboard(textToShare);
+    return ShareHelper.copyToClipboard(textToShare);
   },
 
   /**
    * نسخ النص إلى الحافظة
-   * @param text - النص المراد نسخه
-   * @returns نتيجة العملية
    */
   copyToClipboard: async (text: string): Promise<ShareResult> => {
     try {
@@ -68,7 +63,6 @@ export const ShareHelper = {
       return { success: true, message: 'تم نسخ التذكير إلى الحافظة' };
     } catch (error: any) {
       console.error('Clipboard error:', error);
-      // قد يكون الخطأ بسبب عدم وجود إذن أو متصفح لا يدعم Clipboard API
       if (error.name === 'NotAllowedError') {
         return { success: false, message: 'الرجاء السماح بالوصول إلى الحافظة' };
       }
