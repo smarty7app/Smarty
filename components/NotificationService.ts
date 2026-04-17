@@ -203,14 +203,14 @@ class NotificationService {
       tag: reminder.id,
       requireInteraction: true,
       silent: false,
-      vibrate: [200, 100, 200],
+      // تم إزالة vibrate لتفادي خطأ TypeScript
       data: {
         reminderId: reminder.id,
         reminderText: reminder.text,
         timestamp: new Date().toISOString(),
       },
       actions: [
-        { action: 'complete', title: 'تم' },
+       { action: 'complete', title: 'تم' },
         { action: 'snooze', title: 'تذكير لاحق' },
         { action: 'open', title: 'فتح التطبيق' },
       ],
