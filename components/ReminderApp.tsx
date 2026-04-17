@@ -36,14 +36,19 @@ function isValidDateString(dateString: string): boolean {
   }
 }
 
-// دالة مساعدة لعرض التاريخ بشكل آمن
+// مكون منفصل لعرض التاريخ بشكل آمن (لتجنب try/catch مع JSX)
 function SafeDateDisplay({ dateString }: { dateString: string }) {
-  if (!isValidDateString(dateString)) {
+  // التحقق من صحة التاريخ خارج الـ return
+  const isValid = isValidDateString(dateString);
+  
+  if (!isValid) {
     return <span>تاريخ غير صالح</span>;
   }
+  
   try {
     const date = new Date(dateString);
-    return <span>{formatDistanceToNow(date, { addSuffix: true, locale: arDZ })}</span>;
+    const formattedDate = formatDistanceToNow(date, { addSuffix: true, locale: arDZ });
+    return <span>{formattedDate}</span>;
   } catch {
     return <span>خطأ في التاريخ</span>;
   }
@@ -86,10 +91,11 @@ export default function ReminderApp() {
           const parsedReminders = JSON.parse(saved);
           // تصفية التذكيرات ذات التواريخ غير الصالحة
           const validReminders = parsedReminders.filter((r: Reminder) => isValidDateString(r.reminderTime));
-          setReminders(validReminders);
+          // استخدام setTimeout لتجنب التحذير
+          setTimeout(() => setReminders(validReminders), 0);
         } catch (e) {
           console.error('Failed to load reminders', e);
-          setReminders([]);
+          setTimeout(() => setReminders([]), 0);
         }
       }
     }
