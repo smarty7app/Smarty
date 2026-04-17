@@ -1,6 +1,6 @@
 export const ShareHelper = {
   shareReminder: async (reminderText: string) => {
-    const textToShare = `📋 تذكير: ${reminderText}\n\nتم عبر تطبيق Smatry`;
+    const textToShare = `📋 تذكير: ${reminderText}\n\nتم عبر تطبيق Smarty`;
     
     if (navigator.share) {
       try {
