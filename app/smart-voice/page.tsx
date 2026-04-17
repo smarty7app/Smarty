@@ -26,11 +26,11 @@ export default function SmartVoicePage() {
   const [pulsePhase, setPulsePhase] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [isOnline, setIsOnline] = useState(true);
-  const [useLocalWhisper, setUseLocalWhisper] = useState(false); // ✅ خيار جديد
-  const [isModelLoading, setIsModelLoading] = useState(false); // ✅ مؤشر تحميل النموذج
+  const [useLocalWhisper, setUseLocalWhisper] = useState(false);
+  const [isModelLoading, setIsModelLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null); // ✅ للتسجيل المحلي
-  const audioChunksRef = useRef<Blob[]>([]); // ✅ للتسجيل المحلي
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
@@ -66,6 +66,48 @@ export default function SmartVoicePage() {
       silenceTimerRef.current = null;
     }
   }, []);
+
+  // ✅ دالة معالجة النص (مشتركة بين Web Speech و Whisper) - تم نقلها إلى الأعلى
+  const processText = useCallback(async (text: string) => {
+    setIsProcessing(true);
+    try {
+      if (!isOnline) throw new Error('لا يوجد اتصال بالإنترنت');
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text, userId, userEmail, userName }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 429) throw new Error('تم تجاوز الحد اليومي للطلبات');
+        throw new Error(`API error: ${res.status}`);
+      }
+
+      const reply = await res.text();
+      setResponse(reply);
+
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(reply);
+      utterance.lang = 'ar-SA';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.onstart = () => { setIsSpeaking(true); setIsProcessing(false); };
+      utterance.onend = () => { setIsSpeaking(false); setRetryCount(0); };
+      utterance.onerror = () => { setIsSpeaking(false); setIsProcessing(false); setResponse('عذراً، لم أستطع نطق الرد.'); };
+      window.speechSynthesis.speak(utterance);
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      if (retryCount < 3 && error.message.includes('fetch')) {
+        setRetryCount(prev => prev + 1);
+        setResponse(`محاولة إعادة الاتصال (${retryCount + 1}/3)...`);
+        setTimeout(() => processText(text), 2000);
+      } else {
+        setResponse(error.message || 'حدث خطأ في الاتصال بالمساعد.');
+        setIsProcessing(false);
+      }
+    }
+  }, [isOnline, userId, userEmail, userName, retryCount]);
 
   // ✅ دالة بدء التسجيل المحلي (Whisper)
   const startLocalRecording = useCallback(async () => {
@@ -117,129 +159,84 @@ export default function SmartVoicePage() {
       console.error('Mic error:', error);
       setResponse('فشل الوصول إلى الميكروفون.');
     }
-  }, [clearSilenceTimer]);
-
-  // ✅ دالة معالجة النص (مشتركة بين Web Speech و Whisper)
-  const processText = useCallback(async (text: string) => {
-    setIsProcessing(true);
-    try {
-      if (!isOnline) throw new Error('لا يوجد اتصال بالإنترنت');
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text, userId, userEmail, userName }),
-      });
-
-      if (!res.ok) {
-        if (res.status === 429) throw new Error('تم تجاوز الحد اليومي للطلبات');
-        throw new Error(`API error: ${res.status}`);
-      }
-
-      const reply = await res.text();
-      setResponse(reply);
-
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(reply);
-      utterance.lang = 'ar-SA';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.onstart = () => { setIsSpeaking(true); setIsProcessing(false); };
-      utterance.onend = () => { setIsSpeaking(false); setRetryCount(0); };
-      utterance.onerror = () => { setIsSpeaking(false); setIsProcessing(false); setResponse('عذراً، لم أستطع نطق الرد.'); };
-      window.speechSynthesis.speak(utterance);
-    } catch (error: any) {
-      console.error('Chat error:', error);
-      if (retryCount < 3 && error.message.includes('fetch')) {
-        setRetryCount(prev => prev + 1);
-        setResponse(`محاولة إعادة الاتصال (${retryCount + 1}/3)...`);
-        setTimeout(() => processText(text), 2000);
-      } else {
-        setResponse(error.message || 'حدث خطأ في الاتصال بالمساعد.');
-        setIsProcessing(false);
-      }
-    }
-  }, [isOnline, userId, userEmail, userName, retryCount]);
+  }, [clearSilenceTimer, processText]);
 
   // دالة إنشاء كائن SpeechRecognition (Web Speech API)
   const createRecognition = useCallback(() => {
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('متصفحك لا يدعم التعرف على الصوت');
-    return null;
-  }
-
-  const instance = new SpeechRecognition();
-  instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
-  instance.continuous = true;   // ✅ تغيير إلى true
-  instance.interimResults = true; // ✅ يبقى true
-
-  instance.onstart = () => {
-    setIsListening(true);
-    setTranscript('');
-    setResponse('');
-    setRetryCount(0);
-    clearSilenceTimer();
-    silenceTimerRef.current = setTimeout(() => {
-      if (isListening) {
-        recognitionRef.current?.stop();
-        setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
-      }
-    }, 10000);
-  };
-
-  instance.onaudiostart = () => clearSilenceTimer();
-  instance.onaudioend = () => clearSilenceTimer();
-
-  instance.onresult = (event: any) => {
-    clearSilenceTimer();
-    
-    let interimTranscript = '';
-    let finalTranscript = '';
-    
-    // تجميع جميع النتائج
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcriptPart = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        finalTranscript += transcriptPart;
-      } else {
-        interimTranscript += transcriptPart;
-      }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('متصفحك لا يدعم التعرف على الصوت');
+      return null;
     }
-    
-    // عرض النص المؤقت (أثناء الكلام)
-    if (interimTranscript) {
-      setTranscript(interimTranscript);
-    }
-    
-    // عند انتهاء الكلام (نتيجة نهائية)
-    if (finalTranscript) {
-      setTranscript(finalTranscript);
+
+    const instance = new SpeechRecognition();
+    instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
+    instance.continuous = true;
+    instance.interimResults = true;
+
+    instance.onstart = () => {
+      setIsListening(true);
+      setTranscript('');
+      setResponse('');
+      setRetryCount(0);
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        if (isListening) {
+          recognitionRef.current?.stop();
+          setResponse('لم أسمع شيئاً. حاول مرة أخرى.');
+        }
+      }, 10000);
+    };
+
+    instance.onaudiostart = () => clearSilenceTimer();
+    instance.onaudioend = () => clearSilenceTimer();
+
+    instance.onresult = (event: any) => {
+      clearSilenceTimer();
+      
+      let interimTranscript = '';
+      let finalTranscript = '';
+      
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcriptPart = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcriptPart;
+        } else {
+          interimTranscript += transcriptPart;
+        }
+      }
+      
+      if (interimTranscript) {
+        setTranscript(interimTranscript);
+      }
+      
+      if (finalTranscript) {
+        setTranscript(finalTranscript);
+        setIsListening(false);
+        processText(finalTranscript);
+      }
+    };
+
+    instance.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
       setIsListening(false);
-      processText(finalTranscript);
-    }
-  };
+      setIsProcessing(false);
+      clearSilenceTimer();
+      switch (event.error) {
+        case 'not-allowed': setResponse('الرجاء السماح بالوصول إلى الميكروفون.'); break;
+        case 'no-speech': setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.'); break;
+        case 'network': setResponse('خطأ في الشبكة، تحقق من اتصالك.'); break;
+        default: setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
+      }
+    };
 
-  instance.onerror = (event: any) => {
-    console.error('Speech recognition error:', event.error);
-    setIsListening(false);
-    setIsProcessing(false);
-    clearSilenceTimer();
-    switch (event.error) {
-      case 'not-allowed': setResponse('الرجاء السماح بالوصول إلى الميكروفون.'); break;
-      case 'no-speech': setResponse('لم يتم اكتشاف أي صوت، حاول مرة أخرى.'); break;
-      case 'network': setResponse('خطأ في الشبكة، تحقق من اتصالك.'); break;
-      default: setResponse('لم يتم التعرف على صوتك، حاول مرة أخرى.');
-    }
-  };
+    instance.onend = () => {
+      setIsListening(false);
+      clearSilenceTimer();
+    };
 
-  instance.onend = () => {
-    setIsListening(false);
-    clearSilenceTimer();
-  };
-
-  return instance;
-}, [language, processText, clearSilenceTimer, isListening]);
+    return instance;
+  }, [language, processText, clearSilenceTimer, isListening]);
 
   // تنظيف الكائن القديم عند تغيير اللغة
   useEffect(() => {
@@ -255,60 +252,52 @@ export default function SmartVoicePage() {
   }, [language, clearSilenceTimer]);
 
   const toggleListening = () => {
-  // إذا كان المساعد يتحدث، أوقف الكلام أولاً
-  if (isSpeaking) {
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-  }
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
 
-  // إذا كان جاري التسجيل/الاستماع، قم بإيقافه
-  if (isListening) {
-    // إيقاف التسجيل المحلي (Whisper)
-    if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') {
-      mediaRecorderRef.current.stop();
+    if (isListening) {
+      if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') {
+        mediaRecorderRef.current.stop();
+        clearSilenceTimer();
+        setIsListening(false);
+        return;
+      }
+      
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.log("Recognition already stopped");
+        }
+      }
       clearSilenceTimer();
       setIsListening(false);
       return;
     }
-    
-    // إيقاف التعرف على الصوت (Web Speech API)
-    if (recognitionRef.current) {
+
+    if (isProcessing) return;
+
+    if (useLocalWhisper) {
+      startLocalRecording();
+    } else {
+      if (!isOnline) {
+        setResponse('لا يوجد اتصال بالإنترنت');
+        return;
+      }
+      recognitionRef.current = createRecognition();
       try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        // قد يظهر خطأ إذا كان متوقفاً بالفعل
-        console.log("Recognition already stopped");
+        recognitionRef.current?.start();
+      } catch (error) {
+        console.error('Failed to start recognition:', error);
+        setTimeout(() => {
+          recognitionRef.current = createRecognition();
+          recognitionRef.current?.start();
+        }, 100);
       }
     }
-    clearSilenceTimer();
-    setIsListening(false);
-    return;
-  }
-
-  // إذا كان جاري المعالجة، لا تفعل شيئاً
-  if (isProcessing) return;
-
-  // بدء التسجيل/الاستماع
-  if (useLocalWhisper) {
-    startLocalRecording();
-  } else {
-    if (!isOnline) {
-      setResponse('لا يوجد اتصال بالإنترنت');
-      return;
-    }
-    // إنشاء كائن التعرف من جديد (للتأكد من أنه نظيف)
-    recognitionRef.current = createRecognition();
-    try {
-      recognitionRef.current?.start();
-    } catch (error) {
-      console.error('Failed to start recognition:', error);
-      setTimeout(() => {
-        recognitionRef.current = createRecognition();
-        recognitionRef.current?.start();
-      }, 100);
-    }
-  }
-};
+  };
 
   // حساب حجم النبض حسب الحالة
   const getPulseScale = () => {
@@ -338,7 +327,6 @@ export default function SmartVoicePage() {
         </h1>
         <div className="ml-auto flex items-center gap-2">
           {!isOnline && <WifiOff className="w-4 h-4 text-red-400" />}
-          {/* ✅ زر التبديل بين السحابي والمحلي */}
           <button
             onClick={() => setUseLocalWhisper(!useLocalWhisper)}
             className={`text-[10px] font-bold px-2 py-1 rounded-full transition ${useLocalWhisper ? 'bg-purple-500/30 text-purple-200' : 'bg-white/10 text-white/60'}`}
@@ -378,7 +366,6 @@ export default function SmartVoicePage() {
           
           {/* حالة الكائن */}
           <div className="mt-6 text-center min-h-[24px]">
-            {/* لا يوجد اتصال بالإنترنت */}
             {!isOnline && (
               <div className="flex items-center justify-center gap-2 text-red-400">
                 <WifiOff className="w-4 h-4" />
@@ -386,7 +373,6 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* تحميل النموذج المحلي */}
             {isModelLoading && (
               <div className="flex items-center justify-center gap-2 text-purple-300">
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -394,7 +380,6 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* حالة الاستماع */}
             {isListening && (
               <div className="flex items-center justify-center gap-2">
                 <Mic className="w-4 h-4 text-white/70 animate-pulse" />
@@ -404,7 +389,6 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* حالة المعالجة / التفكير */}
             {isProcessing && !isModelLoading && (
               <div className="flex items-center justify-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
@@ -412,7 +396,6 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* حالة التحدث */}
             {isSpeaking && (
               <div className="flex items-center justify-center gap-2">
                 <Volume2 className="w-4 h-4 text-emerald-300" />
@@ -420,7 +403,6 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* حالة السكون (جاهز للتحدث) */}
             {!isListening && !isProcessing && !isSpeaking && !isModelLoading && isOnline && (
               <div className="flex items-center justify-center gap-2">
                 <MessageCircle className="w-4 h-4 text-white/40" />
