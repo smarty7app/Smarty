@@ -1,53 +1,67 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
-function SharedReminderContent() {
+export default function SharedReminderPage() {
   const searchParams = useSearchParams();
   const reminderId = searchParams.get('id');
   const [reminder, setReminder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     if (reminderId) {
       fetch(`/api/reminder/${reminderId}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('Reminder not found');
+          return res.json();
+        })
         .then(data => {
           setReminder(data);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
           toast.error('فشل في تحميل التذكير');
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);
 
   const addToMyReminders = async () => {
+    if (!reminder) {
+      toast.error('لا يوجد تذكير لإضافته');
+      return;
+    }
+    setIsAdding(true);
     try {
       const response = await fetch('/api/reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: reminder.text, reminderTime: reminder.reminderTime }),
+        body: JSON.stringify({
+          text: reminder.text,
+          reminderTime: reminder.reminderTime,
+        }),
       });
+      const data = await response.json();
       if (response.ok) {
         toast.success('تمت إضافة التذكير إلى قائمتك!');
+        // يمكن إعادة توجيه المستخدم إلى الصفحة الرئيسية بعد قليل
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       } else {
-        toast.error('فشل في إضافة التذكير');
+        toast.error(data.error || 'فشل في إضافة التذكير');
       }
     } catch (error) {
       console.error(error);
       toast.error('حدث خطأ أثناء الإضافة');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -68,18 +82,11 @@ function SharedReminderContent() {
       </p>
       <button
         onClick={addToMyReminders}
-        className="px-6 py-2 bg-[#E65100] text-white rounded-full font-bold"
+        disabled={isAdding}
+        className="px-6 py-2 bg-[#E65100] text-white rounded-full font-bold disabled:opacity-50"
       >
-        أضف هذا التذكير لي
+        {isAdding ? 'جاري الإضافة...' : 'أضف هذا التذكير لي'}
       </button>
     </div>
-  );
-}
-
-export default function SharedReminderPage() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>}>
-      <SharedReminderContent />
-    </Suspense>
   );
 }
