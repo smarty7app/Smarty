@@ -78,7 +78,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
               {t.terms_of_service}
             </a>
             <span className="text-white/30">•</span>
-            <span className="text-white/40">© {new Date().getFullYear()} Smarty</span>
           </div>
         </div>
       </div>
