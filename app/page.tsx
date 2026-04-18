@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import SplashScreen from '@/components/SplashScreen';
 import ReminderApp from '@/components/ReminderApp';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [showSplash, setShowSplash] = useState(true);
+  const [initialReminderText, setInitialReminderText] = useState<string | null>(null);
 
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem('smarty_splash_seen');
@@ -15,6 +18,15 @@ export default function Home() {
       setShowSplash(false);
     }
   }, []);
+
+  useEffect(() => {
+    const sharedText = searchParams.get('shareText');
+    if (sharedText) {
+      setInitialReminderText(decodeURIComponent(sharedText));
+      // إزالة المعامل من الرابط بعد الاستخدام
+      window.history.replaceState({}, '', '/');
+    }
+  }, [searchParams]);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -28,7 +40,7 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <main className="min-h-screen bg-surface text-on-surface">
-        <ReminderApp />
+        <ReminderApp initialReminderText={initialReminderText} />
       </main>
     </ErrorBoundary>
   );

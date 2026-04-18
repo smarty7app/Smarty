@@ -29,5 +29,14 @@
       "sizes": "48x48",
       "type": "image/x-icon"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }
