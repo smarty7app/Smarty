@@ -253,27 +253,6 @@ export default function SmartVoicePage() {
     clearSilenceTimer();
   }, [language, clearSilenceTimer]);
 
-  const toggleListening = () => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-
-    if (isListening) {
-      if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') {
-        mediaRecorderRef.current.stop();
-        clearSilenceTimer();
-        setIsListening(false);
-        return;
-      }
-      
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          console.log("Recognition already stopped");
-        }
-      }
 // أضف هذه الدالة المساعدة قبل تعريف toggleListening (مثلاً بعد الـ useCallback الأخرى)
 const cleanupMediaRecorder = useCallback(() => {
   if (mediaRecorderRef.current) {
