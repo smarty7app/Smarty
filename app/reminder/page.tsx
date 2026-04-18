@@ -16,17 +16,14 @@ export default function SharedReminderPage() {
         .then(res => res.json())
         .then(data => {
           setReminder(data);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
           toast.error('فشل في تحميل التذكير');
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);
