@@ -1,9 +1,11 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function SharePage() {
+// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
+function ShareContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [title, setTitle] = useState('');
@@ -23,7 +25,12 @@ export default function SharePage() {
     setUrl(sharedUrl);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false);
-    // ... باقي الكود
+
+    const timer = setTimeout(() => {
+      const reminderText = [sharedTitle, sharedText, sharedUrl].filter(Boolean).join(' ');
+      router.push(`/?shareText=${encodeURIComponent(reminderText)}`);
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [searchParams, router]);
 
   if (isLoading) {
@@ -52,5 +59,13 @@ export default function SharePage() {
         <p className="text-sm text-gray-500">جاري تحويل المحتوى إلى تذكير...</p>
       </div>
     </div>
+  );
+}
+
+export default function SharePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#E65100] flex items-center justify-center">جاري التحميل...</div>}>
+      <ShareContent />
+    </Suspense>
   );
 }
