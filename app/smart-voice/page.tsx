@@ -18,6 +18,7 @@ import {
 
 export default function SmartVoicePage() {
   const router = useRouter();
+  const isMediaRecorderInitializedRef = useRef(false);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -112,6 +113,7 @@ export default function SmartVoicePage() {
   // ✅ دالة بدء التسجيل المحلي (Whisper)
   const startLocalRecording = useCallback(async () => {
     try {
+      isMediaRecorderInitializedRef.current = true;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -272,32 +274,74 @@ export default function SmartVoicePage() {
           console.log("Recognition already stopped");
         }
       }
+// أضف هذه الدالة المساعدة قبل تعريف toggleListening (مثلاً بعد الـ useCallback الأخرى)
+const cleanupMediaRecorder = useCallback(() => {
+  if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current.state === 'recording') {
+      try { mediaRecorderRef.current.stop(); } catch(e) { console.warn(e); }
+    }
+    if (mediaRecorderRef.current.stream) {
+      mediaRecorderRef.current.stream.getTracks().forEach(track => {
+        if (track.readyState === 'live') track.stop();
+      });
+    }
+    mediaRecorderRef.current = null;
+  }
+  audioChunksRef.current = [];
+  if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+}, []);
+
+// ثم قم بتعديل دالة toggleListening كالتالي:
+const toggleListening = () => {
+  if (isSpeaking) {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }
+
+  if (isListening) {
+    if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
       clearSilenceTimer();
       setIsListening(false);
       return;
     }
-
-    if (isProcessing) return;
-
-    if (useLocalWhisper) {
-      startLocalRecording();
-    } else {
-      if (!isOnline) {
-        setResponse('لا يوجد اتصال بالإنترنت');
-        return;
-      }
-      recognitionRef.current = createRecognition();
+    
+    if (recognitionRef.current) {
       try {
-        recognitionRef.current?.start();
-      } catch (error) {
-        console.error('Failed to start recognition:', error);
-        setTimeout(() => {
-          recognitionRef.current = createRecognition();
-          recognitionRef.current?.start();
-        }, 100);
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.log("Recognition already stopped");
       }
     }
-  };
+    clearSilenceTimer();
+    setIsListening(false);
+    return;
+  }
+
+  if (isProcessing) return;
+
+  if (useLocalWhisper) {
+    startLocalRecording();
+  } else {
+    if (!isOnline) {
+      setResponse('لا يوجد اتصال بالإنترنت');
+      return;
+    }
+    // ✅ التعديل الأساسي: تنظيف أي MediaRecorder معلق قبل بدء recognition
+    cleanupMediaRecorder();
+    
+    recognitionRef.current = createRecognition();
+    try {
+      recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Failed to start recognition:', error);
+      setTimeout(() => {
+        recognitionRef.current = createRecognition();
+        recognitionRef.current?.start();
+      }, 100);
+    }
+  }
+};
 
   // حساب حجم النبض حسب الحالة
   const getPulseScale = () => {
