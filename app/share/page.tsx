@@ -15,13 +15,9 @@ export default function SharePage() {
     const sharedTitle = searchParams.get('title') || '';
     const sharedText = searchParams.get('text') || '';
     const sharedUrl = searchParams.get('url') || '';
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitle(sharedTitle);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setText(sharedText);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(sharedUrl);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false);
 
     const timer = setTimeout(() => {
