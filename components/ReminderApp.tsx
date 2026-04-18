@@ -264,7 +264,7 @@ const handleShare = async (reminder: Reminder) => {
                           </div>
                         </div>
                         <div className="flex gap-2 items-center">
-                          <button onClick={() => handleShare(rem.text)} className="text-zinc-300 hover:text-blue-500 transition-colors p-1">
+                          <button onClick={() => handleShare(rem)} className="text-zinc-300 hover:text-blue-500 transition-colors p-1">
                             <Share2 className="w-5 h-5" />
                           </button>
                           <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
