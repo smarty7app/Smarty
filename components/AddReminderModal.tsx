@@ -65,9 +65,6 @@ export default function AddReminderModal({
   // مفتاح التخزين المؤقت
   const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
   
-  // علم لتحديد سبب الإغلاق (true = إغلاق بحفظ، false = إلغاء بدون حفظ)
-  const shouldSaveOnClose = useRef(false);
-
   // تحميل المسودة عند فتح المودال (فقط إذا كانت موجودة)
   useEffect(() => {
     if (isOpen) {
@@ -85,12 +82,10 @@ export default function AddReminderModal({
           console.error('Failed to load draft reminder', e);
         }
       }
-      // إعادة تعيين العلم عند الفتح
-      shouldSaveOnClose.current = false;
     }
   }, [isOpen, setInputText, setRecurring]);
 
-  // دالة الإغلاق الداخلية التي تقرر ما إذا كانت ستحفظ المسودة أم لا
+  // دالة الإغلاق الداخلية
   const handleClose = (saveDraft: boolean) => {
     if (saveDraft && inputText.trim()) {
       // حفظ المسودة في sessionStorage
@@ -101,14 +96,16 @@ export default function AddReminderModal({
       };
       sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
     } else if (!saveDraft) {
-      // إلغاء: حذف المسودة إن وجدت
+      // إلغاء: حذف المسودة ومسح النص الحالي
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      setInputText('');       // مسح النص
+      setRecurring('none');   // إعادة التكرار إلى الوضع الافتراضي
     }
     // استدعاء دالة الإغلاق الأصلية
     onClose();
   };
 
-  // تأثير التحليل الذكي (موجود سابقاً)
+  // تأثير التحليل الذكي
   useEffect(() => {
     if (inputText.trim()) {
       const result = analyzeReminderInput(inputText);
@@ -271,7 +268,7 @@ export default function AddReminderModal({
 
             <div className="flex gap-3">
               <button 
-                onClick={() => handleClose(false)} // ← إلغاء: لا يحفظ
+                onClick={() => handleClose(false)} // ← إلغاء: يحذف النص والمسودة ويغلق
                 className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold py-4 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               >
                 {t.cancel || 'إلغاء'}
