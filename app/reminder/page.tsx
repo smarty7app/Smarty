@@ -10,20 +10,23 @@ export default function SharedReminderPage() {
   const [reminder, setReminder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     if (reminderId) {
       fetch(`/api/reminder/${reminderId}`)
         .then(res => res.json())
         .then(data => {
           setReminder(data);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
           toast.error('فشل في تحميل التذكير');
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);

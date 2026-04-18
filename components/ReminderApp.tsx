@@ -80,9 +80,11 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-  useEffect(() => {
+   useEffect(() => {
     if (initialReminderText) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputText(initialReminderText);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAdding(true);
     }
   }, [initialReminderText]);
