@@ -1,6 +1,8 @@
 'use client';
 
+import { toast } from 'sonner';
 import React, { useState, useEffect } from 'react';
+import { ShareHelper } from '@/lib/share-helper';
 import VoiceInput from './VoiceInput';
 import AddReminderModal from './AddReminderModal';
 import { formatDistanceToNow, parseISO } from 'date-fns';
@@ -9,7 +11,7 @@ import { useLanguage } from './LanguageContext';
 import { SettingsScreen } from './SettingsScreen';
 import { AboutScreen } from './AboutScreen';
 import { motion, AnimatePresence } from 'motion/react';
-import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar, AlertCircle, Bell, BellOff } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, Clock, Search, Volume2, VolumeX, Settings, Info, Timer, Calendar, AlertCircle, Bell, BellOff, Share2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { notificationService } from './NotificationService';
@@ -150,6 +152,16 @@ export default function ReminderApp() {
   const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
 
+  // ✅ دالة مشاركة التذكير
+  const handleShare = async (reminderText: string) => {
+    const result = await ShareHelper.shareReminder(reminderText);
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  };
+
   const handleCloseModal = () => {
     setIsAdding(false);
     setSmartParsed(null);
@@ -238,9 +250,14 @@ export default function ReminderApp() {
                             </span>
                           </div>
                         </div>
-                        <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2 items-center">
+                          <button onClick={() => handleShare(rem.text)} className="text-zinc-300 hover:text-blue-500 transition-colors p-1">
+                            <Share2 className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => handleDelete(rem.id)} className="text-zinc-300 hover:text-red-500 transition-colors p-1">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   );
