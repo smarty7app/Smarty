@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
 function SharedReminderContent() {
   const searchParams = useSearchParams();
   const reminderId = searchParams.get('id');
@@ -16,51 +15,42 @@ function SharedReminderContent() {
   useEffect(() => {
     if (reminderId) {
       fetch(`/api/reminder/${reminderId}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Reminder not found');
-          return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
           setReminder(data);
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
-        .catch(err => {
-          console.error(err);
+        .catch(() => {
           toast.error('فشل في تحميل التذكير');
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);
 
-  const addToMyReminders = async () => {
-    if (!reminder) {
-      toast.error('لا يوجد تذكير لإضافته');
-      return;
-    }
+  const addToMyReminders = () => {
+    if (!reminder) return;
     setIsAdding(true);
     try {
-      const response = await fetch('/api/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: reminder.text,
-          reminderTime: reminder.reminderTime,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('تمت إضافة التذكير إلى قائمتك!');
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
-      } else {
-        toast.error(data.error || 'فشل في إضافة التذكير');
-      }
+      // 1. جلب التذكيرات الحالية من localStorage
+      const existing = JSON.parse(localStorage.getItem('smarty_reminders') || '[]');
+      // 2. إنشاء تذكير جديد بنفس الصيغة
+      const newReminder = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: reminder.text,
+        reminderTime: reminder.reminderTime,
+        isCompleted: false,
+      };
+      // 3. إضافة التذكير الجديد في البداية
+      const updated = [newReminder, ...existing];
+      // 4. حفظ في localStorage
+      localStorage.setItem('smarty_reminders', JSON.stringify(updated));
+      toast.success('تمت إضافة التذكير إلى قائمتك!');
+      // 5. التوجيه إلى الصفحة الرئيسية
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } catch (error) {
       console.error(error);
       toast.error('حدث خطأ أثناء الإضافة');
@@ -69,13 +59,8 @@ function SharedReminderContent() {
     }
   };
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>;
-  }
-
-  if (!reminder) {
-    return <div className="flex items-center justify-center min-h-screen">التذكير غير موجود</div>;
-  }
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>;
+  if (!reminder) return <div className="flex items-center justify-center min-h-screen">التذكير غير موجود</div>;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
