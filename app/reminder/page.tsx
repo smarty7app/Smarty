@@ -1,10 +1,8 @@
-// app/reminder/page.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { clientPromise } from '@/lib/mongodb';
 
 export default function SharedReminderPage() {
   const searchParams = useSearchParams();
@@ -14,25 +12,26 @@ export default function SharedReminderPage() {
 
   useEffect(() => {
     if (reminderId) {
-      // جلب تفاصيل التذكير من قاعدة البيانات باستخدام reminderId
       fetch(`/api/reminder/${reminderId}`)
         .then(res => res.json())
         .then(data => {
           setReminder(data);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
           toast.error('فشل في تحميل التذكير');
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);
 
   const addToMyReminders = async () => {
-    // إضافة التذكير إلى قائمة تذكيرات المستخدم الحالي
     try {
       const response = await fetch('/api/reminders', {
         method: 'POST',

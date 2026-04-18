@@ -22,6 +22,7 @@ export default function Home() {
   useEffect(() => {
     const sharedText = searchParams.get('shareText');
     if (sharedText) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialReminderText(decodeURIComponent(sharedText));
       // إزالة المعامل من الرابط بعد الاستخدام
       window.history.replaceState({}, '', '/');

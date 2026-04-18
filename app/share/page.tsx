@@ -1,9 +1,7 @@
-// app/share/page.tsx
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
 
 export default function SharePage() {
   const searchParams = useSearchParams();
@@ -17,12 +15,15 @@ export default function SharePage() {
     const sharedTitle = searchParams.get('title') || '';
     const sharedText = searchParams.get('text') || '';
     const sharedUrl = searchParams.get('url') || '';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitle(sharedTitle);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setText(sharedText);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(sharedUrl);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(false);
 
-    // توجيه المستخدم إلى إضافة التذكير بعد 1 ثانية
     const timer = setTimeout(() => {
       const reminderText = [sharedTitle, sharedText, sharedUrl].filter(Boolean).join(' ');
       router.push(`/?shareText=${encodeURIComponent(reminderText)}`);

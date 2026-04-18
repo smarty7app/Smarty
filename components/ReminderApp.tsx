@@ -63,7 +63,7 @@ function loadRemindersFromStorage(): Reminder[] {
   }
 }
 
-export default function ReminderApp() {
+export default function ReminderApp({ initialReminderText }: { initialReminderText?: string | null }) {
   // ✅ استخدام lazy initialization لتجنب useEffect للتحميل الأولي
   const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
   const [inputText, setInputText] = useState('');
@@ -80,6 +80,13 @@ export default function ReminderApp() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
+  useEffect(() => {
+    if (initialReminderText) {
+      setInputText(initialReminderText);
+      setIsAdding(true);
+    }
+  }, [initialReminderText]);
+
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
     return () => clearTimeout(timer);
@@ -153,14 +160,18 @@ export default function ReminderApp() {
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
 
   // ✅ دالة مشاركة التذكير
-  const handleShare = async (reminderText: string) => {
-    const result = await ShareHelper.shareReminder(reminderText);
-    if (result.success) {
-      toast.success(result.message);
-    } else {
-      toast.error(result.message);
-    }
-  };
+
+const handleShare = async (reminder: Reminder) => {
+ const result = await ShareHelper.shareReminder({
+    text: reminder.text,
+    reminderTime: reminder.reminderTime,
+  });
+  if (result.success) {
+    toast.success(result.message);
+  } else {
+    toast.error(result.message);
+  }
+};
 
   const handleCloseModal = () => {
     setIsAdding(false);
