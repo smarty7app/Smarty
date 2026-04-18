@@ -1,0 +1,95 @@
+Smarty/
+├── README.md
+├── api/
+│   ├── Procfile
+│   ├── api.py
+│   └── requirements.txt
+├── app/
+│   ├── Settings/
+│   │   └── page.tsx
+│   ├── api/
+│   │   ├── auth/
+│   │   │   └── [...nextauth]/
+│   │   │       └── route.ts
+│   │   ├── chat/
+│   │   │   └── route.ts
+│   │   ├── reminder/
+│   │   │   └── [id]/
+│   │   │       └── route.ts
+│   │   ├── reminders/
+│   │   │   └── route.ts
+│   │   ├── share-reminder/
+│   │   │   └── route.ts
+│   │   ├── smarty/
+│   │   │   └── route.ts
+│   │   └── test-db/
+│   │       └── route.ts
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── login/
+│   │   └── page.tsx
+│   ├── page.tsx
+│   ├── privacy/
+│   │   └── page.tsx
+│   ├── reminder/
+│   │   └── page.tsx
+│   ├── share/
+│   │   └── page.tsx
+│   ├── smart-voice/
+│   │   └── page.tsx
+│   └── terms/
+│       └── page.tsx
+├── components/
+│   ├── AboutScreen.tsx
+│   ├── AddReminderModal.tsx
+│   ├── AuthProvider.tsx
+│   ├── ErrorBoundary.tsx
+│   ├── ErrorStatsScreen.tsx
+│   ├── InstallPrompt.tsx
+│   ├── IosInstallGuide.tsx
+│   ├── LanguageContext.tsx
+│   ├── NotificationService.ts
+│   ├── ReminderApp.tsx
+│   ├── RiskyComponent.tsx
+│   ├── SettingsScreen.tsx
+│   ├── SplashScreen.tsx
+│   └── VoiceInput.tsx
+├── crowdin.yml
+├── eslint.config.mjs
+├── hooks/
+│   └── use-mobile.ts
+├── lib/
+│   ├── date-parser.ts
+│   ├── db.ts
+│   ├── error-context.tsx
+│   ├── error-logger.ts
+│   ├── error-reporter.ts
+│   ├── local-whisper.ts
+│   ├── metadata.json
+│   ├── mongodb.ts
+│   ├── reminder-utils.ts
+│   ├── share-helper.ts
+│   ├── supabaseClient.ts
+│   ├── system-manager.ts
+│   ├── translations.ts
+│   └── utils.ts
+├── middleware.ts
+├── next-env.d.ts
+├── next.config.js
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── project_structure.txt
+├── public/
+│   ├── apple-icon.png
+│   ├── favicon.ico
+│   ├── icon0.svg
+│   ├── icon1.png
+│   ├── manifest.json
+│   ├── sw.js
+│   ├── web-app-manifest-192x192.png
+│   ├── web-app-manifest-512x512.png
+│   └── workbox-f1770938.js
+├── tsconfig.json
+└── types/
+    └── next-auth.d.ts

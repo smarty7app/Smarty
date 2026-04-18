@@ -73,26 +73,32 @@ export default function SettingsPage() {
             <Globe className="w-4 h-4" />
             {t.language}
           </h3>
-          
-          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-sm border border-zinc-100 dark:border-white/5">
-            <div className="p-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+  
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-sm border border-zinc-100 dark:border-white/5">
+            <div className="p-1.5 grid grid-cols-2 sm:grid-cols-4 gap-1.5">
               {languages.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => setLanguage(lang.code)}
-                  className={`flex items-center justify-center p-4 rounded-2xl font-bold transition-all ${
+                  className={`relative flex items-center justify-center px-3 py-3 rounded-xl font-bold text-sm transition-all duration-200 ${
                     language === lang.code 
-                      ? 'bg-[#E65100] text-white shadow-md' 
-                      : 'bg-zinc-50 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                      ? 'bg-gradient-to-br from-[#E65100] to-amber-500 text-white shadow-md shadow-[#E65100]/20' 
+                      : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                   }`}
                 >
-                  {lang.label}
+                  {language === lang.code && (
+                    <motion.span
+                      layoutId="activeLanguageIndicator"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#E65100] to-amber-500 -z-10"
+                      transition={{ type: 'spring', duration: 0.5 }}
+                    />
+                  )}
+                  <span className="relative z-10">{lang.label}</span>
                 </button>
               ))}
             </div>
           </div>
         </section>
-
         {/* System Preferences Section */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest px-2 flex items-center gap-2">
@@ -145,7 +151,7 @@ export default function SettingsPage() {
 
         <footer className="text-center py-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-300 dark:text-zinc-700">
-            Smatry v2.0.0 • {new Date().getFullYear()}
+            SMARTY v2.0.3 • {new Date().getFullYear()}
           </p>
         </footer>
       </main>
