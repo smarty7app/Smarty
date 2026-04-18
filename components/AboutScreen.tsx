@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, Code, MessageCircle } from 'lucide-react';
+import { ChevronLeft, Twitter, Facebook, Instagram, Send } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from 'motion/react';
 
@@ -11,6 +11,17 @@ interface AboutScreenProps {
 
 export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const { t, isRTL } = useLanguage();
+
+  // رابط التطبيق للمشاركة
+  const APP_URL = 'https://smarty-lac.vercel.app';
+  const SHARE_TEXT = encodeURIComponent('جرب تطبيق Smarty - مساعدك الذكي للتذكيرات');
+
+  const shareLinks = {
+    twitter: `https://twitter.com/intent/tweet?text=${SHARE_TEXT}&url=${APP_URL}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${APP_URL}`,
+    instagram: `https://www.instagram.com/`, // Instagram لا يدعم مشاركة مباشرة عبر رابط، نوجه لصفحة الملف الشخصي أو لفتح التطبيق
+    telegram: `https://t.me/share/url?url=${APP_URL}&text=${SHARE_TEXT}`,
+  };
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
@@ -45,30 +56,48 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </motion.div>
 
-        {/* Social Links */}
-        <div className="flex gap-4 w-full max-w-md">
+        {/* Social Icons - عصرية واحترافية */}
+        <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
           <a
-            href="https://github.com/smarty7app"
+            href={shareLinks.twitter}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-3 bg-zinc-900 dark:bg-white text-white dark:text-black py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
+            className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on X"
           >
-            <Code className="w-5 h-5" />
-            GitHub
+            <Twitter className="w-5 h-5 text-white" />
           </a>
           <a
-            href="https://t.me/share/url?url=https://smarty-lac.vercel.app/&text=جرب%20تطبيق%20Smarty%20الرائع"
+            href={shareLinks.facebook}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-3 bg-[#0088cc] text-white py-4 rounded-2xl font-black hover:scale-[1.02] transition-transform shadow-lg"
+            className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on Facebook"
           >
-            <MessageCircle className="w-5 h-5" />
-            {t.telegram}
+            <Facebook className="w-5 h-5 text-white" />
+          </a>
+          <a
+            href={shareLinks.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Instagram Profile"
+          >
+            <Instagram className="w-5 h-5 text-white" />
+          </a>
+          <a
+            href={shareLinks.telegram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on Telegram"
+          >
+            <Send className="w-5 h-5 text-white" />
           </a>
         </div>
 
         {/* Footer with Privacy & Terms */}
-        <div className="mt-10 w-full max-w-md text-center">
+        <div className="mt-12 w-full max-w-md text-center">
           <div className="flex flex-wrap justify-center gap-4 text-white/60 text-xs font-medium">
             <a href="/privacy" className="hover:text-white transition-colors">
               {t.privacy_policy}
@@ -77,7 +106,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             <a href="/terms" className="hover:text-white transition-colors">
               {t.terms_of_service}
             </a>
-            <span className="text-white/30">•</span>
           </div>
         </div>
       </div>
