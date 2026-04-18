@@ -1,10 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-export default function SharedReminderPage() {
+// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
+function SharedReminderContent() {
   const searchParams = useSearchParams();
   const reminderId = searchParams.get('id');
   const [reminder, setReminder] = useState<any>(null);
@@ -20,14 +22,17 @@ export default function SharedReminderPage() {
         })
         .then(data => {
           setReminder(data);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         })
         .catch(err => {
           console.error(err);
           toast.error('فشل في تحميل التذكير');
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsLoading(false);
         });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
   }, [reminderId]);
@@ -50,7 +55,6 @@ export default function SharedReminderPage() {
       const data = await response.json();
       if (response.ok) {
         toast.success('تمت إضافة التذكير إلى قائمتك!');
-        // يمكن إعادة توجيه المستخدم إلى الصفحة الرئيسية بعد قليل
         setTimeout(() => {
           window.location.href = '/';
         }, 1500);
@@ -88,5 +92,13 @@ export default function SharedReminderPage() {
         {isAdding ? 'جاري الإضافة...' : 'أضف هذا التذكير لي'}
       </button>
     </div>
+  );
+}
+
+export default function SharedReminderPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>}>
+      <SharedReminderContent />
+    </Suspense>
   );
 }
