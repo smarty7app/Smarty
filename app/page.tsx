@@ -1,15 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import ReminderApp from '@/components/ReminderApp';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-export default function Home() {
+// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
+function HomeContent() {
   const searchParams = useSearchParams();
-  const [showSplash, setShowSplash] = useState(true);
   const [initialReminderText, setInitialReminderText] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sharedText = searchParams.get('shareText');
+    if (sharedText) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInitialReminderText(decodeURIComponent(sharedText));
+      window.history.replaceState({}, '', '/');
+    }
+  }, [searchParams]);
+
+  return <ReminderApp initialReminderText={initialReminderText} />;
+}
+
+export default function Home() {
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     const hasSeenSplash = sessionStorage.getItem('smarty_splash_seen');
@@ -18,16 +34,6 @@ export default function Home() {
       setShowSplash(false);
     }
   }, []);
-
-  useEffect(() => {
-    const sharedText = searchParams.get('shareText');
-    if (sharedText) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setInitialReminderText(decodeURIComponent(sharedText));
-      // إزالة المعامل من الرابط بعد الاستخدام
-      window.history.replaceState({}, '', '/');
-    }
-  }, [searchParams]);
 
   const handleSplashFinish = () => {
     setShowSplash(false);
@@ -41,7 +47,9 @@ export default function Home() {
   return (
     <ErrorBoundary>
       <main className="min-h-screen bg-surface text-on-surface">
-        <ReminderApp initialReminderText={initialReminderText} />
+        <Suspense fallback={<div className="text-center p-8">جاري التحميل...</div>}>
+          <HomeContent />
+        </Suspense>
       </main>
     </ErrorBoundary>
   );
