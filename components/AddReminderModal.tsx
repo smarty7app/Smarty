@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
@@ -61,11 +61,14 @@ export default function AddReminderModal({
 }: AddReminderModalProps) {
 
   const [error, setError] = useState<string | null>(null);
-
-  // مفتاح تخزين المسودة في sessionStorage
+  
+  // مفتاح التخزين المؤقت
   const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
+  
+  // علم لتحديد سبب الإغلاق (true = إغلاق بحفظ، false = إلغاء بدون حفظ)
+  const shouldSaveOnClose = useRef(false);
 
-  // تحميل المسودة عند فتح النافذة
+  // تحميل المسودة عند فتح المودال (فقط إذا كانت موجودة)
   useEffect(() => {
     if (isOpen) {
       const savedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
@@ -82,25 +85,30 @@ export default function AddReminderModal({
           console.error('Failed to load draft reminder', e);
         }
       }
+      // إعادة تعيين العلم عند الفتح
+      shouldSaveOnClose.current = false;
     }
   }, [isOpen, setInputText, setRecurring]);
 
-  // حفظ المسودة عند تغيير النص أو التكرار (فقط أثناء فتح النافذة)
-  useEffect(() => {
-    if (isOpen && inputText.trim()) {
+  // دالة الإغلاق الداخلية التي تقرر ما إذا كانت ستحفظ المسودة أم لا
+  const handleClose = (saveDraft: boolean) => {
+    if (saveDraft && inputText.trim()) {
+      // حفظ المسودة في sessionStorage
       const draft = {
         inputText,
         recurring,
         savedAt: new Date().toISOString(),
       };
       sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    } else if (isOpen && !inputText.trim()) {
-      // إذا كان النص فارغاً، امسح المسودة (اختياري)
+    } else if (!saveDraft) {
+      // إلغاء: حذف المسودة إن وجدت
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
     }
-  }, [inputText, recurring, isOpen]);
+    // استدعاء دالة الإغلاق الأصلية
+    onClose();
+  };
 
-  // تأثير التحليل الذكي (الموجود سابقاً)
+  // تأثير التحليل الذكي (موجود سابقاً)
   useEffect(() => {
     if (inputText.trim()) {
       const result = analyzeReminderInput(inputText);
@@ -140,6 +148,12 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+        {/* خلفية شفافة - الضغط عليها يغلق مع حفظ */}
+        <div 
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+          onClick={() => handleClose(true)}
+        />
+        
         <motion.div                   
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
@@ -148,7 +162,9 @@ export default function AddReminderModal({
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.05}
-          onDragEnd={(event, info) => { if (info.offset.y > DRAG_THRESHOLD) onClose(); }}
+          onDragEnd={(event, info) => { 
+            if (info.offset.y > DRAG_THRESHOLD) handleClose(true); 
+          }}
           className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
         > 
           <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-6 cursor-grab" />
@@ -255,14 +271,14 @@ export default function AddReminderModal({
 
             <div className="flex gap-3">
               <button 
-                onClick={onClose} 
+                onClick={() => handleClose(false)} // ← إلغاء: لا يحفظ
                 className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold py-4 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
               >
                 {t.cancel || 'إلغاء'}
               </button>
               <button 
                 onClick={() => {
-                  // مسح المسودة عند الحفظ الناجح
+                  // حفظ ناجح → حذف المسودة
                   sessionStorage.removeItem(DRAFT_STORAGE_KEY);
                   handleAddReminder();
                 }} 
