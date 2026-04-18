@@ -1,16 +1,18 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-export default function SharedReminderPage() {
+// مكون منفصل يستخدم useSearchParams (يجب وضعه داخل Suspense)
+function SharedReminderContent() {
   const searchParams = useSearchParams();
   const reminderId = searchParams.get('id');
   const [reminder, setReminder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
+  useEffect(() => {
     if (reminderId) {
       fetch(`/api/reminder/${reminderId}`)
         .then(res => res.json())
@@ -71,5 +73,13 @@ export default function SharedReminderPage() {
         أضف هذا التذكير لي
       </button>
     </div>
+  );
+}
+
+export default function SharedReminderPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>}>
+      <SharedReminderContent />
+    </Suspense>
   );
 }
