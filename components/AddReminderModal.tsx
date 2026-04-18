@@ -62,12 +62,50 @@ export default function AddReminderModal({
 
   const [error, setError] = useState<string | null>(null);
 
+  // مفتاح تخزين المسودة في sessionStorage
+  const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
+
+  // تحميل المسودة عند فتح النافذة
+  useEffect(() => {
+    if (isOpen) {
+      const savedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.inputText && typeof draft.inputText === 'string') {
+            setInputText(draft.inputText);
+          }
+          if (draft.recurring && typeof draft.recurring === 'string') {
+            setRecurring(draft.recurring);
+          }
+        } catch (e) {
+          console.error('Failed to load draft reminder', e);
+        }
+      }
+    }
+  }, [isOpen, setInputText, setRecurring]);
+
+  // حفظ المسودة عند تغيير النص أو التكرار (فقط أثناء فتح النافذة)
+  useEffect(() => {
+    if (isOpen && inputText.trim()) {
+      const draft = {
+        inputText,
+        recurring,
+        savedAt: new Date().toISOString(),
+      };
+      sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    } else if (isOpen && !inputText.trim()) {
+      // إذا كان النص فارغاً، امسح المسودة (اختياري)
+      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+  }, [inputText, recurring, isOpen]);
+
+  // تأثير التحليل الذكي (الموجود سابقاً)
   useEffect(() => {
     if (inputText.trim()) {
       const result = analyzeReminderInput(inputText);
       
       if (result) {
-        // ✅ التحقق من صحة التاريخ قبل تمريره
         const isValidDate = isValidDateString(result.reminderTime);
         
         if (isValidDate) {
@@ -77,7 +115,6 @@ export default function AddReminderModal({
             onReminderTimeDetected(result.reminderTime);
           }
         } else {
-          // ✅ التاريخ غير صالح - لا تمرره واستخدم الوقت الحالي بدلاً من ذلك
           setSmartParsed(null);
           setError('التاريخ المستخرج غير صالح، سيتم استخدام الوقت الحالي');
           if (onReminderTimeDetected) {
@@ -87,7 +124,6 @@ export default function AddReminderModal({
       } else {
         setSmartParsed(null);
         setError('لا يمكن إنشاء تذكير في وقت سابق');
-        // ✅ في حالة الفشل، استخدم الوقت الحالي كقيمة افتراضية
         if (onReminderTimeDetected) {
           onReminderTimeDetected(new Date().toISOString());
         }
@@ -225,7 +261,11 @@ export default function AddReminderModal({
                 {t.cancel || 'إلغاء'}
               </button>
               <button 
-                onClick={handleAddReminder} 
+                onClick={() => {
+                  // مسح المسودة عند الحفظ الناجح
+                  sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+                  handleAddReminder();
+                }} 
                 disabled={!inputText.trim()} 
                 className="flex-[2] bg-gradient-to-r from-[#E65100] to-amber-500 text-white font-bold py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#E65100]/20 hover:shadow-xl hover:shadow-[#E65100]/30 transition-all"
               >
