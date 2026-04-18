@@ -9,8 +9,8 @@ export async function GET(
     const { id } = await params;
     const client = await clientPromise;
     const db = client.db('smartyDB');
-    // نستخدم { _id: id } مباشرة لأن id من nanoid هو string وليس ObjectId
-    const reminder = await db.collection('shared_reminders').findOne({ _id: id });
+    // استخدام تأكيد النوع (type assertion) لتجاوز التحقق من TypeScript
+    const reminder = await db.collection('shared_reminders').findOne({ _id: id as any });
     
     if (!reminder) {
       return NextResponse.json({ error: 'Reminder not found' }, { status: 404 });
