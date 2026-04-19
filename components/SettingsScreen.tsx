@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut, Mail } from 'lucide-react';
+import { ChevronLeft, Settings, Shield, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut, Mail } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { LanguageCode } from '@/lib/translations';
 import { signOut, useSession } from 'next-auth/react';
@@ -22,94 +22,87 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const router = useRouter();
   const { data: session } = useSession();
 
+  // Refs for language buttons and container
+  const langContainerRef = React.useRef<HTMLDivElement>(null);
+  const langButtonsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
+  const [indicatorStyle, setIndicatorStyle] = React.useState({ width: 0, translateX: 0 });
+
+  const languages: { code: LanguageCode; label: string }[] = [
+    { code: 'ar', label: t.arabic },
+    { code: 'en', label: t.english },
+    { code: 'fr', label: t.french },
+    // اللغة الصينية محذوفة حسب الطلب
+  ];
+
+  // Update indicator position and width when language changes or window resizes
+  React.useEffect(() => {
+    const updateIndicator = () => {
+      const activeIndex = languages.findIndex(l => l.code === language);
+      const activeButton = langButtonsRef.current[activeIndex];
+      const container = langContainerRef.current;
+      if (activeButton && container) {
+        const buttonRect = activeButton.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const translateX = buttonRect.left - containerRect.left;
+        setIndicatorStyle({
+          width: buttonRect.width,
+          translateX: translateX,
+        });
+      }
+    };
+    updateIndicator();
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [language, languages]);
+
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
       router.push('/login');
     } catch (error) {
-      // قوة: حتى لو فشل الاتصال، نظف البيانات محليًا
       localStorage.removeItem('nextauth.message');
       router.push('/login');
     }
   };
 
-  // دالة إعادة الضبط المتطورة
   const factoryReset = async () => {
     setIsResetting(true);
-    
     try {
-      // 1. مسح localStorage
       localStorage.clear();
-      
-      // 2. مسح sessionStorage
       sessionStorage.clear();
-      
-      // 3. مسح IndexedDB
       if ('indexedDB' in window) {
         try {
           const databases = await indexedDB.databases();
-          databases.forEach(db => {
-            if (db.name) indexedDB.deleteDatabase(db.name);
-          });
+          databases.forEach(db => { if (db.name) indexedDB.deleteDatabase(db.name); });
         } catch (error) {
-          console.warn('IndexedDB cleanup warning:', error);
-          // طريقة بديلة للمتصفحات القديمة
           const knownDatabases = ['SmartyDB', 'VoiceDB', 'RemindersDB', 'firebaseLocalStorageDb'];
-          knownDatabases.forEach(dbName => {
-            try {
-              indexedDB.deleteDatabase(dbName);
-            } catch (e) {
-              // تجاهل الأخطاء
-            }
-          });
+          knownDatabases.forEach(dbName => { try { indexedDB.deleteDatabase(dbName); } catch (e) {} });
         }
       }
-      
-      // 4. مسح Cookies
       try {
         document.cookie.split(";").forEach(c => {
           if (c.trim()) {
-            document.cookie = c.replace(/^ +/, "")
-              .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
           }
         });
-      } catch (error) {
-        console.warn('Cookie cleanup warning:', error);
-      }
-      
-      // 5. مسح Cache API
+      } catch (error) {}
       if ('caches' in window) {
         try {
           const keys = await caches.keys();
           await Promise.all(keys.map(key => caches.delete(key)));
-        } catch (error) {
-          console.warn('Cache cleanup warning:', error);
-        }
+        } catch (error) {}
       }
-      
-      // 6. مسح Service Worker registrations
       if ('serviceWorker' in navigator) {
         try {
           const registrations = await navigator.serviceWorker.getRegistrations();
           await Promise.all(registrations.map(reg => reg.unregister()));
-        } catch (error) {
-          console.warn('ServiceWorker cleanup warning:', error);
-        }
+        } catch (error) {}
       }
-      
-      // 7. تسجيل الخروج من المصادقة
       try {
         await signOut({ redirect: false });
-      } catch (error) {
-        console.warn('Sign out warning:', error);
-      }
-      
-      // 8. إعادة التحميل
+      } catch (error) {}
       window.location.href = '/login';
-      
     } catch (error) {
-      console.error('Factory reset error:', error);
-      // حتى لو فشل البعض، حاول إعادة التحميل
       window.location.reload();
     }
   };
@@ -120,21 +113,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     if (smartAnalysis !== null) {
       setIsSmartAnalysisEnabled(smartAnalysis === 'true');
     }
-
     const handleStorage = () => {
       setIsDark(document.documentElement.classList.contains('dark'));
     };
-
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
-
-  const languages: { code: LanguageCode; label: string }[] = [
-    { code: 'ar', label: t.arabic },
-    { code: 'en', label: t.english },
-    { code: 'fr', label: t.french },
-    { code: 'zh', label: t.chinese },
-  ];
 
   return (
     <div className="flex flex-col h-full bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
@@ -147,13 +131,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* ========== Profile Section (Responsive Fix) ========== */}
+        {/* Profile Section */}
         {session?.user && (
           <section className="space-y-4">
             <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
-              {/* استخدام flex-col على الشاشات الصغيرة، و flex-row على المتوسطة فما فوق */}
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                {/* Avatar */}
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
                     {session.user.image ? (
@@ -162,10 +144,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                         alt="avatar"
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          e.currentTarget.src = '';
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        onError={(e) => { e.currentTarget.src = ''; e.currentTarget.style.display = 'none'; }}
                       />
                     ) : (
                       session.user.name?.charAt(0) || 'U'
@@ -173,8 +152,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
                 </div>
-
-                {/* User Info - يتمدد ليملأ المساحة المتاحة */}
                 <div className="flex-1 text-center sm:text-right min-w-0">
                   <h3 className="font-bold text-black dark:text-white truncate">
                     {session.user.name || 'مستخدم Google'}
@@ -184,8 +161,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                     <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
                   </div>
                 </div>
-
-                {/* Logout Button - عرض كامل على الموبايل */}
                 <button
                   onClick={() => setShowLogoutConfirm(true)}
                   className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
@@ -199,49 +174,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
         )}
 
         {/* Language Section */}
-<section className="space-y-4">
-  <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
-    <Globe className="w-4 h-4" />
-    {t.language}
-  </h3>
+        <section className="space-y-4">
+          <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
+            <Globe className="w-4 h-4" />
+            {t.language}
+          </h3>
+          <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative" ref={langContainerRef}>
+            <div className="relative flex h-14">
+              <motion.div
+                layout
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                className="absolute top-0 bottom-0 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
+                style={{
+                  width: indicatorStyle.width,
+                  transform: `translateX(${indicatorStyle.translateX}px)`,
+                }}
+              />
+              {languages.map((lang, idx) => (
+                <button
+                  key={lang.code}
+                  ref={el => { langButtonsRef.current[idx] = el; }}
+                  onClick={() => setLanguage(lang.code)}
+                  className={`relative z-10 flex-1 h-full flex items-center justify-center font-black text-xs tracking-wider transition-colors duration-300 ${
+                    language === lang.code
+                      ? 'text-white'
+                      : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  }`}
+                >
+                  {lang.code === 'ar' ? lang.label : lang.label.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
 
-  <div className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative">
-    <div className="relative flex h-14">
-      {/* المؤشر المتحرك */}
-      <motion.div
-        layout
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-        className="absolute top-0 bottom-0 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
-        style={{
-          width: `${100 / languages.length}%`,
-          left: `${(languages.findIndex(l => l.code === language) * 100) / languages.length}%`,
-        }}
-      />
-      
-      {/* الأزرار */}
-      {languages.map((lang) => (
-        <button
-          key={lang.code}
-          onClick={() => setLanguage(lang.code)}
-          className={`relative z-10 flex-1 h-full flex items-center justify-center font-black text-xs tracking-wider transition-colors duration-300 ${
-            language === lang.code
-              ? 'text-white'
-              : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
-          }`}
-        >
-          {lang.code === 'ar' ? lang.label : lang.label.toUpperCase()}
-        </button>
-      ))}
-    </div>
-  </div>
-</section>
         {/* System Preferences */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
             <Settings className="w-4 h-4" />
             {t.system_preferences}
           </h3>
-
           <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-lg border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
               <div className="flex items-center gap-4">
@@ -268,29 +240,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 }}
                 className={`w-14 h-7 rounded-full relative transition-all duration-300 ${isDark ? 'bg-[#E65100] shadow-inner' : 'bg-zinc-100 dark:bg-zinc-800'}`}
               >
-                <div
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-                    isDark
-                      ? isRTL
-                        ? 'right-8'
-                        : 'left-8'
-                      : isRTL
-                      ? 'right-1'
-                      : 'left-1'
-                  }`}
-                >
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
+                  isDark ? (isRTL ? 'right-8' : 'left-8') : (isRTL ? 'right-1' : 'left-1')
+                }`}>
                   {isDark ? <Moon className="w-3 h-3 text-[#E65100]" /> : <Moon className="w-3 h-3 text-zinc-300" />}
                 </div>
               </button>
             </div>
-
             <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
               <div className="flex items-center gap-4">
                 <Shield className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
                 <span className="font-bold text-black dark:text-white">{t.privacy_security}</span>
               </div>
             </div>
-
             <div className="flex items-center justify-between p-6">
               <div className="flex items-center gap-4">
                 <Sparkles className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
@@ -308,17 +270,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 }}
                 className={`w-14 h-7 rounded-full relative transition-all duration-300 ${isSmartAnalysisEnabled ? 'bg-[#E65100] shadow-inner' : 'bg-zinc-100 dark:bg-zinc-800'}`}
               >
-                <div
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-                    isSmartAnalysisEnabled
-                      ? isRTL
-                        ? 'right-8'
-                        : 'left-8'
-                      : isRTL
-                      ? 'right-1'
-                      : 'left-1'
-                  }`}
-                >
+                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
+                  isSmartAnalysisEnabled ? (isRTL ? 'right-8' : 'left-8') : (isRTL ? 'right-1' : 'left-1')
+                }`}>
                   {isSmartAnalysisEnabled ? <Sparkles className="w-3 h-3 text-[#E65100]" /> : <Sparkles className="w-3 h-3 text-zinc-300" />}
                 </div>
               </button>
@@ -332,7 +286,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <Trash2 className="w-3 h-3" />
             {isRTL ? 'منطقة البيانات' : 'Data Zone'}
           </h3>
-
           <div className="bg-red-50/50 dark:bg-red-900/10 rounded-[1.5rem] overflow-hidden border border-red-500/10">
             <button
               onClick={() => setShowResetConfirm(true)}
@@ -364,36 +317,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm shadow-none">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
-          >
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <LogOut className="w-8 h-8 text-red-500" />
             </div>
-
-            <h2 className="text-xl font-black mb-2 dark:text-white">
-              {isRTL ? 'تسجيل الخروج؟' : 'Sign Out?'}
-            </h2>
-
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
-              {isRTL ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟' : 'Are you sure you want to sign out?'}
-            </p>
-
+            <h2 className="text-xl font-black mb-2 dark:text-white">{isRTL ? 'تسجيل الخروج؟' : 'Sign Out?'}</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">{isRTL ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟' : 'Are you sure you want to sign out?'}</p>
             <div className="flex flex-col gap-3">
-              <button
-                onClick={handleLogout}
-                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95"
-              >
-                {isRTL ? 'نعم، تسجيل الخروج' : 'Yes, Sign Out'}
-              </button>
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold"
-              >
-                {isRTL ? 'إلغاء' : 'Cancel'}
-              </button>
+              <button onClick={handleLogout} className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95">{isRTL ? 'نعم، تسجيل الخروج' : 'Yes, Sign Out'}</button>
+              <button onClick={() => setShowLogoutConfirm(false)} className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold">{isRTL ? 'إلغاء' : 'Cancel'}</button>
             </div>
           </motion.div>
         </div>
@@ -402,45 +334,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       {/* Factory Reset Confirmation Modal */}
       {showResetConfirm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm shadow-none">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center"
-          >
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-              {isResetting ? (
-                <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <RefreshCcw className="w-8 h-8 text-red-500" />
-              )}
+              {isResetting ? <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" /> : <RefreshCcw className="w-8 h-8 text-red-500" />}
             </div>
-
-            <h2 className="text-xl font-black mb-2 dark:text-white">
-              {isRTL ? 'إعادة ضبط المصنع؟' : 'Factory Reset?'}
-            </h2>
-
-            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
-              {isRTL ? 'هل أنت متأكد؟ سيتم حذف كل البيانات.' : 'Are you sure? All data will be deleted.'}
-            </p>
-
+            <h2 className="text-xl font-black mb-2 dark:text-white">{isRTL ? 'إعادة ضبط المصنع؟' : 'Factory Reset?'}</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">{isRTL ? 'هل أنت متأكد؟ سيتم حذف كل البيانات.' : 'Are you sure? All data will be deleted.'}</p>
             <div className="flex flex-col gap-3">
-              <button
-                onClick={() => {
-                  setShowResetConfirm(false);
-                  factoryReset();
-                }}
-                disabled={isResetting}
-                className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95 disabled:opacity-50 disabled:active:scale-100"
-              >
-                {isResetting 
-                  ? (isRTL ? 'جاري المسح...' : 'Clearing...') 
-                  : (isRTL ? 'حذف الكل' : 'Yes, Delete All')}
+              <button onClick={() => { setShowResetConfirm(false); factoryReset(); }} disabled={isResetting} className="w-full py-4 bg-red-500 text-white rounded-2xl font-black active:scale-95 disabled:opacity-50 disabled:active:scale-100">
+                {isResetting ? (isRTL ? 'جاري المسح...' : 'Clearing...') : (isRTL ? 'حذف الكل' : 'Yes, Delete All')}
               </button>
-              <button
-                onClick={() => setShowResetConfirm(false)}
-                disabled={isResetting}
-                className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold disabled:opacity-50"
-              >
+              <button onClick={() => setShowResetConfirm(false)} disabled={isResetting} className="w-full py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 rounded-2xl font-bold disabled:opacity-50">
                 {isRTL ? 'إلغاء' : 'Cancel'}
               </button>
             </div>
