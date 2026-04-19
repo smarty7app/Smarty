@@ -22,38 +22,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const router = useRouter();
   const { data: session } = useSession();
 
-  // Refs for language buttons and container
   const langContainerRef = React.useRef<HTMLDivElement>(null);
   const langButtonsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicatorStyle, setIndicatorStyle] = React.useState({ width: 0, translateX: 0 });
+  const [indicatorStyle, setIndicatorStyle] = React.useState({ width: 0, left: 0 });
 
   const languages: { code: LanguageCode; label: string }[] = [
     { code: 'ar', label: t.arabic },
     { code: 'en', label: t.english },
     { code: 'fr', label: t.french },
-    // اللغة الصينية محذوفة
   ];
 
-  // تحديث موضع وعرض المؤشر عند تغيير اللغة أو تغيير حجم النافذة
-  React.useEffect(() => {
+  // استخدام useLayoutEffect لضمان تحديث المؤشر بعد تغيير اللغة وقبل الرسم
+  React.useLayoutEffect(() => {
     const updateIndicator = () => {
       const activeIndex = languages.findIndex(l => l.code === language);
       const activeButton = langButtonsRef.current[activeIndex];
       const container = langContainerRef.current;
       if (activeButton && container) {
-        const buttonRect = activeButton.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        const translateX = buttonRect.left - containerRect.left;
+        const buttonRect = activeButton.getBoundingClientRect();
+        // حساب المسافة من يسار الحاوية إلى يسار الزر (تعمل في RTL و LTR)
+        const left = buttonRect.left - containerRect.left;
         setIndicatorStyle({
           width: buttonRect.width,
-          translateX: translateX,
+          left: left,
         });
       }
     };
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
     return () => window.removeEventListener('resize', updateIndicator);
-  }, [language, languages]);
+  }, [language, languages, isRTL]); // إعادة الحساب عند تغيير اللغة أو الاتجاه
 
   const handleLogout = async () => {
     try {
@@ -173,7 +172,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </section>
         )}
 
-        {/* Language Section */}
+        {/* Language Section - مُصلح */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
             <Globe className="w-4 h-4" />
@@ -183,11 +182,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <div className="relative flex h-14">
               <motion.div
                 layout
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                 className="absolute top-0 bottom-0 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
                 style={{
                   width: indicatorStyle.width,
-                  transform: `translateX(${indicatorStyle.translateX}px)`,
+                  left: indicatorStyle.left,
                 }}
               />
               {languages.map((lang, idx) => (
