@@ -19,8 +19,8 @@ export default function LoginPage() {
             <Image
               src="/android-chrome-192x192.png"
               alt="Smarty Logo"
-              width={48}
-              height={48}
+              width={45}
+              height={45}
               className="w-12 h-12 object-contain scale-150"   // تكبير 50%
               priority
             />
