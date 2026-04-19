@@ -47,14 +47,13 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
             {/* استبدال SVG القديم بـ Image من الأيقونات الجديدة */}
             <Image
-              src="/favicon.svg"         // استخدم favicon.svg من مجلد public
+              src="/favicon.svg"
               alt="Smarty Logo"
-              width={48}                 // نفس حجم w-12 h-12 (48px)
+              width={48}
               height={48}
-              className="w-12 h-12 object-contain scal-110"
+              className="w-12 h-12 object-contain scale-125"   // scale-125 تعني تكبير 25%
               priority
             />
-          </div>
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
           </h2>
