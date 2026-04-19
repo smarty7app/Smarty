@@ -4,6 +4,7 @@ import React from 'react';
 import { ChevronLeft, Twitter, Facebook, Instagram, Send } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from 'motion/react';
+import Image from 'next/image';  // استيراد مكون الصورة
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -19,7 +20,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${SHARE_TEXT}&url=${APP_URL}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${APP_URL}`,
-    instagram: `https://www.instagram.com/`, // Instagram لا يدعم مشاركة مباشرة عبر رابط، نوجه لصفحة الملف الشخصي أو لفتح التطبيق
+    instagram: `https://www.instagram.com/`, // Instagram لا يدعم مشاركة مباشرة عبر رابط
     telegram: `https://t.me/share/url?url=${APP_URL}&text=${SHARE_TEXT}`,
   };
 
@@ -44,9 +45,15 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           className="flex flex-col items-center mb-10"
         >
           <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
-            <svg className="w-12 h-12 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
-            </svg>
+            {/* استبدال SVG القديم بـ Image من الأيقونات الجديدة */}
+            <Image
+              src="/favicon.svg"         // استخدم favicon.svg من مجلد public
+              alt="Smarty Logo"
+              width={48}                 // نفس حجم w-12 h-12 (48px)
+              height={48}
+              className="w-12 h-12 object-contain"
+              priority
+            />
           </div>
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
@@ -56,7 +63,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </motion.div>
 
-        {/* Social Icons - عصرية واحترافية */}
+        {/* Social Icons */}
         <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
           <a
             href={shareLinks.twitter}
