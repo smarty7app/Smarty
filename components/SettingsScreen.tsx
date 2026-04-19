@@ -31,10 +31,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     { code: 'ar', label: t.arabic },
     { code: 'en', label: t.english },
     { code: 'fr', label: t.french },
-    // اللغة الصينية محذوفة حسب الطلب
+    // اللغة الصينية محذوفة
   ];
 
-  // Update indicator position and width when language changes or window resizes
+  // تحديث موضع وعرض المؤشر عند تغيير اللغة أو تغيير حجم النافذة
   React.useEffect(() => {
     const updateIndicator = () => {
       const activeIndex = languages.findIndex(l => l.code === language);
