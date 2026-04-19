@@ -196,8 +196,8 @@ const handleShare = async (reminder: Reminder) => {
           <Image
             src="/android-chrome-192x192.png"   // تغيير المسار
             alt="Smarty Logo"
-            width={24}
-            height={24}
+            width={40}
+            height={40}
             className="w-6 h-6 object-contain"
             priority
           />
