@@ -4,6 +4,7 @@ import React from 'react';
 import { ChevronLeft, Twitter, Facebook, Instagram, Send } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from 'motion/react';
+import { SmartyLogo } from '@/components/SmartyLogo'; // ✅ إضافة استيراد الشعار الجديد
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -44,9 +45,8 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           className="flex flex-col items-center mb-10"
         >
           <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
-            <svg className="w-12 h-12 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
-            </svg>
+            {/* ✅ استبدال SVG القديم بمكون SmartyLogo مع نفس الخصائص */}
+            <SmartyLogo className="w-12 h-12 text-[#E65100]" />
           </div>
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
