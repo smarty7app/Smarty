@@ -15,15 +15,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-lg mb-6">
+          <div className="w-20 h-20 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-6">
             <Image
-            src="/android-chrome-192x192.png"
-            alt="Smarty Logo"
-            width={80}
-            height={80}
-            className="w-full h-full object-contain p-1 invert"   // ← أضف invert
-            priority
-          />
+              src="/android-chrome-192x192.png"
+              alt="Smarty Logo"
+              width={80}
+              height={80}
+              className="w-full h-full object-contain p-1"   // تملأ الحاوية مع مسافة داخلية صغيرة
+              priority
+            />
           </div>
         <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">Smarty</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">سجل دخولك للمتابعة</p>
