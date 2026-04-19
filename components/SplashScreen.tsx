@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
+import Image from 'next/image'; // استخدم Image من Next.js لتحسين الأداء
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -25,7 +26,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onFinish, 600);
-    }, 2500); // مدة أقصر قليلاً لأن الشعار فقط
+    }, 2500);
     return () => clearTimeout(timer);
   }, [onFinish]);
 
@@ -60,7 +61,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         ))}
       </div>
 
-      {/* الشعار فقط */}
+      {/* الشعار الجديد من الأيقونات */}
       <div className="relative z-10">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -76,9 +77,16 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           className="group"
         >
           <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-2xl flex items-center justify-center shadow-2xl transform -rotate-6 transition-transform group-hover:rotate-0 duration-300">
-            <svg className="w-14 h-14 md:w-20 md:h-20 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
-            </svg>
+            {/* استبدال SVG القديم بصورة الأيقونة الجديدة */}
+            <Image
+              src="/favicon.svg"          // ← استخدم favicon.svg من الأيقونات الجديدة
+              alt="Smarty Logo"
+              width={80}                  // مناسب للأجهزة المختلفة (يتم التحكم بـ w-14 md:w-20)
+              height={80}
+              className="w-14 h-14 md:w-20 md:h-20 object-contain"
+              priority                    // تحميل فوري لأنها أيقونة الشاشة التمهيدية
+            />
+            {/* إذا أردت استخدام PNG بدلاً من SVG، استبدل المسار بـ "/android-chrome-192x192.png" */}
           </div>
         </motion.div>
       </div>
