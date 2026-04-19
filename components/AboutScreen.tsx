@@ -61,7 +61,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             {t.version} 2.0 PREMIUM
           </p>
         </motion.div>
-
         {/* Social Icons */}
         <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
           <a
