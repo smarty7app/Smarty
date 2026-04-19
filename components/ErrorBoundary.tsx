@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -12,7 +12,6 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
-  showDetails: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -22,7 +21,6 @@ export class ErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-      showDetails: false,
     };
   }
 
@@ -31,19 +29,36 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    this.setState({ errorInfo });
-    // يمكنك هنا إرسال الخطأ إلى خدمة خارجية (مثل Sentry)
-    console.error('Error caught by ErrorBoundary:', error, errorInfo);
+    // ✅ تسجيل التفاصيل التقنية في وحدة التحكم (تظهر للمطور فقط)
+    console.group('🚨 خطأ تم التقاطه بواسطة ErrorBoundary (للمطور فقط)');
+    console.error('الخطأ:', error);
+    console.error('مكونات Stack:', errorInfo.componentStack);
+    console.groupEnd();
+
+    // ✅ (اختياري) حفظ الخطأ في localStorage للتشخيص لاحقًا (للمطور فقط)
+    try {
+      const logs = JSON.parse(localStorage.getItem('smarty_error_logs') || '[]');
+      logs.push({
+        id: Date.now(),
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+      });
+      if (logs.length > 20) logs.shift();
+      localStorage.setItem('smarty_error_logs', JSON.stringify(logs));
+    } catch (e) {
+      // تجاهل أخطاء التخزين
+    }
+
+    this.setState({ error, errorInfo });
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null, showDetails: false });
+    this.setState({ hasError: false, error: null, errorInfo: null });
     // يمكنك إعادة تحميل الصفحة أو إعادة تعيين الحالة حسب احتياجك
     // window.location.reload(); // اختياري
-  };
-
-  toggleDetails = () => {
-    this.setState((prev) => ({ showDetails: !prev.showDetails }));
   };
 
   render() {
@@ -53,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // إشعار بسيط في أعلى الصفحة (بدون إغلاق التطبيق)
+      // ✅ رسالة عامة للمستخدم (بدون أي تفاصيل تقنية أو زر إظهار التفاصيل)
       return (
         <>
           {/* عرض المحتوى الأصلي (مع إمكانية استمرار التطبيق) */}
@@ -72,28 +87,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <p className="text-xs text-red-700 dark:text-red-300 mt-1">
                   يمكنك متابعة استخدام التطبيق، ولكن قد تتأثر بعض الوظائف.
                 </p>
-                
-                {/* زر إظهار التفاصيل */}
-                <button
-                  onClick={this.toggleDetails}
-                  className="text-xs text-red-600 dark:text-red-400 hover:underline mt-2 inline-flex items-center gap-1"
-                >
-                  {this.state.showDetails ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
-                  {this.state.showDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
-                
-                {this.state.showDetails && this.state.error && (
-                  <div className="mt-2 text-xs font-mono bg-red-100 dark:bg-red-900/50 p-2 rounded overflow-auto max-h-32">
-                    <p className="font-bold text-red-800 dark:text-red-200">
-                      {this.state.error.name}: {this.state.error.message}
-                    </p>
-                    {this.state.errorInfo && (
-                      <pre className="text-red-700 dark:text-red-300 whitespace-pre-wrap mt-1">
-                        {this.state.errorInfo.componentStack}
-                      </pre>
-                    )}
-                  </div>
-                )}
+                {/* ❌ تم إزالة زر "عرض التفاصيل" وجميع التفاصيل التقنية */}
               </div>
               <button
                 onClick={this.handleRetry}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut, Mail } from 'lucide-react';
+import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut, Mail, UserX } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { LanguageCode } from '@/lib/translations';
 import { signOut, useSession } from 'next-auth/react';
@@ -17,20 +17,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const [isGuestMode, setIsGuestMode] = React.useState(false);
   const { language, setLanguage, t, isRTL } = useLanguage();
   const router = useRouter();
   const { data: session } = useSession();
 
   const handleLogout = async () => {
-  try {
-    await signOut({ redirect: false });
-    router.push('/login');
-  } catch (error) {
-    // قوة: حتى لو فشل الاتصال، نظف البيانات محليًا
-    localStorage.removeItem('nextauth.message');
-    router.push('/login');
-  }
-};
+    try {
+      await signOut({ redirect: false });
+      router.push('/login');
+    } catch (error) {
+      localStorage.removeItem('nextauth.message');
+      router.push('/login');
+    }
+  };
+
+  // إنهاء وضع الضيف
+  const handleExitGuestMode = () => {
+    document.cookie = "guest_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    sessionStorage.removeItem("guest_mode");
+    window.location.href = "/login";
+  };
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
@@ -39,8 +46,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       setIsSmartAnalysisEnabled(smartAnalysis === 'true');
     }
 
+    // التحقق من وضع الضيف (كوكي أو sessionStorage)
+    const checkGuestMode = () => {
+      const hasGuestCookie = document.cookie.includes('guest_mode=true');
+      const hasGuestStorage = sessionStorage.getItem('guest_mode') === 'true';
+      setIsGuestMode(hasGuestCookie || hasGuestStorage);
+    };
+    checkGuestMode();
+
     const handleStorage = () => {
       setIsDark(document.documentElement.classList.contains('dark'));
+      checkGuestMode();
     };
 
     window.addEventListener('storage', handleStorage);
@@ -66,52 +82,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
         {/* ========== Profile Section (Responsive Fix) ========== */}
-             {session?.user && (
-               <section className="space-y-4">
-                 <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
-                   {/* استخدام flex-col على الشاشات الصغيرة، و flex-row على المتوسطة فما فوق */}
-                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                     {/* Avatar */}
-                     <div className="relative">
-                       <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
-                         {session.user.image ? (
-                          <img 
-                            src={session.user.image || '/default-avatar.png'} 
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              e.currentTarget.src = '/default-avatar.png';
-                            }}
-                          />
-                         ) : (
-                           session.user.name?.charAt(0) || 'U'
-                         )}
-                       </div>
-                       <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
-                     </div>
+        {session?.user && (
+          <section className="space-y-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                {/* Avatar */}
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
+                    {session.user.image ? (
+                      <img 
+                        src={session.user.image || '/default-avatar.png'} 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.src = '/default-avatar.png';
+                        }}
+                      />
+                    ) : (
+                      session.user.name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
+                </div>
 
-                     {/* User Info - يتمدد ليملأ المساحة المتاحة */}
-                     <div className="flex-1 text-center sm:text-right min-w-0">
-                       <h3 className="font-bold text-black dark:text-white truncate">
-                         {session.user.name || 'مستخدم Google'}
-                       </h3>
-                       <div className="flex items-center justify-center sm:justify-end gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
-                         <Mail className="w-3 h-3 flex-shrink-0" />
-                         <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
-                       </div>
-                     </div>
+                {/* User Info */}
+                <div className="flex-1 text-center sm:text-right min-w-0">
+                  <h3 className="font-bold text-black dark:text-white truncate">
+                    {session.user.name || 'مستخدم Google'}
+                  </h3>
+                  <div className="flex items-center justify-center sm:justify-end gap-1 text-zinc-500 dark:text-zinc-400 text-sm">
+                    <Mail className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{session.user.email || 'user@gmail.com'}</span>
+                  </div>
+                </div>
 
-                     {/* Logout Button - عرض كامل على الموبايل */}
-                     <button
-                     onClick={() => setShowLogoutConfirm(true)}
-                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
-                   >
-                     <LogOut className="w-4 h-4" />
-                     {t.logout}
-                   </button>
-                   </div>
-                 </div>
-               </section>
-             )}
+                {/* Logout Button */}
+                <button
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm font-bold hover:bg-red-100 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t.logout}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Language Section */}
         <section className="space-y-4">
@@ -119,7 +134,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <Globe className="w-4 h-4" />
             {t.language}
           </h3>
-
           <div dir="ltr" className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
             <motion.div
               initial={false}
@@ -133,7 +147,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 left: '0.375rem'
               }}
             />
-
             {languages.map((lang) => (
               <button
                 key={lang.code}
@@ -156,7 +169,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <Settings className="w-4 h-4" />
             {t.system_preferences}
           </h3>
-
           <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-lg border border-black/5 dark:border-white/5">
             <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
               <div className="flex items-center gap-4">
@@ -198,14 +210,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 </div>
               </button>
             </div>
-
             <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
               <div className="flex items-center gap-4">
                 <Shield className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
                 <span className="font-bold text-black dark:text-white">{t.privacy_security}</span>
               </div>
             </div>
-
             <div className="flex items-center justify-between p-6">
               <div className="flex items-center gap-4">
                 <Sparkles className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
@@ -247,7 +257,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <Trash2 className="w-3 h-3" />
             {isRTL ? 'البيانات' : 'Data Zone'}
           </h3>
-
           <div className="bg-red-50/50 dark:bg-red-900/10 rounded-[1.5rem] overflow-hidden border border-red-500/10">
             <button
               onClick={() => setShowResetConfirm(true)}
@@ -271,6 +280,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </div>
         </section>
 
+        {/* Guest Mode Section - يظهر فقط في وضع الضيف */}
+        {isGuestMode && (
+          <section className="space-y-3 pt-4">
+            <h3 className="text-[10px] font-black text-yellow-500/60 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
+              <UserX className="w-3 h-3" />
+              {isRTL ? 'وضع الزائر' : 'Guest Mode'}
+            </h3>
+            <div className="bg-yellow-50/50 dark:bg-yellow-900/10 rounded-[1.5rem] overflow-hidden border border-yellow-500/20">
+              <button
+                onClick={handleExitGuestMode}
+                className="w-full flex items-center justify-between p-4 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 transition-all active:scale-[0.98] group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white dark:bg-zinc-900 rounded-lg text-yellow-600 shadow-sm group-hover:rotate-12 transition-transform">
+                    <LogOut className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs font-black text-yellow-700 dark:text-yellow-400">
+                      {isRTL ? 'إنهاء وضع الضيف' : 'Exit Guest Mode'}
+                    </span>
+                    <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold">
+                      {isRTL ? 'العودة إلى شاشة تسجيل الدخول' : 'Return to login screen'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronLeft className={`w-4 h-4 text-yellow-300 ${isRTL ? '' : 'rotate-180'}`} />
+              </button>
+            </div>
+          </section>
+        )}
+
         <footer className="text-center py-10">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{t.app_name} v2.0.0</p>
         </footer>
@@ -287,15 +327,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <LogOut className="w-8 h-8 text-red-500" />
             </div>
-
             <h2 className="text-xl font-black mb-2 dark:text-white">
               {isRTL ? 'تسجيل الخروج؟' : 'Sign Out?'}
             </h2>
-
             <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
               {isRTL ? 'هل أنت متأكد من رغبتك في تسجيل الخروج؟' : 'Are you sure you want to sign out?'}
             </p>
-
             <div className="flex flex-col gap-3">
               <button
                 onClick={handleLogout}
@@ -325,15 +362,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <RefreshCcw className="w-8 h-8 text-red-500" />
             </div>
-
             <h2 className="text-xl font-black mb-2 dark:text-white">
               {isRTL ? 'إعادة ضبط المصنع؟' : 'Factory Reset?'}
             </h2>
-
             <p className="text-zinc-500 dark:text-zinc-400 text-sm font-bold mb-8">
               {isRTL ? 'هل أنت متأكد؟ سيتم حذف كل البيانات.' : 'Are you sure? All data will be deleted.'}
             </p>
-
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
