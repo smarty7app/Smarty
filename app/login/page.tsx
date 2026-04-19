@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import Image from "next/image";  // ← إضافة استيراد الصورة
+import Image from "next/image";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,13 +16,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
         <div className="w-20 h-20 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-6">
-          {/* استبدال SVG القديم بـ Image */}
           <Image
-            src="/android-chrome-192x192.png"  // أو /favicon.svg
+            src="/android-chrome-192x192.png"
             alt="Smarty Logo"
-            width={40}
-            height={40}
-            className="w-10 h-10 object-contain"
+            width={48}      // تم التغيير من 40 إلى 48
+            height={48}     // تم التغيير من 40 إلى 48
+            className="w-12 h-12 object-contain"  // تم التغيير من w-10 h-10 إلى w-12 h-12
             priority
           />
         </div>
