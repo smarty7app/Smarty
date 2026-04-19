@@ -4,7 +4,6 @@ import React from 'react';
 import { ChevronLeft, Twitter, Facebook, Instagram, Send } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from 'motion/react';
-import { SmartyLogo } from '@/components/SmartyLogo';
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -13,18 +12,20 @@ interface AboutScreenProps {
 export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const { t, isRTL } = useLanguage();
 
+  // رابط التطبيق للمشاركة
   const APP_URL = 'https://smarty-lac.vercel.app';
   const SHARE_TEXT = encodeURIComponent('جرب تطبيق Smarty - مساعدك الذكي للتذكيرات');
 
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${SHARE_TEXT}&url=${APP_URL}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${APP_URL}`,
-    instagram: `https://www.instagram.com/`,
+    instagram: `https://www.instagram.com/`, // Instagram لا يدعم مشاركة مباشرة عبر رابط، نوجه لصفحة الملف الشخصي أو لفتح التطبيق
     telegram: `https://t.me/share/url?url=${APP_URL}&text=${SHARE_TEXT}`,
   };
 
   return (
     <div className="flex flex-col h-full min-h-screen bg-[#E65100] dark:bg-zinc-950 text-black dark:text-white transition-colors duration-500">
+      {/* App Bar */}
       <header className="flex items-center gap-4 p-6 bg-black/20 backdrop-blur-xl sticky top-0 z-10 border-b border-white/5">
         <button
           onClick={onBack}
@@ -36,15 +37,16 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
       </header>
 
       <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
-        {/* Logo Section - بدون دائرة بيضاء، الشعار مباشرة */}
+        {/* Logo Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center mb-10"
         >
-          {/* الشعار الجديد بحجم كبير وتأثير دوران خفيف */}
-          <div className="mb-6 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-            <SmartyLogo className="w-36 h-36 text-white drop-shadow-2xl" />
+          <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
+            <svg className="w-12 h-12 text-[#E65100]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
+            </svg>
           </div>
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
@@ -54,13 +56,14 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           </p>
         </motion.div>
 
-        {/* Social Icons */}
+        {/* Social Icons - عصرية واحترافية */}
         <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
           <a
             href={shareLinks.twitter}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on X"
           >
             <Twitter className="w-5 h-5 text-white" />
           </a>
@@ -69,6 +72,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on Facebook"
           >
             <Facebook className="w-5 h-5 text-white" />
           </a>
@@ -77,6 +81,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Instagram Profile"
           >
             <Instagram className="w-5 h-5 text-white" />
           </a>
@@ -85,12 +90,13 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/10 backdrop-blur-sm p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 shadow-md"
+            aria-label="Share on Telegram"
           >
             <Send className="w-5 h-5 text-white" />
           </a>
         </div>
 
-        {/* Footer */}
+        {/* Footer with Privacy & Terms */}
         <div className="mt-12 w-full max-w-md text-center">
           <div className="flex flex-wrap justify-center gap-4 text-white/60 text-xs font-medium">
             <a href="/privacy" className="hover:text-white transition-colors">
