@@ -20,7 +20,7 @@ const cairo = Cairo({
 
 // ✅ إعدادات viewport منفصلة (موصى به في Next.js 15+)
 export const viewport: Viewport = {
-  themeColor: '#E65100',
+  themeColor: '#e65100',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -44,14 +44,21 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '48x48' },
-      { url: '/icon1.png', sizes: '192x192' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/android-chrome-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/android-chrome-512x512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/apple-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+      { url: '/apple-touch-icon-152x152.png', sizes: '152x152' },
+      { url: '/apple-touch-icon-167x167.png', sizes: '167x167' },
+      { url: '/apple-touch-icon-180x180.png', sizes: '180x180' },
     ],
   },
   other: {
-    'mobile-web-app-capable': 'yes', // ✅ التوجيه الحديث
+    'mobile-web-app-capable': 'yes',
   },
   // تحسين SEO للغة العربية
   alternates: {
@@ -68,6 +75,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl" className={`${inter.variable} ${cairo.variable}`} suppressHydrationWarning>
       <head>
+        {/* ✅ أيقونات Favicon و PWA الجديدة - جميع الأحجام */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+        
+        {/* ✅ أيقونات Apple Touch (جميع الأحجام الموصى بها) */}
+        <link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167x167.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-180x180.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        
+        {/* ✅ ملف Manifest وأيقونة Safari Pinned Tab */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#E65100" />
+        
+        {/* ✅ لون الشريط العلوي للمتصفحات والتطبيقات */}
+        <meta name="theme-color" content="#E65100" />
+        <meta name="msapplication-TileColor" content="#E65100" />
+        
         {/* ✅ التوجيهات الحديثة لـ PWA */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
