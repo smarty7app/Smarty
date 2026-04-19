@@ -44,7 +44,6 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center mb-10"
         >
-          {/* تم حذف الحاوية التي كانت تحتوي على الشعار */}
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
           </h2>
@@ -52,6 +51,9 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
             {t.version} 2.0 PREMIUM
           </p>
         </motion.div>
+
+        {/* ✅ هذا العنصر يدفع المحتوى السفلي إلى أسفل الصفحة */}
+        <div className="flex-1"></div>
 
         {/* Social Icons */}
         <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
