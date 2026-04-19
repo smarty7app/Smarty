@@ -43,11 +43,11 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center mb-10"
       >
-         <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
+         <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
           <Image
             src="/android-chrome-192x192.png"
             alt="Smarty Logo"
-           width={96}
+            width={96}
             height={96}
             className="w-full h-full object-contain scale-110"
             priority
