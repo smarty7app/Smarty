@@ -4,7 +4,7 @@ import React from 'react';
 import { ChevronLeft, Twitter, Facebook, Instagram, Send } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { motion } from 'motion/react';
-import Image from 'next/image';  // استيراد مكون الصورة
+// حذف import Image من next/image لأنه لم يعد مستخدمًا
 
 interface AboutScreenProps {
   onBack: () => void;
@@ -20,7 +20,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${SHARE_TEXT}&url=${APP_URL}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${APP_URL}`,
-    instagram: `https://www.instagram.com/`, // Instagram لا يدعم مشاركة مباشرة عبر رابط
+    instagram: `https://www.instagram.com/`,
     telegram: `https://t.me/share/url?url=${APP_URL}&text=${SHARE_TEXT}`,
   };
 
@@ -38,23 +38,13 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
       </header>
 
       <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
-        {/* Logo Section */}
+        {/* Logo Section - بدون شعار، فقط النص */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center mb-10"
         >
-          <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
-            {/* استبدال SVG القديم بـ Image من الأيقونات الجديدة */}
-            <Image
-              src="/favicon.svg"         // استخدم favicon.svg من مجلد public
-              alt="Smarty Logo"
-              width={48}                 // نفس حجم w-12 h-12 (48px)
-              height={48}
-              className="w-12 h-12 object-contain"
-              priority
-            />
-          </div>
+          {/* تم حذف الحاوية التي كانت تحتوي على الشعار */}
           <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
             Smarty<span className="text-orange-500">®</span>
           </h2>
