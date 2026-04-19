@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import Image from 'next/image'; // استخدم Image من Next.js لتحسين الأداء
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -77,16 +76,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           className="group"
         >
           <div className="w-28 h-28 md:w-36 md:h-36 bg-white rounded-2xl flex items-center justify-center shadow-2xl transform -rotate-6 transition-transform group-hover:rotate-0 duration-300">
-            {/* استبدال SVG القديم بصورة الأيقونة الجديدة */}
-            <Image
-              src="/favicon.svg"          // ← استخدم favicon.svg من الأيقونات الجديدة
-              alt="Smarty Logo"
-              width={80}                  // مناسب للأجهزة المختلفة (يتم التحكم بـ w-14 md:w-20)
-              height={80}
-              className="w-14 h-14 md:w-20 md:h-20 object-contain"
-              priority                    // تحميل فوري لأنها أيقونة الشاشة التمهيدية
-            />
-            {/* إذا أردت استخدام PNG بدلاً من SVG، استبدل المسار بـ "/android-chrome-192x192.png" */}
+            
           </div>
         </motion.div>
       </div>
