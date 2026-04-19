@@ -51,7 +51,7 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
               alt="Smarty Logo"
               width={48}                 // نفس حجم w-12 h-12 (48px)
               height={48}
-              className="w-12 h-12 object-contain"
+              className="w-12 h-12 object-contain scal-110"
               priority
             />
           </div>
