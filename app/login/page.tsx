@@ -32,7 +32,7 @@ export default function LoginPage() {
           {/* طبقة الشعار (خلف الإطار) */}
           <div className="absolute inset-0 overflow-hidden rounded-2xl">
             <Image
-              src="/android-chrome-192x192.png"
+              src="/android-chrome-512x512.png"
               alt="Smarty Logo"
               fill
               className="object-cover scale-110"
