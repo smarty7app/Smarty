@@ -36,31 +36,31 @@ export const AboutScreen: React.FC<AboutScreenProps> = ({ onBack }) => {
         </button>
         <h1 className="text-xl font-bold tracking-tight text-white/90">{t.about}</h1>
       </header>
+        <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
+      {/* Logo Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center mb-10"
+      >
+        <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
+          <Image
+            src="/favicon.svg"
+            alt="Smarty Logo"
+            width={48}
+            height={48}
+            className="w-12 h-12 object-contain scale-125"
+            priority
+          />
+        </div>  {/* ✅ هذا السطر كان مفقوداً - إغلاق الحاوية البيضاء */}
 
-      <div className="flex-1 flex flex-col items-center p-8 pt-12 overflow-y-auto">
-        {/* Logo Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center mb-10"
-        >
-          <div className="w-24 h-24 bg-white rounded-[2.2rem] flex items-center justify-center shadow-[0_20px_50px_rgba(230,81,0,0.2)] mb-6 transform -rotate-6">
-            {/* استبدال SVG القديم بـ Image من الأيقونات الجديدة */}
-            <Image
-              src="/favicon.svg"
-              alt="Smarty Logo"
-              width={48}
-              height={48}
-              className="w-12 h-12 object-contain scale-125"   // scale-125 تعني تكبير 25%
-              priority
-            />
-          <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
-            Smarty<span className="text-orange-500">®</span>
-          </h2>
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
-            {t.version} 2.0 PREMIUM
-          </p>
-        </motion.div>
+        <h2 className="text-4xl font-black tracking-tighter text-white select-none pointer-events-none">
+          Smarty<span className="text-orange-500">®</span>
+        </h2>
+        <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mt-2">
+          {t.version} 2.0 PREMIUM
+        </p>
+      </motion.div>
         {/* Social Icons */}
         <div className="flex gap-5 justify-center items-center w-full max-w-md mt-4">
           <a
