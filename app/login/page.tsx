@@ -2,32 +2,55 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import Image from "next/image";  // ← إضافة استيراد الصورة
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     await signIn("google", { callbackUrl: "/" });
   };
 
+  const handleGuestMode = () => {
+    document.cookie = "guest_mode=true; path=/; max-age=86400";
+    router.push("/");
+  };
+
+  const showGuestButton =
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_GUEST_MODE === "true";
+
   return (
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-        <div className="w-20 h-20 bg-[#E65100] rounded-2xl flex items-center justify-center mx-auto shadow-lg mb-6">
-          {/* استبدال SVG القديم بـ Image */}
-          <Image
-            src="/android-chrome-192x192.png"  // أو /favicon.svg
-            alt="Smarty Logo"
-            width={40}
-            height={40}
-            className="w-10 h-10 object-contain"
-            priority
-          />
-        </div>
-        <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">Smarty</h1>
+        
+        {/* الحاوية الجديدة للشعار والإطار */}
+        <div className="relative w-24 h-24 mx-auto mb-6">
+         {/* الشعار SVG (واضح ودائم الجودة) */}
+         <div className="absolute inset-0 overflow-hidden rounded-2xl flex items-center justify-center bg-white">
+           <svg 
+                 className="w-16 h-16 text-[#E65100] scale-110" 
+                 viewBox="0 0 24 24" 
+                 fill="currentColor"
+               >
+                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z"/>
+               </svg>
+             </div>
+  
+             {/* الإطار الأمامي */}
+             <div className="absolute inset-0 rounded-2xl border-4 border-white/30 shadow-lg bg-[#E65100]/10 backdrop-blur-[1px]" />
+  
+             {/* الظل الداخلي */}
+             <div className="absolute inset-0 rounded-2xl shadow-inner pointer-events-none" />
+           </div>
+        <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">
+          Smarty
+        </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8">سجل دخولك للمتابعة</p>
+
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
@@ -47,6 +70,20 @@ export default function LoginPage() {
             </>
           )}
         </button>
+
+        {showGuestButton && (
+          <div className="mt-4">
+            <button
+              onClick={handleGuestMode}
+              className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition underline-offset-2 underline"
+            >
+              🚪 تخطي تسجيل الدخول مؤقتاً (وضع الضيف)
+            </button>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+              هذا الخيار متاح فقط في بيئة التطوير. لن يتم حفظ أي بيانات شخصية.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
