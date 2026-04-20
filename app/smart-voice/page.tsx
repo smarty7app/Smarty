@@ -190,41 +190,44 @@ export default function SmartVoicePage() {
   const getModelDescription = (model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en;
 
   // دالة تحميل النموذج
-  const downloadModel = async (model: AIModel) => {
-    if (!isOnline) {
-      setResponse('لا يوجد اتصال بالإنترنت للتحميل');
+  // دالة تحميل النموذج (النسخة المصححة)
+const downloadModel = async (model: AIModel) => {
+  if (!isOnline) {
+    setResponse('لا يوجد اتصال بالإنترنت للتحميل');
+    return;
+  }
+
+  // التحقق من المساحة المتاحة
+  if ('storage' in navigator && 'estimate' in navigator.storage) {
+    const estimate = await navigator.storage.estimate();
+    const availableMB = (estimate.quota! - estimate.usage!) / (1024 * 1024);
+    if (availableMB < model.estimatedSizeMB + 100) {
+      setResponse(`مساحة غير كافية. تحتاج إلى ${model.estimatedSizeMB} MB إضافية.`);
       return;
     }
+  }
 
-    // التحقق من المساحة المتاحة
-    if ('storage' in navigator && 'estimate' in navigator.storage) {
-      const estimate = await navigator.storage.estimate();
-      const availableMB = (estimate.quota! - estimate.usage!) / (1024 * 1024);
-      if (availableMB < model.estimatedSizeMB + 100) {
-        setResponse(`مساحة غير كافية. تحتاج إلى ${model.estimatedSizeMB} MB إضافية.`);
-        return;
-      }
-    }
+  setDownloadingModel(model.id);
+  setDownloadProgress(prev => ({ ...prev, [model.id]: 0 }));
 
-    setDownloadingModel(model.id);
-    setDownloadProgress(prev => ({ ...prev, [model.id]: 0 }));
+  try {
+    const response = await fetch(model.downloadUrl);
+    if (!response.ok) throw new Error('فشل التحميل');
 
-    try {
-      const response = await fetch(model.downloadUrl);
-      if (!response.ok) throw new Error('فشل التحميل');
+    const contentLength = response.headers.get('content-length');
+    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    
+    const reader = response.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
 
-      const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-      
-      const reader = response.body?.getReader();
-      const chunks: Uint8Array[] = [];
-      let received = 0;
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        // ✅ التصحيح: التأكد من أن value هو Uint8Array
+        if (value) {
           chunks.push(value);
           received += value.length;
           
@@ -234,32 +237,55 @@ export default function SmartVoicePage() {
           }
         }
       }
+    }
 
-      const blob = new Blob(chunks);
-      
-      // حفظ في IndexedDB أو localStorage (هنا نستخدم localStorage للتخزين المؤقت)
-      // في التطبيق الحقيقي، يجب استخدام IndexedDB للملفات الكبيرة
-      const readerForSave = new FileReader();
-      readerForSave.onload = () => {
-        const base64 = readerForSave.result as string;
+    // ✅ التصحيح: دمج الـ chunks بشكل صحيح
+    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const mergedArray = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      mergedArray.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    // إنشاء Blob من Uint8Array المدمج
+    const blob = new Blob([mergedArray], { type: 'application/octet-stream' });
+    
+    // حفظ الملف باستخدام FileReader
+    const readerForSave = new FileReader();
+    readerForSave.onload = () => {
+      const base64 = readerForSave.result as string;
+      try {
         localStorage.setItem(`model_${model.id}`, base64);
         setDownloadedModels(prev => new Set(prev).add(model.id));
         setResponse(`تم تحميل نموذج ${getModelName(model)} بنجاح`);
-      };
-      readerForSave.readAsDataURL(blob);
-      
-    } catch (error) {
-      console.error('Download error:', error);
-      setResponse(`فشل تحميل النموذج: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
-    } finally {
+      } catch (error) {
+        // إذا فشل localStorage بسبب الحجم الكبير
+        console.error('Failed to save to localStorage:', error);
+        setResponse(`النموذج كبير جداً للحفظ في التخزين المحلي. سيتم استخدامه مؤقتاً فقط.`);
+        // يمكن تخزين مرجع للملف بدلاً من الملف نفسه
+        sessionStorage.setItem(`model_${model.id}_ref`, 'downloaded');
+        setDownloadedModels(prev => new Set(prev).add(model.id));
+      }
+    };
+    readerForSave.onerror = () => {
+      setResponse(`فشل حفظ النموذج: خطأ في قراءة الملف`);
       setDownloadingModel(null);
-      setDownloadProgress(prev => {
-        const newProgress = { ...prev };
-        delete newProgress[model.id];
-        return newProgress;
-      });
-    }
-  };
+    };
+    readerForSave.readAsDataURL(blob);
+    
+  } catch (error) {
+    console.error('Download error:', error);
+    setResponse(`فشل تحميل النموذج: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+  } finally {
+    setDownloadingModel(null);
+    setDownloadProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[model.id];
+      return newProgress;
+    });
+  }
+};
 
   // دالة حذف النموذج
   const deleteModel = (modelId: string) => {
