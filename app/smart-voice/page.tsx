@@ -186,7 +186,7 @@ export default function SmartVoicePage() {
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
 
-  // ========== دالة الترجمة (useCallback) ==========
+  // ========== دالة الترجمة ==========
   const t = useCallback((key: string): string => {
     const translations: Record<string, Record<string, string>> = {
       'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
@@ -311,7 +311,7 @@ export default function SmartVoicePage() {
       abortControllerRef.current = null;
       setDownloadProgress(prev => { const newProgress = { ...prev }; delete newProgress[model.id]; return newProgress; });
     }
-  }, [isOnline, t]);
+  }, [isOnline, t, getModelName]);
 
   const cancelDownload = useCallback(() => {
     if (abortControllerRef.current) {
@@ -336,7 +336,7 @@ export default function SmartVoicePage() {
     const modelName = selectedModel ? getModelName(selectedModel) : modelId;
     setResponse(`${t('switch_to_model')} ${modelName}`);
     setShowModelDialog(false);
-  }, [t, getModelName]);
+  }, [t, getModelName]); // ✅ تم إضافة getModelName
 
   const startWhisperDownload = useCallback(async () => {
     if (!isOnline) { setResponse(t('no_internet')); return; }
@@ -362,6 +362,11 @@ export default function SmartVoicePage() {
   }, [isOnline, t]);
 
   // ========== دوال الصوت الأساسية (مع الترتيب الصحيح) ==========
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+  }, []);
+
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -430,12 +435,7 @@ export default function SmartVoicePage() {
     };
     instance.onend = () => { setIsListening(false); clearSilenceTimer(); };
     return instance;
-  }, [language, processText, clearSilenceTimer, isListening, t]);
-
-  const clearSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = null;
-  }, []);
+  }, [language, processText, clearSilenceTimer, isListening, t]); // ✅ clearSilenceTimer معرف الآن
 
   const startLocalRecording = useCallback(async () => {
     if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
@@ -545,7 +545,7 @@ export default function SmartVoicePage() {
       }
     };
     loadSavedModels();
-  }, [downloadModel]); // ✅ إضافة downloadModel إلى التبعيات
+  }, [downloadModel]);
 
   useEffect(() => {
     if (activeModel) localStorage.setItem('active_ai_model', activeModel);
