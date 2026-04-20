@@ -86,18 +86,6 @@ async function deleteModelFromIndexedDB(modelId: string): Promise<void> {
   });
 }
 
-async function checkModelInIndexedDB(modelId: string): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  const db = await openIndexedDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['models'], 'readonly');
-    const store = transaction.objectStore('models');
-    const request = store.get(modelId);
-    request.onsuccess = () => resolve(!!request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 async function sendNotificationViaSW(title: string, body: string, tag?: string) {
   if (typeof window === 'undefined') return;
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
@@ -108,6 +96,46 @@ async function sendNotificationViaSW(title: string, body: string, tag?: string) 
   } else if ('Notification' in window && Notification.permission === 'granted') {
     new Notification(title, { body, icon: '/icon-192.png', badge: '/badge.png' });
   }
+}
+
+// دالة تحميل مباشر (بدون Service Worker) - الاحتياطي
+async function directDownload(
+  model: AIModel,
+  onProgress: (percent: number) => void,
+  signal: AbortSignal
+): Promise<Blob> {
+  const response = await fetch(model.downloadUrl, { signal });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  
+  const contentLength = response.headers.get('content-length');
+  const total = contentLength ? parseInt(contentLength, 10) : 0;
+  const reader = response.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  
+  if (reader) {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        chunks.push(value);
+        received += value.length;
+        if (total > 0) {
+          onProgress((received / total) * 100);
+        }
+      }
+    }
+  }
+  
+  // دمج الملف
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const mergedArray = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    mergedArray.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return new Blob([mergedArray], { type: 'application/octet-stream' });
 }
 
 export default function SmartVoicePage() {
@@ -134,6 +162,8 @@ export default function SmartVoicePage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   const { language } = useLanguage();
   const { data: session } = useSession();
   const userId = session?.user?.id || 'anonymous';
@@ -195,22 +225,17 @@ export default function SmartVoicePage() {
   useEffect(() => {
     const loadSavedModels = async () => {
       if (typeof window === 'undefined') return;
-      
-      // تحميل النماذج المحفوظة
       const db = await openIndexedDB();
       const transaction = db.transaction(['models'], 'readonly');
       const store = transaction.objectStore('models');
       const request = store.getAllKeys();
-      
       request.onsuccess = () => {
         const keys = request.result as string[];
         setDownloadedModels(new Set(keys));
       };
-      
       const savedActiveModel = localStorage.getItem('active_ai_model');
       if (savedActiveModel) setActiveModel(savedActiveModel);
       
-      // ✅ التحقق من وجود تحميل معلق
       const pending = localStorage.getItem('pending_download');
       if (pending) {
         try {
@@ -225,54 +250,39 @@ export default function SmartVoicePage() {
         }
       }
     };
-    
     loadSavedModels();
   }, [t]);
 
-  // ✅ الاستماع لأحداث Service Worker
+  // الاستماع لأحداث Service Worker (للترقية فقط، لا نعتمد عليه كلياً)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
     const handleSWMessage = (event: MessageEvent) => {
       const { type, modelId, progress, filename, error } = event.data;
-      
       switch (type) {
-        case 'DOWNLOAD_STARTED':
-          console.log(`🚀 Download started: ${filename}`);
-          setDownloadingModel(modelId);
-          setDownloadProgress(prev => ({ ...prev, [modelId]: 0 }));
-          break;
         case 'DOWNLOAD_PROGRESS':
           setDownloadProgress(prev => ({ ...prev, [modelId]: progress }));
           break;
         case 'DOWNLOAD_COMPLETE':
-          console.log(`✅ Download complete: ${filename}`);
           setDownloadedModels(prev => new Set(prev).add(`model_${modelId}`));
           setDownloadingModel(null);
           setResponse(`✅ ${t('download_success')}: ${filename}`);
           localStorage.removeItem('pending_download');
-          // تحديث قائمة النماذج المحملة
-          setDownloadedModels(prev => new Set(prev).add(`model_${modelId}`));
           break;
         case 'DOWNLOAD_ERROR':
-          console.error(`❌ Download error: ${error}`);
           setDownloadingModel(null);
           setResponse(`❌ ${t('download_failed')}: ${error}`);
           localStorage.removeItem('pending_download');
           break;
         case 'DOWNLOAD_CANCELLED':
-          console.log(`⏸️ Download cancelled: ${filename}`);
           setDownloadingModel(null);
           setResponse(`⏸️ ${t('download_cancelled')}`);
           localStorage.removeItem('pending_download');
           break;
       }
     };
-    
     if (navigator.serviceWorker) {
       navigator.serviceWorker.addEventListener('message', handleSWMessage);
     }
-    
     return () => {
       if (navigator.serviceWorker) {
         navigator.serviceWorker.removeEventListener('message', handleSWMessage);
@@ -280,14 +290,12 @@ export default function SmartVoicePage() {
     };
   }, [t]);
 
-  // حفظ النموذج النشط
   useEffect(() => {
     if (activeModel && typeof window !== 'undefined') {
       localStorage.setItem('active_ai_model', activeModel);
     }
   }, [activeModel]);
 
-  // مراقبة حالة الاتصال بالإنترنت
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setIsOnline(navigator.onLine);
@@ -301,36 +309,36 @@ export default function SmartVoicePage() {
     };
   }, []);
 
-  // تأثير النبض المستمر
   useEffect(() => {
     const interval = setInterval(() => setPulsePhase(prev => (prev + 1) % 100), 50);
     return () => clearInterval(interval);
   }, []);
 
-  // تنظيف مؤقت الصمت
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = null;
   }, []);
 
-  // طلب إذن الإشعارات
   const requestNotificationPermission = async () => {
     if (typeof window === 'undefined') return;
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       setNotificationsEnabled(permission === 'granted');
-      if (permission === 'granted') {
-        setResponse('✅ تم تفعيل الإشعارات');
-      }
+      if (permission === 'granted') setResponse('✅ تم تفعيل الإشعارات');
     }
   };
 
-  // ✅ دالة تحميل النموذج عبر Service Worker (تحميل في الخلفية)
-  const downloadModelWithSW = async (model: AIModel) => {
+  // دالة تحميل النموذج الأساسية (تدعم Service Worker والتحميل المباشر)
+  const downloadModel = async (model: AIModel) => {
     if (typeof window === 'undefined') return;
     if (!isOnline) {
       setResponse(t('no_internet'));
       return;
+    }
+
+    // إذا كان هناك تحميل نشط بالفعل، قم بإلغائه أولاً
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
     setDownloadingModel(model.id);
@@ -344,32 +352,72 @@ export default function SmartVoicePage() {
       startedAt: Date.now()
     }));
     
-    setResponse(`📥 ${t('background_download')}: ${getModelName(model)}`);
+    setResponse(`📥 جاري تحميل ${getModelName(model)}...`);
     
-    // إرسال طلب التحميل إلى Service Worker
+    // محاولة استخدام Service Worker أولاً
+    let swUsed = false;
     if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'START_DOWNLOAD',
-        data: {
-          modelId: model.id,
-          downloadUrl: model.downloadUrl,
-          filename: model.filename
+      try {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'START_DOWNLOAD',
+          data: {
+            modelId: model.id,
+            downloadUrl: model.downloadUrl,
+            filename: model.filename
+          }
+        });
+        swUsed = true;
+        setResponse(`📥 ${t('background_download')}: ${getModelName(model)}`);
+        await sendNotificationViaSW('🚀 بدء التحميل', `جاري تحميل ${getModelName(model)} في الخلفية`, `download-start-${model.id}`);
+      } catch (err) {
+        console.warn('SW postMessage failed, falling back to direct download', err);
+        swUsed = false;
+      }
+    }
+    
+    // إذا فشل Service Worker أو لم يكن موجوداً، استخدم التحميل المباشر
+    if (!swUsed) {
+      console.log('Using direct download fallback for', model.id);
+      abortControllerRef.current = new AbortController();
+      try {
+        const blob = await directDownload(model, (progress) => {
+          setDownloadProgress(prev => ({ ...prev, [model.id]: progress }));
+        }, abortControllerRef.current.signal);
+        
+        await saveModelToIndexedDB(`model_${model.id}`, blob);
+        setDownloadedModels(prev => new Set(prev).add(`model_${model.id}`));
+        setResponse(`✅ ${t('download_success')}: ${getModelName(model)}`);
+        localStorage.removeItem('pending_download');
+        await sendNotificationViaSW('✅ اكتمل التحميل', `${getModelName(model)} جاهز للاستخدام`, `download-complete-${model.id}`);
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          setResponse(`⏸️ ${t('download_cancelled')}`);
+          localStorage.removeItem('pending_download');
+        } else {
+          console.error('Direct download failed:', error);
+          setResponse(`❌ ${t('download_failed')}: ${error.message}`);
+          localStorage.removeItem('pending_download');
         }
-      });
-      
-      // إشعار بدء التحميل
-      await sendNotificationViaSW('🚀 بدء التحميل', `جاري تحميل ${getModelName(model)} في الخلفية`, `download-start-${model.id}`);
+      } finally {
+        setDownloadingModel(null);
+        abortControllerRef.current = null;
+      }
     } else {
-      setResponse('❌ Service Worker غير جاهز. حاول مرة أخرى.');
-      setDownloadingModel(null);
-      localStorage.removeItem('pending_download');
+      // إذا استخدمنا Service Worker، فإنه سيتولى إكمال التحميل وتحديث الحالة عبر الرسائل
+      // لا نغلق downloadingModel هنا، بل سيتم إغلاقه عند استلام DOWNLOAD_COMPLETE أو ERROR
     }
   };
 
-  // دالة إلغاء التحميل
   const cancelDownload = () => {
     if (typeof window === 'undefined') return;
     
+    // إلغاء التحميل المباشر إذا كان نشطاً
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // إلغاء التحميل عبر Service Worker إذا كان موجوداً
     if (downloadingModel && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({
         type: 'CANCEL_DOWNLOAD',
@@ -382,7 +430,6 @@ export default function SmartVoicePage() {
     localStorage.removeItem('pending_download');
   };
 
-  // دالة حذف النموذج
   const deleteModel = async (modelId: string) => {
     if (typeof window === 'undefined') return;
     if (confirm(t('delete_confirm'))) {
@@ -397,7 +444,6 @@ export default function SmartVoicePage() {
     }
   };
 
-  // دالة تفعيل النموذج
   const activateModel = (modelId: string) => {
     setActiveModel(modelId);
     const selectedModel = AVAILABLE_MODELS.find(m => m.id === modelId);
@@ -406,7 +452,7 @@ export default function SmartVoicePage() {
     setShowModelDialog(false);
   };
 
-  // دالة معالجة النص
+  // دوال الصوت (بدون تغيير)
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -435,7 +481,6 @@ export default function SmartVoicePage() {
     }
   }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t]);
 
-  // دالة بدء التسجيل المحلي
   const startLocalRecording = useCallback(async () => {
     if (typeof window === 'undefined') return;
     try {
@@ -469,7 +514,6 @@ export default function SmartVoicePage() {
     } catch (error) { console.error(error); setResponse(t('mic_access_failed')); }
   }, [clearSilenceTimer, processText, t]);
 
-  // دالة إنشاء كائن SpeechRecognition
   const createRecognition = useCallback(() => {
     if (typeof window === 'undefined') return null;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -627,7 +671,7 @@ export default function SmartVoicePage() {
                     <div className="flex gap-2 mt-3">
                       {!isDownloaded ? (
                         <>
-                          <button onClick={() => downloadModelWithSW(model)} disabled={isDownloading} className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-sm font-bold py-2 rounded-xl transition disabled:opacity-50">
+                          <button onClick={() => downloadModel(model)} disabled={isDownloading} className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-sm font-bold py-2 rounded-xl transition disabled:opacity-50">
                             {isDownloading ? <><Loader2 className="w-4 h-4 animate-spin" />{t('downloading')} {Math.round(progress)}%</> : <><Download className="w-4 h-4" />{t('download')}</>}
                           </button>
                           {isDownloading && <button onClick={cancelDownload} className="px-4 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-bold py-2 rounded-xl transition"><X className="w-4 h-4" />{t('cancel')}</button>}
