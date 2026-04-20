@@ -219,6 +219,72 @@ export default function SmartVoicePage() {
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
 
+  // دالة الترجمة (يجب تعريفها قبل أي useEffect أو useCallback)
+  const t = useCallback((key: string): string => {
+    const translations: Record<string, Record<string, string>> = {
+      // أزرار رئيسية
+      'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
+      'select_model': { ar: 'اختر نموذج الذكاء الاصطناعي', en: 'Select AI Model', fr: 'Sélectionner un Modèle IA' },
+      'downloaded': { ar: 'تم التحميل', en: 'Downloaded', fr: 'Téléchargé' },
+      'active': { ar: 'نشط', en: 'Active', fr: 'Actif' },
+      'download': { ar: 'تحميل', en: 'Download', fr: 'Télécharger' },
+      'downloading': { ar: 'جاري التحميل...', en: 'Downloading...', fr: 'Téléchargement...' },
+      'delete': { ar: 'حذف', en: 'Delete', fr: 'Supprimer' },
+      'use_model': { ar: 'استخدام', en: 'Use', fr: 'Utiliser' },
+      'switch_to_model': { ar: 'تم التبديل إلى نموذج', en: 'Switched to model', fr: 'Passé au modèle' },
+      'delete_confirm': { ar: 'هل أنت متأكد من حذف هذا النموذج؟', en: 'Are you sure you want to delete this model?', fr: 'Êtes-vous sûr de vouloir supprimer ce modèle ?' },
+      'close': { ar: 'إغلاق', en: 'Close', fr: 'Fermer' },
+      'local': { ar: 'محلي', en: 'Local', fr: 'Local' },
+      'cloud': { ar: 'سحابي', en: 'Cloud', fr: 'Cloud' },
+      'cancel': { ar: 'إلغاء', en: 'Cancel', fr: 'Annuler' },
+      'enable_notifications': { ar: 'تفعيل الإشعارات', en: 'Enable Notifications', fr: 'Activer Notifications' },
+      'notifications_enabled': { ar: 'الإشعارات مفعلة', en: 'Notifications Enabled', fr: 'Notifications Activées' },
+      
+      // حالات الصوت
+      'no_internet': { ar: 'لا يوجد اتصال بالإنترنت', en: 'No internet connection', fr: 'Pas de connexion internet' },
+      'listening': { ar: 'يستمع إليك الآن...', en: 'Listening to you...', fr: 'Vous écoute...' },
+      'recording': { ar: 'جاري التسجيل...', en: 'Recording...', fr: 'Enregistrement...' },
+      'thinking': { ar: 'يفكر...', en: 'Thinking...', fr: 'Réflexion...' },
+      'speaking': { ar: 'يتحدث...', en: 'Speaking...', fr: 'Parle...' },
+      'tap_to_speak': { ar: 'اضغط على الشعار للتحدث مع المساعد الذكي', en: 'Tap the logo to speak with the smart assistant', fr: 'Appuyez sur le logo pour parler avec l\'assistant intelligent' },
+      'you': { ar: 'أنت', en: 'You', fr: 'Vous' },
+      'smarty': { ar: 'سمارتي', en: 'Smarty', fr: 'Smarty' },
+      
+      // رسائل الردود
+      'loading_model': { ar: 'جاري تحميل نموذج الذكاء الاصطناعي المحلي...', en: 'Loading local AI model...', fr: 'Chargement du modèle IA local...' },
+      'mic_access_failed': { ar: 'فشل الوصول إلى الميكروفون.', en: 'Failed to access microphone.', fr: 'Échec de l\'accès au microphone.' },
+      'no_speech_detected': { ar: 'لم أسمع شيئاً. حاول مرة أخرى.', en: 'I didn\'t hear anything. Try again.', fr: 'Je n\'ai rien entendu. Réessayez.' },
+      'allow_mic': { ar: 'الرجاء السماح بالوصول إلى الميكروفون.', en: 'Please allow microphone access.', fr: 'Veuillez autoriser l\'accès au microphone.' },
+      'no_speech': { ar: 'لم يتم اكتشاف أي صوت، حاول مرة أخرى.', en: 'No speech detected, try again.', fr: 'Aucune parole détectée, réessayez.' },
+      'network_error': { ar: 'خطأ في الشبكة، تحقق من اتصالك.', en: 'Network error, check your connection.', fr: 'Erreur réseau, vérifiez votre connexion.' },
+      'recognition_failed': { ar: 'لم يتم التعرف على صوتك، حاول مرة أخرى.', en: 'Could not recognize your voice, try again.', fr: 'Impossible de reconnaître votre voix, réessayez.' },
+      'transcription_failed': { ar: 'فشل التفريغ المحلي. تأكد من اتصالك بالإنترنت للتحميل الأولي.', en: 'Local transcription failed. Make sure you have internet for initial download.', fr: 'La transcription locale a échoué. Assurez-vous d\'avoir une connexion internet pour le téléchargement initial.' },
+      'speech_synthesis_failed': { ar: 'عذراً، لم أستطع نطق الرد.', en: 'Sorry, I couldn\'t speak the response.', fr: 'Désolé, je n\'ai pas pu prononcer la réponse.' },
+      'daily_limit_exceeded': { ar: 'تم تجاوز الحد اليومي للطلبات', en: 'Daily request limit exceeded', fr: 'Limite quotidienne de requêtes dépassée' },
+      'connection_error': { ar: 'حدث خطأ في الاتصال بالمساعد.', en: 'Connection error with the assistant.', fr: 'Erreur de connexion avec l\'assistant.' },
+      'retrying': { ar: 'محاولة إعادة الاتصال', en: 'Retrying connection', fr: 'Tentative de reconnexion' },
+      
+      // رسائل التحميل
+      'download_success': { ar: 'تم تحميل النموذج بنجاح', en: 'Model downloaded successfully', fr: 'Modèle téléchargé avec succès' },
+      'download_failed': { ar: 'فشل تحميل النموذج', en: 'Failed to download model', fr: 'Échec du téléchargement du modèle' },
+      'delete_success': { ar: 'تم حذف النموذج', en: 'Model deleted', fr: 'Modèle supprimé' },
+      'no_space': { ar: 'مساحة غير كافية', en: 'Insufficient space', fr: 'Espace insuffisant' },
+      'download_cancelled': { ar: 'تم إلغاء التحميل', en: 'Download cancelled', fr: 'Téléchargement annulé' },
+      'download_resumed': { ar: 'تم استئناف التحميل', en: 'Download resumed', fr: 'Téléchargement repris' },
+      'background_download': { ar: 'جاري التحميل في الخلفية... ستتلقى إشعاراً عند الانتهاء', en: 'Downloading in background... You will receive a notification when complete', fr: 'Téléchargement en arrière-plan... Vous recevrez une notification lorsque terminé' },
+    };
+    return translations[key]?.[language] || translations[key]?.en || key;
+  }, [language]);
+
+  // الحصول على نص النموذج حسب اللغة
+  const getModelName = useCallback((model: AIModel): string => {
+    return model.name[language as keyof typeof model.name] || model.name.en;
+  }, [language]);
+
+  const getModelDescription = useCallback((model: AIModel): string => {
+    return model.description[language as keyof typeof model.description] || model.description.en;
+  }, [language]);
+
   // تحقق من حالة الإشعارات
   useEffect(() => {
     if ('Notification' in window) {
@@ -287,7 +353,7 @@ export default function SmartVoicePage() {
       window.removeEventListener('sw-download-complete', handleSWDownloadComplete as EventListener);
       window.removeEventListener('sw-download-progress', handleSWDownloadProgress as EventListener);
     };
-  }, [t]);
+  }, [t]); // الآن t معرفة
 
   // تحميل النماذج المحفوظة من IndexedDB
   useEffect(() => {
@@ -368,72 +434,6 @@ export default function SmartVoicePage() {
       silenceTimerRef.current = null;
     }
   }, []);
-
-  // دالة الترجمة الكاملة
-  const t = (key: string): string => {
-    const translations: Record<string, Record<string, string>> = {
-      // أزرار رئيسية
-      'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
-      'select_model': { ar: 'اختر نموذج الذكاء الاصطناعي', en: 'Select AI Model', fr: 'Sélectionner un Modèle IA' },
-      'downloaded': { ar: 'تم التحميل', en: 'Downloaded', fr: 'Téléchargé' },
-      'active': { ar: 'نشط', en: 'Active', fr: 'Actif' },
-      'download': { ar: 'تحميل', en: 'Download', fr: 'Télécharger' },
-      'downloading': { ar: 'جاري التحميل...', en: 'Downloading...', fr: 'Téléchargement...' },
-      'delete': { ar: 'حذف', en: 'Delete', fr: 'Supprimer' },
-      'use_model': { ar: 'استخدام', en: 'Use', fr: 'Utiliser' },
-      'switch_to_model': { ar: 'تم التبديل إلى نموذج', en: 'Switched to model', fr: 'Passé au modèle' },
-      'delete_confirm': { ar: 'هل أنت متأكد من حذف هذا النموذج؟', en: 'Are you sure you want to delete this model?', fr: 'Êtes-vous sûr de vouloir supprimer ce modèle ?' },
-      'close': { ar: 'إغلاق', en: 'Close', fr: 'Fermer' },
-      'local': { ar: 'محلي', en: 'Local', fr: 'Local' },
-      'cloud': { ar: 'سحابي', en: 'Cloud', fr: 'Cloud' },
-      'cancel': { ar: 'إلغاء', en: 'Cancel', fr: 'Annuler' },
-      'enable_notifications': { ar: 'تفعيل الإشعارات', en: 'Enable Notifications', fr: 'Activer Notifications' },
-      'notifications_enabled': { ar: 'الإشعارات مفعلة', en: 'Notifications Enabled', fr: 'Notifications Activées' },
-      
-      // حالات الصوت
-      'no_internet': { ar: 'لا يوجد اتصال بالإنترنت', en: 'No internet connection', fr: 'Pas de connexion internet' },
-      'listening': { ar: 'يستمع إليك الآن...', en: 'Listening to you...', fr: 'Vous écoute...' },
-      'recording': { ar: 'جاري التسجيل...', en: 'Recording...', fr: 'Enregistrement...' },
-      'thinking': { ar: 'يفكر...', en: 'Thinking...', fr: 'Réflexion...' },
-      'speaking': { ar: 'يتحدث...', en: 'Speaking...', fr: 'Parle...' },
-      'tap_to_speak': { ar: 'اضغط على الشعار للتحدث مع المساعد الذكي', en: 'Tap the logo to speak with the smart assistant', fr: 'Appuyez sur le logo pour parler avec l\'assistant intelligent' },
-      'you': { ar: 'أنت', en: 'You', fr: 'Vous' },
-      'smarty': { ar: 'سمارتي', en: 'Smarty', fr: 'Smarty' },
-      
-      // رسائل الردود
-      'loading_model': { ar: 'جاري تحميل نموذج الذكاء الاصطناعي المحلي...', en: 'Loading local AI model...', fr: 'Chargement du modèle IA local...' },
-      'mic_access_failed': { ar: 'فشل الوصول إلى الميكروفون.', en: 'Failed to access microphone.', fr: 'Échec de l\'accès au microphone.' },
-      'no_speech_detected': { ar: 'لم أسمع شيئاً. حاول مرة أخرى.', en: 'I didn\'t hear anything. Try again.', fr: 'Je n\'ai rien entendu. Réessayez.' },
-      'allow_mic': { ar: 'الرجاء السماح بالوصول إلى الميكروفون.', en: 'Please allow microphone access.', fr: 'Veuillez autoriser l\'accès au microphone.' },
-      'no_speech': { ar: 'لم يتم اكتشاف أي صوت، حاول مرة أخرى.', en: 'No speech detected, try again.', fr: 'Aucune parole détectée, réessayez.' },
-      'network_error': { ar: 'خطأ في الشبكة، تحقق من اتصالك.', en: 'Network error, check your connection.', fr: 'Erreur réseau, vérifiez votre connexion.' },
-      'recognition_failed': { ar: 'لم يتم التعرف على صوتك، حاول مرة أخرى.', en: 'Could not recognize your voice, try again.', fr: 'Impossible de reconnaître votre voix, réessayez.' },
-      'transcription_failed': { ar: 'فشل التفريغ المحلي. تأكد من اتصالك بالإنترنت للتحميل الأولي.', en: 'Local transcription failed. Make sure you have internet for initial download.', fr: 'La transcription locale a échoué. Assurez-vous d\'avoir une connexion internet pour le téléchargement initial.' },
-      'speech_synthesis_failed': { ar: 'عذراً، لم أستطع نطق الرد.', en: 'Sorry, I couldn\'t speak the response.', fr: 'Désolé, je n\'ai pas pu prononcer la réponse.' },
-      'daily_limit_exceeded': { ar: 'تم تجاوز الحد اليومي للطلبات', en: 'Daily request limit exceeded', fr: 'Limite quotidienne de requêtes dépassée' },
-      'connection_error': { ar: 'حدث خطأ في الاتصال بالمساعد.', en: 'Connection error with the assistant.', fr: 'Erreur de connexion avec l\'assistant.' },
-      'retrying': { ar: 'محاولة إعادة الاتصال', en: 'Retrying connection', fr: 'Tentative de reconnexion' },
-      
-      // رسائل التحميل
-      'download_success': { ar: 'تم تحميل النموذج بنجاح', en: 'Model downloaded successfully', fr: 'Modèle téléchargé avec succès' },
-      'download_failed': { ar: 'فشل تحميل النموذج', en: 'Failed to download model', fr: 'Échec du téléchargement du modèle' },
-      'delete_success': { ar: 'تم حذف النموذج', en: 'Model deleted', fr: 'Modèle supprimé' },
-      'no_space': { ar: 'مساحة غير كافية', en: 'Insufficient space', fr: 'Espace insuffisant' },
-      'download_cancelled': { ar: 'تم إلغاء التحميل', en: 'Download cancelled', fr: 'Téléchargement annulé' },
-      'download_resumed': { ar: 'تم استئناف التحميل', en: 'Download resumed', fr: 'Téléchargement repris' },
-      'background_download': { ar: 'جاري التحميل في الخلفية... ستتلقى إشعاراً عند الانتهاء', en: 'Downloading in background... You will receive a notification when complete', fr: 'Téléchargement en arrière-plan... Vous recevrez une notification lorsque terminé' },
-    };
-    return translations[key]?.[language] || translations[key]?.en || key;
-  };
-
-  // الحصول على نص النموذج حسب اللغة
-  const getModelName = (model: AIModel): string => {
-    return model.name[language as keyof typeof model.name] || model.name.en;
-  };
-
-  const getModelDescription = (model: AIModel): string => {
-    return model.description[language as keyof typeof model.description] || model.description.en;
-  };
 
   // طلب إذن الإشعارات
   const requestNotificationPermission = async () => {
