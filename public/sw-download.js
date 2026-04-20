@@ -31,7 +31,6 @@ async function showNotification(title, body, tag = null) {
       body: body,
       icon: '/icon-192.png',
       badge: '/badge.png',
-      vibrate: [200, 100, 200],
       silent: false,
       requireInteraction: true,
       actions: [
