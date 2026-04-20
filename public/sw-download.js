@@ -2,27 +2,30 @@
 let activeDownloads = new Map();
 
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
   event.waitUntil(clients.claim());
 });
 
 // استقبال طلب التحميل
-self.addEventListener('message', (event) => {
+self.addEventListener('message', async (event) => {
   const { type, data } = event.data;
   
   if (type === 'START_DOWNLOAD') {
     startDownload(data);
   } else if (type === 'CANCEL_DOWNLOAD') {
     cancelDownload(data.modelId);
+  } else if (type === 'SHOW_NOTIFICATION') {
+    showNotification(data.title, data.body, data.tag);
   }
 });
 
 // دالة لإظهار الإشعار
 async function showNotification(title, body, tag = null) {
-  // طلب إذن الإشعارات إذا لم يكن موجوداً
   if (Notification.permission === 'granted') {
     const options = {
       body: body,
@@ -30,7 +33,7 @@ async function showNotification(title, body, tag = null) {
       badge: '/badge.png',
       vibrate: [200, 100, 200],
       silent: false,
-      requireInteraction: true, // يبقى الإشعار حتى يتفاعل معه المستخدم
+      requireInteraction: true,
       actions: [
         { action: 'open', title: 'فتح التطبيق' },
         { action: 'dismiss', title: 'تجاهل' }
@@ -45,32 +48,10 @@ async function showNotification(title, body, tag = null) {
   }
 }
 
-// دالة لتحديث شريط التقدم في الإشعار
-async function updateNotificationProgress(modelId, progress, filename) {
-  const notificationTag = `download-${modelId}`;
-  
-  // إظهار إشعار مع شريط تقدم
-  if (Notification.permission === 'granted') {
-    await self.registration.showNotification(`تحميل ${filename}`, {
-      body: `جاري التحميل: ${Math.round(progress)}%`,
-      icon: '/icon-192.png',
-      badge: '/badge.png',
-      tag: notificationTag,
-      requireInteraction: false,
-      progress: Math.round(progress), // خاصية التقدم (مدعومة في بعض المتصفحات)
-      silent: true
-    });
-  }
-}
-
 async function startDownload({ modelId, downloadUrl, filename }) {
   try {
-    // إظهار إشعار بدء التحميل
-    await showNotification(
-      '🚀 بدء التحميل',
-      `جاري تحميل ${filename}`,
-      `download-${modelId}`
-    );
+    // إشعار بدء التحميل
+    await showNotification('🚀 بدء التحميل', `جاري تحميل ${filename}`, `download-start-${modelId}`);
     
     // إعلام جميع العملاء ببدء التحميل
     const clients = await self.clients.matchAll();
@@ -113,10 +94,10 @@ async function startDownload({ modelId, downloadUrl, filename }) {
         });
       });
       
-      // تحديث الإشعار كل 5% أو كل 5 ثواني
+      // تحديث الإشعار كل 5%
       if (Math.floor(progress / 5) > lastProgressUpdate || progress >= 100) {
         lastProgressUpdate = Math.floor(progress / 5);
-        await updateNotificationProgress(modelId, progress, filename);
+        await showNotification('📥 جاري التحميل', `${filename}: ${Math.round(progress)}%`, `download-progress-${modelId}`);
       }
     }
     
@@ -127,12 +108,8 @@ async function startDownload({ modelId, downloadUrl, filename }) {
     const cache = await caches.open('ai-models');
     await cache.put(`model-${modelId}`, new Response(blob));
     
-    // إشعار باكتمال التحميل مع إجراءات
-    await showNotification(
-      '✅ اكتمل التحميل!',
-      `تم تحميل ${filename} بنجاح. اضغط لفتح التطبيق.`,
-      `download-complete-${modelId}`
-    );
+    // إشعار باكتمال التحميل
+    await showNotification('✅ اكتمل التحميل!', `تم تحميل ${filename} بنجاح.`, `download-complete-${modelId}`);
     
     // إعلام العملاء باكتمال التحميل
     const clients = await self.clients.matchAll();
@@ -149,12 +126,7 @@ async function startDownload({ modelId, downloadUrl, filename }) {
   } catch (error) {
     console.error('Download failed:', error);
     
-    // إشعار بفشل التحميل
-    await showNotification(
-      '❌ فشل التحميل',
-      `حدث خطأ أثناء تحميل ${filename}: ${error.message}`,
-      `download-error-${modelId}`
-    );
+    await showNotification('❌ فشل التحميل', `${filename}: ${error.message}`, `download-error-${modelId}`);
     
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
@@ -174,12 +146,7 @@ async function cancelDownload(modelId) {
     await download.reader.cancel();
     activeDownloads.delete(modelId);
     
-    // إشعار بإلغاء التحميل
-    await showNotification(
-      'تم إلغاء التحميل',
-      `تم إلغاء تحميل النموذج.`,
-      `download-cancel-${modelId}`
-    );
+    await showNotification('⏸️ تم إلغاء التحميل', 'تم إلغاء تحميل النموذج.', `download-cancel-${modelId}`);
     
     const clients = await self.clients.matchAll();
     clients.forEach(client => {
@@ -196,29 +163,18 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   if (event.action === 'open' || !event.action) {
-    // فتح التطبيق عند الضغط على الإشعار
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then(windowClients => {
-          // إذا كان التطبيق مفتوحاً بالفعل، انتقل إليه
           for (let client of windowClients) {
             if (client.url.includes('/smart-voice') && 'focus' in client) {
               return client.focus();
             }
           }
-          // إذا لم يكن مفتوحاً، افتح نافذة جديدة
           if (clients.openWindow) {
             return clients.openWindow('/smart-voice');
           }
         })
     );
-  }
-});
-
-// طلب إذن الإشعارات عند تسجيل Service Worker
-self.addEventListener('message', async (event) => {
-  if (event.data.type === 'REQUEST_NOTIFICATION_PERMISSION') {
-    const permission = await self.registration.pushManager.permissionState();
-    event.source.postMessage({ type: 'NOTIFICATION_PERMISSION', permission });
   }
 });
