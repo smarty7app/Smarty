@@ -29,10 +29,10 @@ export default function LoginPage() {
         
         {/* الحاوية الجديدة للشعار والإطار */}
         <div className="relative w-24 h-24 mx-auto mb-6">
-          {/* طبقة الشعار (خلف الإطار) */}
+          {/* طبقة الشعار (خلف الإطار) - باستخدام أيقونة maskable عالية الجودة */}
           <div className="absolute inset-0 overflow-hidden rounded-2xl">
             <Image
-              src="/android-chrome-512x512.png"
+              src="/maskable_icon_x384.png"
               alt="Smarty Logo"
               fill
               className="object-cover scale-110"
