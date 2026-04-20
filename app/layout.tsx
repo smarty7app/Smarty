@@ -5,7 +5,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import AuthProvider from '@/components/AuthProvider';
 import InstallPrompt from '@/components/InstallPrompt';
-import ClientComponents from './ClientComponents'; // ✅ إضافة استيراد ClientComponents
 
 const inter = Inter({
   subsets: ['latin'],
@@ -107,7 +106,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <ErrorBoundary>
               {children}
               <InstallPrompt />
-              <ClientComponents /> {/* ✅ إضافة مكون ClientComponents لتسجيل Service Worker والإشعارات */}
             </ErrorBoundary>
           </LanguageProvider>
         </AuthProvider>
