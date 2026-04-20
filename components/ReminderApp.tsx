@@ -180,21 +180,15 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
 
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col">
-      <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          {/* الشعار باستخدام الأيقونة الجديدة عالية الدقة */}
-          <div className="relative w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl -rotate-6 overflow-hidden">
-          <Image
-            src="/maskable_icon_x384.png"
-            alt="Smarty Logo"
-            fill
-            className="object-cover scale-110"
-            priority
-          />
-        </div>
-          <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
-        </div>
-        <div className="flex gap-1">
+     <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
+  <div className="flex items-center gap-3">
+    {/* تم حذف أيقونة الشعار */}
+    <div>
+      <h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1>
+      <span className="text-[8px] font-bold text-white/30">Premium Assistant</span>
+    </div>
+  </div>
+  <div className="flex gap-1">
            <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
            <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
            <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
