@@ -27,15 +27,17 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
         
-        {/* الشعار فقط بدون إطار */}
+        {/* حاوية دائرية للشعار */}
         <div className="relative w-24 h-24 mx-auto mb-6">
-          <Image
-            src="/maskable_icon_x384.png"
-            alt="Smarty Logo"
-            fill
-            className="object-contain"
-            priority
-          />
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            <Image
+              src="/maskable_icon_x384.png"
+              alt="Smarty Logo"
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
 
         <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">
