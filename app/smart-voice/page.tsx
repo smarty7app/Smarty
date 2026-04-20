@@ -15,149 +15,73 @@ import {
   Sparkles, 
   MessageCircle,
   Download,
+  ChevronDown,
   Check,
   Trash2,
-  HardDrive,
-  X,
-  Bell
+  HardDrive
 } from 'lucide-react';
 
-// ========== تعريفات النماذج ==========
+// تعريف واجهات البيانات
 interface AIModel {
   id: string;
-  name: { ar: string; en: string; fr: string };
+  name: {
+    ar: string;
+    en: string;
+    fr: string;
+  };
   size: string;
-  sizeMB: number;
-  description: { ar: string; en: string; fr: string };
+  description: {
+    ar: string;
+    en: string;
+    fr: string;
+  };
   downloadUrl: string;
   filename: string;
+  estimatedSizeMB: number;
 }
 
+// النماذج المتوفرة للتحميل
 const AVAILABLE_MODELS: AIModel[] = [
   {
     id: 'gemma-2-2b',
     name: { ar: 'جيما 2 - 2 مليار', en: 'Gemma 2 - 2B', fr: 'Gemma 2 - 2B' },
-    size: '1.5 GB', sizeMB: 1500,
-    description: { ar: '⚡ سريع، يدعم العربية، مناسب للهواتف المتوسطة', en: '⚡ Fast, supports Arabic, suitable for mid-range phones', fr: '⚡ Rapide, supporte l\'arabe, adapté aux smartphones milieu de gamme' },
-    downloadUrl: 'https://huggingface.co/second-state/Gemma-2b-it-GGUF/resolve/main/gemma-2b-it-Q4_K_M.gguf',
-    filename: 'gemma-2b-it-Q4_K_M.gguf'
+    size: '1.5 GB',
+    description: { 
+      ar: 'سريع، يدعم العربية، مناسب للهواتف المتوسطة', 
+      en: 'Fast, supports Arabic, suitable for mid-range phones',
+      fr: 'Rapide, supporte l\'arabe, adapté aux smartphones milieu de gamme'
+    },
+    downloadUrl: 'https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf',
+    filename: 'gemma-2-2b-it-Q4_K_M.gguf',
+    estimatedSizeMB: 1500
   },
   {
     id: 'llama-3.2-3b',
     name: { ar: 'لاما 3.2 - 3 مليار', en: 'Llama 3.2 - 3B', fr: 'Llama 3.2 - 3B' },
-    size: '2 GB', sizeMB: 2000,
-    description: { ar: '🎯 أداء عالي، دقة ممتازة، للهواتف المتطورة', en: '🎯 High performance, excellent accuracy, for flagship phones', fr: '🎯 Haute performance, excellente précision, pour smartphones haut de gamme' },
-    downloadUrl: 'https://huggingface.co/Triangle104/Llama-3.2-3B-Instruct-Q4_K_M-GGUF/resolve/main/llama-3.2-3b-instruct-q4_k_m.gguf',
-    filename: 'llama-3.2-3b-instruct-q4_k_m.gguf'
+    size: '2 GB',
+    description: { 
+      ar: 'أداء عالي، دقة ممتازة، للهواتف المتطورة', 
+      en: 'High performance, excellent accuracy, for flagship phones',
+      fr: 'Haute performance, excellente précision, pour smartphones haut de gamme'
+    },
+    downloadUrl: 'https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+    filename: 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+    estimatedSizeMB: 2000
   },
   {
     id: 'phi-3.5-mini',
     name: { ar: 'فاي 3.5 مصغر', en: 'Phi-3.5 Mini', fr: 'Phi-3.5 Mini' },
-    size: '1.8 GB', sizeMB: 1800,
-    description: { ar: '🔬 أحدث التقنيات، دقة عالية، حجم صغير', en: '🔬 Latest technology, high accuracy, small size', fr: '🔬 Dernière technologie, haute précision, petite taille' },
-    downloadUrl: 'https://huggingface.co/tensorblock/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf',
-    filename: 'Phi-3.5-mini-instruct-Q4_K_M.gguf'
+    size: '1.8 GB',
+    description: { 
+      ar: 'خفيف الوزن، مناسب للهواتف القديمة', 
+      en: 'Lightweight, suitable for older phones',
+      fr: 'Léger, adapté aux anciens téléphones'
+    },
+    downloadUrl: 'https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf',
+    filename: 'Phi-3.5-mini-instruct-Q4_K_M.gguf',
+    estimatedSizeMB: 1800
   }
 ];
-
-// ========== دوال IndexedDB ==========
-async function openIndexedDB(): Promise<IDBDatabase> {
-  if (typeof window === 'undefined') throw new Error('IndexedDB not available');
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('AIModelsDB', 2);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains('models')) db.createObjectStore('models');
-      if (!db.objectStoreNames.contains('downloads')) db.createObjectStore('downloads');
-    };
-  });
-}
-
-async function saveModelToIndexedDB(modelId: string, blob: Blob): Promise<void> {
-  if (typeof window === 'undefined') return;
-  const db = await openIndexedDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['models'], 'readwrite');
-    const store = transaction.objectStore('models');
-    const request = store.put(blob, modelId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function deleteModelFromIndexedDB(modelId: string): Promise<void> {
-  if (typeof window === 'undefined') return;
-  const db = await openIndexedDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['models'], 'readwrite');
-    const store = transaction.objectStore('models');
-    const request = store.delete(modelId);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-// ========== دالة التحميل المباشر مع دعم الاستئناف (Range) ==========
-async function directDownload(
-  model: AIModel,
-  onProgress: (percent: number) => void,
-  signal: AbortSignal,
-  startByte: number = 0
-): Promise<Blob> {
-  const headers: HeadersInit = {};
-  if (startByte > 0) {
-    headers.Range = `bytes=${startByte}-`;
-  }
-
-  const response = await fetch(model.downloadUrl, { headers, signal });
-  if (!response.ok && response.status !== 206) throw new Error(`HTTP ${response.status}`);
-  
-  const contentLength = response.headers.get('content-length');
-  const total = contentLength ? parseInt(contentLength, 10) + startByte : 0;
-  const reader = response.body?.getReader();
-  const chunks: Uint8Array[] = [];
-  let received = startByte;
-  
-  if (reader) {
-    let lastSave = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) {
-        chunks.push(value);
-        received += value.length;
-        if (total > 0) {
-          const percent = (received / total) * 100;
-          onProgress(percent);
-          
-          // حفظ التقدم كل 2% لتجنب الحفظ المتكرر
-          const currentPercentChunk = Math.floor(percent / 2);
-          if (currentPercentChunk > lastSave) {
-            lastSave = currentPercentChunk;
-            localStorage.setItem(`resume_${model.id}`, JSON.stringify({
-              modelId: model.id,
-              downloadedBytes: received,
-              totalBytes: total,
-              timestamp: Date.now()
-            }));
-          }
-        }
-      }
-    }
-  }
-  
-  // دمج الملف
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const mergedArray = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const chunk of chunks) {
-    mergedArray.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return new Blob([mergedArray], { type: 'application/octet-stream' });
-}
 
 export default function SmartVoicePage() {
   const router = useRouter();
@@ -173,14 +97,12 @@ export default function SmartVoicePage() {
   const [useLocalWhisper, setUseLocalWhisper] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
   
-  // ========== حالات تحميل النماذج ==========
+  // حالات تحميل النماذج
   const [showModelDialog, setShowModelDialog] = useState(false);
   const [downloadedModels, setDownloadedModels] = useState<Set<string>>(new Set());
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
   
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -192,188 +114,29 @@ export default function SmartVoicePage() {
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
 
-  // ========== دوال الترجمة والمساعدة ==========
-  const t = useCallback((key: string): string => {
-    const translations: Record<string, Record<string, string>> = {
-      'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
-      'select_model': { ar: 'اختر نموذج الذكاء الاصطناعي', en: 'Select AI Model', fr: 'Sélectionner un Modèle IA' },
-      'downloaded': { ar: 'تم التحميل', en: 'Downloaded', fr: 'Téléchargé' },
-      'active': { ar: 'نشط', en: 'Active', fr: 'Actif' },
-      'download': { ar: 'تحميل', en: 'Download', fr: 'Télécharger' },
-      'downloading': { ar: 'جاري التحميل...', en: 'Downloading...', fr: 'Téléchargement...' },
-      'delete': { ar: 'حذف', en: 'Delete', fr: 'Supprimer' },
-      'use_model': { ar: 'استخدام', en: 'Use', fr: 'Utiliser' },
-      'switch_to_model': { ar: 'تم التبديل إلى نموذج', en: 'Switched to model', fr: 'Passé au modèle' },
-      'delete_confirm': { ar: 'هل أنت متأكد من حذف هذا النموذج؟', en: 'Are you sure you want to delete this model?', fr: 'Êtes-vous sûr de vouloir supprimer ce modèle ?' },
-      'close': { ar: 'إغلاق', en: 'Close', fr: 'Fermer' },
-      'cancel': { ar: 'إلغاء', en: 'Cancel', fr: 'Annuler' },
-      'download_success': { ar: 'تم تحميل النموذج بنجاح', en: 'Model downloaded successfully', fr: 'Modèle téléchargé avec succès' },
-      'download_failed': { ar: 'فشل تحميل النموذج', en: 'Failed to download model', fr: 'Échec du téléchargement du modèle' },
-      'delete_success': { ar: 'تم حذف النموذج', en: 'Model deleted', fr: 'Modèle supprimé' },
-      'download_cancelled': { ar: 'تم إلغاء التحميل', en: 'Download cancelled', fr: 'Téléchargement annulé' },
-      'no_internet': { ar: 'لا يوجد اتصال بالإنترنت', en: 'No internet connection', fr: 'Pas de connexion internet' },
-    };
-    return translations[key]?.[language] || translations[key]?.en || key;
-  }, [language]);
-
-  const getModelName = useCallback((model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en, [language]);
-  const getModelDescription = useCallback((model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en, [language]);
-
-  // ========== تحميل النماذج المحفوظة واستئناف التحميل المعلق ==========
+  // تحميل النماذج المحفوظة من localStorage
   useEffect(() => {
-    const loadSavedModels = async () => {
-      if (typeof window === 'undefined') return;
-      const db = await openIndexedDB();
-      const transaction = db.transaction(['models'], 'readonly');
-      const store = transaction.objectStore('models');
-      const request = store.getAllKeys();
-      request.onsuccess = () => {
-        const keys = request.result as string[];
-        setDownloadedModels(new Set(keys));
-      };
-      const savedActiveModel = localStorage.getItem('active_ai_model');
-      if (savedActiveModel) setActiveModel(savedActiveModel);
-      
-      // التحقق من وجود تحميل غير مكتمل (pending_download)
-      const pending = localStorage.getItem('pending_download');
-      if (pending) {
-        try {
-          const { modelId, filename } = JSON.parse(pending);
-          const model = AVAILABLE_MODELS.find(m => m.id === modelId);
-          if (model) {
-            console.log(`🔄 استئناف التحميل المعلق: ${filename}`);
-            setResponse(`🔄 استئناف تحميل ${filename}...`);
-            // استدعاء التحميل مع resume=true
-            await downloadModel(model, true);
-          }
-        } catch (e) {
-          console.error('Error parsing pending download:', e);
-          localStorage.removeItem('pending_download');
-        }
-      }
-    };
-    loadSavedModels();
+    const savedModels = localStorage.getItem('downloaded_ai_models');
+    if (savedModels) {
+      setDownloadedModels(new Set(JSON.parse(savedModels)));
+    }
+    const savedActiveModel = localStorage.getItem('active_ai_model');
+    if (savedActiveModel) {
+      setActiveModel(savedActiveModel);
+    }
   }, []);
 
+  // حفظ النماذج المحفوظة
   useEffect(() => {
-    if (activeModel && typeof window !== 'undefined') {
+    localStorage.setItem('downloaded_ai_models', JSON.stringify(Array.from(downloadedModels)));
+  }, [downloadedModels]);
+
+  useEffect(() => {
+    if (activeModel) {
       localStorage.setItem('active_ai_model', activeModel);
     }
   }, [activeModel]);
 
-  // ========== دوال التحميل والإدارة مع دعم الاستئناف ==========
-  const downloadModel = async (model: AIModel, resume: boolean = false) => {
-    if (typeof window === 'undefined') return;
-    if (!isOnline) {
-      setResponse(t('no_internet'));
-      return;
-    }
-
-    // تحديد نقطة البداية إذا كان استئنافاً
-    let startByte = 0;
-    if (resume) {
-      const savedProgress = localStorage.getItem(`resume_${model.id}`);
-      if (savedProgress) {
-        try {
-          const { downloadedBytes } = JSON.parse(savedProgress);
-          startByte = downloadedBytes;
-          const progressPercent = (startByte / (model.sizeMB * 1024 * 1024)) * 100;
-          setResponse(`🔄 استئناف التحميل من ${Math.round(progressPercent)}%...`);
-        } catch (e) {}
-      }
-    }
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    setDownloadingModel(model.id);
-    const initialProgress = startByte === 0 ? 0 : (startByte / (model.sizeMB * 1024 * 1024)) * 100;
-    setDownloadProgress(prev => ({ ...prev, [model.id]: initialProgress }));
-    
-    // حفظ معلومات التحميل
-    localStorage.setItem('pending_download', JSON.stringify({
-      modelId: model.id,
-      downloadUrl: model.downloadUrl,
-      filename: model.filename,
-      startedAt: Date.now()
-    }));
-    
-    setResponse(`📥 جاري تحميل ${getModelName(model)}...`);
-    
-    abortControllerRef.current = new AbortController();
-    try {
-      const blob = await directDownload(model, (progress) => {
-        setDownloadProgress(prev => ({ ...prev, [model.id]: progress }));
-      }, abortControllerRef.current.signal, startByte);
-      
-      await saveModelToIndexedDB(`model_${model.id}`, blob);
-      setDownloadedModels(prev => new Set(prev).add(`model_${model.id}`));
-      setResponse(`✅ ${t('download_success')}: ${getModelName(model)}`);
-      localStorage.removeItem('pending_download');
-      localStorage.removeItem(`resume_${model.id}`);
-      
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('✅ اكتمل التحميل', { body: `${getModelName(model)} جاهز للاستخدام`, icon: '/icon-192.png' });
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        setResponse(`⏸️ ${t('download_cancelled')}`);
-        localStorage.removeItem('pending_download');
-      } else {
-        console.error('Download failed:', error);
-        setResponse(`❌ ${t('download_failed')}: ${error.message}`);
-      }
-    } finally {
-      setDownloadingModel(null);
-      abortControllerRef.current = null;
-    }
-  };
-
-  const cancelDownload = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setDownloadingModel(null);
-    setResponse(`⏸️ ${t('download_cancelled')}`);
-    localStorage.removeItem('pending_download');
-    // لا نمسح resume_* لكي نتمكن من الاستئناف لاحقاً
-  };
-
-  const deleteModel = async (modelId: string) => {
-    if (typeof window === 'undefined') return;
-    if (confirm(t('delete_confirm'))) {
-      await deleteModelFromIndexedDB(`model_${modelId}`);
-      setDownloadedModels(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(`model_${modelId}`);
-        return newSet;
-      });
-      if (activeModel === modelId) setActiveModel(null);
-      setResponse(`🗑️ ${t('delete_success')}`);
-      localStorage.removeItem(`resume_${modelId}`);
-    }
-  };
-
-  const activateModel = (modelId: string) => {
-    setActiveModel(modelId);
-    const selectedModel = AVAILABLE_MODELS.find(m => m.id === modelId);
-    const modelName = selectedModel ? getModelName(selectedModel) : modelId;
-    setResponse(`${t('switch_to_model')} ${modelName}`);
-    setShowModelDialog(false);
-  };
-
-  const requestNotificationPermission = async () => {
-    if (typeof window === 'undefined') return;
-    if ('Notification' in window) {
-      const permission = await Notification.requestPermission();
-      setNotificationsEnabled(permission === 'granted');
-      if (permission === 'granted') setResponse('✅ تم تفعيل الإشعارات');
-    }
-  };
-
-  // ========== الوظائف الأصلية للصوت (بدون تغيير) ==========
   // مراقبة حالة الاتصال بالإنترنت
   useEffect(() => {
     setIsOnline(navigator.onLine);
@@ -387,30 +150,14 @@ export default function SmartVoicePage() {
     };
   }, []);
 
-  // تأثير النبض المستمر
+  // تأثير النبض المستمر (التنفس)
   useEffect(() => {
     const interval = setInterval(() => {
       setPulsePhase(prev => (prev + 1) % 100);
     }, 50);
     return () => clearInterval(interval);
   }, []);
-  
-  // ✅ تأكيد الوضع الليلي بعد تحميل الصفحة
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const theme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = theme === 'dark' || (!theme && prefersDark);
-    
-    if (shouldBeDark) {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    }
-  }, []);
-  
+
   // تنظيف مؤقت الصمت
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -419,7 +166,125 @@ export default function SmartVoicePage() {
     }
   }, []);
 
-  // دالة معالجة النص
+  // دالة الترجمة
+  const t = (key: string): string => {
+    const translations: Record<string, Record<string, string>> = {
+      'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
+      'select_model': { ar: 'اختر نموذج الذكاء الاصطناعي', en: 'Select AI Model', fr: 'Sélectionner un Modèle IA' },
+      'downloaded': { ar: 'تم التحميل', en: 'Downloaded', fr: 'Téléchargé' },
+      'active': { ar: 'نشط', en: 'Active', fr: 'Actif' },
+      'download': { ar: 'تحميل', en: 'Download', fr: 'Télécharger' },
+      'downloading': { ar: 'جاري التحميل...', en: 'Downloading...', fr: 'Téléchargement...' },
+      'delete': { ar: 'حذف', en: 'Delete', fr: 'Supprimer' },
+      'use_model': { ar: 'استخدام', en: 'Use', fr: 'Utiliser' },
+      'storage_info': { ar: 'المساحة المتاحة', en: 'Available Space', fr: 'Espace Disponible' },
+      'no_models': { ar: 'لم يتم تحميل أي نموذج بعد', en: 'No models downloaded yet', fr: 'Aucun modèle téléchargé' },
+      'switch_to_model': { ar: 'تم التبديل إلى نموذج', en: 'Switched to model', fr: 'Passé au modèle' },
+      'delete_confirm': { ar: 'هل أنت متأكد من حذف هذا النموذج؟', en: 'Are you sure you want to delete this model?', fr: 'Êtes-vous sûr de vouloir supprimer ce modèle ?' }
+    };
+    return translations[key]?.[language] || translations[key]?.en || key;
+  };
+
+  // الحصول على نص النموذج حسب اللغة
+  const getModelName = (model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en;
+  const getModelDescription = (model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en;
+
+  // دالة تحميل النموذج
+  const downloadModel = async (model: AIModel) => {
+    if (!isOnline) {
+      setResponse('لا يوجد اتصال بالإنترنت للتحميل');
+      return;
+    }
+
+    // التحقق من المساحة المتاحة
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      const estimate = await navigator.storage.estimate();
+      const availableMB = (estimate.quota! - estimate.usage!) / (1024 * 1024);
+      if (availableMB < model.estimatedSizeMB + 100) {
+        setResponse(`مساحة غير كافية. تحتاج إلى ${model.estimatedSizeMB} MB إضافية.`);
+        return;
+      }
+    }
+
+    setDownloadingModel(model.id);
+    setDownloadProgress(prev => ({ ...prev, [model.id]: 0 }));
+
+    try {
+      const response = await fetch(model.downloadUrl);
+      if (!response.ok) throw new Error('فشل التحميل');
+
+      const contentLength = response.headers.get('content-length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      
+      const reader = response.body?.getReader();
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          chunks.push(value);
+          received += value.length;
+          
+          if (total > 0) {
+            const progress = (received / total) * 100;
+            setDownloadProgress(prev => ({ ...prev, [model.id]: progress }));
+          }
+        }
+      }
+
+      const blob = new Blob(chunks);
+      
+      // حفظ في IndexedDB أو localStorage (هنا نستخدم localStorage للتخزين المؤقت)
+      // في التطبيق الحقيقي، يجب استخدام IndexedDB للملفات الكبيرة
+      const readerForSave = new FileReader();
+      readerForSave.onload = () => {
+        const base64 = readerForSave.result as string;
+        localStorage.setItem(`model_${model.id}`, base64);
+        setDownloadedModels(prev => new Set(prev).add(model.id));
+        setResponse(`تم تحميل نموذج ${getModelName(model)} بنجاح`);
+      };
+      readerForSave.readAsDataURL(blob);
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      setResponse(`فشل تحميل النموذج: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    } finally {
+      setDownloadingModel(null);
+      setDownloadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[model.id];
+        return newProgress;
+      });
+    }
+  };
+
+  // دالة حذف النموذج
+  const deleteModel = (modelId: string) => {
+    if (confirm(t('delete_confirm'))) {
+      localStorage.removeItem(`model_${modelId}`);
+      setDownloadedModels(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(modelId);
+        return newSet;
+      });
+      if (activeModel === modelId) {
+        setActiveModel(null);
+      }
+      setResponse(`تم حذف النموذج`);
+    }
+  };
+
+  // دالة تفعيل النموذج
+  const activateModel = (modelId: string) => {
+    setActiveModel(modelId);
+    setResponse(`${t('switch_to_model')} ${AVAILABLE_MODELS.find(m => m.id === modelId)?.name[language as keyof typeof model.name] || modelId}`);
+    setShowModelDialog(false);
+  };
+
+  // دالة معالجة النص (مشتركة بين Web Speech و Whisper)
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -428,7 +293,13 @@ export default function SmartVoicePage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text, userId, userEmail, userName }),
+        body: JSON.stringify({ 
+          prompt: text, 
+          userId, 
+          userEmail, 
+          userName,
+          model: activeModel // إرسال النموذج النشط للـ API
+        }),
       });
 
       if (!res.ok) {
@@ -459,7 +330,7 @@ export default function SmartVoicePage() {
         setIsProcessing(false);
       }
     }
-  }, [isOnline, userId, userEmail, userName, retryCount]);
+  }, [isOnline, userId, userEmail, userName, retryCount, activeModel]);
 
   // دالة بدء التسجيل المحلي (Whisper)
   const startLocalRecording = useCallback(async () => {
@@ -514,7 +385,7 @@ export default function SmartVoicePage() {
     }
   }, [clearSilenceTimer, processText]);
 
-  // دالة إنشاء كائن SpeechRecognition
+  // دالة إنشاء كائن SpeechRecognition (Web Speech API)
   const createRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -604,6 +475,7 @@ export default function SmartVoicePage() {
     clearSilenceTimer();
   }, [language, clearSilenceTimer]);
 
+  // تنظيف MediaRecorder
   const cleanupMediaRecorder = useCallback(() => {
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state === 'recording') {
@@ -620,6 +492,7 @@ export default function SmartVoicePage() {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
   }, []);
 
+  // دالة تشغيل/إيقاف التسجيل
   const toggleListening = () => {
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -697,15 +570,7 @@ export default function SmartVoicePage() {
           Smarty <span className="text-[10px] font-bold opacity-40">AI VOICE</span>
         </h1>
         <div className="ml-auto flex items-center gap-2">
-          {/* زر تفعيل الإشعارات */}
-          {!notificationsEnabled && typeof window !== 'undefined' && 'Notification' in window && (
-            <button onClick={requestNotificationPermission} className="flex items-center gap-1.5 text-[10px] font-bold px-2 py-1.5 rounded-full bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border border-blue-500/30">
-              <Bell className="w-3 h-3" />
-            </button>
-          )}
-          {notificationsEnabled && <div className="text-[10px] text-green-400/70"><Bell className="w-3 h-3" /></div>}
-          
-          {/* زر تحميل النموذج */}
+          {/* زر تحميل النموذج الجديد */}
           <button
             onClick={() => setShowModelDialog(true)}
             className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full transition bg-gradient-to-r from-purple-500/30 to-purple-600/20 text-purple-200 hover:from-purple-500/40 hover:to-purple-600/30 border border-purple-500/30"
@@ -716,7 +581,6 @@ export default function SmartVoicePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 ml-1"></span>
             )}
           </button>
-          
           {!isOnline && <WifiOff className="w-4 h-4 text-red-400" />}
           <button
             onClick={() => setUseLocalWhisper(!useLocalWhisper)}
@@ -764,15 +628,11 @@ export default function SmartVoicePage() {
               </div>
             )}
 
-            {/* عرض النموذج النشط */}
             {activeModel && (
               <div className="flex items-center justify-center gap-2 text-green-400/70 mb-2">
                 <HardDrive className="w-3 h-3" />
                 <p className="text-[10px] font-medium">
-                  {(() => {
-                    const foundModel = AVAILABLE_MODELS.find(m => m.id === activeModel);
-                    return foundModel ? getModelName(foundModel) : activeModel;
-                  })()}
+                  {AVAILABLE_MODELS.find(m => m.id === activeModel)?.name[language as keyof typeof AVAILABLE_MODELS[0]['name']] || activeModel}
                 </p>
               </div>
             )}
@@ -835,20 +695,18 @@ export default function SmartVoicePage() {
         </div>
       </div>
 
-      {/* ========== حوار اختيار وتحميل النماذج ========== */}
+      {/* حوار اختيار وتحميل النماذج */}
       {showModelDialog && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowModelDialog(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-white/10" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-black/90 backdrop-blur-md p-4 border-b border-white/10 flex justify-between items-center">
+            <div className="sticky top-0 bg-black/90 backdrop-blur-md p-4 border-b border-white/10">
               <h2 className="text-lg font-bold text-white">{t('select_model')}</h2>
-              <button onClick={() => setShowModelDialog(false)} className="p-1 hover:bg-white/10 rounded-full transition">
-                <X className="w-5 h-5 text-white/60" />
-              </button>
+              <p className="text-xs text-white/40 mt-1">اختر نموذج الذكاء الاصطناعي الذي تريد استخدامه</p>
             </div>
             
             <div className="p-4 space-y-3">
               {AVAILABLE_MODELS.map((model) => {
-                const isDownloaded = downloadedModels.has(`model_${model.id}`);
+                const isDownloaded = downloadedModels.has(model.id);
                 const isActive = activeModel === model.id;
                 const isDownloading = downloadingModel === model.id;
                 const progress = downloadProgress[model.id] || 0;
@@ -857,7 +715,7 @@ export default function SmartVoicePage() {
                   <div key={model.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
                           <h3 className="font-bold text-white">{getModelName(model)}</h3>
                           {isActive && (
                             <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
@@ -877,34 +735,23 @@ export default function SmartVoicePage() {
                     
                     <div className="flex gap-2 mt-3">
                       {!isDownloaded ? (
-                        <>
-                          <button
-                            onClick={() => downloadModel(model, false)}
-                            disabled={isDownloading}
-                            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-sm font-bold py-2 rounded-xl transition disabled:opacity-50"
-                          >
-                            {isDownloading ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                {t('downloading')} {Math.round(progress)}%
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-4 h-4" />
-                                {t('download')}
-                              </>
-                            )}
-                          </button>
-                          {isDownloading && (
-                            <button
-                              onClick={cancelDownload}
-                              className="px-4 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-bold py-2 rounded-xl transition"
-                            >
-                              <X className="w-4 h-4" />
-                              {t('cancel')}
-                            </button>
+                        <button
+                          onClick={() => downloadModel(model)}
+                          disabled={isDownloading}
+                          className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-sm font-bold py-2 rounded-xl transition disabled:opacity-50"
+                        >
+                          {isDownloading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              {t('downloading')} {Math.round(progress)}%
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-4 h-4" />
+                              {t('download')}
+                            </>
                           )}
-                        </>
+                        </button>
                       ) : (
                         <>
                           {!isActive && (
@@ -945,7 +792,7 @@ export default function SmartVoicePage() {
                 onClick={() => setShowModelDialog(false)}
                 className="w-full py-2 text-white/60 hover:text-white text-sm transition"
               >
-                {t('close')}
+                إغلاق
               </button>
             </div>
           </div>
@@ -960,4 +807,4 @@ export default function SmartVoicePage() {
       </footer>
     </div>
   );
-        }
+                              }
