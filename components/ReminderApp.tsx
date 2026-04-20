@@ -28,7 +28,6 @@ function cn(...inputs: ClassValue[]) { return twMerge(clsx(inputs)); }
 
 interface Reminder { id: string; text: string; reminderTime: string; isCompleted: boolean; }
 
-// ✅ دالة مساعدة للتحقق من صحة التاريخ
 function isValidReminderTime(dateString: string): boolean {
   if (!dateString || typeof dateString !== 'string') return false;
   try {
@@ -39,7 +38,6 @@ function isValidReminderTime(dateString: string): boolean {
   }
 }
 
-// ✅ دالة آمنة لعرض الوقت النسبي (تجنب parseISO المباشر)
 function safeFormatDistanceToNow(dateString: string, locale: any): string {
   if (!isValidReminderTime(dateString)) return 'تاريخ غير صالح';
   try {
@@ -49,14 +47,12 @@ function safeFormatDistanceToNow(dateString: string, locale: any): string {
   }
 }
 
-// ✅ دالة لتحميل التذكيرات من localStorage (للاستخدام في lazy initialization)
 function loadRemindersFromStorage(): Reminder[] {
   if (typeof window === 'undefined') return [];
   const saved = localStorage.getItem('smarty_reminders');
   if (!saved) return [];
   try {
     const parsed = JSON.parse(saved);
-    // تصفية التذكيرات ذات التاريخ غير الصالح
     return parsed.filter((rem: Reminder) => isValidReminderTime(rem.reminderTime));
   } catch (e) {
     console.error('Failed to load reminders', e);
@@ -65,7 +61,6 @@ function loadRemindersFromStorage(): Reminder[] {
 }
 
 export default function ReminderApp({ initialReminderText }: { initialReminderText?: string | null }) {
-  // ✅ استخدام lazy initialization لتجنب useEffect للتحميل الأولي
   const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
   const [inputText, setInputText] = useState('');
   const [recurring, setRecurring] = useState<string>('none');
@@ -81,7 +76,7 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
    
-   useEffect(() => {
+  useEffect(() => {
     if (initialReminderText) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputText(initialReminderText);
@@ -103,7 +98,6 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
     }
   }, [isMounted]);
 
-  // ✅ حفظ التذكيرات في localStorage عند تغييرها (بدون تحميل أولي)
   useEffect(() => {
     if (isMounted) {
       localStorage.setItem('smarty_reminders', JSON.stringify(reminders));
@@ -121,7 +115,6 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
     }
   }, []);
 
-  // معالج الإدخال الصوتي
   const handleVoiceInput = (text: string) => {
     const result = analyzeReminderInput(text);
     if (result) {
@@ -138,7 +131,6 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
     }
   };
 
-  // ✅ تعديل: التحقق من صحة reminderDateTime قبل إضافة التذكير
   const handleAddReminder = () => {
     if (!inputText.trim()) return;
     let finalTime = reminderDateTime;
@@ -162,19 +154,17 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
 
-  // ✅ دالة مشاركة التذكير
-
-const handleShare = async (reminder: Reminder) => {
- const result = await ShareHelper.shareReminder({
-    text: reminder.text,
-    reminderTime: reminder.reminderTime,
-  });
-  if (result.success) {
-    toast.success(result.message);
-  } else {
-    toast.error(result.message);
-  }
-};
+  const handleShare = async (reminder: Reminder) => {
+    const result = await ShareHelper.shareReminder({
+      text: reminder.text,
+      reminderTime: reminder.reminderTime,
+    });
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
+    }
+  };
 
   const handleCloseModal = () => {
     setIsAdding(false);
@@ -192,17 +182,17 @@ const handleShare = async (reminder: Reminder) => {
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col">
       <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
         <div className="flex items-center gap-3">
-         // داخل header، استبدل كتلة الشعار بهذا:
-         <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl -rotate-6">
-           <Image
-             src="/maskable_icon_x384.png"   // ← استخدام الأيقونة الجديدة عالية الدقة
-             alt="Smarty Logo"
-             width={40}
-             height={40}
-             className="w-6 h-6 object-contain"
-             priority
-           />
-         </div>
+          {/* الشعار باستخدام الأيقونة الجديدة عالية الدقة */}
+          <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-xl -rotate-6">
+            <Image
+              src="/maskable_icon_x384.png"
+              alt="Smarty Logo"
+              width={40}
+              height={40}
+              className="w-6 h-6 object-contain"
+              priority
+            />
+          </div>
           <div><h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1><span className="text-[8px] font-bold text-white/30">Premium Assistant</span></div>
         </div>
         <div className="flex gap-1">
@@ -224,14 +214,14 @@ const handleShare = async (reminder: Reminder) => {
 
         <div className="flex flex-col items-center justify-center my-8">
           <VoiceInput onTranscript={handleVoiceInput} />
-        <p className="text-center text-sm text-white/70 mt-2">{t.tap_to_speak}</p>
+          <p className="text-center text-sm text-white/70 mt-2">{t.tap_to_speak}</p>
         </div>
 
         {assistantMessage && <div className="bg-white/10 backdrop-blur-sm text-white p-4 rounded-2xl mb-6 text-center">{assistantMessage}</div>}
 
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-           <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
+            <Clock className="w-4 h-4" /> {t.active_reminders} ({activeReminders.length})
           </h3>
           <div className="flex flex-col gap-3">
             <AnimatePresence>
@@ -239,9 +229,8 @@ const handleShare = async (reminder: Reminder) => {
                 <div className="text-center py-20 bg-black/5 rounded-[3rem] border border-dashed border-white/10">
                   <p className="text-white/40 font-black text-xs uppercase">{t.no_active_reminders}</p>
                 </div>
-                ) : (
+              ) : (
                 activeReminders.map((rem) => {
-                  // ✅ حماية عرض التواريخ: إذا كان التاريخ غير صالح نعرض رسائل افتراضية
                   const isValid = isValidReminderTime(rem.reminderTime);
                   const exactTime = isValid ? formatDetectedTime(rem.reminderTime, 'ar') : (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date');
                   const countdownObj = isValid ? formatCountdown(rem.reminderTime, 'ar') : { text: (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date'), isPast: false };
