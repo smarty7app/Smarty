@@ -182,6 +182,7 @@ export default function SmartVoicePage() {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
+  // استخدام قيم افتراضية آمنة في حال عدم وجود session
   const userId = session?.user?.id || 'anonymous';
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
@@ -276,6 +277,7 @@ export default function SmartVoicePage() {
       const reader = response.body?.getReader();
       const chunks = [...existingChunks];
       let received = startByte;
+      let lastSaveTime = Date.now();
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
@@ -285,8 +287,10 @@ export default function SmartVoicePage() {
             received += value.length;
             const progress = (received / total) * 100;
             setDownloadProgress(prev => ({ ...prev, [model.id]: progress }));
-            if (Math.floor(Date.now() / 5000) !== Math.floor((Date.now() - 100) / 5000)) {
-              await saveDownloadProgress(model.id, { modelId: model.id, downloadedBytes: received, totalBytes: total, chunks, lastUpdated: Date.now() });
+            const now = Date.now();
+            if (now - lastSaveTime >= 5000) {
+              await saveDownloadProgress(model.id, { modelId: model.id, downloadedBytes: received, totalBytes: total, chunks, lastUpdated: now });
+              lastSaveTime = now;
             }
           }
         }
@@ -336,7 +340,7 @@ export default function SmartVoicePage() {
     const modelName = selectedModel ? getModelName(selectedModel) : modelId;
     setResponse(`${t('switch_to_model')} ${modelName}`);
     setShowModelDialog(false);
-  }, [t, getModelName]); // ✅ تم إضافة getModelName
+  }, [t, getModelName]);
 
   const startWhisperDownload = useCallback(async () => {
     if (!isOnline) { setResponse(t('no_internet')); return; }
@@ -361,12 +365,20 @@ export default function SmartVoicePage() {
     }
   }, [isOnline, t]);
 
-  // ========== دوال الصوت الأساسية (مع الترتيب الصحيح) ==========
+  // ========== دوال الصوت الأساسية (مرتبة بشكل صحيح) ==========
+  // أولاً: clearSilenceTimer (يجب أن تكون قبل createRecognition)
   const clearSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = null;
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
   }, []);
 
+  // ثانياً: isListeningRef لتجنب stale closure
+  const isListeningRef = useRef(isListening);
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+
+  // ثالثاً: processText (تعتمد على دوال أخرى)
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -395,9 +407,13 @@ export default function SmartVoicePage() {
     }
   }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t]);
 
+  // رابعاً: createRecognition (تعتمد على clearSilenceTimer و isListeningRef)
   const createRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { alert(t('recognition_failed')); return null; }
+    if (!SpeechRecognition) { 
+      setResponse(t('recognition_failed')); 
+      return null; 
+    }
     const instance = new SpeechRecognition();
     instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
     instance.continuous = true;
@@ -408,7 +424,10 @@ export default function SmartVoicePage() {
       setResponse('');
       setRetryCount(0);
       clearSilenceTimer();
-      silenceTimerRef.current = setTimeout(() => { if (isListening) recognitionRef.current?.stop(); setResponse(t('no_speech_detected')); }, 10000);
+      silenceTimerRef.current = setTimeout(() => { 
+        if (isListeningRef.current) recognitionRef.current?.stop(); 
+        setResponse(t('no_speech_detected')); 
+      }, 10000);
     };
     instance.onaudiostart = () => clearSilenceTimer();
     instance.onaudioend = () => clearSilenceTimer();
@@ -435,8 +454,9 @@ export default function SmartVoicePage() {
     };
     instance.onend = () => { setIsListening(false); clearSilenceTimer(); };
     return instance;
-  }, [language, processText, clearSilenceTimer, isListening, t]); // ✅ clearSilenceTimer معرف الآن
+  }, [language, processText, clearSilenceTimer, t]);
 
+  // خامساً: startLocalRecording (تعتمد على processText)
   const startLocalRecording = useCallback(async () => {
     if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
       setShowWhisperConsent(true);
@@ -486,6 +506,7 @@ export default function SmartVoicePage() {
     }
   }, [useLocalWhisper, whisperDownloaded, whisperDownloading, clearSilenceTimer, processText, t]);
 
+  // سادساً: cleanupMediaRecorder
   const cleanupMediaRecorder = useCallback(() => {
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state === 'recording') try { mediaRecorderRef.current.stop(); } catch(e) {}
@@ -496,6 +517,7 @@ export default function SmartVoicePage() {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
   }, []);
 
+  // سابعاً: toggleListening
   const toggleListening = useCallback(() => {
     if (isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
     if (isListening) {
@@ -525,7 +547,11 @@ export default function SmartVoicePage() {
     checkWhisperModel();
   }, []);
 
+  // استخدام useRef لمنع التحميل المتكرر عند تغير downloadModel
+  const hasLoadedModelsRef = useRef(false);
   useEffect(() => {
+    if (hasLoadedModelsRef.current) return;
+    hasLoadedModelsRef.current = true;
     const loadSavedModels = async () => {
       const db = await openIndexedDB();
       const transaction = db.transaction(['models'], 'readonly');
@@ -545,7 +571,7 @@ export default function SmartVoicePage() {
       }
     };
     loadSavedModels();
-  }, [downloadModel]);
+  }, [downloadModel]); // تبقى التبعية ولكننا نضمن التنفيذ مرة واحدة فقط
 
   useEffect(() => {
     if (activeModel) localStorage.setItem('active_ai_model', activeModel);
