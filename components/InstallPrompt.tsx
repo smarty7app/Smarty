@@ -46,13 +46,13 @@ export default function InstallPrompt() {
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-4 flex items-center justify-between border border-zinc-200 dark:border-zinc-700 animate-in slide-in-from-bottom-4 duration-300">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md overflow-hidden">
+        <div className="w-10 h-10 bg-[#E65100] rounded-xl flex items-center justify-center overflow-hidden">
           <Image
-            src="/maskable_icon_x48.png"
+            src="/maskable_icon_x384.png"
             alt="Smarty Logo"
             width={40}
             height={40}
-            className="object-cover"
+            className="w-full h-full object-cover"
             priority
           />
         </div>
