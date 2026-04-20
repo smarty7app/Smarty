@@ -28,6 +28,15 @@ function ServiceWorkerRegister() {
               }
             }, 3000);
           }
+          
+          // ✅ إرسال رسالة إلى Service Worker لتأكيد التسجيل
+          if (swRegistration.active) {
+            swRegistration.active.postMessage({
+              type: 'SW_REGISTERED',
+              data: { timestamp: Date.now() }
+            });
+          }
+          
         } catch (error) {
           console.error('❌ Service Worker registration failed:', error);
         }
@@ -42,7 +51,7 @@ function ServiceWorkerRegister() {
       
       // الاستماع لرسائل من Service Worker
       const handleMessage = (event: MessageEvent) => {
-        const { type, filename, progress, modelId } = event.data;
+        const { type, filename, progress, modelId, error } = event.data;
         
         switch (type) {
           case 'DOWNLOAD_STARTED':
@@ -61,20 +70,39 @@ function ServiceWorkerRegister() {
             console.log(`✅ Download complete: ${filename}`);
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('sw-download-complete', { detail: { modelId, filename } }));
+              // ✅ إزالة التحميل المعلق من localStorage
+              localStorage.removeItem('pending_download');
             }
             break;
           case 'DOWNLOAD_ERROR':
-            console.error(`❌ Download error: ${filename}`);
+            console.error(`❌ Download error: ${filename} - ${error}`);
             if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('sw-download-error', { detail: { modelId, error: event.data.error } }));
+              window.dispatchEvent(new CustomEvent('sw-download-error', { detail: { modelId, error } }));
+              // ✅ إزالة التحميل المعلق من localStorage في حالة الخطأ
+              localStorage.removeItem('pending_download');
             }
             break;
           case 'DOWNLOAD_CANCELLED':
             console.log(`⏸️ Download cancelled: ${filename}`);
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('sw-download-cancelled', { detail: { modelId } }));
+              // ✅ إزالة التحميل المعلق من localStorage عند الإلغاء
+              localStorage.removeItem('pending_download');
             }
             break;
+          case 'SHOW_NOTIFICATION':
+            // ✅ عرض إشعار من Service Worker
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification(event.data.title, {
+                body: event.data.body,
+                icon: '/icon-192.png',
+                badge: '/badge.png',
+                silent: false
+              });
+            }
+            break;
+          default:
+            console.log('Unknown message type:', type);
         }
       };
       
@@ -116,6 +144,14 @@ function NotificationPermissionHandler() {
               badge: '/badge.png',
               silent: false
             });
+            
+            // ✅ إرسال إشعار إلى Service Worker بتفعيل الإذن
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.controller.postMessage({
+                type: 'NOTIFICATION_PERMISSION_GRANTED',
+                data: { timestamp: Date.now() }
+              });
+            }
           }
         });
       };
@@ -145,30 +181,57 @@ function PendingDownloadsHandler() {
           
           console.log(`🔄 Found pending download: ${filename} (${elapsedMinutes} minutes ago)`);
           
+          // ✅ إرسال إشعار للمستخدم
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('🔄 تحميل مستمر', {
-              body: `تم اكتشاف تحميل غير مكتمل لنموذج ${filename}. سيتم استئنافه تلقائياً.`,
+              body: `تم اكتشاف تحميل غير مكتمل لنموذج ${filename}. جاري الاستئناف...`,
               icon: '/icon-192.png',
               badge: '/badge.png',
               silent: false
             });
           }
           
+          // ✅ إرسال حدث إلى الصفحة الرئيسية لاستعادة التحميل
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('sw-pending-download', { 
               detail: { modelId, filename, elapsedMinutes } 
             }));
           }
+          
+          // ✅ محاولة استئناف التحميل عبر Service Worker
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: 'RESUME_DOWNLOAD',
+              data: { modelId, filename }
+            });
+          }
+          
         } catch (error) {
           console.error('Error checking pending downloads:', error);
+          // ✅ إذا كان هناك خطأ في البيانات، قم بحذفها
+          localStorage.removeItem('pending_download');
         }
       }
     };
     
+    // ✅ التحقق فوراً عند تحميل الصفحة
     checkPendingDownloads();
-    const interval = setInterval(checkPendingDownloads, 60000);
     
-    return () => clearInterval(interval);
+    // ✅ التحقق كل 30 ثانية بدلاً من 60 ثانية
+    const interval = setInterval(checkPendingDownloads, 30000);
+    
+    // ✅ التحقق أيضاً عند عودة الصفحة للتركيز
+    const handleFocus = () => {
+      console.log('Page focused, checking pending downloads...');
+      checkPendingDownloads();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
   
   return null;
@@ -177,7 +240,7 @@ function PendingDownloadsHandler() {
 // ✅ Client Component لإظهار إشعار عند تثبيت التطبيق (PWA)
 function PWAListener() {
   useEffect(() => {
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       console.log('📱 App installed as PWA');
       
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -188,14 +251,16 @@ function PWAListener() {
           silent: false
         });
       }
-    });
+    };
+    
+    window.addEventListener('appinstalled', handleAppInstalled);
     
     if (window.matchMedia('(display-mode: standalone)').matches) {
       console.log('App is running in standalone mode (PWA)');
     }
     
     return () => {
-      window.removeEventListener('appinstalled', () => {});
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
   
@@ -211,4 +276,4 @@ export default function ClientComponents() {
       <PWAListener />
     </>
   );
-}
+      }
