@@ -326,7 +326,21 @@ export default function SmartVoicePage() {
     }, 50);
     return () => clearInterval(interval);
   }, []);
-
+ // ✅ تأكيد الوضع الليلي بعد تحميل الصفحة (لحل مشكلة العودة إلى الوضع العادي)
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+  const theme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const shouldBeDark = theme === 'dark' || (!theme && prefersDark);
+  
+  if (shouldBeDark) {
+    document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = 'dark';
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
+  }
+}, []);
   // تنظيف مؤقت الصمت
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
