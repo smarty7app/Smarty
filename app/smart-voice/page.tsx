@@ -6,23 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { transcribeLocal } from '@/lib/local-whisper';
 import { 
-  ArrowLeft, 
-  Wifi, 
-  WifiOff, 
-  Loader2, 
-  Mic, 
-  Volume2, 
-  Sparkles, 
-  MessageCircle,
-  Download,
-  Check,
-  Trash2,
-  HardDrive,
-  X,
-  AlertTriangle
+  ArrowLeft, Wifi, WifiOff, Loader2, Mic, Volume2, Sparkles, MessageCircle,
+  Download, Check, Trash2, HardDrive, X, AlertTriangle
 } from 'lucide-react';
 
-// تعريف واجهات البيانات (بدون تغيير)
+// تعريف واجهات البيانات
 interface AIModel {
   id: string;
   name: { ar: string; en: string; fr: string };
@@ -41,50 +29,34 @@ interface DownloadInfo {
   lastUpdated: number;
 }
 
-// النماذج المتوفرة للتحميل (Gemma, Llama, Phi) - نفس الشيء
 const AVAILABLE_MODELS: AIModel[] = [
   {
     id: 'gemma-2-2b',
     name: { ar: 'جيما 2 - 2 مليار', en: 'Gemma 2 - 2B', fr: 'Gemma 2 - 2B' },
-    size: '1.5 GB',
-    sizeMB: 1500,
-    description: { 
-      ar: 'سريع، يدعم العربية، مناسب للهواتف المتوسطة', 
-      en: 'Fast, supports Arabic, suitable for mid-range phones',
-      fr: 'Rapide, supporte l\'arabe, adapté aux smartphones milieu de gamme'
-    },
+    size: '1.5 GB', sizeMB: 1500,
+    description: { ar: 'سريع، يدعم العربية، مناسب للهواتف المتوسطة', en: 'Fast, supports Arabic, suitable for mid-range phones', fr: 'Rapide, supporte l\'arabe, adapté aux smartphones milieu de gamme' },
     downloadUrl: 'https://huggingface.co/second-state/Gemma-2b-it-GGUF/resolve/main/gemma-2b-it-Q4_K_M.gguf',
     filename: 'gemma-2b-it-Q4_K_M.gguf'
   },
   {
     id: 'llama-3.2-3b',
     name: { ar: 'لاما 3.2 - 3 مليار', en: 'Llama 3.2 - 3B', fr: 'Llama 3.2 - 3B' },
-    size: '2 GB',
-    sizeMB: 2000,
-    description: { 
-      ar: 'أداء عالي، دقة ممتازة، للهواتف المتطورة', 
-      en: 'High performance, excellent accuracy, for flagship phones',
-      fr: 'Haute performance, excellente précision, pour smartphones haut de gamme'
-    },
+    size: '2 GB', sizeMB: 2000,
+    description: { ar: 'أداء عالي، دقة ممتازة، للهواتف المتطورة', en: 'High performance, excellent accuracy, for flagship phones', fr: 'Haute performance, excellente précision, pour smartphones haut de gamme' },
     downloadUrl: 'https://huggingface.co/Triangle104/Llama-3.2-3B-Instruct-Q4_K_M-GGUF/resolve/main/llama-3.2-3b-instruct-q4_k_m.gguf',
     filename: 'llama-3.2-3b-instruct-q4_k_m.gguf'
   },
   {
     id: 'phi-3.5-mini',
     name: { ar: 'فاي 3.5 مصغر', en: 'Phi-3.5 Mini', fr: 'Phi-3.5 Mini' },
-    size: '1.8 GB',
-    sizeMB: 1800,
-    description: { 
-      ar: 'خفيف الوزن، مناسب للهواتف القديمة', 
-      en: 'Lightweight, suitable for older phones',
-      fr: 'Léger, adapté aux anciens téléphones'
-    },
+    size: '1.8 GB', sizeMB: 1800,
+    description: { ar: 'خفيف الوزن، مناسب للهواتف القديمة', en: 'Lightweight, suitable for older phones', fr: 'Léger, adapté aux anciens téléphones' },
     downloadUrl: 'https://huggingface.co/tensorblock/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf',
     filename: 'Phi-3.5-mini-instruct-Q4_K_M.gguf'
   }
 ];
 
-// دوال مساعدة للتخزين في IndexedDB (بدون تغيير)
+// دوال IndexedDB
 async function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('AIModelsDB', 2);
@@ -105,17 +77,6 @@ async function saveModelToIndexedDB(modelId: string, blob: Blob): Promise<void> 
     const store = transaction.objectStore('models');
     const request = store.put(blob, modelId);
     request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-async function getModelFromIndexedDB(modelId: string): Promise<Blob | null> {
-  const db = await openIndexedDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['models'], 'readonly');
-    const store = transaction.objectStore('models');
-    const request = store.get(modelId);
-    request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
 }
@@ -164,11 +125,7 @@ async function deleteDownloadProgress(modelId: string): Promise<void> {
   });
 }
 
-// دالة لتحميل نموذج Whisper المحلي (حوالي 75 ميجابايت)
-async function downloadWhisperModel(
-  onProgress: (percent: number) => void,
-  signal: AbortSignal
-): Promise<Blob> {
+async function downloadWhisperModel(onProgress: (percent: number) => void, signal: AbortSignal): Promise<Blob> {
   const WHISPER_MODEL_URL = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin';
   const response = await fetch(WHISPER_MODEL_URL, { signal });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -191,10 +148,7 @@ async function downloadWhisperModel(
   const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
   const mergedArray = new Uint8Array(totalLength);
   let offset = 0;
-  for (const chunk of chunks) {
-    mergedArray.set(chunk, offset);
-    offset += chunk.length;
-  }
+  for (const chunk of chunks) { mergedArray.set(chunk, offset); offset += chunk.length; }
   return new Blob([mergedArray], { type: 'application/octet-stream' });
 }
 
@@ -211,22 +165,17 @@ export default function SmartVoicePage() {
   const [isOnline, setIsOnline] = useState(true);
   const [useLocalWhisper, setUseLocalWhisper] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(false);
-  
-  // حالات تحميل النماذج (Gemma, Llama, Phi)
   const [showModelDialog, setShowModelDialog] = useState(false);
   const [downloadedModels, setDownloadedModels] = useState<Set<string>>(new Set());
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  
-  // حالات تحميل نموذج Whisper المحلي
   const [whisperDownloaded, setWhisperDownloaded] = useState(false);
   const [whisperDownloading, setWhisperDownloading] = useState(false);
   const [whisperProgress, setWhisperProgress] = useState(0);
   const [showWhisperConsent, setShowWhisperConsent] = useState(false);
   const whisperAbortControllerRef = useRef<AbortController | null>(null);
-  
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -237,75 +186,9 @@ export default function SmartVoicePage() {
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
 
-  // التحقق من وجود نموذج Whisper في IndexedDB عند تحميل الصفحة
-  useEffect(() => {
-    const checkWhisperModel = async () => {
-      const db = await openIndexedDB();
-      const transaction = db.transaction(['models'], 'readonly');
-      const store = transaction.objectStore('models');
-      const request = store.get('whisper_model');
-      request.onsuccess = () => {
-        if (request.result) setWhisperDownloaded(true);
-      };
-    };
-    checkWhisperModel();
-  }, []);
-
-  // تحميل النماذج المحفوظة من IndexedDB (Gemma, Llama, Phi)
-  useEffect(() => {
-    const loadSavedModels = async () => {
-      const db = await openIndexedDB();
-      const transaction = db.transaction(['models'], 'readonly');
-      const store = transaction.objectStore('models');
-      const request = store.getAllKeys();
-      request.onsuccess = () => {
-        const keys = request.result as string[];
-        // استبعاد مفتاح whisper_model من قائمة النماذج النصية
-        const modelKeys = keys.filter(key => key !== 'whisper_model');
-        setDownloadedModels(new Set(modelKeys));
-      };
-      const savedActiveModel = localStorage.getItem('active_ai_model');
-      if (savedActiveModel) setActiveModel(savedActiveModel);
-      
-      const pendingDownloads = await getDownloadProgress('pending');
-      if (pendingDownloads) {
-        const model = AVAILABLE_MODELS.find(m => m.id === pendingDownloads.modelId);
-        if (model) downloadModel(model, true);
-      }
-    };
-    loadSavedModels();
-  }, []);
-
-  useEffect(() => {
-    if (activeModel) localStorage.setItem('active_ai_model', activeModel);
-  }, [activeModel]);
-
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => setPulsePhase(prev => (prev + 1) % 100), 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  const clearSilenceTimer = useCallback(() => {
-    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = null;
-  }, []);
-
-  // دالة الترجمة الكاملة (مع إضافة المفاتيح الجديدة)
-  const t = (key: string): string => {
+  // ========== دالة الترجمة (useCallback) ==========
+  const t = useCallback((key: string): string => {
     const translations: Record<string, Record<string, string>> = {
-      // أزرار رئيسية
       'download_model': { ar: 'تحميل نموذج', en: 'Download Model', fr: 'Télécharger Modèle' },
       'select_model': { ar: 'اختر نموذج الذكاء الاصطناعي', en: 'Select AI Model', fr: 'Sélectionner un Modèle IA' },
       'downloaded': { ar: 'تم التحميل', en: 'Downloaded', fr: 'Téléchargé' },
@@ -321,17 +204,14 @@ export default function SmartVoicePage() {
       'cloud': { ar: 'سحابي', en: 'Cloud', fr: 'Cloud' },
       'cancel': { ar: 'إلغاء', en: 'Cancel', fr: 'Annuler' },
       'resume': { ar: 'استئناف', en: 'Resume', fr: 'Reprendre' },
-      'cancel_download': { ar: 'إلغاء التحميل', en: 'Cancel Download', fr: 'Annuler Téléchargement' },
-      
-      // حالات الصوت
       'no_internet': { ar: 'لا يوجد اتصال بالإنترنت', en: 'No internet connection', fr: 'Pas de connexion internet' },
       'listening': { ar: 'يستمع إليك الآن...', en: 'Listening to you...', fr: 'Vous écoute...' },
       'recording': { ar: 'جاري التسجيل...', en: 'Recording...', fr: 'Enregistrement...' },
       'thinking': { ar: 'يفكر...', en: 'Thinking...', fr: 'Réflexion...' },
       'speaking': { ar: 'يتحدث...', en: 'Speaking...', fr: 'Parle...' },
       'tap_to_speak': { ar: 'اضغط على الشعار للتحدث مع المساعد الذكي', en: 'Tap the logo to speak with the smart assistant', fr: 'Appuyez sur le logo pour parler avec l\'assistant intelligent' },
-      
-      // رسائل الردود
+      'you': { ar: 'أنت', en: 'You', fr: 'Vous' },
+      'smarty': { ar: 'سمارتي', en: 'Smarty', fr: 'Smarty' },
       'loading_model': { ar: 'جاري تحميل نموذج الذكاء الاصطناعي المحلي...', en: 'Loading local AI model...', fr: 'Chargement du modèle IA local...' },
       'mic_access_failed': { ar: 'فشل الوصول إلى الميكروفون.', en: 'Failed to access microphone.', fr: 'Échec de l\'accès au microphone.' },
       'no_speech_detected': { ar: 'لم أسمع شيئاً. حاول مرة أخرى.', en: 'I didn\'t hear anything. Try again.', fr: 'Je n\'ai rien entendu. Réessayez.' },
@@ -344,16 +224,11 @@ export default function SmartVoicePage() {
       'daily_limit_exceeded': { ar: 'تم تجاوز الحد اليومي للطلبات', en: 'Daily request limit exceeded', fr: 'Limite quotidienne de requêtes dépassée' },
       'connection_error': { ar: 'حدث خطأ في الاتصال بالمساعد.', en: 'Connection error with the assistant.', fr: 'Erreur de connexion avec l\'assistant.' },
       'retrying': { ar: 'محاولة إعادة الاتصال', en: 'Retrying connection', fr: 'Tentative de reconnexion' },
-      
-      // رسائل التحميل
       'download_success': { ar: 'تم تحميل النموذج بنجاح', en: 'Model downloaded successfully', fr: 'Modèle téléchargé avec succès' },
       'download_failed': { ar: 'فشل تحميل النموذج', en: 'Failed to download model', fr: 'Échec du téléchargement du modèle' },
       'delete_success': { ar: 'تم حذف النموذج', en: 'Model deleted', fr: 'Modèle supprimé' },
       'no_space': { ar: 'مساحة غير كافية', en: 'Insufficient space', fr: 'Espace insuffisant' },
       'download_cancelled': { ar: 'تم إلغاء التحميل', en: 'Download cancelled', fr: 'Téléchargement annulé' },
-      'download_resumed': { ar: 'تم استئناف التحميل', en: 'Download resumed', fr: 'Téléchargement repris' },
-      
-      // مفاتيح جديدة لتحميل Whisper
       'whisper_consent_title': { ar: 'تنبيه: مطلوب تحميل نموذج إضافي', en: 'Alert: Additional Model Required', fr: 'Alerte : Modèle supplémentaire requis' },
       'whisper_consent_message': { ar: 'لتشغيل السكرتير الذكي بدون إنترنت، يجب تحميل نموذج التعرف على الصوت (حوالي 75 ميجابايت). هل توافق على التحميل الآن؟', en: 'To use the smart assistant offline, you need to download the speech recognition model (approx. 75 MB). Do you agree to download now?', fr: 'Pour utiliser l\'assistant intelligent hors ligne, vous devez télécharger le modèle de reconnaissance vocale (environ 75 Mo). Acceptez-vous de télécharger maintenant ?' },
       'agree': { ar: 'موافق', en: 'Agree', fr: 'Accepter' },
@@ -363,22 +238,19 @@ export default function SmartVoicePage() {
       'whisper_download_failed': { ar: 'فشل تحميل نموذج التعرف على الصوت. تأكد من اتصالك بالإنترنت.', en: 'Failed to download speech recognition model. Check your internet connection.', fr: 'Échec du téléchargement du modèle de reconnaissance vocale. Vérifiez votre connexion Internet.' },
     };
     return translations[key]?.[language] || translations[key]?.en || key;
-  };
+  }, [language]);
 
-  const getModelName = (model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en;
-  const getModelDescription = (model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en;
+  const getModelName = useCallback((model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en, [language]);
+  const getModelDescription = useCallback((model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en, [language]);
 
-  // دالة تحميل النموذج النصي (Gemma, Llama, Phi) - بدون تغيير
-  const downloadModel = async (model: AIModel, resume: boolean = false) => {
-    if (!isOnline) {
-      setResponse(t('no_internet'));
-      return;
-    }
+  // ========== دوال التحميل والإدارة ==========
+  const downloadModel = useCallback(async (model: AIModel, resume: boolean = false) => {
+    if (!isOnline) { setResponse(t('no_internet')); return; }
     if ('storage' in navigator && 'estimate' in navigator.storage) {
       const estimate = await navigator.storage.estimate();
       const availableMB = (estimate.quota! - estimate.usage!) / (1024 * 1024);
       if (availableMB < model.sizeMB + 100) {
-        setResponse(`${t('no_space')}. ${t('need_space')} ${model.sizeMB + 100} MB`);
+        setResponse(`${t('no_space')}. تحتاج إلى ${model.sizeMB + 100} MB إضافية`);
         return;
       }
     }
@@ -433,45 +305,41 @@ export default function SmartVoicePage() {
       }
     } catch (error: any) {
       if (error.name === 'AbortError') setResponse(`⏸️ ${t('download_cancelled')}`);
-      else { console.error(error); setResponse(`❌ ${t('download_failed')}: ${error.message || t('unknown_error')}`); }
+      else { console.error(error); setResponse(`❌ ${t('download_failed')}: ${error.message || ''}`); }
     } finally {
       setDownloadingModel(null);
       abortControllerRef.current = null;
       setDownloadProgress(prev => { const newProgress = { ...prev }; delete newProgress[model.id]; return newProgress; });
     }
-  };
+  }, [isOnline, t]);
 
-  const cancelDownload = () => {
+  const cancelDownload = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setResponse(`⏸️ ${t('download_cancelled')}`);
       setDownloadingModel(null);
     }
-  };
+  }, [t]);
 
-  const deleteModel = async (modelId: string) => {
+  const deleteModel = useCallback(async (modelId: string) => {
     if (confirm(t('delete_confirm'))) {
       await deleteModelFromIndexedDB(`model_${modelId}`);
       setDownloadedModels(prev => { const newSet = new Set(prev); newSet.delete(modelId); return newSet; });
       if (activeModel === modelId) setActiveModel(null);
       setResponse(`🗑️ ${t('delete_success')}`);
     }
-  };
+  }, [t, activeModel]);
 
-  const activateModel = (modelId: string) => {
+  const activateModel = useCallback((modelId: string) => {
     setActiveModel(modelId);
     const selectedModel = AVAILABLE_MODELS.find(m => m.id === modelId);
     const modelName = selectedModel ? getModelName(selectedModel) : modelId;
     setResponse(`${t('switch_to_model')} ${modelName}`);
     setShowModelDialog(false);
-  };
+  }, [t, getModelName]);
 
-  // دالة بدء تحميل نموذج Whisper بعد موافقة المستخدم
-  const startWhisperDownload = async () => {
-    if (!isOnline) {
-      setResponse(t('no_internet'));
-      return;
-    }
+  const startWhisperDownload = useCallback(async () => {
+    if (!isOnline) { setResponse(t('no_internet')); return; }
     setShowWhisperConsent(false);
     setWhisperDownloading(true);
     setWhisperProgress(0);
@@ -491,71 +359,9 @@ export default function SmartVoicePage() {
       setWhisperDownloading(false);
       whisperAbortControllerRef.current = null;
     }
-  };
+  }, [isOnline, t]);
 
-  // تعديل دالة startLocalRecording لطلب تحميل Whisper إذا لم يكن محملاً
-  const startLocalRecording = useCallback(async () => {
-    // إذا كان الوضع محلياً ولم يتم تحميل نموذج Whisper بعد، نعرض نافذة الموافقة
-    if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
-      setShowWhisperConsent(true);
-      return;
-    }
-    // إذا كان لا يزال قيد التحميل، نعطي رسالة انتظار
-    if (useLocalWhisper && whisperDownloading) {
-      setResponse(t('downloading_whisper'));
-      return;
-    }
-    // باقي الكود الأصلي للتسجيل
-    try {
-      isMediaRecorderInitializedRef.current = true;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop());
-        setIsListening(false);
-        setIsProcessing(true);
-        setIsModelLoading(true);
-        setResponse(t('loading_model'));
-        try {
-          const text = await transcribeLocal(audioBlob);
-          setTranscript(text);
-          await processText(text);
-        } catch (error) {
-          console.error('Local transcription error:', error);
-          setResponse(t('transcription_failed'));
-          setIsProcessing(false);
-        } finally {
-          setIsModelLoading(false);
-        }
-      };
-
-      mediaRecorder.start();
-      setIsListening(true);
-      setTranscript('');
-      setResponse('');
-      clearSilenceTimer();
-      
-      silenceTimerRef.current = setTimeout(() => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          mediaRecorderRef.current.stop();
-          setResponse(t('no_speech_detected'));
-        }
-      }, 10000);
-    } catch (error) {
-      console.error('Mic error:', error);
-      setResponse(t('mic_access_failed'));
-    }
-  }, [clearSilenceTimer, processText, t, useLocalWhisper, whisperDownloaded, whisperDownloading]);
-
-  // دالة معالجة النص (بدون تغيير)
+  // ========== دوال الصوت الأساسية (مع الترتيب الصحيح) ==========
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -584,7 +390,6 @@ export default function SmartVoicePage() {
     }
   }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t]);
 
-  // دالة إنشاء كائن SpeechRecognition (بدون تغيير)
   const createRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) { alert(t('recognition_failed')); return null; }
@@ -627,11 +432,59 @@ export default function SmartVoicePage() {
     return instance;
   }, [language, processText, clearSilenceTimer, isListening, t]);
 
-  useEffect(() => {
-    if (recognitionRef.current) try { recognitionRef.current.abort(); } catch(e) {}
-    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
-    recognitionRef.current = null; mediaRecorderRef.current = null; clearSilenceTimer();
-  }, [language, clearSilenceTimer]);
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
+  }, []);
+
+  const startLocalRecording = useCallback(async () => {
+    if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
+      setShowWhisperConsent(true);
+      return;
+    }
+    if (useLocalWhisper && whisperDownloading) {
+      setResponse(t('downloading_whisper'));
+      return;
+    }
+    try {
+      isMediaRecorderInitializedRef.current = true;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) audioChunksRef.current.push(event.data); };
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        setIsListening(false);
+        setIsProcessing(true);
+        setIsModelLoading(true);
+        setResponse(t('loading_model'));
+        try {
+          const text = await transcribeLocal(audioBlob);
+          setTranscript(text);
+          await processText(text);
+        } catch (error) {
+          console.error('Local transcription error:', error);
+          setResponse(t('transcription_failed'));
+          setIsProcessing(false);
+        } finally {
+          setIsModelLoading(false);
+        }
+      };
+      mediaRecorder.start();
+      setIsListening(true);
+      setTranscript('');
+      setResponse('');
+      clearSilenceTimer();
+      silenceTimerRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === 'recording') { mediaRecorderRef.current.stop(); setResponse(t('no_speech_detected')); }
+      }, 10000);
+    } catch (error) {
+      console.error('Mic error:', error);
+      setResponse(t('mic_access_failed'));
+    }
+  }, [useLocalWhisper, whisperDownloaded, whisperDownloading, clearSilenceTimer, processText, t]);
 
   const cleanupMediaRecorder = useCallback(() => {
     if (mediaRecorderRef.current) {
@@ -643,7 +496,7 @@ export default function SmartVoicePage() {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
   }, []);
 
-  const toggleListening = () => {
+  const toggleListening = useCallback(() => {
     if (isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
     if (isListening) {
       if (useLocalWhisper && mediaRecorderRef.current?.state === 'recording') { mediaRecorderRef.current.stop(); clearSilenceTimer(); setIsListening(false); return; }
@@ -658,15 +511,80 @@ export default function SmartVoicePage() {
       recognitionRef.current = createRecognition();
       try { recognitionRef.current?.start(); } catch(error) { setTimeout(() => { recognitionRef.current = createRecognition(); recognitionRef.current?.start(); }, 100); }
     }
-  };
+  }, [isSpeaking, isListening, useLocalWhisper, isProcessing, isOnline, startLocalRecording, cleanupMediaRecorder, createRecognition, clearSilenceTimer, t]);
 
+  // ========== تأثيرات جانبية (useEffect) ==========
+  useEffect(() => {
+    const checkWhisperModel = async () => {
+      const db = await openIndexedDB();
+      const transaction = db.transaction(['models'], 'readonly');
+      const store = transaction.objectStore('models');
+      const request = store.get('whisper_model');
+      request.onsuccess = () => { if (request.result) setWhisperDownloaded(true); };
+    };
+    checkWhisperModel();
+  }, []);
+
+  useEffect(() => {
+    const loadSavedModels = async () => {
+      const db = await openIndexedDB();
+      const transaction = db.transaction(['models'], 'readonly');
+      const store = transaction.objectStore('models');
+      const request = store.getAllKeys();
+      request.onsuccess = () => {
+        const keys = request.result as string[];
+        const modelKeys = keys.filter(key => key !== 'whisper_model');
+        setDownloadedModels(new Set(modelKeys));
+      };
+      const savedActiveModel = localStorage.getItem('active_ai_model');
+      if (savedActiveModel) setActiveModel(savedActiveModel);
+      const pendingDownloads = await getDownloadProgress('pending');
+      if (pendingDownloads && pendingDownloads.modelId) {
+        const model = AVAILABLE_MODELS.find(m => m.id === pendingDownloads.modelId);
+        if (model) downloadModel(model, true);
+      }
+    };
+    loadSavedModels();
+  }, [downloadModel]); // ✅ إضافة downloadModel إلى التبعيات
+
+  useEffect(() => {
+    if (activeModel) localStorage.setItem('active_ai_model', activeModel);
+  }, [activeModel]);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => setPulsePhase(prev => (prev + 1) % 100), 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  }, []);
+
+  useEffect(() => {
+    if (recognitionRef.current) try { recognitionRef.current.abort(); } catch(e) {}
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+    recognitionRef.current = null; mediaRecorderRef.current = null; clearSilenceTimer();
+  }, [language, clearSilenceTimer]);
+
+  // ========== دوال حساب الرسوم المتحركة ==========
   const getPulseScale = () => {
     if (isListening) return 1.12 + Math.sin(pulsePhase * 0.25) * 0.04;
     if (isProcessing || isModelLoading) return 1.08 + Math.sin(pulsePhase * 0.2) * 0.03;
     if (isSpeaking) return 1.06 + Math.sin(pulsePhase * 0.15) * 0.02;
     return 1 + Math.sin(pulsePhase * 0.12) * 0.025;
   };
-
   const getLogoOpacity = () => {
     if (isListening) return 0.95 + Math.sin(pulsePhase * 0.3) * 0.05;
     if (isProcessing || isModelLoading) return 0.85;
@@ -674,9 +592,9 @@ export default function SmartVoicePage() {
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
+  // ========== JSX (بدون تغيير) ==========
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
-      {/* شريط علوي شفاف */}
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5 z-10">
         <button onClick={() => router.back()} className="p-1"><ArrowLeft className="w-6 h-6 text-white/70 hover:text-white transition" /></button>
         <h1 className="text-xl font-black text-white">Smarty <span className="text-[10px] font-bold opacity-40">AI VOICE</span></h1>
@@ -687,7 +605,6 @@ export default function SmartVoicePage() {
         </div>
       </div>
 
-      {/* المحتوى الرئيسي */}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="relative flex flex-col items-center justify-center">
           <div className="absolute w-80 h-80 rounded-full bg-gradient-to-r from-[#E65100]/30 via-amber-500/20 to-[#E65100]/30 blur-3xl" style={{ opacity: isListening ? 0.7 : isProcessing ? 0.5 : isSpeaking ? 0.4 : 0.25, transform: `scale(${getPulseScale() * 1.1})`, transition: 'opacity 0.5s ease, transform 0.4s ease-out' }} />
@@ -721,7 +638,6 @@ export default function SmartVoicePage() {
         </div>
       </div>
 
-      {/* حوار اختيار وتحميل النماذج النصية (Gemma, Llama, Phi) */}
       {showModelDialog && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowModelDialog(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-white/10" onClick={e => e.stopPropagation()}>
@@ -760,7 +676,6 @@ export default function SmartVoicePage() {
         </div>
       )}
 
-      {/* نافذة الموافقة لتحميل نموذج Whisper */}
       {showWhisperConsent && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowWhisperConsent(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full border border-white/10" onClick={e => e.stopPropagation()}>
@@ -769,15 +684,14 @@ export default function SmartVoicePage() {
               <h3 className="text-xl font-bold text-white mb-2">{t('whisper_consent_title')}</h3>
               <p className="text-white/70 text-sm mb-6">{t('whisper_consent_message')}</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowWhisperConsent(false)} className="flex-1 py-2 rounded-xl bg-white/10 text-white/80 hover:bg-white/20 transition"> {t('decline')} </button>
-                <button onClick={startWhisperDownload} className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold hover:from-purple-500 transition"> {t('agree')} </button>
+                <button onClick={() => setShowWhisperConsent(false)} className="flex-1 py-2 rounded-xl bg-white/10 text-white/80 hover:bg-white/20 transition">{t('decline')}</button>
+                <button onClick={startWhisperDownload} className="flex-1 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold hover:from-purple-500 transition">{t('agree')}</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* شريط تقدم تحميل Whisper (يظهر أثناء التحميل) */}
       {whisperDownloading && (
         <div className="fixed bottom-20 left-4 right-4 bg-black/90 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-50">
           <div className="flex items-center gap-3">
@@ -788,9 +702,7 @@ export default function SmartVoicePage() {
                 <div className="h-full bg-gradient-to-r from-purple-500 to-purple-300 rounded-full transition-all duration-300" style={{ width: `${whisperProgress}%` }} />
               </div>
             </div>
-            <button onClick={() => whisperAbortControllerRef.current?.abort()} className="text-white/60 hover:text-white p-1">
-              <X className="w-4 h-4" />
-            </button>
+            <button onClick={() => whisperAbortControllerRef.current?.abort()} className="text-white/60 hover:text-white p-1"><X className="w-4 h-4" /></button>
           </div>
         </div>
       )}
