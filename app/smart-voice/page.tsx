@@ -306,7 +306,7 @@ const downloadModel = async (model: AIModel) => {
   // دالة تفعيل النموذج
   const activateModel = (modelId: string) => {
     setActiveModel(modelId);
-    setResponse(`${t('switch_to_model')} ${AVAILABLE_MODELS.find(m => m.id === modelId)?.name[language as keyof typeof m.name] || modelId}`);
+    setResponse(`${t('switch_to_model')} ${AVAILABLE_MODELS.find(m => m.id === modelId)?.name[language as keyof typeof model.name] || modelId}`);
     setShowModelDialog(false);
   };
 
