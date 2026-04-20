@@ -960,4 +960,4 @@ export default function SmartVoicePage() {
       </footer>
     </div>
   );
-      }
+        }
