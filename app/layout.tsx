@@ -1,5 +1,3 @@
-'use client';
-
 import type { Metadata, Viewport } from 'next';
 import { Inter, Cairo } from 'next/font/google';
 import './globals.css';
