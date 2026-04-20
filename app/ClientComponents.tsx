@@ -114,8 +114,7 @@ function NotificationPermissionHandler() {
               body: 'سنخبرك عند اكتمال تحميل النماذج في الخلفية',
               icon: '/icon-192.png',
               badge: '/badge.png',
-              silent: false,
-              vibrate: [200, 100, 200]
+              silent: false
             });
           }
         });
@@ -151,8 +150,7 @@ function PendingDownloadsHandler() {
               body: `تم اكتشاف تحميل غير مكتمل لنموذج ${filename}. سيتم استئنافه تلقائياً.`,
               icon: '/icon-192.png',
               badge: '/badge.png',
-              silent: false,
-              vibrate: [200, 100, 200]
+              silent: false
             });
           }
           
@@ -187,8 +185,7 @@ function PWAListener() {
           body: 'الآن يمكنك استخدام التطبيق بشكل أسرع وأفضل',
           icon: '/icon-192.png',
           badge: '/badge.png',
-          silent: false,
-          vibrate: [200, 100, 200, 100, 200]
+          silent: false
         });
       }
     });
