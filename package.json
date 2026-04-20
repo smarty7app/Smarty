@@ -3,10 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint ."
+  "description": "Premium Multilingual AI-Powered Reminder PWA with Local Whisper and Google Gemini Integration",
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start",
+  "lint": "eslint ."
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",
