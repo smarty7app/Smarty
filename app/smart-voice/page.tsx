@@ -599,6 +599,7 @@ const downloadModel = async (model: AIModel) => {
           {/* زر تحميل النموذج الجديد */}
           <button
             onClick={() => setShowModelDialog(true)}
+            disabled={true}  // ✅ تعطيل مؤقت
             className="flex items-center gap-1.5 text-[10px] font-bold px-3 py-1.5 rounded-full transition bg-gradient-to-r from-purple-500/30 to-purple-600/20 text-purple-200 hover:from-purple-500/40 hover:to-purple-600/30 border border-purple-500/30"
           >
             <Download className="w-3 h-3" />
