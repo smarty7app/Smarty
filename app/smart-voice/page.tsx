@@ -304,11 +304,13 @@ const downloadModel = async (model: AIModel) => {
   };
 
   // دالة تفعيل النموذج
-  const activateModel = (modelId: string) => {
-    setActiveModel(modelId);
-    setResponse(`${t('switch_to_model')} ${AVAILABLE_MODELS.find(m => m.id === modelId)?.name[language as keyof typeof model.name] || modelId}`);
-    setShowModelDialog(false);
-  };
+const activateModel = (modelId: string) => {
+  setActiveModel(modelId);
+  const selectedModel = AVAILABLE_MODELS.find(m => m.id === modelId);
+  const modelName = selectedModel?.name[language as keyof typeof selectedModel.name] || modelId;
+  setResponse(`${t('switch_to_model')} ${modelName}`);
+  setShowModelDialog(false);
+};
 
   // دالة معالجة النص (مشتركة بين Web Speech و Whisper)
   const processText = useCallback(async (text: string) => {
