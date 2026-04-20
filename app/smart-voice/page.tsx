@@ -55,7 +55,7 @@ const AVAILABLE_MODELS: AIModel[] = [
   }
 ];
 
-// Helper functions for IndexedDB (only run in browser)
+// ===================== IndexedDB Helpers =====================
 async function openIndexedDB(): Promise<IDBDatabase> {
   if (typeof window === 'undefined') throw new Error('IndexedDB not available');
   return new Promise((resolve, reject) => {
@@ -224,7 +224,7 @@ export default function SmartVoicePage() {
   const getModelName = useCallback((model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en, [language]);
   const getModelDescription = useCallback((model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en, [language]);
 
-  // Only run client-side effects
+  // ========== Effects ==========
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if ('Notification' in window) setNotificationsEnabled(Notification.permission === 'granted');
@@ -298,7 +298,9 @@ export default function SmartVoicePage() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => console.log('Service Worker ready'));
   }, []);
 
-  useEffect(() => { if (activeModel && typeof window !== 'undefined') localStorage.setItem('active_ai_model', activeModel); }, [activeModel]);
+  useEffect(() => {
+    if (activeModel && typeof window !== 'undefined') localStorage.setItem('active_ai_model', activeModel);
+  }, [activeModel]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -323,6 +325,7 @@ export default function SmartVoicePage() {
     silenceTimerRef.current = null;
   }, []);
 
+  // ========== Notifications ==========
   const requestNotificationPermission = async () => {
     if (typeof window === 'undefined') return;
     if ('Notification' in window) {
@@ -335,6 +338,7 @@ export default function SmartVoicePage() {
     }
   };
 
+  // ========== Download with Service Worker ==========
   const downloadModelWithSW = async (model: AIModel) => {
     if (typeof window === 'undefined') return;
     if (!isOnline) { setResponse(t('no_internet')); return; }
@@ -429,6 +433,7 @@ export default function SmartVoicePage() {
     setShowModelDialog(false);
   };
 
+  // ========== Core Voice Functions (unchanged) ==========
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
