@@ -6,16 +6,15 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
 });
 
-// تكوينات النماذج المختلفة مع نماذج Gemini المناسبة
+// تكوينات النماذج المختلفة
 const MODEL_CONFIGS = {
   'gemma-2-2b': {
     name: 'Gemma 2 2B',
-    model: 'gemini-1.5-flash', // نستخدم نفس Gemini مع توجيه مختلف
+    model: 'gemini-1.5-flash',
     systemPrompt: (userName: string) => `أنت Smarty، مساعد ذكي يعمل بنموذج Gemma 2B (نسخة خفيفة وسريعة).
              شخصيتك: ودود، سريع الاستجابة، ومباشر. تتحدث العربية بطلاقة.
              المستخدم الحالي: ${userName || 'مستخدم'}.
              قدم إجابات مختصرة ومفيدة، وركز على السرعة والدقة.`,
-    maxTokens: 512,
     temperature: 0.7,
   },
   'llama-3.2-3b': {
@@ -26,7 +25,6 @@ const MODEL_CONFIGS = {
              تقدم إجابات مفصلة وشاملة، مع أمثلة عند الحاجة.
              المستخدم الحالي: ${userName || 'مستخدم'}.
              أنت خبير في جميع المجالات وتقدم إجابات دقيقة وعميقة.`,
-    maxTokens: 1024,
     temperature: 0.8,
   },
   'phi-3.5-mini': {
@@ -37,7 +35,6 @@ const MODEL_CONFIGS = {
              تقدم إجابات قصيرة ومباشرة، مناسبة للهواتف الأقل قدرة.
              المستخدم الحالي: ${userName || 'مستخدم'}.
              ركز على البساطة والوضوح في إجاباتك.`,
-    maxTokens: 384,
     temperature: 0.6,
   },
   'default': {
@@ -49,19 +46,18 @@ const MODEL_CONFIGS = {
              بالإضافة إلى ذلك، أنت خبير في تنظيم الوقت وإدارة المهام، ويمكنك مساعدة المستخدم في إنشاء تذكيرات ومواعيد إذا طلب ذلك.
              المستخدم الحالي: ${userName || 'مستخدم'}.
              اجعل إجاباتك مفيدة ومباشرة، ولا تتردد في طرح أسئلة توضيحية إذا لزم الأمر.`,
-    maxTokens: 512,
     temperature: 0.7,
   }
 };
 
-// سجل الاستخدام اليومي للمستخدمين (في الإنتاج استخدم قاعدة بيانات)
+// سجل الاستخدام اليومي للمستخدمين
 const userDailyUsage = new Map<string, { count: number; date: string }>();
 
 // دالة مساعدة للتحقق من الحد اليومي
 function checkDailyLimit(userId: string): { allowed: boolean; remaining: number; limit: number } {
   const today = new Date().toISOString().split('T')[0];
   const userRecord = userDailyUsage.get(userId);
-  const DAILY_LIMIT = 1500; // Gemini يسمح بـ 1500 طلب يومياً مجاناً
+  const DAILY_LIMIT = 1500;
   
   if (!userRecord || userRecord.date !== today) {
     return { allowed: true, remaining: DAILY_LIMIT, limit: DAILY_LIMIT };
@@ -118,7 +114,7 @@ export async function POST(req: Request) {
     // إنشاء رسالة النظام المخصصة للنموذج
     const systemPrompt = activeModel.systemPrompt(finalUserName);
     
-    // إضافة معلومات عن النموذج المستخدم في السياق (اختياري)
+    // إضافة معلومات عن النموذج المستخدم في السياق
     const enhancedPrompt = `[النموذج المستخدم: ${activeModel.name}]
 سؤال المستخدم: ${prompt}`;
     
@@ -128,17 +124,16 @@ export async function POST(req: Request) {
       system: systemPrompt,
       prompt: enhancedPrompt,
       temperature: activeModel.temperature,
-      maxTokens: activeModel.maxTokens,
     });
     
-    // إضافة headers مخصصة للرد
-    const response = result.toTextStreamResponse();
+    // الحصول على دفق النص
+    const stream = result.toTextStreamResponse();
     
     // إضافة معلومات الاستخدام المتبقي في الـ headers
-    response.headers.set('X-Remaining-Requests', (remaining - 1).toString());
-    response.headers.set('X-Active-Model', activeModel.name);
+    stream.headers.set('X-Remaining-Requests', (remaining - 1).toString());
+    stream.headers.set('X-Active-Model', activeModel.name);
     
-    return response;
+    return stream;
     
   } catch (error) {
     console.error('Chat API error:', error);
