@@ -95,7 +95,7 @@ export default function LoginPage() {
             onClick={handleBrowseAsGuest}
             className="w-full text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-[#E65100] dark:hover:text-[#E65100] transition"
           >
-            🚪 {browseAsGuestText}
+             {browseAsGuestText}
           </button>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
             {guestDisclaimerText}
@@ -109,7 +109,7 @@ export default function LoginPage() {
               onClick={handleGuestMode}
               className="w-full text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition underline-offset-2 underline"
             >
-              🚪 تخطي تسجيل الدخول مؤقتاً (وضع الضيف)
+                تخطي تسجيل الدخول 
             </button>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
               هذا الخيار متاح فقط في بيئة التطوير. لن يتم حفظ أي بيانات شخصية.
