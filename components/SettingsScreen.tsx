@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, Settings, Shield, Bell, Moon, Sparkles, Globe, Trash2, RefreshCcw, LogOut, Mail, UserX } from 'lucide-react';
+import { ChevronLeft, Settings, Moon, Globe, Trash2, RefreshCcw, LogOut, Mail, UserX } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 import { LanguageCode } from '@/lib/translations';
 import { signOut, useSession } from 'next-auth/react';
@@ -14,7 +14,6 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
   const [isDark, setIsDark] = React.useState(false);
-  const [isSmartAnalysisEnabled, setIsSmartAnalysisEnabled] = React.useState(true);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [isGuestMode, setIsGuestMode] = React.useState(false);
@@ -41,10 +40,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
   React.useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'));
-    const smartAnalysis = localStorage.getItem('smart_analysis_enabled');
-    if (smartAnalysis !== null) {
-      setIsSmartAnalysisEnabled(smartAnalysis === 'true');
-    }
 
     // التحقق من وضع الضيف (كوكي أو sessionStorage)
     const checkGuestMode = () => {
@@ -81,7 +76,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* ========== Profile Section (Responsive Fix) ========== */}
+        {/* ========== Profile Section ========== */}
         {session?.user && (
           <section className="space-y-4">
             <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
@@ -128,51 +123,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </section>
         )}
 
-        {/* Language Section */}
+        {/* ========== Language Section - Redesigned ========== */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
             <Globe className="w-4 h-4" />
             {t.language}
           </h3>
-          <div dir="ltr" className="bg-white dark:bg-zinc-900 rounded-[2rem] p-1.5 shadow-xl border border-black/5 dark:border-white/5 relative flex items-center h-16">
-            <motion.div
-              initial={false}
-              animate={{
-                x: (languages.findIndex(l => l.code === language) * 100) + '%'
-              }}
-              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-              className="absolute top-1.5 bottom-1.5 rounded-2xl bg-[#E65100] shadow-lg shadow-orange-500/30"
-              style={{
-                width: `calc(${100 / languages.length}% - 0.75rem)`,
-                left: '0.375rem'
-              }}
-            />
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                className={`relative z-10 flex-1 h-full flex items-center justify-center font-black text-xs tracking-wider transition-colors duration-300 ${
-                  language === lang.code
-                    ? 'text-white'
-                    : 'text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300'
-                }`}
-              >
-                {lang.code === 'ar' ? lang.label : lang.label.toUpperCase()}
-              </button>
-            ))}
+
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-sm border border-black/5 dark:border-white/5">
+            <div className="p-4 flex flex-wrap justify-center gap-3">
+              {languages.map((lang) => {
+                const isActive = language === lang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code)}
+                    className={`
+                      relative px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-200
+                      ${isActive 
+                        ? 'bg-[#E65100] text-white shadow-md shadow-[#E65100]/20' 
+                        : 'bg-transparent text-zinc-700 dark:text-zinc-300 hover:bg-[#E65100]/10 dark:hover:bg-[#E65100]/20 border border-zinc-200 dark:border-zinc-700'
+                      }
+                    `}
+                  >
+                    {lang.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
-        {/* System Preferences */}
+        {/* ========== System Preferences (Only Dark Mode) ========== */}
         <section className="space-y-4">
           <h3 className="text-xs font-black text-white/50 uppercase tracking-widest px-2 flex items-center gap-2">
             <Settings className="w-4 h-4" />
             {t.system_preferences}
           </h3>
-          <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-lg border border-black/5 dark:border-white/5">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
+          
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-sm border border-black/5 dark:border-white/5">
+            {/* Dark Mode Toggle */}
+            <div className="flex items-center justify-between p-6">
               <div className="flex items-center gap-4">
-                <Moon className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
+                <div className={`p-2 rounded-lg ${isDark ? 'bg-indigo-500/10 text-indigo-500' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
+                  <Moon className="w-5 h-5" />
+                </div>
                 <div className="flex flex-col">
                   <span className="font-bold text-black dark:text-white">{t.dark_mode}</span>
                   <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
@@ -210,48 +205,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                 </div>
               </button>
             </div>
-            <div className="flex items-center justify-between p-6 border-b border-zinc-50 dark:border-white/5">
-              <div className="flex items-center gap-4">
-                <Shield className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
-                <span className="font-bold text-black dark:text-white">{t.privacy_security}</span>
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-6">
-              <div className="flex items-center gap-4">
-                <Sparkles className="w-5 h-5 text-zinc-300 dark:text-zinc-600" />
-                <div className="flex flex-col">
-                  <span className="font-bold text-black dark:text-white">{t.smart_analysis}</span>
-                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">{t.smart_analysis_desc}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  const newState = !isSmartAnalysisEnabled;
-                  setIsSmartAnalysisEnabled(newState);
-                  localStorage.setItem('smart_analysis_enabled', newState.toString());
-                  window.dispatchEvent(new Event('storage'));
-                }}
-                className={`w-14 h-7 rounded-full relative transition-all duration-300 ${isSmartAnalysisEnabled ? 'bg-[#E65100] shadow-inner' : 'bg-zinc-100 dark:bg-zinc-800'}`}
-              >
-                <div
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 flex items-center justify-center ${
-                    isSmartAnalysisEnabled
-                      ? isRTL
-                        ? 'right-8'
-                        : 'left-8'
-                      : isRTL
-                      ? 'right-1'
-                      : 'left-1'
-                  }`}
-                >
-                  {isSmartAnalysisEnabled ? <Sparkles className="w-3 h-3 text-[#E65100]" /> : <Sparkles className="w-3 h-3 text-zinc-300" />}
-                </div>
-              </button>
-            </div>
           </div>
         </section>
 
-        {/* Data Zone */}
+        {/* ========== Data Zone ========== */}
         <section className="space-y-3 pt-4">
           <h3 className="text-[10px] font-black text-red-500/40 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
             <Trash2 className="w-3 h-3" />
@@ -280,7 +237,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           </div>
         </section>
 
-        {/* Guest Mode Section - يظهر فقط في وضع الضيف */}
+        {/* ========== Guest Mode Section ========== */}
         {isGuestMode && (
           <section className="space-y-3 pt-4">
             <h3 className="text-[10px] font-black text-yellow-500/60 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
