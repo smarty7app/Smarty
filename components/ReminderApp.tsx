@@ -78,7 +78,9 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
    
   useEffect(() => {
     if (initialReminderText) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputText(initialReminderText);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAdding(true);
     }
   }, [initialReminderText]);
