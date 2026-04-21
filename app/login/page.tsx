@@ -33,10 +33,10 @@ export default function LoginPage() {
 
   // نصوص متعددة اللغات للخيار الجديد
   const browseAsGuestText = {
-    ar: "تصفح التطبيق كضيف",
-    en: "Browse as guest",
-    fr: "Parcourir en tant qu'invité",
-  }[language] || "Browse as guest";
+    ar: "تخطي تسجيل الدخول",
+    en: "Skip login",
+    fr: "Ignorer la connexion",
+  }[language] || "Skip login";
 
   const guestDisclaimerText = {
     ar: "يمكنك استخدام التطبيق بدون حساب، لكن لن تتم مزامنة بياناتك.",
