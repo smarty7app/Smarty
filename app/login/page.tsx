@@ -4,10 +4,12 @@ import { signIn } from "next-auth/react";
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { language } = useLanguage();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -19,14 +21,32 @@ export default function LoginPage() {
     router.push("/");
   };
 
+  // وضع الضيف العام (متاح دائمًا)
+  const handleBrowseAsGuest = () => {
+    document.cookie = "guest_mode=true; path=/; max-age=86400";
+    router.push("/");
+  };
+
   const showGuestButton =
     process.env.NODE_ENV === "development" ||
     process.env.NEXT_PUBLIC_ENABLE_GUEST_MODE === "true";
 
+  // نصوص متعددة اللغات للخيار الجديد
+  const browseAsGuestText = {
+    ar: "تصفح التطبيق كضيف",
+    en: "Browse as guest",
+    fr: "Parcourir en tant qu'invité",
+  }[language] || "Browse as guest";
+
+  const guestDisclaimerText = {
+    ar: "يمكنك استخدام التطبيق بدون حساب، لكن لن تتم مزامنة بياناتك.",
+    en: "You can use the app without an account, but your data won't be synced.",
+    fr: "Vous pouvez utiliser l'application sans compte, mais vos données ne seront pas synchronisées.",
+  }[language] || "You can use the app without an account, but your data won't be synced.";
+
   return (
     <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
       <div className="bg-white dark:bg-black rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
-        
         {/* حاوية دائرية للشعار */}
         <div className="relative w-24 h-24 mx-auto mb-6">
           <div className="absolute inset-0 rounded-full overflow-hidden">
@@ -43,7 +63,9 @@ export default function LoginPage() {
         <h1 className="text-3xl font-black text-[#E65100] dark:text-white mb-2">
           Smarty
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">سجل دخولك للمتابعة</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          {language === "ar" ? "سجل دخولك للمتابعة" : language === "fr" ? "Connectez-vous pour continuer" : "Sign in to continue"}
+        </p>
 
         <button
           onClick={handleGoogleSignIn}
@@ -60,11 +82,27 @@ export default function LoginPage() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              <span>تسجيل الدخول باستخدام Google</span>
+              <span>
+                {language === "ar" ? "تسجيل الدخول باستخدام Google" : language === "fr" ? "Se connecter avec Google" : "Sign in with Google"}
+              </span>
             </>
           )}
         </button>
 
+        {/* خيار تصفح التطبيق كضيف (متاح دائمًا) */}
+        <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+          <button
+            onClick={handleBrowseAsGuest}
+            className="w-full text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-[#E65100] dark:hover:text-[#E65100] transition"
+          >
+            🚪 {browseAsGuestText}
+          </button>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            {guestDisclaimerText}
+          </p>
+        </div>
+
+        {/* وضع الضيف التطويري (يظهر فقط في بيئة التطوير أو عند تفعيل المتغير) */}
         {showGuestButton && (
           <div className="mt-4">
             <button
