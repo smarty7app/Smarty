@@ -297,4 +297,4 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
       <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
     </div>
   );
-}
+            }
