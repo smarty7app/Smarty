@@ -53,6 +53,55 @@ const AVAILABLE_MODELS: AIModel[] = [
     description: { ar: 'خفيف الوزن، مناسب للهواتف القديمة', en: 'Lightweight, suitable for older phones', fr: 'Léger, adapté aux anciens téléphones' },
     downloadUrl: 'https://huggingface.co/tensorblock/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf',
     filename: 'Phi-3.5-mini-instruct-Q4_K_M.gguf'
+  },
+  // ========== النماذج الجديدة المضافة ==========
+  {
+    id: 'qwen2.5-1.5b',
+    name: { ar: 'كوين 2.5 - 1.5 مليار', en: 'Qwen 2.5 - 1.5B', fr: 'Qwen 2.5 - 1.5B' },
+    size: '1.2 GB', sizeMB: 1200,
+    description: { ar: 'خفيف وسريع، دعم ممتاز للعربية واللغات المتعددة', en: 'Lightweight and fast, excellent multilingual support', fr: 'Léger et rapide, excellent support multilingue' },
+    downloadUrl: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf',
+    filename: 'qwen2.5-1.5b-instruct-q4_k_m.gguf'
+  },
+  {
+    id: 'phi-3-mini-4k',
+    name: { ar: 'فاي 3 ميني - 4K', en: 'Phi-3 Mini 4K', fr: 'Phi-3 Mini 4K' },
+    size: '2.2 GB', sizeMB: 2200,
+    description: { ar: 'نموذج قوي من مايكروسوفت بذاكرة سياق 4K', en: 'Powerful Microsoft model with 4K context', fr: 'Modèle Microsoft puissant avec contexte 4K' },
+    downloadUrl: 'https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf/resolve/main/Phi-3-mini-4k-instruct-q4.gguf',
+    filename: 'Phi-3-mini-4k-instruct-q4.gguf'
+  },
+  {
+    id: 'mistral-7b-v0.1',
+    name: { ar: 'ميسترال 7B', en: 'Mistral 7B', fr: 'Mistral 7B' },
+    size: '4.2 GB', sizeMB: 4200,
+    description: { ar: 'نموذج قوي جدًا (للهواتف الرائدة ذات الذاكرة العالية)', en: 'Very powerful model (for flagship phones with high RAM)', fr: 'Modèle très puissant (pour smartphones haut de gamme avec beaucoup de RAM)' },
+    downloadUrl: 'https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF/resolve/main/mistral-7b-instruct-v0.1.Q4_K_M.gguf',
+    filename: 'mistral-7b-instruct-v0.1.Q4_K_M.gguf'
+  },
+  {
+    id: 'tinyllama-1.1b',
+    name: { ar: 'تاييني لاما 1.1B', en: 'TinyLlama 1.1B', fr: 'TinyLlama 1.1B' },
+    size: '700 MB', sizeMB: 700,
+    description: { ar: 'صغير جدًا، مناسب لجميع الهواتف، استجابة سريعة', en: 'Very small, suitable for all phones, fast response', fr: 'Très petit, adapté à tous les téléphones, réponse rapide' },
+    downloadUrl: 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf',
+    filename: 'tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf'
+  },
+  {
+    id: 'zephyr-3b',
+    name: { ar: 'زفير 3B', en: 'Zephyr 3B', fr: 'Zephyr 3B' },
+    size: '1.9 GB', sizeMB: 1900,
+    description: { ar: 'مشتق من ميسترال، أداء جيد للمهام العامة', en: 'Derived from Mistral, good performance for general tasks', fr: 'Dérivé de Mistral, bonne performance pour tâches générales' },
+    downloadUrl: 'https://huggingface.co/TheBloke/zephyr-3B-GGUF/resolve/main/zephyr-3b.Q4_K_M.gguf',
+    filename: 'zephyr-3b.Q4_K_M.gguf'
+  },
+  {
+    id: 'stablelm-2-1.6b',
+    name: { ar: 'ستيبل إل إم 2 - 1.6B', en: 'StableLM 2 - 1.6B', fr: 'StableLM 2 - 1.6B' },
+    size: '1.1 GB', sizeMB: 1100,
+    description: { ar: 'نموذج متوازن من Stability AI، جيد للهواتف المتوسطة', en: 'Balanced model from Stability AI, good for mid-range phones', fr: 'Modèle équilibré de Stability AI, bon pour les smartphones milieu de gamme' },
+    downloadUrl: 'https://huggingface.co/stabilityai/stablelm-2-1.6b-chat-GGUF/resolve/main/stablelm-2-1.6b-chat-Q4_K_M.gguf',
+    filename: 'stablelm-2-1.6b-chat-Q4_K_M.gguf'
   }
 ];
 
@@ -736,4 +785,4 @@ export default function SmartVoicePage() {
       <footer className="py-6 text-center"><p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">SMARTY AI ASSISTANT</p></footer>
     </div>
   );
-}
+                                     }
