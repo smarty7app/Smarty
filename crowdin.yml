@@ -1,6 +1,6 @@
 # crowdin.yml
 project_id: "890276"          # ← استبدل بـ Project ID الخاص بك
-api_token: "05fe7890145f26b10e492058ce6a0126b4abb44a9738d4cd46112d7d1bfe6bfa81b79ccd6eda50b9"   # ← استبدل بـ API Token الكامل
+api_token: "CROWDIN_API_TOKEN"   # ← استبدل بـ API Token الكامل
 base_path: "."
 preserve_hierarchy: true
 
