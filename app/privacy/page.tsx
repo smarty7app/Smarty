@@ -1,10 +1,23 @@
 'use client';
 
 import { useLanguage } from '@/components/LanguageContext';
+import { useEffect, useState } from 'react';
 
 export default function PrivacyPage() {
   const { language, isRTL } = useLanguage();
   const contactEmail = "smarty7app@gmail.com";
+
+  // إضافة حالة محلية للمساعدة في إعادة التصيير عند تغيير الوضع الليلي
+  const [, setDarkModeTick] = useState(0);
+
+  // مراقبة التغيرات على class الخاصة بالوضع الليلي
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDarkModeTick(prev => prev + 1);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   // الترجمة حسب اللغة
   const t = {
@@ -178,4 +191,4 @@ export default function PrivacyPage() {
       </div>
     </div>
   );
-}
+                                                            }
