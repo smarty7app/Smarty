@@ -427,6 +427,31 @@ export default function SmartVoicePage() {
   const isListeningRef = useRef(isListening);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
 
+  // دالة للتحقق مما إذا كان النص تحذيرياً (يُعرض للمستخدم)
+  const isWarningMessage = (msg: string): boolean => {
+    const warningPatterns = [
+      'لا يوجد اتصال',
+      'فشل',
+      'خطأ',
+      'عذراً',
+      'لم أستطع',
+      'تم تجاوز',
+      'محاولة إعادة الاتصال',
+      'حدث خطأ',
+      'فشل الوصول',
+      'لم يتم اكتشاف',
+      'الرجاء السماح',
+      'مساحة غير كافية',
+      'تحميل النموذج',
+      'جارٍ تحميل',
+      'النموذج المحلي',
+      'فشل التفريغ',
+      'تنبيه',
+      'تحذير',
+    ];
+    return warningPatterns.some(pattern => msg.includes(pattern));
+  };
+
   // ثالثاً: processText (تعتمد على دوال أخرى)
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
@@ -473,10 +498,11 @@ export default function SmartVoicePage() {
       setResponse('');
       setRetryCount(0);
       clearSilenceTimer();
+      // ✅ انتظار 2 ثانية بعد الصمت (تم تغييرها من 10000 إلى 2000)
       silenceTimerRef.current = setTimeout(() => { 
         if (isListeningRef.current) recognitionRef.current?.stop(); 
         setResponse(t('no_speech_detected')); 
-      }, 10000);
+      }, 2000);
     };
     instance.onaudiostart = () => clearSilenceTimer();
     instance.onaudioend = () => clearSilenceTimer();
@@ -546,9 +572,10 @@ export default function SmartVoicePage() {
       setTranscript('');
       setResponse('');
       clearSilenceTimer();
+      // ✅ انتظار 2 ثانية بعد الصمت (تم تغييرها من 10000 إلى 2000)
       silenceTimerRef.current = setTimeout(() => {
         if (mediaRecorderRef.current?.state === 'recording') { mediaRecorderRef.current.stop(); setResponse(t('no_speech_detected')); }
-      }, 10000);
+      }, 2000);
     } catch (error) {
       console.error('Mic error:', error);
       setResponse(t('mic_access_failed'));
@@ -667,7 +694,7 @@ export default function SmartVoicePage() {
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
-  // ========== JSX (بدون تغيير) ==========
+  // ========== JSX ==========
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5 z-10">
@@ -708,8 +735,14 @@ export default function SmartVoicePage() {
           </div>
         </div>
         <div className="w-full max-w-md space-y-4 mt-10">
-          {transcript && <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10"><p className="text-xs font-bold text-white/40 uppercase tracking-wider">{t('you')}</p><p className="text-white text-lg font-medium mt-1">{transcript}</p></div>}
-          {response && <div className="bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 backdrop-blur-md rounded-2xl p-5 border border-white/10"><p className="text-xs font-bold text-white/40 uppercase tracking-wider">{t('smarty')}</p><p className="text-white text-lg font-medium mt-1">{response}</p></div>}
+          {/* تم إخفاء نص المستخدم (transcript) – لا يظهر */}
+          {/* عرض الرسائل التحذيرية فقط */}
+          {response && isWarningMessage(response) && (
+            <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-md rounded-2xl p-5 border border-red-500/30">
+              <p className="text-xs font-bold text-red-300 uppercase tracking-wider">⚠️ تحذير</p>
+              <p className="text-white text-lg font-medium mt-1">{response}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -785,4 +818,4 @@ export default function SmartVoicePage() {
       <footer className="py-6 text-center"><p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">SMARTY AI ASSISTANT</p></footer>
     </div>
   );
-                                     }
+                          }
