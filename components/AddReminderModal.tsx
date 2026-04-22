@@ -6,7 +6,7 @@ import {
   Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
 } from 'lucide-react';
 import { 
-  analyzeReminderInput, 
+  analyzeReminderInputAsync, 
   formatDetectedTime, 
   type SmartParsedResult 
 } from '@/lib/date-parser';
@@ -61,6 +61,7 @@ export default function AddReminderModal({
 }: AddReminderModalProps) {
 
   const [error, setError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // مفتاح التخزين المؤقت
   const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
@@ -105,39 +106,58 @@ export default function AddReminderModal({
     onClose();
   };
 
-  // تأثير التحليل الذكي
+  // تأثير التحليل الذكي (غير متزامن - AI أولاً)
   useEffect(() => {
-    if (inputText.trim()) {
-      const result = analyzeReminderInput(inputText);
+    const analyzeText = async () => {
+      if (!inputText.trim()) {
+        setSmartParsed(null);
+        setError(null);
+        setIsAnalyzing(false);
+        return;
+      }
       
-      if (result) {
-        const isValidDate = isValidDateString(result.reminderTime);
+      setIsAnalyzing(true);
+      
+      try {
+        // استخدام الدالة غير المتزامنة التي تعطي الأولوية للـ AI
+        const result = await analyzeReminderInputAsync(inputText);
         
-        if (isValidDate) {
+        if (result && isValidDateString(result.reminderTime)) {
           setSmartParsed(result);
           setError(null);
           if (onReminderTimeDetected) {
             onReminderTimeDetected(result.reminderTime);
           }
+          
+          // للتصحيح: معرفة مصدر التحليل (يمكن إزالته في الإنتاج)
+          if (result.source === 'ai') {
+            console.log('✅ AI analysis successful');
+          } else {
+            console.log('⚠️ Using local analysis fallback');
+          }
         } else {
           setSmartParsed(null);
-          setError('التاريخ المستخرج غير صالح، سيتم استخدام الوقت الحالي');
+          setError('لم نتمكن من تحديد الوقت بدقة. يرجى كتابة الوقت بشكل أوضح.');
           if (onReminderTimeDetected) {
             onReminderTimeDetected(new Date().toISOString());
           }
         }
-      } else {
+      } catch (error) {
+        console.error('Date parsing error:', error);
         setSmartParsed(null);
-        setError('لا يمكن إنشاء تذكير في وقت سابق');
+        setError('حدث خطأ في تحليل الوقت. يرجى المحاولة مرة أخرى.');
         if (onReminderTimeDetected) {
           onReminderTimeDetected(new Date().toISOString());
         }
+      } finally {
+        setIsAnalyzing(false);
       }
-    } else {
-      setSmartParsed(null);
-      setError(null);
-    }
-  }, [inputText, setSmartParsed, onReminderTimeDetected]);
+    };
+    
+    // تأخير التحليل قليلاً لتجنب الطلبات المتكررة أثناء الكتابة
+    const timer = setTimeout(analyzeText, 500);
+    return () => clearTimeout(timer);
+  }, [inputText, setSmartParsed, onReminderTimeDetected, language]);
 
   if (!isOpen) return null;
   const DRAG_THRESHOLD = 100;
@@ -190,6 +210,18 @@ export default function AddReminderModal({
             {error && (
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl">
                 <p className="text-sm font-bold text-red-600 dark:text-red-400 text-center">{error}</p>
+              </div>
+            )}
+
+            {/* مؤشر التحليل */}
+            {isAnalyzing && inputText.trim() && !smartParsed && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm font-bold text-blue-600 dark:text-blue-400 text-center">
+                    جاري التحليل الذكي...
+                  </p>
+                </div>
               </div>
             )}
 
@@ -279,7 +311,7 @@ export default function AddReminderModal({
                   sessionStorage.removeItem(DRAFT_STORAGE_KEY);
                   handleAddReminder();
                 }} 
-                disabled={!inputText.trim()} 
+                disabled={!inputText.trim() || isAnalyzing} 
                 className="flex-[2] bg-gradient-to-r from-[#E65100] to-amber-500 text-white font-bold py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#E65100]/20 hover:shadow-xl hover:shadow-[#E65100]/30 transition-all"
               >
                 <CheckCircle2 className="w-5 h-5" />
@@ -291,4 +323,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-}
+                                    }
