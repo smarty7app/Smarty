@@ -1,11 +1,11 @@
 // app/api/parse-date/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export async function POST(request: NextRequest) {
   try {
     const { text, language } = await request.json();
-    
+
     if (!text || typeof text !== 'string') {
       return NextResponse.json(
         { success: false, error: 'النص مطلوب' },
@@ -15,29 +15,29 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn('GEMINI_API_KEY not configured');
+      console.warn('⚠️ GEMINI_API_KEY not configured');
       return NextResponse.json(
         { success: false, error: 'AI غير متوفر حالياً' },
         { status: 503 }
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    // استخدام الـ SDK الجديد
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+    const model = 'gemini-1.5-flash'; // أو gemini-1.5-pro أو gemini-1.0-pro
 
     const prompt = `
-أنت مساعد ذكي متخصص في استخراج التواريخ والمواعيد من النصوص.
+أنت مساعد ذكي متخصص في استخراج التواريخ والمواعيد من النصوص العربية.
 
 النص: "${text}"
 
 المطلوب:
 1. استخرج التاريخ والوقت بدقة عالية.
 2. إذا كان الوقت قد فات اليوم، اجعله في نفس الوقت من الغد.
-3. إذا كان النص يحتوي على تعبيرات مثل "بعد ساعة" أو "بعد يومين"، احسبها بدقة.
+3. أجب فقط بكائن JSON بهذا التنسيق:
 
-أجب فقط بكائن JSON بهذا التنسيق (بدون أي نص آخر):
 {
-  "reminderTime": "ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)",
+  "reminderTime": "YYYY-MM-DDTHH:mm:ss.sssZ",
   "parsedText": "النص بعد إزالة كلمات الأمر",
   "confidence": 0.95
 }
@@ -54,24 +54,24 @@ export async function POST(request: NextRequest) {
 تأكد من أن الوقت دائماً في المستقبل.
 `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
-    
-    // استخراج JSON من الرد
+    const result = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+    });
+
+    const responseText = result.text;
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error('Invalid AI response format');
     }
-    
+
     const parsed = JSON.parse(jsonMatch[0]);
-    
-    // التحقق من صحة التاريخ
     const date = new Date(parsed.reminderTime);
+
     if (isNaN(date.getTime())) {
       throw new Error('Invalid date from AI');
     }
-    
+
     return NextResponse.json({
       success: true,
       reminderTime: parsed.reminderTime,
