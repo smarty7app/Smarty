@@ -6,7 +6,7 @@ import {
   Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
 } from 'lucide-react';
 import { 
-  analyzeReminderInputAsync, 
+  analyzeReminderInput, 
   formatDetectedTime, 
   type SmartParsedResult 
 } from '@/lib/date-parser';
@@ -106,9 +106,9 @@ export default function AddReminderModal({
     onClose();
   };
 
-  // تأثير التحليل الذكي (غير متزامن - AI أولاً)
+  // تأثير التحليل الذكي (متزامن - تحليل محلي فقط)
   useEffect(() => {
-    const analyzeText = async () => {
+    const analyzeText = () => {
       if (!inputText.trim()) {
         setSmartParsed(null);
         setError(null);
@@ -119,21 +119,14 @@ export default function AddReminderModal({
       setIsAnalyzing(true);
       
       try {
-        // استخدام الدالة غير المتزامنة التي تعطي الأولوية للـ AI
-        const result = await analyzeReminderInputAsync(inputText);
+        // استخدام الدالة المتزامنة للتحليل المحلي
+        const result = analyzeReminderInput(inputText);
         
         if (result && isValidDateString(result.reminderTime)) {
           setSmartParsed(result);
           setError(null);
           if (onReminderTimeDetected) {
             onReminderTimeDetected(result.reminderTime);
-          }
-          
-          // للتصحيح: معرفة مصدر التحليل (يمكن إزالته في الإنتاج)
-          if (result.source === 'ai') {
-            console.log('✅ AI analysis successful');
-          } else {
-            console.log('⚠️ Using local analysis fallback');
           }
         } else {
           setSmartParsed(null);
@@ -157,7 +150,7 @@ export default function AddReminderModal({
     // تأخير التحليل قليلاً لتجنب الطلبات المتكررة أثناء الكتابة
     const timer = setTimeout(analyzeText, 500);
     return () => clearTimeout(timer);
-  }, [inputText, setSmartParsed, onReminderTimeDetected, language]);
+  }, [inputText, setSmartParsed, onReminderTimeDetected]);
 
   if (!isOpen) return null;
   const DRAG_THRESHOLD = 100;
@@ -219,7 +212,7 @@ export default function AddReminderModal({
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm font-bold text-blue-600 dark:text-blue-400 text-center">
-                    جاري التحليل الذكي...
+                    جاري التحليل...
                   </p>
                 </div>
               </div>
@@ -323,4 +316,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-                                    }
+}
