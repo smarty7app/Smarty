@@ -1,6 +1,8 @@
 // lib/date-parser.ts
 
-// ==================== الخرائط اللغوية ====================
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// ==================== الخرائط اللغوية (للاستخدام الاحتياطي فقط) ====================
 
 // --- العربية ---
 export const arabicDayMap: Record<string, number> = {
@@ -79,139 +81,27 @@ export interface CleanResult {
   detectedLanguage: 'ar' | 'fr' | 'en';
   confidence: number;
   originalText: string;
+  source?: 'ai' | 'local';
 }
 
-// ==================== دوال مساعدة لتحويل الأرقام النصية ====================
+// ==================== دوال التحليل الاحتياطي (العادي) ====================
 
-function parseArabicNumberWord(word: string): number | null {
-  const normalized = word.toLowerCase().replace(/[ًٌٍَُِّْ]/g, '');
-  return arabicNumeralMap[normalized] || null;
-}
-
-function parseFrenchNumberWord(word: string): number | null {
-  const normalized = word.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return frenchNumeralMap[normalized] || null;
-}
-
-function parseEnglishNumberWord(word: string): number | null {
-  const normalized = word.toLowerCase();
-  return englishNumeralMap[normalized] || null;
-}
-
-// دالة آمنة لاستخراج المدة الزمنية من النص (بدون أخطاء)
-function parseDurationFromText(text: string, lang: 'ar' | 'fr' | 'en'): { days: number; hours: number; minutes: number } | null {
-  let days = 0;
-  let hours = 0;
-  let minutes = 0;
-  let found = false;
-
-  const patterns: Record<string, Array<{ regex: RegExp; unit: 'days' | 'hours' | 'minutes' }>> = {
-    ar: [
-      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(يوم|أيام|يومين)\s*/i, unit: 'days' },
-      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(ساعة|ساعات|ساعتين)\s*/i, unit: 'hours' },
-      { regex: /(?:و)?\s*(\d+|واحد|واحدة|اثنين|اثنان|اثنتين|ثلاثة|ثلاث|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(دقيقة|دقائق|دقيقتين)\s*/i, unit: 'minutes' },
-      { regex: /(?:و)?\s*(واحد|واحدة|اثنان|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s*(?!يوم|أيام|ساعة|ساعات|دقيقة|دقائق)/i, unit: 'minutes' }
-    ],
-    fr: [
-      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(jour|jours)\s*/i, unit: 'days' },
-      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(heure|heures)\s*/i, unit: 'hours' },
-      { regex: /(\d+|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s*(minute|minutes)\s*/i, unit: 'minutes' }
-    ],
-    en: [
-      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(day|days)\s*/i, unit: 'days' },
-      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(hour|hours)\s*/i, unit: 'hours' },
-      { regex: /(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(minute|minutes)\s*/i, unit: 'minutes' }
-    ]
-  };
-
-  const parseNumber = (numStr: string, lang: string): number => {
-    if (/^\d+$/.test(numStr)) return parseInt(numStr);
-    if (lang === 'ar') return parseArabicNumberWord(numStr) || 0;
-    if (lang === 'fr') return parseFrenchNumberWord(numStr) || 0;
-    return parseEnglishNumberWord(numStr) || 0;
-  };
-
-  for (const pattern of patterns[lang]) {
-    let match;
-    while ((match = pattern.regex.exec(text)) !== null) {
-      const value = parseNumber(match[1], lang);
-      if (isNaN(value)) continue;
-      found = true;
-      if (pattern.unit === 'days') days += value;
-      else if (pattern.unit === 'hours') hours += value;
-      else if (pattern.unit === 'minutes') minutes += value;
-    }
-  }
-
-  // دعم صيغة "ثلاثة أيام و أربع ساعات و خمسون دقيقة"
-  const combinedPattern = /(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+يوم\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+ساعة\s+و\s+(\d+|واحد|اثنين|ثلاثة|اربعة|أربعة|خمسة|ستة|سبعة|ثمانية|تسعة|عشرة)\s+دقيقة/i;
-  const combinedMatch = text.match(combinedPattern);
-  if (combinedMatch) {
-    const d = parseNumber(combinedMatch[1], lang);
-    const h = parseNumber(combinedMatch[2], lang);
-    const m = parseNumber(combinedMatch[3], lang);
-    if (!isNaN(d) && !isNaN(h) && !isNaN(m)) {
-      days = d;
-      hours = h;
-      minutes = m;
-      found = true;
-    }
-  }
-
-  if (!found) return null;
-  return { days, hours, minutes };
-}
-
-// ==================== دوال التنظيف المشتركة ====================
-
-export function cleanReminderText(text: string, language: 'ar' | 'fr' | 'en' = 'ar'): string {
-  let cleaned = text;
-
-  const commandWords: Record<'ar' | 'fr' | 'en', string[]> = {
-    ar: ['ذكرني', 'تذكير', 'تذكر', 'ذكر', 'أذكر', 'نذكر', 'موعد', 'حدث', 'مهمة'],
-    fr: ['rappelle', 'rappel', 'rappeler', 'tâche', 'rendez-vous', 'rdv'],
-    en: ['remind', 'reminder', 'remember', 'task', 'appointment', 'event']
-  };
-
-  const timeKeywords = [
-    'غدا', 'غداً', 'بعد غد', 'اليوم', 'صباحا', 'مساء', 'صباحاً', 'مساءً',
-    'الساعة', 'على الساعة', 'في الساعة', 'دقيقة', 'دقائق', 'دقيقتين', 'ساعة', 'ساعتين', 'ساعات',
-    'يوم', 'أيام', 'اسبوع', 'أسبوع', 'بعد', 'خلال', 'القادم', 'الجاي', 'المقبل',
-    ...Object.keys(arabicDayMap), ...Object.keys(arabicMonthMap),
-    'tomorrow', 'today', 'am', 'pm', 'o\'clock', 'hour', 'minute', 'hours', 'minutes', 'in', 'at', 'next',
-    ...Object.keys(englishDayMap), ...Object.keys(englishMonthMap),
-    'demain', 'aujourd\'hui', 'après-demain', 'heure', 'heures', 'minutes', 'dans', 'à', 'prochain',
-    ...Object.keys(frenchDayMap), ...Object.keys(frenchMonthMap)
-  ];
-
-  commandWords[language].forEach(word => {
-    cleaned = cleaned.replace(new RegExp(word, 'gi'), '').trim();
-  });
-
-  timeKeywords.forEach(keyword => {
-    cleaned = cleaned.replace(new RegExp(keyword, 'gi'), '').trim();
-  });
-
-  cleaned = cleaned.replace(/\d+/g, '').trim();
-  cleaned = cleaned.replace(/\s+/g, ' ').replace(/^[\s,،]+|[\s,،]+$/g, '').trim();
-
-  return cleaned || (language === 'ar' ? 'مهمة' : language === 'fr' ? 'Tâche' : 'Task');
-}
-
-// ==================== دالة التحليل الرئيسية (محسنة وآمنة) ====================
-
-export function parseSmartDateTime(text: string, baseDate: Date = new Date()): ParseResult | null {
+/**
+ * التحليل العادي (يُستخدم فقط عند فشل AI أو عدم وجود إنترنت)
+ * مبسط ومنطقي، يركز على الحالات الأساسية فقط
+ */
+function parseLocalDateTime(text: string, baseDate: Date = new Date()): ParseResult | null {
   if (!text.trim()) return null;
   const now = new Date(baseDate);
   const lower = text.toLowerCase();
 
-  // 1. معالجة "بعد دقيقة واحدة" وما شابه (أكثر الحالات شيوعًا)
+  // 1. معالجة "بعد X دقيقة/ساعة/يوم"
   const durationMatch = text.match(/(?:بعد|خلال|في)\s+(.+)/i);
   if (durationMatch) {
     const durationText = durationMatch[1];
     let value = 1;
     let unit: 'minute' | 'hour' | 'day' | 'week' | null = null;
-    // استخراج الرقم
+    
     const numMatch = durationText.match(/(\d+)/);
     if (numMatch) value = parseInt(numMatch[1]);
     else {
@@ -222,11 +112,12 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
         }
       }
     }
-    // تحديد الوحدة
+    
     if (/(دقيقة|دقائق|دقيقتين)/.test(durationText)) unit = 'minute';
     else if (/(ساعة|ساعات|ساعتين)/.test(durationText)) unit = 'hour';
     else if (/(يوم|أيام|يومين)/.test(durationText)) unit = 'day';
     else if (/(اسبوع|أسبوع|أسبوعين)/.test(durationText)) unit = 'week';
+    
     if (unit) {
       let targetDate = new Date(now);
       switch (unit) {
@@ -235,8 +126,8 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
         case 'day': targetDate.setDate(now.getDate() + value); break;
         case 'week': targetDate.setDate(now.getDate() + value * 7); break;
       }
-      if (!isNaN(targetDate.getTime())) {
-        return { dateTime: targetDate, confidence: 0.95, detectedLanguage: 'ar', matchedPattern: durationMatch[0] };
+      if (!isNaN(targetDate.getTime()) && targetDate.getTime() > now.getTime()) {
+        return { dateTime: targetDate, confidence: 0.9, detectedLanguage: 'ar', matchedPattern: durationMatch[0] };
       }
     }
   }
@@ -261,11 +152,13 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     let hour = parseInt(timeMatch[1]);
     let minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
     const period = timeMatch[3]?.toLowerCase();
+    
     if (period && (period.includes('مساء') || period === 'م' || period === 'pm')) {
       if (hour < 12) hour += 12;
     } else if (period && (period.includes('صباحا') || period === 'ص' || period === 'am')) {
       if (hour === 12) hour = 0;
     }
+    
     const targetDate = new Date(now);
     targetDate.setHours(hour, minute, 0, 0);
     if (targetDate.getTime() < now.getTime()) {
@@ -276,63 +169,191 @@ export function parseSmartDateTime(text: string, baseDate: Date = new Date()): P
     }
   }
 
-  // 4. معالجة "اسبوع" (بدون بعد)
+  // 4. معالجة "اسبوع"
   if (/(اسبوع|أسبوع)/.test(lower)) {
     const targetDate = new Date(now);
     targetDate.setDate(now.getDate() + 7);
     return { dateTime: targetDate, confidence: 0.85, detectedLanguage: 'ar', matchedPattern: 'اسبوع' };
   }
 
-  // 5. استخدام الأنماط المعقدة السابقة (مع أمان)
-  const arPatterns: Array<{ regex: RegExp; handler: (m: RegExpMatchArray) => Date; confidence: number }> = [
-    // ... (يمكن الاحتفاظ بالأنماط المعقدة من النسخة السابقة، لكن مع إضافة try-catch)
-    // للاختصار، سأضع أنماطًا محدودة هنا، لكن يمكن إعادة إدراج الأنماط الكاملة مع تحسينات.
-  ];
-
-  // إذا لم ينجح أي من الأنماط السابقة، نعيد null
   return null;
 }
 
+// ==================== دوال التنظيف ====================
+
+export function cleanReminderText(text: string, language: 'ar' | 'fr' | 'en' = 'ar'): string {
+  let cleaned = text;
+
+  const commandWords: Record<'ar' | 'fr' | 'en', string[]> = {
+    ar: ['ذكرني', 'تذكير', 'تذكر', 'ذكر', 'أذكر', 'نذكر', 'موعد', 'حدث', 'مهمة'],
+    fr: ['rappelle', 'rappel', 'rappeler', 'tâche', 'rendez-vous', 'rdv'],
+    en: ['remind', 'reminder', 'remember', 'task', 'appointment', 'event']
+  };
+
+  const timeKeywords = [
+    'غدا', 'غداً', 'بعد غد', 'اليوم', 'صباحا', 'مساء', 'صباحاً', 'مساءً',
+    'الساعة', 'على الساعة', 'في الساعة', 'دقيقة', 'دقائق', 'دقيقتين', 'ساعة', 'ساعتين', 'ساعات',
+    'يوم', 'أيام', 'اسبوع', 'أسبوع', 'بعد', 'خلال', 'القادم', 'الجاي', 'المقبل',
+    'tomorrow', 'today', 'am', 'pm', 'o\'clock', 'hour', 'minute', 'hours', 'minutes', 'in', 'at', 'next',
+    'demain', 'aujourd\'hui', 'après-demain', 'heure', 'heures', 'minutes', 'dans', 'à', 'prochain'
+  ];
+
+  commandWords[language].forEach(word => {
+    cleaned = cleaned.replace(new RegExp(word, 'gi'), '').trim();
+  });
+
+  timeKeywords.forEach(keyword => {
+    cleaned = cleaned.replace(new RegExp(keyword, 'gi'), '').trim();
+  });
+
+  cleaned = cleaned.replace(/\d+/g, '').trim();
+  cleaned = cleaned.replace(/\s+/g, ' ').replace(/^[\s,،]+|[\s,،]+$/g, '').trim();
+
+  return cleaned || (language === 'ar' ? 'مهمة' : language === 'fr' ? 'Tâche' : 'Task');
+}
+
+// ==================== دالة التحليل الرئيسية (AI أولاً) ====================
+
+// تهيئة Gemini API (تتم مرة واحدة فقط)
+let genAI: GoogleGenerativeAI | null = null;
+let model: any = null;
+
+function initGemini() {
+  if (typeof window !== 'undefined') return null; // لا نستخدم AI في المتصفح مباشرة (لأمان المفتاح)
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return null;
+    genAI = new GoogleGenerativeAI(apiKey);
+    model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    return model;
+  } catch (error) {
+    console.warn('[date-parser] Failed to initialize Gemini:', error);
+    return null;
+  }
+}
+
+/**
+ * تحليل النص باستخدام الذكاء الاصطناعي (Gemini API)
+ */
+async function parseWithAI(text: string, language: string = 'ar'): Promise<{ dateTime: Date; confidence: number; parsedText: string } | null> {
+  // التحقق من وجود إنترنت
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    console.log('[date-parser] No internet, skipping AI');
+    return null;
+  }
+
+  // نستخدم API route لتجنب مشاكل المفتاح في client-side
+  try {
+    const response = await fetch('/api/parse-date', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, language }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    if (data.success && data.reminderTime) {
+      const date = new Date(data.reminderTime);
+      if (!isNaN(date.getTime()) && date.getTime() > Date.now()) {
+        return {
+          dateTime: date,
+          confidence: data.confidence || 0.95,
+          parsedText: data.parsedText || text,
+        };
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('[date-parser] AI parsing failed:', error);
+    return null;
+  }
+}
+
+/**
+ * دالة التحليل الرئيسية (AI أولاً، ثم محلي)
+ */
+export async function analyzeReminderInputAsync(text: string): Promise<CleanResult | null> {
+  if (!text.trim()) return null;
+
+  // 1. المحاولة باستخدام الذكاء الاصطناعي أولاً
+  const aiResult = await parseWithAI(text);
+  
+  if (aiResult && aiResult.dateTime) {
+    const cleaned = cleanReminderText(text, 'ar');
+    return {
+      parsedText: aiResult.parsedText || cleaned,
+      reminderTime: aiResult.dateTime.toISOString(),
+      detectedLanguage: 'ar',
+      confidence: aiResult.confidence,
+      originalText: text,
+      source: 'ai',
+    };
+  }
+
+  // 2. إذا فشل AI، نستخدم التحليل المحلي كخيار احتياطي
+  const localResult = parseLocalDateTime(text);
+  
+  if (localResult && localResult.dateTime) {
+    const cleaned = cleanReminderText(text, localResult.detectedLanguage);
+    return {
+      parsedText: cleaned,
+      reminderTime: localResult.dateTime.toISOString(),
+      detectedLanguage: localResult.detectedLanguage,
+      confidence: localResult.confidence,
+      originalText: text,
+      source: 'local',
+    };
+  }
+
+  // 3. الخيار النهائي: وقت افتراضي (بعد ساعة)
+  const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
+  return {
+    parsedText: cleanReminderText(text, 'ar'),
+    reminderTime: fallbackDate.toISOString(),
+    detectedLanguage: 'ar',
+    confidence: 0.3,
+    originalText: text,
+    source: 'local',
+  };
+}
+
+/**
+ * دالة متزامنة (للتوافق مع الكود القديم)
+ * ملاحظة: هذه الدالة لن تستخدم AI، فقط التحليل المحلي
+ * يُنصح باستخدام analyzeReminderInputAsync بدلاً منها
+ */
 export function analyzeReminderInput(text: string): CleanResult | null {
   if (!text.trim()) return null;
 
-  const parseResult = parseSmartDateTime(text);
-  if (!parseResult) {
-    // قيمة افتراضية آمنة: الوقت الحالي + ساعة واحدة
-    const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
+  const localResult = parseLocalDateTime(text);
+  
+  if (localResult && localResult.dateTime) {
+    const cleaned = cleanReminderText(text, localResult.detectedLanguage);
     return {
-      parsedText: cleanReminderText(text, 'ar'),
-      reminderTime: fallbackDate.toISOString(),
-      detectedLanguage: 'ar',
-      confidence: 0.5,
-      originalText: text
+      parsedText: cleaned,
+      reminderTime: localResult.dateTime.toISOString(),
+      detectedLanguage: localResult.detectedLanguage,
+      confidence: localResult.confidence,
+      originalText: text,
     };
   }
 
-  const date = parseResult.dateTime;
-  if (isNaN(date.getTime())) {
-    console.warn('[date-parser] Invalid date parsed, using fallback');
-    const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
-    return {
-      parsedText: cleanReminderText(text, 'ar'),
-      reminderTime: fallbackDate.toISOString(),
-      detectedLanguage: 'ar',
-      confidence: 0.5,
-      originalText: text
-    };
-  }
-
-  const cleaned = cleanReminderText(text, parseResult.detectedLanguage);
+  const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
   return {
-    parsedText: cleaned,
-    reminderTime: date.toISOString(),
-    detectedLanguage: parseResult.detectedLanguage,
-    confidence: parseResult.confidence,
-    originalText: text
+    parsedText: cleanReminderText(text, 'ar'),
+    reminderTime: fallbackDate.toISOString(),
+    detectedLanguage: 'ar',
+    confidence: 0.3,
+    originalText: text,
   };
 }
 
 export type SmartParsedResult = CleanResult;
+
+// ==================== دوال التنسيق (بدون تغيير) ====================
 
 export function formatDetectedTime(isoString: string, lang: 'ar' | 'fr' | 'en' = 'ar'): string {
   if (!isoString || typeof isoString !== 'string') {
