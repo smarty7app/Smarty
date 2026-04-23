@@ -426,55 +426,69 @@ export default function SmartVoicePage() {
 
   // دالة نطق آمنة تنتظر تحميل الأصوات وتتعامل مع الأخطاء
   const speak = useCallback((text: string) => {
-    return new Promise<void>((resolve) => {
-      if (!window.speechSynthesis) {
-        console.warn('speechSynthesis not supported');
-        setResponse(t('speech_synthesis_failed'));
-        resolve();
-        return;
-      }
+  return new Promise<void>((resolve) => {
+    // التحقق من دعم المتصفح
+    if (!window.speechSynthesis) {
+      console.warn('speechSynthesis not supported');
+      setResponse(t('speech_synthesis_failed'));
+      resolve();
+      return;
+    }
 
-      // إلغاء أي نطق سابق
-      window.speechSynthesis.cancel();
+    // إلغاء أي نطق سابق
+    window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ar-EG'; // استخدام ar-EG بدلاً من ar-SA (أكثر توافقاً)
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1;
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // محاولة استخدام اللغة العربية بعدة صيغ
+    utterance.lang = 'ar';
+    
+    // محاولة ثانية: إذا فشل 'ar'، جرب 'ar-SA' أو 'ar-EG'
+    // هذا يتم تجربته تلقائياً عبر المتصفح
+    
+    utterance.rate = 0.9;  // أبطأ قليلاً لتحسين الفهم
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
 
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-        setIsProcessing(false);
-      };
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        setRetryCount(0);
-        resolve();
-      };
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        setIsSpeaking(false);
-        setIsProcessing(false);
-        setResponse(t('speech_synthesis_failed'));
-        resolve();
-      };
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsProcessing(false);
+    };
+    
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setRetryCount(0);
+      resolve();
+    };
+    
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
+      setIsSpeaking(false);
+      setIsProcessing(false);
+      // لا نعرض خطأ للمستخدم، فقط نسكت
+      // setResponse(t('speech_synthesis_failed')); // يمكن تعليقها
+      resolve();
+    };
 
-      // محاولة تحميل الأصوات واختيار صوت عربي إذا أمكن
-      const trySpeak = () => {
-        const voices = window.speechSynthesis.getVoices();
-        const arabicVoice = voices.find(voice => voice.lang.includes('ar'));
-        if (arabicVoice) utterance.voice = arabicVoice;
-        window.speechSynthesis.speak(utterance);
-      };
+    // محاولة اختيار صوت عربي إذا وجد
+    const trySpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find(voice => 
+        voice.lang.includes('ar') || 
+        voice.lang.includes('AR') ||
+        voice.name?.includes('Arabic')
+      );
+      if (arabicVoice) utterance.voice = arabicVoice;
+      window.speechSynthesis.speak(utterance);
+    };
 
-      if (window.speechSynthesis.getVoices().length > 0) {
-        trySpeak();
-      } else {
-        window.speechSynthesis.onvoiceschanged = trySpeak;
-      }
-    });
-  }, [t]);
+    if (window.speechSynthesis.getVoices().length > 0) {
+      trySpeak();
+    } else {
+      window.speechSynthesis.onvoiceschanged = trySpeak;
+    }
+  });
+}, [t]);
 
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
