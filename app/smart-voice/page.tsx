@@ -739,7 +739,7 @@ export default function SmartVoicePage() {
             <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-xl border border-white/10" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
-              <svg className="w-52 h-52 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
+              <svg className="w-50 h-50 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
   <defs>
     {/* تدرجات لونية باردة */}
     <radialGradient id="grad1" cx="30%" cy="30%" r="70%">
