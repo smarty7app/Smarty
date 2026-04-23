@@ -739,8 +739,8 @@ export default function SmartVoicePage() {
             <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-xl border border-white/10" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
-           <svg class="w-24 h-24 text-white drop-shadow-2xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-           <path d="M7 6h9c2.2 0 3 1.3 3 3c0 1.5-1 2.5-2.5 3L10 14c-1.5 0.5-2 1.5-2 3c0 1.5 1 2.5 2.5 2.5h8.5" />
+           <svg className="w-24 h-24 text-white drop-shadow-2xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+             <path d="M7 6h9c2.2 0 3 1.3 3 3c0 1.5-1 2.5-2.5 3L10 14c-1.5 0.5-2 1.5-2 3c0 1.5 1 2.5 2.5 2.5h8.5" />
            </svg>
             </div>
             {(isProcessing || isModelLoading) && <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />}
