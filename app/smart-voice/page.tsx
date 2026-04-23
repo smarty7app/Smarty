@@ -739,9 +739,79 @@ export default function SmartVoicePage() {
             <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-xl border border-white/10" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
-              <svg className="w-24 h-24 text-white drop-shadow-2xl" viewBox="0 0 24 24" fill="currentColor" style={{ opacity: getLogoOpacity(), filter: isListening ? 'drop-shadow(0 0 25px #E65100)' : 'drop-shadow(0 0 10px rgba(230,81,0,0.3))', transition: 'opacity 0.3s ease, filter 0.3s ease' }}>
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.32 15.1l-2.02-2.02C12.87 14.86 12.44 14.75 12 14.75s-.87.11-1.3.33L8.68 17.1c-.81.4-1.68-.3-1.68-1.1s.87-1.5 1.68-1.1l2.02 1.01c.22.11.65-.11.65-.33v-1.12c-1.93-.65-3.35-2.48-3.35-4.66 0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.18-1.42 4.01-3.35 4.66v1.12c0 .22.43.44.65.33l2.02-1.01c.81-.4 1.68.3 1.68 1.1s-.87 1.5-1.68 1.1z" />
-              </svg>
+              <svg className="w-24 h-24 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
+  <defs>
+    {/* تدرجات لونية باردة */}
+    <radialGradient id="grad1" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.9">
+        <animate attributeName="stopColor" values="#1E90FF;#00BFFF;#1E90FF" dur="6s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="50%" stopColor="#00BFFF" stopOpacity="0.6">
+        <animate attributeName="stopColor" values="#00BFFF;#4682B4;#00BFFF" dur="8s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" stopColor="#4682B4" stopOpacity="0.2">
+        <animate attributeName="stopColor" values="#4682B4;#1E3A8A;#4682B4" dur="7s" repeatCount="indefinite" />
+      </stop>
+    </radialGradient>
+
+    <radialGradient id="grad2" cx="70%" cy="70%" r="60%">
+      <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.8">
+        <animate attributeName="stopColor" values="#8A2BE2;#4B0082;#8A2BE2" dur="9s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="50%" stopColor="#4B0082" stopOpacity="0.5">
+        <animate attributeName="stopColor" values="#4B0082;#9370DB;#4B0082" dur="5s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" stopColor="#9370DB" stopOpacity="0.1" />
+    </radialGradient>
+
+    <radialGradient id="grad3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#00CED1" stopOpacity="0.7">
+        <animate attributeName="stopColor" values="#00CED1;#20B2AA;#00CED1" dur="7s" repeatCount="indefinite" />
+      </stop>
+      <stop offset="100%" stopColor="#4682B4" stopOpacity="0" />
+    </radialGradient>
+
+    <filter id="blurFilter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+      <feComposite in="blur" in2="SourceGraphic" operator="over" />
+    </filter>
+  </defs>
+
+  {/* طبقة ضبابية خلفية متحركة */}
+  <circle cx="50" cy="50" r="45" fill="url(#grad1)" filter="url(#blurFilter)">
+    <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; -1,2; 0,0" dur="10s" repeatCount="indefinite" />
+  </circle>
+
+  <circle cx="50" cy="50" r="38" fill="url(#grad2)" filter="url(#blurFilter)">
+    <animateTransform attributeName="transform" type="translate" values="0,0; -2,3; 2,-1; 0,0" dur="8s" repeatCount="indefinite" />
+  </circle>
+
+  <circle cx="50" cy="50" r="30" fill="url(#grad3)" filter="url(#blurFilter)">
+    <animateTransform attributeName="transform" type="translate" values="0,0; 2,2; -2,-2; 0,0" dur="12s" repeatCount="indefinite" />
+  </circle>
+
+  {/* دوائر متحركة صغيرة (جسيمات ضبابية) */}
+  {[...Array(6)].map((_, i) => (
+    <circle
+      key={i}
+      cx={50 + (i % 2 === 0 ? 15 : -15)}
+      cy={50 + (i % 3 === 0 ? 12 : -12)}
+      r="4"
+      fill="#FFFFFF"
+      opacity="0.3"
+      filter="url(#blurFilter)"
+    >
+      <animateTransform
+        attributeName="transform"
+        type="translate"
+        values="0,0; 8,-5; -5,10; 0,0"
+        dur={`${4 + i}s`}
+        repeatCount="indefinite"
+      />
+      <animate attributeName="opacity" values="0.3;0.7;0.1;0.3" dur={`${5 + i}s`} repeatCount="indefinite" />
+    </circle>
+  ))}
+</svg>
             </div>
             {(isProcessing || isModelLoading) && <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
