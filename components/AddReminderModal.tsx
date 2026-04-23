@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  X, Send, Sparkles, CheckCircle2, Loader2, User, Bot, Clock, Calendar 
+  X, Send, Sparkles, CheckCircle2, Loader2, User, Bot, Clock, Calendar, XCircle 
 } from 'lucide-react';
 import { 
   analyzeReminderInput, 
@@ -71,20 +71,33 @@ export default function AddReminderModal({
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'مرحباً! 👋 أنا مساعدك الذكي. يمكنك كتابة تذكير مثل "ذكرني باجتماع غداً الساعة 10 صباحاً"، أو اسألني عن أي شيء. سأقوم بتحويل طلباتك إلى تذكيرات وحفظها تلقائياً.',
+      content: 'مرحباً! 👋 أنا مساعدك الذكي. يمكنك كتابة تذكير مثل &quot;ذكرني باجتماع غداً الساعة 10 صباحاً&quot;، أو اسألني عن أي شيء. سأقوم بتحويل طلباتك إلى تذكيرات وحفظها تلقائياً.',
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingReminder, setPendingReminder] = useState<{ text: string; time: string; recurring?: string } | null>(null);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
-  // مفتاح التخزين المؤقت (نحتفظ به من الكود الأصلي)
+  // مفتاح التخزين المؤقت
   const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
 
-  // تحميل المسودة عند فتح المودال (من الكود الأصلي)
+  // مراقبة حالة الاتصال بالإنترنت
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // تحميل المسودة عند فتح المودال
   useEffect(() => {
     if (isOpen) {
       const savedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
@@ -101,12 +114,7 @@ export default function AddReminderModal({
           console.error('Failed to load draft reminder', e);
         }
       }
-      // تركيز على حقل الإدخال
       setTimeout(() => inputRef.current?.focus(), 300);
-    } else {
-      // إعادة تعيين الدردشة عند الإغلاق (اختياري، حسب رغبتك)
-      // يمكنك التعليق على السطر التالي إذا أردت الاحتفاظ بالمحادثة
-      // resetChat();
     }
   }, [isOpen, setInputText, setRecurring]);
 
@@ -115,7 +123,7 @@ export default function AddReminderModal({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // دالة الإغلاق الداخلية (محفوظة من الكود الأصلي)
+  // دالة الإغلاق الداخلية
   const handleClose = (saveDraft: boolean) => {
     if (saveDraft && input.trim()) {
       const draft = {
@@ -132,9 +140,39 @@ export default function AddReminderModal({
     onClose();
   };
 
-  // استخراج التذكير من النص (محلياً أو عبر API)
+  // استخراج التذكير من النص (AI أولاً، ثم محلي)
   const extractReminder = async (text: string): Promise<{ success: boolean; reminderTime?: string; parsedText?: string; error?: string }> => {
-    // أولاً: التحليل المحلي
+    // إذا كان هناك اتصال بالإنترنت، استخدم الذكاء الاصطناعي أولاً
+    if (isOnline) {
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: `استخرج من النص التالي التاريخ والوقت (بصيغة ISO 8601) ونص التذكير النظيف. أجب فقط بكائن JSON بهذا الشكل: {"reminderTime": "YYYY-MM-DDTHH:mm:ss.sssZ", "parsedText": "نص التذكير"}. النص: "${text}"`,
+            model: 'llama-3.3-70b-versatile',
+          }),
+        });
+        if (!response.ok) throw new Error('AI request failed');
+        const reply = await response.text();
+        const jsonMatch = reply.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('Invalid JSON');
+        const parsed = JSON.parse(jsonMatch[0]);
+        const date = new Date(parsed.reminderTime);
+        if (isNaN(date.getTime()) || date <= new Date()) throw new Error('Invalid or past date');
+        return {
+          success: true,
+          reminderTime: parsed.reminderTime,
+          parsedText: parsed.parsedText || text,
+        };
+      } catch (error: any) {
+        console.error('AI extraction error:', error);
+        // إذا فشل AI، ننتقل إلى التحليل المحلي كحل احتياطي
+        console.log('Falling back to local analysis');
+      }
+    }
+
+    // التحليل المحلي (يعمل دون إنترنت أو كحل احتياطي)
     const localResult = analyzeReminderInput(text);
     if (localResult && isValidDateString(localResult.reminderTime)) {
       const date = new Date(localResult.reminderTime);
@@ -147,32 +185,7 @@ export default function AddReminderModal({
       }
     }
     
-    // ثانياً: استخدام الذكاء الاصطناعي (Groq) عبر API الدردشة
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `استخرج من النص التالي التاريخ والوقت (بصيغة ISO 8601) ونص التذكير النظيف. أجب فقط بكائن JSON بهذا الشكل: {"reminderTime": "YYYY-MM-DDTHH:mm:ss.sssZ", "parsedText": "نص التذكير"}. النص: "${text}"`,
-          model: 'llama-3.3-70b-versatile',
-        }),
-      });
-      if (!response.ok) throw new Error('AI request failed');
-      const reply = await response.text();
-      const jsonMatch = reply.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Invalid JSON');
-      const parsed = JSON.parse(jsonMatch[0]);
-      const date = new Date(parsed.reminderTime);
-      if (isNaN(date.getTime()) || date <= new Date()) throw new Error('Invalid or past date');
-      return {
-        success: true,
-        reminderTime: parsed.reminderTime,
-        parsedText: parsed.parsedText || text,
-      };
-    } catch (error: any) {
-      console.error('Extraction error:', error);
-      return { success: false, error: error.message };
-    }
+    return { success: false, error: 'لم نتمكن من استخراج وقت صالح للتذكير. يرجى كتابة الوقت بشكل أوضح.' };
   };
 
   // إرسال رسالة المستخدم
@@ -203,7 +216,7 @@ export default function AddReminderModal({
     ]);
 
     try {
-      // محاولة استخراج تذكير
+      // محاولة استخراج تذكير (AI أولاً)
       const reminder = await extractReminder(userInput);
       if (reminder.success && reminder.reminderTime && reminder.parsedText) {
         // إزالة رسالة "التفكير" وإضافة رد التأكيد
@@ -212,7 +225,7 @@ export default function AddReminderModal({
         const confirmMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `📝 **تم استخراج التذكير التالي:**\n\n• **الوصف:** ${reminder.parsedText}\n• **الوقت:** ${formattedTime}\n\nهل تريد حفظ هذا التذكير؟ (اضغط على زر "حفظ" أدناه)`,
+          content: `📝 **تم استخراج التذكير التالي:**\n\n• **الوصف:** ${reminder.parsedText}\n• **الوقت:** ${formattedTime}\n\nهل تريد حفظ هذا التذكير؟`,
           timestamp: new Date(),
           reminderData: {
             text: reminder.parsedText,
@@ -223,13 +236,22 @@ export default function AddReminderModal({
         setMessages(prev => [...prev, confirmMessage]);
         setPendingReminder(confirmMessage.reminderData);
       } else {
-        // ليس تذكيراً، نرد برد عام باستخدام Groq
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: userInput, model: 'llama-3.3-70b-versatile' }),
-        });
-        const reply = await response.text();
+        // ليس تذكيراً واضحاً، نرد برد عام باستخدام Groq (إذا كان متصلاً)
+        let reply = '';
+        if (isOnline) {
+          try {
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: userInput, model: 'llama-3.3-70b-versatile' }),
+            });
+            reply = await response.text();
+          } catch (err) {
+            reply = 'عذراً، لا يمكنني الاتصال بالإنترنت حالياً. يرجى المحاولة لاحقاً.';
+          }
+        } else {
+          reply = 'أنت غير متصل بالإنترنت حالياً. يمكنك كتابة تذكير بالوقت والتاريخ بشكل واضح، وسأحاول معالجته محلياً.';
+        }
         setMessages(prev => prev.filter(m => m.id !== thinkingId).concat({
           id: Date.now().toString(),
           role: 'assistant',
@@ -271,6 +293,23 @@ export default function AddReminderModal({
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
       setInput('');
       setRecurring('none');
+    }
+  };
+
+  // إلغاء التذكير المعلق
+  const handleCancelReminder = () => {
+    if (pendingReminder) {
+      setPendingReminder(null);
+      // إضافة رسالة إلغاء
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: '❌ تم إلغاء التذكير. يمكنك كتابة تذكير آخر أو طرح سؤال.',
+          timestamp: new Date(),
+        },
+      ]);
     }
   };
 
@@ -334,12 +373,18 @@ export default function AddReminderModal({
                   }`}>
                     <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                     {msg.reminderData && (
-                      <div className="mt-3 flex justify-end">
+                      <div className="mt-3 flex justify-end gap-2">
                         <button
                           onClick={handleConfirmReminder}
                           className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5" /> حفظ التذكير
+                          <CheckCircle2 className="w-3.5 h-3.5" /> حفظ
+                        </button>
+                        <button
+                          onClick={handleCancelReminder}
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1 transition"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> إلغاء
                         </button>
                       </div>
                     )}
@@ -383,11 +428,11 @@ export default function AddReminderModal({
               </button>
             </div>
             <p className="text-[10px] text-zinc-400 text-center mt-2">
-              يمكنك كتابة تذكير مثل "ذكرني بموعد الطبيب غداً الساعة 3 مساءً"
+              يمكنك كتابة تذكير مثل &quot;ذكرني بموعد الطبيب غداً الساعة 3 مساءً&quot;
             </p>
           </div>
         </motion.div>
       </div>
     </AnimatePresence>
   );
-        }
+  }
