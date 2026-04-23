@@ -255,7 +255,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
                   </div>
                   <div className="flex flex-col items-start">
                     <span className="text-xs font-black text-yellow-700 dark:text-yellow-400">
-                      {isRTL ? 'إنهاء وضع الضيف' : 'Exit Guest Mode'}
+                      {isRTL ? 'خروج' : 'Exit'}
                     </span>
                     <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold">
                       {isRTL ? 'العودة إلى شاشة تسجيل الدخول' : 'Return to login screen'}
