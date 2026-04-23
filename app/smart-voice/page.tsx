@@ -10,7 +10,7 @@ import {
   Download, Check, Trash2, HardDrive, X, AlertTriangle
 } from 'lucide-react';
 
-// تعريف واجهات البيانات (لم تتغير)
+// تعريف واجهات البيانات
 interface AIModel {
   id: string;
   name: { ar: string; en: string; fr: string };
@@ -30,7 +30,7 @@ interface DownloadInfo {
 }
 
 const AVAILABLE_MODELS: AIModel[] = [
-  // ... (نفس القائمة الموجودة، لم تتغير)
+  // ... (نفس القائمة الموجودة، لم تتغير، اختصاراً للعرض)
   {
     id: 'gemma-2-2b',
     name: { ar: 'جيما 2 - 2 مليار', en: 'Gemma 2 - 2B', fr: 'Gemma 2 - 2B' },
@@ -292,7 +292,7 @@ export default function SmartVoicePage() {
   const getModelName = useCallback((model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en, [language]);
   const getModelDescription = useCallback((model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en, [language]);
 
-  // ========== دوال التحميل والإدارة (لم تتغير) ==========
+  // ========== دوال التحميل والإدارة ==========
   const downloadModel = useCallback(async (model: AIModel, resume: boolean = false) => {
     if (!isOnline) { setResponse(t('no_internet')); return; }
     if ('storage' in navigator && 'estimate' in navigator.storage) {
@@ -481,12 +481,21 @@ export default function SmartVoicePage() {
     try {
       if (!isOnline) throw new Error(t('no_internet'));
       const res = await fetch('/api/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: text, userId, userEmail, userName, model: activeModel })
       });
       if (!res.ok) {
-        if (res.status === 429) throw new Error(t('daily_limit_exceeded'));
-        throw new Error(`API error: ${res.status}`);
+        // سجل التفاصيل للمطور فقط
+        console.error(`API responded with status ${res.status}`);
+        if (res.status === 429) {
+          setResponse(t('daily_limit_exceeded'));
+        } else {
+          // أي خطأ آخر (500, 400, إلخ) نعرض رسالة عامة
+          setResponse(t('connection_error'));
+        }
+        setIsProcessing(false);
+        return;
       }
       const reply = await res.text();
       setResponse(reply);
@@ -498,7 +507,8 @@ export default function SmartVoicePage() {
         setResponse(`${t('retrying')} (${retryCount + 1}/3)...`);
         setTimeout(() => processText(text), 2000);
       } else {
-        setResponse(error.message || t('connection_error'));
+        // خطأ غير متوقع (مشكلة شبكة، إلخ) نعرض رسالة عامة
+        setResponse(t('connection_error'));
         setIsProcessing(false);
       }
     }
@@ -716,7 +726,7 @@ export default function SmartVoicePage() {
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
-  // ========== JSX ==========
+  // ========== JSX (مع الحفاظ على الشعار المتحرك نفسه) ==========
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5 z-10">
@@ -740,78 +750,62 @@ export default function SmartVoicePage() {
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
               <svg className="w-48 h-48 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
-  <defs>
-    {/* تدرجات لونية طيفية */}
-    <radialGradient id="grad1" cx="30%" cy="30%" r="70%">
-      <stop offset="0%" stopColor="#FF3366" stopOpacity="0.9">
-        <animate attributeName="stopColor" values="#FF3366;#FF8C42;#FF3366" dur="6s" repeatCount="indefinite" />
-      </stop>
-      <stop offset="50%" stopColor="#FF8C42" stopOpacity="0.6">
-        <animate attributeName="stopColor" values="#FF8C42;#E65100;#FF8C42" dur="8s" repeatCount="indefinite" />
-      </stop>
-      <stop offset="100%" stopColor="#E65100" stopOpacity="0.2">
-        <animate attributeName="stopColor" values="#E65100;#9B2E00;#E65100" dur="7s" repeatCount="indefinite" />
-      </stop>
-    </radialGradient>
-
-    <radialGradient id="grad2" cx="70%" cy="70%" r="60%">
-      <stop offset="0%" stopColor="#9B2E00" stopOpacity="0.8">
-        <animate attributeName="stopColor" values="#9B2E00;#FF66B2;#9B2E00" dur="9s" repeatCount="indefinite" />
-      </stop>
-      <stop offset="50%" stopColor="#FF66B2" stopOpacity="0.5">
-        <animate attributeName="stopColor" values="#FF66B2;#E65100;#FF66B2" dur="5s" repeatCount="indefinite" />
-      </stop>
-      <stop offset="100%" stopColor="#E65100" stopOpacity="0.1" />
-    </radialGradient>
-
-    <radialGradient id="grad3" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7">
-        <animate attributeName="stopColor" values="#FFD700;#FF8C42;#FFD700" dur="7s" repeatCount="indefinite" />
-      </stop>
-      <stop offset="100%" stopColor="#E65100" stopOpacity="0" />
-    </radialGradient>
-
-    <filter id="blurFilter" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
-      <feComposite in="blur" in2="SourceGraphic" operator="over" />
-    </filter>
-  </defs>
-
-  {/* طبقة ضبابية خلفية متحركة */}
-  <circle cx="50" cy="50" r="45" fill="url(#grad1)" filter="url(#blurFilter)">
-    <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; -1,2; 0,0" dur="10s" repeatCount="indefinite" />
-  </circle>
-
-  <circle cx="50" cy="50" r="38" fill="url(#grad2)" filter="url(#blurFilter)">
-    <animateTransform attributeName="transform" type="translate" values="0,0; -2,3; 2,-1; 0,0" dur="8s" repeatCount="indefinite" />
-  </circle>
-
-  <circle cx="50" cy="50" r="30" fill="url(#grad3)" filter="url(#blurFilter)">
-    <animateTransform attributeName="transform" type="translate" values="0,0; 2,2; -2,-2; 0,0" dur="12s" repeatCount="indefinite" />
-  </circle>
-
-  {/* دوائر متحركة صغيرة (جسيمات ضبابية) */}
-  {[...Array(6)].map((_, i) => (
-    <circle
-      key={i}
-      cx={50 + (i % 2 === 0 ? 15 : -15)}
-      cy={50 + (i % 3 === 0 ? 12 : -12)}
-      r="4"
-      fill="#FFFFFF"
-      opacity="0.3"
-      filter="url(#blurFilter)"
-    >
-      <animateTransform
-        attributeName="transform"
-        type="translate"
-        values="0,0; 8,-5; -5,10; 0,0"
-        dur={`${4 + i}s`}
-        repeatCount="indefinite"
-      />
-      <animate attributeName="opacity" values="0.3;0.7;0.1;0.3" dur={`${5 + i}s`} repeatCount="indefinite" />
-    </circle>
-  ))}
-</svg>
+                <defs>
+                  <radialGradient id="grad1" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#FF3366" stopOpacity="0.9">
+                      <animate attributeName="stopColor" values="#FF3366;#FF8C42;#FF3366" dur="6s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="50%" stopColor="#FF8C42" stopOpacity="0.6">
+                      <animate attributeName="stopColor" values="#FF8C42;#E65100;#FF8C42" dur="8s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="100%" stopColor="#E65100" stopOpacity="0.2">
+                      <animate attributeName="stopColor" values="#E65100;#9B2E00;#E65100" dur="7s" repeatCount="indefinite" />
+                    </stop>
+                  </radialGradient>
+                  <radialGradient id="grad2" cx="70%" cy="70%" r="60%">
+                    <stop offset="0%" stopColor="#9B2E00" stopOpacity="0.8">
+                      <animate attributeName="stopColor" values="#9B2E00;#FF66B2;#9B2E00" dur="9s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="50%" stopColor="#FF66B2" stopOpacity="0.5">
+                      <animate attributeName="stopColor" values="#FF66B2;#E65100;#FF66B2" dur="5s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="100%" stopColor="#E65100" stopOpacity="0.1" />
+                  </radialGradient>
+                  <radialGradient id="grad3" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7">
+                      <animate attributeName="stopColor" values="#FFD700;#FF8C42;#FFD700" dur="7s" repeatCount="indefinite" />
+                    </stop>
+                    <stop offset="100%" stopColor="#E65100" stopOpacity="0" />
+                  </radialGradient>
+                  <filter id="blurFilter" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+                    <feComposite in="blur" in2="SourceGraphic" operator="over" />
+                  </filter>
+                </defs>
+                <circle cx="50" cy="50" r="45" fill="url(#grad1)" filter="url(#blurFilter)">
+                  <animateTransform attributeName="transform" type="translate" values="0,0; 3,-2; -1,2; 0,0" dur="10s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="50" cy="50" r="38" fill="url(#grad2)" filter="url(#blurFilter)">
+                  <animateTransform attributeName="transform" type="translate" values="0,0; -2,3; 2,-1; 0,0" dur="8s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="50" cy="50" r="30" fill="url(#grad3)" filter="url(#blurFilter)">
+                  <animateTransform attributeName="transform" type="translate" values="0,0; 2,2; -2,-2; 0,0" dur="12s" repeatCount="indefinite" />
+                </circle>
+                {[...Array(6)].map((_, i) => (
+                  <circle
+                    key={i}
+                    cx={50 + (i % 2 === 0 ? 15 : -15)}
+                    cy={50 + (i % 3 === 0 ? 12 : -12)}
+                    r="4"
+                    fill="#FFFFFF"
+                    opacity="0.3"
+                    filter="url(#blurFilter)"
+                  >
+                    <animateTransform attributeName="transform" type="translate" values="0,0; 8,-5; -5,10; 0,0" dur={`${4 + i}s`} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.3;0.7;0.1;0.3" dur={`${5 + i}s`} repeatCount="indefinite" />
+                  </circle>
+                ))}
+              </svg>
             </div>
             {(isProcessing || isModelLoading) && <div className="absolute inset-0 rounded-full border-2 border-[#E65100]/30 border-t-[#E65100] animate-spin" />}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition duration-700 bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 blur-xl" />
@@ -833,6 +827,7 @@ export default function SmartVoicePage() {
       </div>
 
       {showModelDialog && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowModelDialog(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-white/10" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-black/90 backdrop-blur-md p-4 border-b border-white/10 flex justify-between items-center"><h2 className="text-lg font-bold text-white">{t('select_model')}</h2><button onClick={() => setShowModelDialog(false)} className="p-1 hover:bg-white/10 rounded-full"><X className="w-5 h-5 text-white/60" /></button></div>
@@ -871,6 +866,7 @@ export default function SmartVoicePage() {
       )}
 
       {showWhisperConsent && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowWhisperConsent(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full border border-white/10" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
@@ -887,6 +883,7 @@ export default function SmartVoicePage() {
       )}
 
       {whisperDownloading && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed bottom-20 left-4 right-4 bg-black/90 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-50">
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
@@ -904,4 +901,4 @@ export default function SmartVoicePage() {
       <footer className="py-6 text-center"><p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">SMARTY AI ASSISTANT</p></footer>
     </div>
   );
-      }
+  }
