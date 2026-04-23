@@ -2,24 +2,19 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Plus, RefreshCw, Clock, Sparkles, CheckCircle2 
-} from 'lucide-react';
-import { 
-  analyzeReminderInput, 
-  formatDetectedTime, 
-  type SmartParsedResult 
-} from '@/lib/date-parser';
+import { Send, Sparkles, CheckCircle2, X, Loader2 } from 'lucide-react';
+import { formatDetectedTime, type SmartParsedResult } from '@/lib/date-parser';
+import { analyzeReminderInput } from '@/lib/date-parser'; // للاستخراج المحلي
 
-// ✅ دالة مساعدة للتحقق من صحة التاريخ
-function isValidDateString(dateString: string): boolean {
-  if (!dateString || typeof dateString !== 'string') return false;
-  try {
-    const date = new Date(dateString);
-    return !isNaN(date.getTime());
-  } catch {
-    return false;
-  }
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  reminderData?: {
+    text: string;
+    time: string;
+    recurring?: string;
+  };
 }
 
 interface AddReminderModalProps {
@@ -52,105 +47,169 @@ export default function AddReminderModal({
   t,
   smartParsed,
   setSmartParsed,
-  activeSuggestions = [],
   language,
-  getTimeBeforeLabel = () => '',
-  format = (date: Date) => date.toLocaleString(),
-  arDZ,
   onReminderTimeDetected,
 }: AddReminderModalProps) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'مرحباً! أنا مساعدك الذكي. يمكنك كتابة تذكير بالوقت والتاريخ، أو سؤالي عن أي شيء. مثلاً: "ذكرني بموعد الطبيب غداً الساعة 3 مساءً"',
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingReminder, setPendingReminder] = useState<{ text: string; time: string; recurring?: string } | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [error, setError] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  // مفتاح التخزين المؤقت
-  const DRAFT_STORAGE_KEY = 'smarty_reminder_draft';
-  
-  // تحميل المسودة عند فتح المودال (فقط إذا كانت موجودة)
+  // تمرير إلى الأسفل تلقائياً
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // تركيز على حقل الإدخال عند الفتح
   useEffect(() => {
     if (isOpen) {
-      const savedDraft = sessionStorage.getItem(DRAFT_STORAGE_KEY);
-      if (savedDraft) {
-        try {
-          const draft = JSON.parse(savedDraft);
-          if (draft.inputText && typeof draft.inputText === 'string') {
-            setInputText(draft.inputText);
-          }
-          if (draft.recurring && typeof draft.recurring === 'string') {
-            setRecurring(draft.recurring);
-          }
-        } catch (e) {
-          console.error('Failed to load draft reminder', e);
-        }
-      }
+      setTimeout(() => inputRef.current?.focus(), 300);
+    } else {
+      // إعادة تعيين الدردشة عند الإغلاق (اختياري)
+      setMessages([
+        {
+          id: '1',
+          role: 'assistant',
+          content: 'مرحباً! أنا مساعدك الذكي. يمكنك كتابة تذكير بالوقت والتاريخ، أو سؤالي عن أي شيء. مثلاً: "ذكرني بموعد الطبيب غداً الساعة 3 مساءً"',
+        },
+      ]);
+      setPendingReminder(null);
+      setInput('');
     }
-  }, [isOpen, setInputText, setRecurring]);
+  }, [isOpen]);
 
-  // دالة الإغلاق الداخلية
-  const handleClose = (saveDraft: boolean) => {
-    if (saveDraft && inputText.trim()) {
-      // حفظ المسودة في sessionStorage
-      const draft = {
-        inputText,
-        recurring,
-        savedAt: new Date().toISOString(),
+  // دالة للاستخراج باستخدام الذكاء الاصطناعي (محلي أو API)
+  const parseReminderFromText = async (text: string): Promise<{ success: boolean; reminderTime?: string; parsedText?: string; error?: string }> => {
+    try {
+      // أولاً نحاول التحليل المحلي السريع
+      const localResult = analyzeReminderInput(text);
+      if (localResult && localResult.reminderTime && new Date(localResult.reminderTime) > new Date()) {
+        return {
+          success: true,
+          reminderTime: localResult.reminderTime,
+          parsedText: localResult.parsedText,
+        };
+      }
+
+      // إذا فشل المحلي، نستخدم الذكاء الاصطناعي (Groq)
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `استخرج من النص التالي: التاريخ والوقت (بصيغة ISO)، ونص التذكير بعد إزالة كلمات الأمر. أعد فقط JSON بهذا الشكل: {"reminderTime": "ISO string", "parsedText": "نص التذكير"}. النص: "${text}"`,
+          model: 'llama-3.3-70b-versatile',
+        }),
+      });
+      if (!res.ok) throw new Error('AI request failed');
+      const reply = await res.text();
+      const jsonMatch = reply.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Invalid JSON');
+      const parsed = JSON.parse(jsonMatch[0]);
+      const date = new Date(parsed.reminderTime);
+      if (isNaN(date.getTime()) || date <= new Date()) throw new Error('Invalid or past date');
+      return {
+        success: true,
+        reminderTime: parsed.reminderTime,
+        parsedText: parsed.parsedText || text,
       };
-      sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    } else if (!saveDraft) {
-      // إلغاء: حذف المسودة ومسح النص الحالي
-      sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-      setInputText('');       // مسح النص
-      setRecurring('none');   // إعادة التكرار إلى الوضع الافتراضي
+    } catch (error: any) {
+      console.error('Parse error:', error);
+      return { success: false, error: error.message };
     }
-    // استدعاء دالة الإغلاق الأصلية
-    onClose();
   };
 
-  // تأثير التحليل الذكي (متزامن - تحليل محلي فقط)
-  useEffect(() => {
-    const analyzeText = () => {
-      if (!inputText.trim()) {
-        setSmartParsed(null);
-        setError(null);
-        setIsAnalyzing(false);
-        return;
-      }
-      
-      setIsAnalyzing(true);
-      
-      try {
-        // استخدام الدالة المتزامنة للتحليل المحلي
-        const result = analyzeReminderInput(inputText);
-        
-        if (result && isValidDateString(result.reminderTime)) {
-          setSmartParsed(result);
-          setError(null);
-          if (onReminderTimeDetected) {
-            onReminderTimeDetected(result.reminderTime);
-          }
-        } else {
-          setSmartParsed(null);
-          setError('لم نتمكن من تحديد الوقت بدقة. يرجى كتابة الوقت بشكل أوضح.');
-          if (onReminderTimeDetected) {
-            onReminderTimeDetected(new Date().toISOString());
-          }
-        }
-      } catch (error) {
-        console.error('Date parsing error:', error);
-        setSmartParsed(null);
-        setError('حدث خطأ في تحليل الوقت. يرجى المحاولة مرة أخرى.');
-        if (onReminderTimeDetected) {
-          onReminderTimeDetected(new Date().toISOString());
-        }
-      } finally {
-        setIsAnalyzing(false);
-      }
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
     };
-    
-    // تأخير التحليل قليلاً لتجنب الطلبات المتكررة أثناء الكتابة
-    const timer = setTimeout(analyzeText, 500);
-    return () => clearTimeout(timer);
-  }, [inputText, setSmartParsed, onReminderTimeDetected]);
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setIsLoading(true);
+
+    // إضافة رسالة مؤقتة للمساعد
+    const tempAssistantId = (Date.now() + 1).toString();
+    setMessages(prev => [
+      ...prev,
+      { id: tempAssistantId, role: 'assistant', content: 'جاري التفكير...' },
+    ]);
+
+    try {
+      // محاولة استخراج تذكير من النص
+      const parseResult = await parseReminderFromText(userMsg.content);
+      if (parseResult.success && parseResult.reminderTime && parseResult.parsedText) {
+        // نعرض ملخص التذكير ونطلب التأكيد
+        const formattedTime = formatDetectedTime(parseResult.reminderTime, language as 'ar' | 'fr' | 'en');
+        const confirmMsg: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `📝 **تم استخراج التذكير التالي:**\n\n- **النص:** ${parseResult.parsedText}\n- **الوقت:** ${formattedTime}\n\nهل تريد حفظ هذا التذكير؟ (أجب بنعم أو لا)`,
+          reminderData: {
+            text: parseResult.parsedText,
+            time: parseResult.reminderTime,
+            recurring: 'none', // يمكنك تحسين استخراج التكرار لاحقاً
+          },
+        };
+        setMessages(prev => prev.filter(m => m.id !== tempAssistantId).concat(confirmMsg));
+        setPendingReminder(confirmMsg.reminderData);
+      } else {
+        // ليس تذكيراً، نرد برد عام
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: userMsg.content,
+            model: 'llama-3.3-70b-versatile',
+          }),
+        });
+        const reply = await res.text();
+        setMessages(prev => prev.filter(m => m.id !== tempAssistantId).concat({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: reply,
+        }));
+      }
+    } catch (error) {
+      setMessages(prev => prev.filter(m => m.id !== tempAssistantId).concat({
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'عذراً، حدث خطأ. حاول مرة أخرى.',
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmReminder = () => {
+    if (pendingReminder) {
+      // تعبئة الحقول في المكون الأب
+      setInputText(pendingReminder.text);
+      if (onReminderTimeDetected) onReminderTimeDetected(pendingReminder.time);
+      setRecurring(pendingReminder.recurring || 'none');
+      // استدعاء الحفظ
+      handleAddReminder();
+      // إغلاق المودال بعد الحفظ
+      onClose();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   if (!isOpen) return null;
   const DRAG_THRESHOLD = 100;
@@ -158,162 +217,75 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        {/* خلفية شفافة - الضغط عليها يغلق مع حفظ */}
-        <div 
-          className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
-          onClick={() => handleClose(true)}
-        />
-        
-        <motion.div                   
-          initial={{ y: "100%" }}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => onClose()} />
+        <motion.div
+          initial={{ y: '100%' }}
           animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 45, stiffness: 400, mass: 1 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 45, stiffness: 400, mass: 1 }}
           drag="y"
           dragConstraints={{ top: 0, bottom: 0 }}
           dragElastic={0.05}
-          onDragEnd={(event, info) => { 
-            if (info.offset.y > DRAG_THRESHOLD) handleClose(true); 
-          }}
-          className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl overflow-y-auto max-h-[90vh]"
-        > 
-          <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-6 cursor-grab" />
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-black dark:text-white tracking-tight">{t.new_reminder || 'تذكير جديد'}</h2>
-              <div className="w-10 h-10 bg-[#E65100]/10 text-[#E65100] rounded-xl flex items-center justify-center">
-                <Plus className="w-5 h-5" />
-              </div>
-            </div>
-            
-            <div className="relative mb-4 group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-[#E65100] to-amber-500 rounded-[2rem] blur opacity-20 group-focus-within:opacity-40"></div>
-              <div className="relative bg-white dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 focus-within:border-[#E65100] rounded-[1.5rem] overflow-hidden">
-                <textarea
-                  autoFocus
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder={t.what_to_remember || 'ماذا تريد أن تتذكر؟'}
-                  className="w-full min-h-[120px] p-4 bg-transparent resize-none text-xl text-black dark:text-white outline-none placeholder:text-zinc-300 font-black leading-relaxed"
-                />
-              </div>
-            </div>
+          onDragEnd={(event, info) => { if (info.offset.y > DRAG_THRESHOLD) onClose(); }}
+          className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl overflow-y-auto max-h-[90vh] flex flex-col"
+        >
+          <div className="sticky top-0 bg-white dark:bg-zinc-900 p-4 border-b border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
+            <h2 className="text-xl font-black">المساعد الذكي</h2>
+            <button onClick={onClose} className="p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            {/* عرض رسالة الخطأ */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                <p className="text-sm font-bold text-red-600 dark:text-red-400 text-center">{error}</p>
-              </div>
-            )}
-
-            {/* مؤشر التحليل */}
-            {isAnalyzing && inputText.trim() && !smartParsed && (
-              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-2xl">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm font-bold text-blue-600 dark:text-blue-400 text-center">
-                    جاري التحليل...
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <AnimatePresence>
-              {smartParsed && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-800 rounded-2xl p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="w-4 h-4 text-[#E65100]" />
-                      <span className="text-xs font-black text-[#E65100] uppercase tracking-wider">
-                        تحليل ذكي
-                      </span>
-                      <span className="ml-auto text-[10px] font-bold text-zinc-500 bg-white/50 dark:bg-zinc-800/50 px-2 py-0.5 rounded-full">
-                        {Math.round(smartParsed.confidence * 100)}% دقة
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2">
-                        <span className="text-[10px] font-black text-zinc-400 uppercase w-16 pt-0.5">النص</span>
-                        <span className="text-sm font-bold text-zinc-900 dark:text-white flex-1">
-                          {smartParsed.parsedText}
-                        </span>
-                      </div>
-
-                      <div className="flex items-start gap-2">
-                        <Clock className="w-4 h-4 text-[#E65100] mt-0.5" />
-                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex-1">
-                          {formatDetectedTime(smartParsed.reminderTime, smartParsed.detectedLanguage)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-           </AnimatePresence>
-
-            <div className="mb-6">
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="flex items-center gap-4 px-5 py-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#E65100]/10 to-amber-500/10 flex items-center justify-center">
-                    <RefreshCw className="w-5 h-5 text-[#E65100] dark:text-amber-400" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-0.5">
-                      {t.recurring || 'تكرار'}
-                    </p>
-                    
-                    <div className="relative">
-                      <select 
-                        value={recurring}
-                        onChange={(e) => setRecurring(e.target.value)}
-                        className="w-full appearance-none bg-transparent border-none p-0 text-base font-bold text-zinc-900 dark:text-white focus:outline-none focus:ring-0 cursor-pointer pr-6"
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto min-h-[300px] max-h-[60vh]">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.role === 'user' ? 'bg-[#E65100] text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white'}`}>
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  {msg.reminderData && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={handleConfirmReminder}
+                        className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded-full flex items-center gap-1"
                       >
-                        <option value="none">{t.once || 'مرة واحدة'}</option>
-                        <option value="hourly">{t.hourly || 'كل ساعة'}</option>
-                        <option value="daily">{t.daily || 'يومياً'}</option>
-                        <option value="weekly">{t.weekly || 'أسبوعياً'}</option>
-                      </select>
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
+                        <CheckCircle2 className="w-4 h-4" /> حفظ التذكير
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
-            </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl px-4 py-2 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>يكتب...</span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-            <div className="flex gap-3">
-              <button 
-                onClick={() => handleClose(false)} // ← إلغاء: يحذف النص والمسودة ويغلق
-                className="flex-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold py-4 rounded-2xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-              >
-                {t.cancel || 'إلغاء'}
-              </button>
-              <button 
-                onClick={() => {
-                  // حفظ ناجح → حذف المسودة
-                  sessionStorage.removeItem(DRAFT_STORAGE_KEY);
-                  handleAddReminder();
-                }} 
-                disabled={!inputText.trim() || isAnalyzing} 
-                className="flex-[2] bg-gradient-to-r from-[#E65100] to-amber-500 text-white font-bold py-4 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#E65100]/20 hover:shadow-xl hover:shadow-[#E65100]/30 transition-all"
-              >
-                <CheckCircle2 className="w-5 h-5" />
-                {t.save_reminder || 'حفظ التذكير'}
-              </button>
-            </div>
+          <div className="p-4 border-t border-zinc-200 dark:border-zinc-700 flex gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="اكتب تذكيراً أو اسأل..."
+              className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#E65100]"
+              rows={1}
+              style={{ minHeight: '44px' }}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={isLoading || !input.trim()}
+              className="bg-[#E65100] hover:bg-[#BF3F00] disabled:opacity-50 text-white rounded-xl px-4 py-2 transition"
+            >
+              <Send className="w-5 h-5" />
+            </button>
           </div>
         </motion.div>
       </div>
     </AnimatePresence>
   );
-}
+              }
