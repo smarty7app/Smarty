@@ -10,7 +10,7 @@ import {
   Download, Check, Trash2, HardDrive, X, AlertTriangle
 } from 'lucide-react';
 
-// تعريف واجهات البيانات
+// تعريف واجهات البيانات (لم تتغير)
 interface AIModel {
   id: string;
   name: { ar: string; en: string; fr: string };
@@ -30,6 +30,7 @@ interface DownloadInfo {
 }
 
 const AVAILABLE_MODELS: AIModel[] = [
+  // ... (نفس القائمة الموجودة، لم تتغير)
   {
     id: 'gemma-2-2b',
     name: { ar: 'جيما 2 - 2 مليار', en: 'Gemma 2 - 2B', fr: 'Gemma 2 - 2B' },
@@ -54,7 +55,6 @@ const AVAILABLE_MODELS: AIModel[] = [
     downloadUrl: 'https://huggingface.co/tensorblock/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf',
     filename: 'Phi-3.5-mini-instruct-Q4_K_M.gguf'
   },
-  // ========== النماذج الجديدة المضافة ==========
   {
     id: 'qwen2.5-1.5b',
     name: { ar: 'كوين 2.5 - 1.5 مليار', en: 'Qwen 2.5 - 1.5B', fr: 'Qwen 2.5 - 1.5B' },
@@ -105,7 +105,7 @@ const AVAILABLE_MODELS: AIModel[] = [
   }
 ];
 
-// دوال IndexedDB
+// دوال IndexedDB (لم تتغير)
 async function openIndexedDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('AIModelsDB', 2);
@@ -231,7 +231,6 @@ export default function SmartVoicePage() {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const { language } = useLanguage();
   const { data: session } = useSession();
-  // استخدام قيم افتراضية آمنة في حال عدم وجود session
   const userId = session?.user?.id || 'anonymous';
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
@@ -270,6 +269,7 @@ export default function SmartVoicePage() {
       'network_error': { ar: 'خطأ في الشبكة، تحقق من اتصالك.', en: 'Network error, check your connection.', fr: 'Erreur réseau, vérifiez votre connexion.' },
       'recognition_failed': { ar: 'لم يتم التعرف على صوتك، حاول مرة أخرى.', en: 'Could not recognize your voice, try again.', fr: 'Impossible de reconnaître votre voix, réessayez.' },
       'transcription_failed': { ar: 'فشل التفريغ المحلي. تأكد من اتصالك بالإنترنت للتحميل الأولي.', en: 'Local transcription failed. Make sure you have internet for initial download.', fr: 'La transcription locale a échoué. Assurez-vous d\'avoir une connexion internet pour le téléchargement initial.' },
+      'speech_synthesis_failed': { ar: 'عذراً، لم أستطع نطق الرد.', en: 'Sorry, I couldn\'t speak the response.', fr: 'Désolé, je n\'ai pas pu prononcer la réponse.' },
       'daily_limit_exceeded': { ar: 'تم تجاوز الحد اليومي للطلبات', en: 'Daily request limit exceeded', fr: 'Limite quotidienne de requêtes dépassée' },
       'connection_error': { ar: 'حدث خطأ في الاتصال بالمساعد.', en: 'Connection error with the assistant.', fr: 'Erreur de connexion avec l\'assistant.' },
       'retrying': { ar: 'محاولة إعادة الاتصال', en: 'Retrying connection', fr: 'Tentative de reconnexion' },
@@ -292,7 +292,7 @@ export default function SmartVoicePage() {
   const getModelName = useCallback((model: AIModel): string => model.name[language as keyof typeof model.name] || model.name.en, [language]);
   const getModelDescription = useCallback((model: AIModel): string => model.description[language as keyof typeof model.description] || model.description.en, [language]);
 
-  // ========== دوال التحميل والإدارة ==========
+  // ========== دوال التحميل والإدارة (لم تتغير) ==========
   const downloadModel = useCallback(async (model: AIModel, resume: boolean = false) => {
     if (!isOnline) { setResponse(t('no_internet')); return; }
     if ('storage' in navigator && 'estimate' in navigator.storage) {
@@ -413,8 +413,7 @@ export default function SmartVoicePage() {
     }
   }, [isOnline, t]);
 
-  // ========== دوال الصوت الأساسية (مرتبة بشكل صحيح) ==========
-  // أولاً: clearSilenceTimer (يجب أن تكون قبل createRecognition)
+  // ========== دوال الصوت الأساسية ==========
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current);
@@ -422,11 +421,61 @@ export default function SmartVoicePage() {
     }
   }, []);
 
-  // ثانياً: isListeningRef لتجنب stale closure
   const isListeningRef = useRef(isListening);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
 
-  // ثالثاً: processText (تعتمد على دوال أخرى)
+  // دالة نطق آمنة تنتظر تحميل الأصوات وتتعامل مع الأخطاء
+  const speak = useCallback((text: string) => {
+    return new Promise<void>((resolve) => {
+      if (!window.speechSynthesis) {
+        console.warn('speechSynthesis not supported');
+        setResponse(t('speech_synthesis_failed'));
+        resolve();
+        return;
+      }
+
+      // إلغاء أي نطق سابق
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ar-EG'; // استخدام ar-EG بدلاً من ar-SA (أكثر توافقاً)
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1;
+
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setIsProcessing(false);
+      };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setRetryCount(0);
+        resolve();
+      };
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        setIsSpeaking(false);
+        setIsProcessing(false);
+        setResponse(t('speech_synthesis_failed'));
+        resolve();
+      };
+
+      // محاولة تحميل الأصوات واختيار صوت عربي إذا أمكن
+      const trySpeak = () => {
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find(voice => voice.lang.includes('ar'));
+        if (arabicVoice) utterance.voice = arabicVoice;
+        window.speechSynthesis.speak(utterance);
+      };
+
+      if (window.speechSynthesis.getVoices().length > 0) {
+        trySpeak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = trySpeak;
+      }
+    });
+  }, [t]);
+
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -435,32 +484,31 @@ export default function SmartVoicePage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: text, userId, userEmail, userName, model: activeModel })
       });
-      if (!res.ok) { if (res.status === 429) throw new Error(t('daily_limit_exceeded')); throw new Error(`API error: ${res.status}`); }
+      if (!res.ok) {
+        if (res.status === 429) throw new Error(t('daily_limit_exceeded'));
+        throw new Error(`API error: ${res.status}`);
+      }
       const reply = await res.text();
       setResponse(reply);
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(reply);
-      utterance.lang = 'ar-SA'; utterance.rate = 1.0; utterance.pitch = 1.0;
-      utterance.onstart = () => { setIsSpeaking(true); setIsProcessing(false); };
-      utterance.onend = () => { setIsSpeaking(false); setRetryCount(0); };
-      utterance.onerror = () => { setIsSpeaking(false); setIsProcessing(false); setResponse(t('speech_synthesis_failed')); };
-      window.speechSynthesis.speak(utterance);
+      await speak(reply);
     } catch (error: any) {
       console.error(error);
       if (retryCount < 3 && error.message.includes('fetch')) {
         setRetryCount(prev => prev + 1);
         setResponse(`${t('retrying')} (${retryCount + 1}/3)...`);
         setTimeout(() => processText(text), 2000);
-      } else { setResponse(error.message || t('connection_error')); setIsProcessing(false); }
+      } else {
+        setResponse(error.message || t('connection_error'));
+        setIsProcessing(false);
+      }
     }
-  }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t]);
+  }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t, speak]);
 
-  // رابعاً: createRecognition (تعتمد على clearSilenceTimer و isListeningRef)
   const createRecognition = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) { 
-      setResponse(t('recognition_failed')); 
-      return null; 
+    if (!SpeechRecognition) {
+      setResponse(t('recognition_failed'));
+      return null;
     }
     const instance = new SpeechRecognition();
     instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
@@ -472,9 +520,9 @@ export default function SmartVoicePage() {
       setResponse('');
       setRetryCount(0);
       clearSilenceTimer();
-      silenceTimerRef.current = setTimeout(() => { 
-        if (isListeningRef.current) recognitionRef.current?.stop(); 
-        setResponse(t('no_speech_detected')); 
+      silenceTimerRef.current = setTimeout(() => {
+        if (isListeningRef.current) recognitionRef.current?.stop();
+        setResponse(t('no_speech_detected'));
       }, 10000);
     };
     instance.onaudiostart = () => clearSilenceTimer();
@@ -488,11 +536,17 @@ export default function SmartVoicePage() {
         else interimTranscript += transcriptPart;
       }
       if (interimTranscript) setTranscript(interimTranscript);
-      if (finalTranscript) { setTranscript(finalTranscript); setIsListening(false); processText(finalTranscript); }
+      if (finalTranscript) {
+        setTranscript(finalTranscript);
+        setIsListening(false);
+        processText(finalTranscript);
+      }
     };
     instance.onerror = (event: any) => {
       console.error(event.error);
-      setIsListening(false); setIsProcessing(false); clearSilenceTimer();
+      setIsListening(false);
+      setIsProcessing(false);
+      clearSilenceTimer();
       switch (event.error) {
         case 'not-allowed': setResponse(t('allow_mic')); break;
         case 'no-speech': setResponse(t('no_speech')); break;
@@ -504,7 +558,6 @@ export default function SmartVoicePage() {
     return instance;
   }, [language, processText, clearSilenceTimer, t]);
 
-  // خامساً: startLocalRecording (تعتمد على processText)
   const startLocalRecording = useCallback(async () => {
     if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
       setShowWhisperConsent(true);
@@ -554,7 +607,6 @@ export default function SmartVoicePage() {
     }
   }, [useLocalWhisper, whisperDownloaded, whisperDownloading, clearSilenceTimer, processText, t]);
 
-  // سادساً: cleanupMediaRecorder
   const cleanupMediaRecorder = useCallback(() => {
     if (mediaRecorderRef.current) {
       if (mediaRecorderRef.current.state === 'recording') try { mediaRecorderRef.current.stop(); } catch(e) {}
@@ -565,7 +617,6 @@ export default function SmartVoicePage() {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
   }, []);
 
-  // سابعاً: toggleListening
   const toggleListening = useCallback(() => {
     if (isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); }
     if (isListening) {
@@ -595,7 +646,6 @@ export default function SmartVoicePage() {
     checkWhisperModel();
   }, []);
 
-  // استخدام useRef لمنع التحميل المتكرر عند تغير downloadModel
   const hasLoadedModelsRef = useRef(false);
   useEffect(() => {
     if (hasLoadedModelsRef.current) return;
@@ -619,7 +669,7 @@ export default function SmartVoicePage() {
       }
     };
     loadSavedModels();
-  }, [downloadModel]); // تبقى التبعية ولكننا نضمن التنفيذ مرة واحدة فقط
+  }, [downloadModel]);
 
   useEffect(() => {
     if (activeModel) localStorage.setItem('active_ai_model', activeModel);
@@ -666,7 +716,7 @@ export default function SmartVoicePage() {
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
-  // ========== JSX (بدون تغيير) ==========
+  // ========== JSX ==========
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5 z-10">
@@ -784,4 +834,4 @@ export default function SmartVoicePage() {
       <footer className="py-6 text-center"><p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">SMARTY AI ASSISTANT</p></footer>
     </div>
   );
-                                     }
+                   }
