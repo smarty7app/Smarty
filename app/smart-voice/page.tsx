@@ -270,7 +270,6 @@ export default function SmartVoicePage() {
       'network_error': { ar: 'خطأ في الشبكة، تحقق من اتصالك.', en: 'Network error, check your connection.', fr: 'Erreur réseau, vérifiez votre connexion.' },
       'recognition_failed': { ar: 'لم يتم التعرف على صوتك، حاول مرة أخرى.', en: 'Could not recognize your voice, try again.', fr: 'Impossible de reconnaître votre voix, réessayez.' },
       'transcription_failed': { ar: 'فشل التفريغ المحلي. تأكد من اتصالك بالإنترنت للتحميل الأولي.', en: 'Local transcription failed. Make sure you have internet for initial download.', fr: 'La transcription locale a échoué. Assurez-vous d\'avoir une connexion internet pour le téléchargement initial.' },
-      'speech_synthesis_failed': { ar: 'عذراً، لم أستطع نطق الرد.', en: 'Sorry, I couldn\'t speak the response.', fr: 'Désolé, je n\'ai pas pu prononcer la réponse.' },
       'daily_limit_exceeded': { ar: 'تم تجاوز الحد اليومي للطلبات', en: 'Daily request limit exceeded', fr: 'Limite quotidienne de requêtes dépassée' },
       'connection_error': { ar: 'حدث خطأ في الاتصال بالمساعد.', en: 'Connection error with the assistant.', fr: 'Erreur de connexion avec l\'assistant.' },
       'retrying': { ar: 'محاولة إعادة الاتصال', en: 'Retrying connection', fr: 'Tentative de reconnexion' },
