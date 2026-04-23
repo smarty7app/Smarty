@@ -197,7 +197,7 @@ export default function AddReminderModal({
       {
         id: thinkingId,
         role: 'assistant',
-        content: '🤔 جاري التفكير...',
+        content: ' جاري التفكير...',
         timestamp: new Date(),
       },
     ]);
@@ -212,7 +212,7 @@ export default function AddReminderModal({
         const confirmMessage: Message = {
           id: Date.now().toString(),
           role: 'assistant',
-          content: `📝 **تم استخراج التذكير التالي:**\n\n• **الوصف:** ${reminder.parsedText}\n• **الوقت:** ${formattedTime}\n\nهل تريد حفظ هذا التذكير؟ (اضغط على زر "حفظ" أدناه)`,
+          content: ` **تم استخراج التذكير التالي:**\n\n• **الوصف:** ${reminder.parsedText}\n• **الوقت:** ${formattedTime}\n\nهل تريد حفظ هذا التذكير؟ (اضغط على زر "حفظ" أدناه)`,
           timestamp: new Date(),
           reminderData: {
             text: reminder.parsedText,
@@ -390,4 +390,4 @@ export default function AddReminderModal({
       </div>
     </AnimatePresence>
   );
-          }
+}
