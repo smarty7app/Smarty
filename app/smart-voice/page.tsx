@@ -258,7 +258,11 @@ export default function SmartVoicePage() {
       'recording': { ar: 'جاري التسجيل...', en: 'Recording...', fr: 'Enregistrement...' },
       'thinking': { ar: 'يفكر...', en: 'Thinking...', fr: 'Réflexion...' },
       'speaking': { ar: 'يتحدث...', en: 'Speaking...', fr: 'Parle...' },
-      'tap_to_speak': { ar: 'اضغط على الشعار للتحدث مع المساعد الذكي', en: 'Tap the logo to speak with the smart assistant', fr: 'Appuyez sur le logo pour parler avec l\'assistant intelligent' },
+      'tap_to_speak': {
+       ar: 'اضغط للتحدث مع مساعدك الذكي',
+       en: 'Tap the logo to speak with the smart assistant',
+       fr: 'Appuyez sur le logo pour parler avec l\'assistant intelligent'
+      },
       'you': { ar: 'أنت', en: 'You', fr: 'Vous' },
       'smarty': { ar: 'سمارتي', en: 'Smarty', fr: 'Smarty' },
       'loading_model': { ar: 'جاري تحميل نموذج الذكاء الاصطناعي المحلي...', en: 'Loading local AI model...', fr: 'Chargement du modèle IA local...' },
