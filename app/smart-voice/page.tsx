@@ -739,36 +739,36 @@ export default function SmartVoicePage() {
             <div className="absolute inset-0 rounded-full bg-white/5 backdrop-blur-xl border border-white/10" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#E65100]/40 to-amber-500/30" style={{ opacity: isListening ? 0.8 : isProcessing ? 0.6 : isSpeaking ? 0.5 : 0.25, transition: 'opacity 0.5s ease' }} />
             <div className="relative z-10">
-              <svg className="w-50 h-50 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
+              <svg className="w-48 h-48 drop-shadow-2xl" viewBox="0 0 100 100" style={{ filter: 'blur(1px)' }}>
   <defs>
-    {/* تدرجات لونية باردة */}
+    {/* تدرجات لونية طيفية */}
     <radialGradient id="grad1" cx="30%" cy="30%" r="70%">
-      <stop offset="0%" stopColor="#1E90FF" stopOpacity="0.9">
-        <animate attributeName="stopColor" values="#1E90FF;#00BFFF;#1E90FF" dur="6s" repeatCount="indefinite" />
+      <stop offset="0%" stopColor="#FF3366" stopOpacity="0.9">
+        <animate attributeName="stopColor" values="#FF3366;#FF8C42;#FF3366" dur="6s" repeatCount="indefinite" />
       </stop>
-      <stop offset="50%" stopColor="#00BFFF" stopOpacity="0.6">
-        <animate attributeName="stopColor" values="#00BFFF;#4682B4;#00BFFF" dur="8s" repeatCount="indefinite" />
+      <stop offset="50%" stopColor="#FF8C42" stopOpacity="0.6">
+        <animate attributeName="stopColor" values="#FF8C42;#E65100;#FF8C42" dur="8s" repeatCount="indefinite" />
       </stop>
-      <stop offset="100%" stopColor="#4682B4" stopOpacity="0.2">
-        <animate attributeName="stopColor" values="#4682B4;#1E3A8A;#4682B4" dur="7s" repeatCount="indefinite" />
+      <stop offset="100%" stopColor="#E65100" stopOpacity="0.2">
+        <animate attributeName="stopColor" values="#E65100;#9B2E00;#E65100" dur="7s" repeatCount="indefinite" />
       </stop>
     </radialGradient>
 
     <radialGradient id="grad2" cx="70%" cy="70%" r="60%">
-      <stop offset="0%" stopColor="#8A2BE2" stopOpacity="0.8">
-        <animate attributeName="stopColor" values="#8A2BE2;#4B0082;#8A2BE2" dur="9s" repeatCount="indefinite" />
+      <stop offset="0%" stopColor="#9B2E00" stopOpacity="0.8">
+        <animate attributeName="stopColor" values="#9B2E00;#FF66B2;#9B2E00" dur="9s" repeatCount="indefinite" />
       </stop>
-      <stop offset="50%" stopColor="#4B0082" stopOpacity="0.5">
-        <animate attributeName="stopColor" values="#4B0082;#9370DB;#4B0082" dur="5s" repeatCount="indefinite" />
+      <stop offset="50%" stopColor="#FF66B2" stopOpacity="0.5">
+        <animate attributeName="stopColor" values="#FF66B2;#E65100;#FF66B2" dur="5s" repeatCount="indefinite" />
       </stop>
-      <stop offset="100%" stopColor="#9370DB" stopOpacity="0.1" />
+      <stop offset="100%" stopColor="#E65100" stopOpacity="0.1" />
     </radialGradient>
 
     <radialGradient id="grad3" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#00CED1" stopOpacity="0.7">
-        <animate attributeName="stopColor" values="#00CED1;#20B2AA;#00CED1" dur="7s" repeatCount="indefinite" />
+      <stop offset="0%" stopColor="#FFD700" stopOpacity="0.7">
+        <animate attributeName="stopColor" values="#FFD700;#FF8C42;#FFD700" dur="7s" repeatCount="indefinite" />
       </stop>
-      <stop offset="100%" stopColor="#4682B4" stopOpacity="0" />
+      <stop offset="100%" stopColor="#E65100" stopOpacity="0" />
     </radialGradient>
 
     <filter id="blurFilter" x="-50%" y="-50%" width="200%" height="200%">
