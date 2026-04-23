@@ -71,7 +71,7 @@ export default function AddReminderModal({
     {
       id: 'welcome',
       role: 'assistant',
-      content: 'مرحباً! 👋 أنا مساعدك الذكي. يمكنك كتابة تذكير مثل &quot;ذكرني باجتماع غداً الساعة 10 صباحاً&quot;، أو اسألني عن أي شيء. سأقوم بتحويل طلباتك إلى تذكيرات وحفظها تلقائياً.',
+      content: 'مرحباً! 👋 أنا مساعدك الذكي. يمكنك كتابة تذكير مثل "ذكرني باجتماع غداً الساعة 10 صباحاً"، أو اسألني عن أي شيء. سأقوم بتحويل طلباتك إلى تذكيرات وحفظها تلقائياً.',
       timestamp: new Date(),
     },
   ]);
@@ -188,6 +188,18 @@ export default function AddReminderModal({
     return { success: false, error: 'لم نتمكن من استخراج وقت صالح للتذكير. يرجى كتابة الوقت بشكل أوضح.' };
   };
 
+  // دالة مساعدة لحفظ التذكير بشكل مباشر (لتجنب الاعتماد على حالة المكون الأصلي)
+  const addReminderDirectly = (reminder: { text: string; time: string; recurring?: string }) => {
+    // تحديث حالات المكون الأصلي
+    setInputText(reminder.text);
+    if (onReminderTimeDetected) onReminderTimeDetected(reminder.time);
+    setRecurring(reminder.recurring || 'none');
+    // استدعاء دالة الحفظ الأصلية
+    handleAddReminder();
+    // إغلاق المودال بعد الحفظ لرؤية التذكير مباشرة
+    onClose();
+  };
+
   // إرسال رسالة المستخدم
   const handleSendMessage = async () => {
     if (!input.trim() || isProcessing) return;
@@ -271,23 +283,10 @@ export default function AddReminderModal({
     }
   };
 
-  // حفظ التذكير المؤكد
+  // حفظ التذكير المؤكد (باستخدام الدالة المباشرة)
   const handleConfirmReminder = () => {
     if (pendingReminder) {
-      setInputText(pendingReminder.text);
-      if (onReminderTimeDetected) onReminderTimeDetected(pendingReminder.time);
-      setRecurring(pendingReminder.recurring || 'none');
-      handleAddReminder();
-      // إضافة رسالة تأكيد
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: '✅ تم حفظ التذكير بنجاح! يمكنك إغلاق هذه النافذة أو مواصلة المحادثة.',
-          timestamp: new Date(),
-        },
-      ]);
+      addReminderDirectly(pendingReminder);
       setPendingReminder(null);
       // مسح المسودة بعد الحفظ
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -428,11 +427,11 @@ export default function AddReminderModal({
               </button>
             </div>
             <p className="text-[10px] text-zinc-400 text-center mt-2">
-              يمكنك كتابة تذكير مثل &quot;ذكرني بموعد الطبيب غداً الساعة 3 مساءً&quot;
+              يمكنك كتابة تذكير مثل "ذكرني بموعد الطبيب غداً الساعة 3 مساءً"
             </p>
           </div>
         </motion.div>
       </div>
     </AnimatePresence>
   );
-  }
+          }
