@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  X, Send, Sparkles, CheckCircle2, Loader2, User, Bot, Clock, Calendar, XCircle 
+  X, Send, Sparkles, CheckCircle2, Loader2, User, Bot, XCircle 
 } from 'lucide-react';
 import { 
   analyzeReminderInput, 
@@ -142,7 +142,6 @@ export default function AddReminderModal({
 
   // استخراج التذكير من النص (AI أولاً، ثم محلي)
   const extractReminder = async (text: string): Promise<{ success: boolean; reminderTime?: string; parsedText?: string; error?: string }> => {
-    // إذا كان هناك اتصال بالإنترنت، استخدم الذكاء الاصطناعي أولاً
     if (isOnline) {
       try {
         const response = await fetch('/api/chat', {
@@ -167,12 +166,10 @@ export default function AddReminderModal({
         };
       } catch (error: any) {
         console.error('AI extraction error:', error);
-        // إذا فشل AI، ننتقل إلى التحليل المحلي كحل احتياطي
-        console.log('Falling back to local analysis');
       }
     }
 
-    // التحليل المحلي (يعمل دون إنترنت أو كحل احتياطي)
+    // التحليل المحلي (احتياطي)
     const localResult = analyzeReminderInput(text);
     if (localResult && isValidDateString(localResult.reminderTime)) {
       const date = new Date(localResult.reminderTime);
@@ -184,20 +181,16 @@ export default function AddReminderModal({
         };
       }
     }
-    
     return { success: false, error: 'لم نتمكن من استخراج وقت صالح للتذكير. يرجى كتابة الوقت بشكل أوضح.' };
   };
 
-  // دالة مساعدة لحفظ التذكير بشكل مباشر (لتجنب الاعتماد على حالة المكون الأصلي)
+  // دالة مساعدة لحفظ التذكير بشكل مباشر (لضمان الإضافة الفورية وإغلاق المودال)
   const addReminderDirectly = (reminder: { text: string; time: string; recurring?: string }) => {
-    // تحديث حالات المكون الأصلي
     setInputText(reminder.text);
     if (onReminderTimeDetected) onReminderTimeDetected(reminder.time);
     setRecurring(reminder.recurring || 'none');
-    // استدعاء دالة الحفظ الأصلية
     handleAddReminder();
-    // إغلاق المودال بعد الحفظ لرؤية التذكير مباشرة
-    onClose();
+    onClose(); // إغلاق المودال بعد الحفظ لرؤية التذكير الجديد فوراً
   };
 
   // إرسال رسالة المستخدم
@@ -215,7 +208,6 @@ export default function AddReminderModal({
     setInput('');
     setIsProcessing(true);
 
-    // إضافة رسالة "يجري التفكير..." مؤقتة
     const thinkingId = (Date.now() + 1).toString();
     setMessages(prev => [
       ...prev,
@@ -228,10 +220,8 @@ export default function AddReminderModal({
     ]);
 
     try {
-      // محاولة استخراج تذكير (AI أولاً)
       const reminder = await extractReminder(userInput);
       if (reminder.success && reminder.reminderTime && reminder.parsedText) {
-        // إزالة رسالة "التفكير" وإضافة رد التأكيد
         setMessages(prev => prev.filter(m => m.id !== thinkingId));
         const formattedTime = formatDetectedTime(reminder.reminderTime, language as 'ar' | 'fr' | 'en');
         const confirmMessage: Message = {
@@ -248,7 +238,6 @@ export default function AddReminderModal({
         setMessages(prev => [...prev, confirmMessage]);
         setPendingReminder(confirmMessage.reminderData);
       } else {
-        // ليس تذكيراً واضحاً، نرد برد عام باستخدام Groq (إذا كان متصلاً)
         let reply = '';
         if (isOnline) {
           try {
@@ -283,12 +272,11 @@ export default function AddReminderModal({
     }
   };
 
-  // حفظ التذكير المؤكد (باستخدام الدالة المباشرة)
+  // حفظ التذكير المؤكد
   const handleConfirmReminder = () => {
     if (pendingReminder) {
       addReminderDirectly(pendingReminder);
       setPendingReminder(null);
-      // مسح المسودة بعد الحفظ
       sessionStorage.removeItem(DRAFT_STORAGE_KEY);
       setInput('');
       setRecurring('none');
@@ -299,7 +287,6 @@ export default function AddReminderModal({
   const handleCancelReminder = () => {
     if (pendingReminder) {
       setPendingReminder(null);
-      // إضافة رسالة إلغاء
       setMessages(prev => [
         ...prev,
         {
@@ -325,7 +312,6 @@ export default function AddReminderModal({
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-        {/* خلفية شفافة - الضغط عليها يغلق مع حفظ المسودة */}
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => handleClose(true)} />
         <motion.div
           initial={{ y: '100%' }}
@@ -356,7 +342,6 @@ export default function AddReminderModal({
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {/* أيقونة المستخدم / المساعد */}
                   <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     msg.role === 'user' 
                       ? 'bg-[#E65100]/20 text-[#E65100]' 
@@ -364,7 +349,6 @@ export default function AddReminderModal({
                   }`}>
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
-                  {/* محتوى الرسالة */}
                   <div className={`rounded-2xl px-4 py-2 ${
                     msg.role === 'user' 
                       ? 'bg-[#E65100] text-white' 
@@ -427,7 +411,7 @@ export default function AddReminderModal({
               </button>
             </div>
             <p className="text-[10px] text-zinc-400 text-center mt-2">
-              يمكنك كتابة تذكير مثل "ذكرني بموعد الطبيب غداً الساعة 3 مساءً"
+              يمكنك كتابة تذكير مثل &quot;ذكرني بموعد الطبيب غداً الساعة 3 مساءً&quot;
             </p>
           </div>
         </motion.div>
