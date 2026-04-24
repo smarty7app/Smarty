@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import getMongoClient from "@/lib/mongodb";
+// ✅ التصحيح: نستورد default export وهو clientPromise
+import clientPromise from "@/lib/mongodb";
 
 const handler = NextAuth({
   providers: [
@@ -19,21 +20,28 @@ const handler = NextAuth({
   callbacks: {
     async signIn({ user }) {
       try {
-        const client = await getMongoClient();
+        // ✅ استخدم clientPromise مباشرة
+        const client = await clientPromise;
         const db = client.db("smartyDB");
         const usersCollection = db.collection("users");
-        
+
         const existingUser = await usersCollection.findOne({ email: user.email });
         if (!existingUser) {
-          await usersCollection.insertOne({
+          const result = await usersCollection.insertOne({
             email: user.email,
             name: user.name,
             image: user.image,
             createdAt: new Date(),
           });
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الجديد
+          user.id = result.insertedId.toString();
+        } else {
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الموجود
+          user.id = existingUser._id.toString();
         }
       } catch (error) {
         console.error("خطأ في حفظ المستخدم:", error);
+        // في حالة الفشل، نسمح بتسجيل الدخول لكن قد لا يعمل `id`
       }
       return true;
     },
