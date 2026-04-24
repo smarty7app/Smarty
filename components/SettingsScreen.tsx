@@ -7,7 +7,6 @@ import { useLanguage } from './LanguageContext';
 import { LanguageCode } from '@/lib/translations';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image'; // ✅ إضافة استيراد next/image
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -82,30 +81,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
           <section className="space-y-4">
             <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-5 shadow-xl border border-black/5 dark:border-white/5">
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                {/* Avatar - ✅ تم إصلاحه باستخدام next/image */}
+                {/* Avatar */}
                 <div className="relative">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E65100] to-amber-500 flex items-center justify-center text-white text-xl font-bold shadow-lg overflow-hidden">
                     {session.user.image ? (
-                      <Image 
-                        src={session.user.image} 
-                        alt={session.user.name || 'صورة المستخدم'}
-                        width={64}
-                        height={64}
-                        className="object-cover w-full h-full"
+                      <img 
+                        src={session.user.image || '/default-avatar.png'} 
                         referrerPolicy="no-referrer"
                         onError={(e) => {
-                          // في حالة فشل تحميل الصورة، نعرض الحرف الأول من الاسم
-                          const target = e.currentTarget;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent) {
-                            parent.textContent = session.user.name?.charAt(0) || 'U';
-                            parent.classList.add('flex', 'items-center', 'justify-center');
-                          }
+                          e.currentTarget.src = '/default-avatar.png';
                         }}
                       />
                     ) : (
-                      <span>{session.user.name?.charAt(0) || 'U'}</span>
+                      session.user.name?.charAt(0) || 'U'
                     )}
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-zinc-900" />
