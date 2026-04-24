@@ -1,61 +1,30 @@
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import clientPromise from "@/lib/db";
+// app/api/auth/[...nextauth]/route.ts
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
+import { MongoDBAdapter } from '@auth/mongodb-adapter';
+import clientPromise from '@/lib/mongodb'; // ✅ استخدم الملف الصحيح
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
+  adapter: MongoDBAdapter(clientPromise),
   secret: process.env.AUTH_SECRET,
+  session: {
+    strategy: 'jwt' as const,
+  },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // حفظ المستخدم في قاعدة البيانات يدوياً
-      try {
-        const db = (await clientPromise).db("smartyDB");
-        const usersCollection = db.collection("users");
-        
-        const existingUser = await usersCollection.findOne({ email: user.email });
-        if (!existingUser) {
-          await usersCollection.insertOne({
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            createdAt: new Date(),
-          });
-          console.log(`✅ تم إنشاء مستخدم جديد: ${user.email}`);
-        }
-      } catch (error) {
-        console.error("خطأ في حفظ المستخدم:", error);
-      }
-      return true;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-      }
-      return token;
-    },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
+      if (session.user) {
+        session.user.id = token.sub!;
       }
       return session;
     },
   },
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
-
