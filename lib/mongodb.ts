@@ -1,7 +1,14 @@
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import { MongoClient, ServerApiVersion } from "mongodb";
 
 const uri = process.env.MONGODB_URI as string;
-if (!uri) throw new Error('❌ Please define MONGODB_URI in .env.local');
+if (!uri) {
+  // في بيئة التطوير، أعط رسالة واضحة. في الإنتاج، اكتفِ بخطأ عام.
+  if (process.env.NODE_ENV === "development") {
+    throw new Error("❌ Please define MONGODB_URI in .env.local");
+  } else {
+    throw new Error("Database connection string missing");
+  }
+}
 
 const options = {
   serverApi: {
@@ -12,24 +19,23 @@ const options = {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   connectTimeoutMS: 5000,
+  socketTimeoutMS: 45000, // أغلق الاتصالات المعلقة بعد 45 ثانية
 };
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
-  }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+let clientPromise: Promise<MongoClient>;
+
+if (!global._mongoClientPromise) {
+  const client = new MongoClient(uri, options);
+  global._mongoClientPromise = client.connect().catch((err) => {
+    // سجل الخطأ وأعده حتى تتمكن الأجزاء الأخرى من التعامل معه
+    console.error("❌ MongoDB initial connection failed:", err);
+    throw err;
+  });
 }
+clientPromise = global._mongoClientPromise;
 
 export default clientPromise;
