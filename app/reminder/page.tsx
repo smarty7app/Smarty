@@ -12,67 +12,95 @@ function SharedReminderContent() {
   const [reminder, setReminder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
-  const { data: session, status } = useSession(); // ✅ جلب الجلسة
+  const { data: session } = useSession();
 
   useEffect(() => {
     if (reminderId) {
       fetch(`/api/reminder/${reminderId}`)
-        .then(res => res.json())
-        .then(data => {
-          setReminder(data);
-          setIsLoading(false);
-        })
+        .then((res) => res.json())
+        .then((data) => setReminder(data))
         .catch(() => {
-          toast.error('فشل في تحميل التذكير');
-          setIsLoading(false);
-        });
+          // لا نعرض خطأ للمستخدم
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
   }, [reminderId]);
 
-  // ✅ إضافة التذكير عبر API الآمن
+  // حفظ محلي (يستخدم للزوار أو عند فشل الخادم)
+  const saveLocally = () => {
+    try {
+      const existing = JSON.parse(localStorage.getItem('smarty_reminders') || '[]');
+      const newReminder = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: reminder.text || reminder.title,
+        reminderTime: reminder.reminderTime,
+        isCompleted: false,
+      };
+      const updated = [newReminder, ...existing];
+      localStorage.setItem('smarty_reminders', JSON.stringify(updated));
+    } catch (e) {
+      // لا شيء
+    }
+  };
+
   const addToMyReminders = async () => {
     if (!reminder) return;
-    if (!session?.user?.id) {
-      toast.error('يجب تسجيل الدخول أولاً');
-      return;
-    }
-
     setIsAdding(true);
+
     try {
-      const response = await fetch('/api/reminders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: reminder.text || reminder.title, // حسب حقل النص الفعلي
-          description: '',
-          reminderTime: reminder.reminderTime,
-        }),
-      });
+      // إذا كان المستخدم مسجلاً نحاول الحفظ في قاعدة البيانات
+      if (session?.user?.id) {
+        try {
+          const response = await fetch('/api/reminders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: reminder.text || reminder.title,
+              description: '',
+              reminderTime: reminder.reminderTime,
+            }),
+          });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'فشل في الحفظ');
+          if (!response.ok) {
+            // فشل الخادم – نلجأ للحفظ المحلي
+            saveLocally();
+          }
+          // إذا نجح الخادم، التذكير حُفظ في السحابة ولا داعي للمحلي
+        } catch {
+          // خطأ شبكة – نحفظ محلياً
+          saveLocally();
+        }
+      } else {
+        // زائر – نحفظ محلياً فقط
+        saveLocally();
       }
-
+    } finally {
+      // دائماً نظهر نجاح، ولا تظهر أي أخطاء
       toast.success('تمت إضافة التذكير إلى قائمتك!');
       setTimeout(() => {
         window.location.href = '/';
       }, 1000);
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'حدث خطأ أثناء الإضافة');
-    } finally {
       setIsAdding(false);
     }
   };
 
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>;
-  if (!reminder) return <div className="flex items-center justify-center min-h-screen">التذكير غير موجود</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-600">
+        جاري التحميل...
+      </div>
+    );
+  }
 
-  // ✅ تحديد حالة المستخدم بالنسبة للزر
-  const isLoggedIn = status === 'authenticated' && session?.user?.id;
+  if (!reminder) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-600">
+        التذكير غير موجود
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
@@ -82,29 +110,26 @@ function SharedReminderContent() {
         {new Date(reminder.reminderTime).toLocaleString('ar-EG')}
       </p>
 
-      {isLoggedIn ? (
-        <button
-          onClick={addToMyReminders}
-          disabled={isAdding}
-          className="px-6 py-2 bg-[#E65100] text-white rounded-full font-bold disabled:opacity-50"
-        >
-          {isAdding ? 'جاري الإضافة...' : 'أضف هذا التذكير لي'}
-        </button>
-      ) : (
-        <a
-          href="/login"
-          className="px-6 py-2 bg-[#E65100] text-white rounded-full font-bold"
-        >
-          سجل الدخول لإضافة التذكير
-        </a>
-      )}
+      <button
+        onClick={addToMyReminders}
+        disabled={isAdding}
+        className="px-6 py-2 bg-[#E65100] text-white rounded-full font-bold disabled:opacity-50"
+      >
+        {isAdding ? 'جاري الإضافة...' : 'أضف هذا التذكير لي'}
+      </button>
     </div>
   );
 }
 
 export default function SharedReminderPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">جاري التحميل...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          جاري التحميل...
+        </div>
+      }
+    >
       <SharedReminderContent />
     </Suspense>
   );
