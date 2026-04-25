@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import { authOptions } from "@/lib/auth"; // استيراد من الملف الجديد
 import GoogleProvider from "next-auth/providers/google";
 import clientPromise from "@/lib/mongodb";
 
