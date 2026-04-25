@@ -1,33 +1,52 @@
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const client = await clientPromise;
-    const db = client.db('smartyDB');
+import { NextRequest, NextResponse } from 'next/server';
+import clientPromise from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // 1. التحقق من صحة المعرف
     let objectId: ObjectId;
     try {
-      objectId = new ObjectId(params.id);
+      objectId = new ObjectId(id);
     } catch {
       return NextResponse.json({ error: 'معرف غير صالح' }, { status: 400 });
     }
 
-    // ابحث في reminders أولاً
-    let reminder = await db.collection('reminders').findOne({ _id: objectId });
-    if (!reminder) {
-      // إذا لم تجده، ابحث في shared_reminders
-      reminder = await db.collection('shared_reminders').findOne({ _id: objectId });
+    const client = await clientPromise;
+    const db = client.db('smartyDB');
+
+    // 2. البحث في مجموعة التذكيرات العادية
+    const dbReminder = await db.collection('reminders').findOne({ _id: objectId });
+
+    if (dbReminder) {
+      return NextResponse.json({
+        id: dbReminder._id.toString(),
+        text: dbReminder.title || dbReminder.text,
+        reminderTime: dbReminder.reminderTime,
+      });
     }
 
-    if (!reminder) {
-      return NextResponse.json({ error: 'التذكير غير موجود' }, { status: 404 });
+    // 3. إذا لم يوجد، نبحث في مجموعة التذكيرات المشتركة
+    const sharedReminder = await db.collection('shared_reminders').findOne({ _id: objectId });
+
+    if (sharedReminder) {
+      return NextResponse.json({
+        id: sharedReminder._id.toString(),
+        text: sharedReminder.text,
+        reminderTime: sharedReminder.reminderTime,
+      });
     }
 
-    // إرجاع التذكير بتنسيق موحد
-    return NextResponse.json({
-      id: reminder._id.toString(),
-      text: reminder.text || reminder.title,
-      reminderTime: reminder.reminderTime,
-    });
+    // 4. غير موجود في أي منهما
+    return NextResponse.json({ error: 'التذكير غير موجود' }, { status: 404 });
+
   } catch (error) {
-    return NextResponse.json({ error: 'حدث خطأ' }, { status: 500 });
+    console.error('Error fetching reminder:', error);
+    return NextResponse.json({ error: 'حدث خطأ داخلي' }, { status: 500 });
   }
 }
