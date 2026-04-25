@@ -30,8 +30,10 @@ mongo_client = MongoClient(MONGO_URI)
 db = mongo_client['smartyDB']
 reminders_collection = db['reminders']
 users_collection = db['users']
+# ✅ مجموعة جديدة لتخزين المحادثات
+conversations_collection = db['conversations']
 
-# --- استخدام Google Gemini API بدلاً من Ollama ---
+# --- استخدام Google Gemini API ---
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 if not GEMINI_API_KEY:
     raise Exception("GEMINI_API_KEY is not set in environment variables")
@@ -39,10 +41,9 @@ if not GEMINI_API_KEY:
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
 # --- إعدادات Edge-TTS ---
-VOICE = "ar-SA-HamedNeural"  # شاب سعودي
+VOICE = "ar-SA-HamedNeural"
 
 async def text_to_audio(text):
-    """تحويل النص إلى صوت باستخدام edge-tts"""
     try:
         audio_fp = io.BytesIO()
         communicate = edge_tts.Communicate(text, VOICE)
@@ -55,7 +56,7 @@ async def text_to_audio(text):
         print(f"⚠️ TTS error: {e}")
         return None
 
-# --- دوال مساعدة للتعامل مع التذكيرات (نفس الكود السابق) ---
+# --- دوال التذكيرات ---
 def extract_reminder_info(prompt, reply):
     reminder_keywords = [
         'ذكرني', 'تذكير', 'تذكر', 'نبهني', 'سجل لي', 'سجل تذكير',
@@ -64,7 +65,6 @@ def extract_reminder_info(prompt, reply):
     ]
     prompt_lower = prompt.lower()
     is_reminder = any(keyword in prompt_lower for keyword in reminder_keywords)
-    
     if is_reminder:
         now = datetime.now()
         reminder_time = now + timedelta(hours=1)
@@ -111,14 +111,18 @@ def update_reminder_status(reminder_id, status):
         {'$set': {'status': status, 'updatedAt': datetime.utcnow()}}
     )
 
-# --- الاتصال بـ Gemini API ---
-def ask_gemini(prompt: str, system_prompt: str) -> str:
-    """إرسال الطلب إلى Gemini والحصول على الرد"""
-    full_prompt = f"{system_prompt}\n\nالمستخدم: {prompt}\nالرد المختصر:"
+# ✅ دالة الاتصال بـ Gemini معدلة لاستقبال قائمة محتويات (محادثة كاملة)
+def ask_gemini_with_history(contents: list) -> str:
+    """
+    contents: قائمة من الأدوار والرسائل بالتنسيق:
+    [{"role": "user", "parts": [{"text": "..."}]}, {"role": "model", "parts": [{"text": "..."}]}]
+    """
     payload = {
-        "contents": [{
-            "parts": [{"text": full_prompt}]
-        }]
+        "contents": contents,
+        "generationConfig": {
+            "maxOutputTokens": 500,
+            "temperature": 0.7
+        }
     }
     try:
         response = requests.post(GEMINI_URL, json=payload, timeout=30)
@@ -136,15 +140,14 @@ def ask():
     data = request.json
     prompt = data.get('prompt', '')
     user_id = data.get('userId', 'anonymous')
-    user_email = data.get('userEmail', '')
     user_name = data.get('userName', '')
     
-    print(f"📝 مستخدم: {user_name} ({user_email}) - المعرف: {user_id}")
+    print(f"📝 مستخدم: {user_name} ({user_id})")
     
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    # التحقق مما إذا كان المستخدم يطلب عرض تذكيراته
+    # --- عرض التذكيرات (كما هو) ---
     show_reminders_keywords = ['تذكيراتي', 'مواعيدي', 'أذكرني', 'عرض التذكيرات', 'ما هي تذكيراتي']
     if any(keyword in prompt.lower() for keyword in show_reminders_keywords):
         user_reminders = get_user_reminders(user_id)
@@ -153,30 +156,108 @@ def ask():
             reply = f"لديك هذه التذكيرات: {reminders_text}"
         else:
             reply = "ليس لديك أي تذكيرات حالياً."
-        # توليد الصوت (اختياري، يمكن إرجاع النص فقط إذا فشل)
         audio_fp = asyncio.run(text_to_audio(reply))
         audio_base64 = base64.b64encode(audio_fp.read()).decode() if audio_fp else None
         return jsonify({"reply": reply, "audio": audio_base64})
 
-    # تعليمات للنموذج (مختصرة ومناسبة لـ Gemini)
+    # ✅ بناء سجل المحادثة من MongoDB
+    history = []
+    if user_id != 'anonymous':
+        try:
+            # جلب آخر 10 رسائل مرتبة زمنياً (الأحدث أولاً)
+            cursor = conversations_collection.find({'userId': user_id}).sort('timestamp', -1).limit(10)
+            history = list(cursor)
+            history.reverse()  # الأقدم فالأحدث
+        except Exception as e:
+            print(f"⚠️ فشل جلب المحادثة: {e}")
+            history = []
+
+    # بناء محتوى الطلب لـ Gemini
+    contents = []
+
+    # رسالة النظام (system prompt) كدور "user" في البداية
     system_prompt = (
         "أنت مساعد ذكي اسمك Smarty. "
         "أجب على أي سؤال بدقة وبجملة واحدة قصيرة جداً (بحد أقصى 10 كلمات). "
         "إذا طلب المستخدم تذكيراً، احفظ التذكير ثم قل: 'تم حفظ تذكيرك'. "
-        "كن مفيداً ومباشراً."
+        "كن مفيداً ومباشراً. تذكر سياق المحادثة السابق."
     )
-    
+    contents.append({
+        "role": "user",
+        "parts": [{"text": system_prompt + "\n\nالمستخدم: " + prompt}]
+    })
+
+    # إضافة الرسائل التاريخية (مع تعديل الدور من assistant إلى model)
+    for msg in history:
+        role = msg['role']
+        if role == 'assistant':
+            role = 'model'  # Gemini يستخدم 'model' بدلاً من 'assistant'
+        contents.append({
+            "role": role,
+            "parts": [{"text": msg['content']}]
+        })
+
+    # إذا لم نكن قد أضفنا السؤال الحالي بعد (لأننا أضفناه مع system prompt)، نتجنب التكرار.
+    # في هذه الحالة، السؤال الحالي موجود بالفعل في أول عنصر، لكن إذا كان هناك تاريخ طويل نضيف السؤال الحالي منفصلاً.
+    # سنكتفي بما سبق لأن أول رسالة تحتوي على prompt.
+    # ولكن إذا كان هناك تاريخ، قد يكون السؤال الحالي غير موجود. نضيفه إذا كان فارغًا.
+    if not history and not contents[-1]['parts'][0]['text'].endswith(prompt):
+        # في حالة كان history فارغًا، نضيف السؤال الحالي كرسالة منفصلة
+        pass  # تمت إضافته ضمن الأول
+
+    # في الحقيقة، من الأفضل فصل الـ system prompt عن السؤال الحالي، خاصة مع التاريخ.
+    # لذلك نعيد تشكيل المحتوى:
+    contents = []
+    # إضافة system prompt كرسالة مستقلة
+    contents.append({
+        "role": "user",
+        "parts": [{"text": system_prompt}]
+    })
+    # إضافة التاريخ
+    for msg in history:
+        role = 'model' if msg['role'] == 'assistant' else 'user'
+        contents.append({
+            "role": role,
+            "parts": [{"text": msg['content']}]
+        })
+    # إضافة السؤال الحالي
+    contents.append({
+        "role": "user",
+        "parts": [{"text": prompt}]
+    })
+
     # الحصول على الرد من Gemini
-    reply = ask_gemini(prompt, system_prompt)
+    reply = ask_gemini_with_history(contents)
     reply = reply.strip().replace('\n', ' ')
-    
-    # معالجة التذكيرات
+
+    # --- حفظ المحادثة في MongoDB ---
+    if user_id != 'anonymous':
+        try:
+            now = datetime.utcnow()
+            conversations_collection.insert_many([
+                {
+                    'userId': user_id,
+                    'role': 'user',
+                    'content': prompt,
+                    'timestamp': now
+                },
+                {
+                    'userId': user_id,
+                    'role': 'assistant',
+                    'content': reply,
+                    'timestamp': now + timedelta(seconds=1)
+                }
+            ])
+        except Exception as e:
+            print(f"⚠️ فشل حفظ المحادثة: {e}")
+
+    # --- معالجة التذكيرات ---
     reminder_info = extract_reminder_info(prompt, reply)
     if reminder_info:
         reminder_id = save_reminder(user_id, reminder_info)
         print(f"💾 تم حفظ تذكير للمستخدم {user_id} بمعرف {reminder_id}")
-    
-    # توليد الصوت (إذا فشل، نرسل الرد النصي فقط)
+
+    # --- توليد الصوت (اختياري) ---
     audio_base64 = None
     try:
         audio_fp = asyncio.run(text_to_audio(reply))
@@ -184,12 +265,11 @@ def ask():
             audio_base64 = base64.b64encode(audio_fp.read()).decode()
     except Exception as e:
         print(f"⚠️ TTS failed: {e}")
-    
+
     elapsed = time.time() - start_time
     print(f"✅ رد في {elapsed:.2f} ثانية: {reply[:50]}...")
-    
     return jsonify({"reply": reply, "audio": audio_base64})
 
 if __name__ == '__main__':
-    print("--- SmarTi API with Gemini and MongoDB ---")
+    print("--- SmarTi API with Gemini, MongoDB & Conversation Memory ---")
     app.run(host="0.0.0.0", port=5000, debug=False)
