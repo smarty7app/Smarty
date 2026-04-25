@@ -1,56 +1,37 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 
 function ShareContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [text, setText] = useState('');
-  const [url, setUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isValid, setIsValid] = useState(true); // ✅ فحص إذا كانت المعاملات موجودة
+  const hasRedirected = useRef(false);
 
+  // ✅ نحسب القيم مباشرة من searchParams بدلاً من useState + useEffect
+  const sharedTitle = searchParams.get('title') || '';
+  const sharedText = searchParams.get('text') || '';
+  const sharedUrl = searchParams.get('url') || '';
+  const hasContent = sharedTitle || sharedText || sharedUrl;
+  const reminderText = useMemo(
+    () => [sharedTitle, sharedText, sharedUrl].filter(Boolean).join(' '),
+    [sharedTitle, sharedText, sharedUrl]
+  );
+
+  // ✅ ننفذ التوجيه مرة واحدة فقط
   useEffect(() => {
-    const sharedTitle = searchParams.get('title') || '';
-    const sharedText = searchParams.get('text') || '';
-    const sharedUrl = searchParams.get('url') || '';
-
-    if (!sharedTitle && !sharedText && !sharedUrl) {
-      setIsValid(false);
-      setIsLoading(false);
-      return;
+    if (!hasRedirected.current) {
+      hasRedirected.current = true;
+      const timer = setTimeout(() => {
+        router.push(`/?shareText=${encodeURIComponent(reminderText)}`);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
+  }, [router, reminderText]);
 
-    setTitle(sharedTitle);
-    setText(sharedText);
-    setUrl(sharedUrl);
-    setIsLoading(false);
-
-    const timer = setTimeout(() => {
-      const reminderText = [sharedTitle, sharedText, sharedUrl].filter(Boolean).join(' ');
-      router.push(`/?shareText=${encodeURIComponent(reminderText)}`);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [searchParams, router]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#E65100] flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>جاري تحويل المشاركة...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ إذا لم توجد معاملات مشاركة
-  if (!isValid) {
+  // ✅ حالة عدم وجود معاملات مشاركة
+  if (!hasContent) {
     return (
       <div className="min-h-screen bg-[#E65100] flex items-center justify-center p-6">
         <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 max-w-md w-full shadow-xl text-center">
@@ -61,6 +42,7 @@ function ShareContent() {
     );
   }
 
+  // ✅ حالة المشاركة الصالحة
   return (
     <div className="min-h-screen bg-[#E65100] flex flex-col items-center justify-center p-6 text-center">
       <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 max-w-md w-full shadow-xl">
@@ -79,9 +61,9 @@ function ShareContent() {
         </motion.div>
 
         <h1 className="text-2xl font-bold mb-2">محتوى مشارك</h1>
-        {title && <p className="mb-2"><strong>العنوان:</strong> {title}</p>}
-        {text && <p className="mb-2"><strong>النص:</strong> {text}</p>}
-        {url && <p className="mb-4 break-all"><strong>الرابط:</strong> <a href={url} className="text-blue-500 underline">{url}</a></p>}
+        {sharedTitle && <p className="mb-2"><strong>العنوان:</strong> {sharedTitle}</p>}
+        {sharedText && <p className="mb-2"><strong>النص:</strong> {sharedText}</p>}
+        {sharedUrl && <p className="mb-4 break-all"><strong>الرابط:</strong> <a href={sharedUrl} className="text-blue-500 underline">{sharedUrl}</a></p>}
         <p className="text-sm text-gray-500">جاري تحويل المحتوى إلى تذكير...</p>
       </div>
     </div>
