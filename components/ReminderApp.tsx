@@ -154,40 +154,15 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const handleDelete = (id: string) => setReminders(prev => prev.filter(r => r.id !== id));
   const handleToggleComplete = (id: string) => setReminders(prev => prev.map(r => r.id === id ? { ...r, isCompleted: !r.isCompleted } : r));
 
-  // ✅ دالة المشاركة المعدلة – تعرض رابط المشاركة مع زر النسخ
   const handleShare = async (reminder: Reminder) => {
-    try {
-      const res = await fetch('/api/share-reminder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: reminder.text,
-          reminderTime: reminder.reminderTime,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'فشل في إنشاء رابط المشاركة');
-      }
-
-      const data = await res.json();
-      const shareUrl = `${window.location.origin}/share?id=${data.sharedId}`;
-
-      // تحسين تجربة المستخدم: عرض الرابط مع زر نسخ في الإشعار
-      toast.success('تم إنشاء رابط المشاركة', {
-        description: shareUrl,
-        duration: 15000,
-        action: {
-          label: 'نسخ الرابط',
-          onClick: () => {
-            navigator.clipboard.writeText(shareUrl);
-            toast.info('تم نسخ الرابط');
-          },
-        },
-      });
-    } catch (error: any) {
-      toast.error(error.message || 'تعذر إنشاء رابط المشاركة');
+    const result = await ShareHelper.shareReminder({
+      text: reminder.text,
+      reminderTime: reminder.reminderTime,
+    });
+    if (result.success) {
+      toast.success(result.message);
+    } else {
+      toast.error(result.message);
     }
   };
 
@@ -322,4 +297,4 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
       <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
     </div>
   );
-}
+            }
