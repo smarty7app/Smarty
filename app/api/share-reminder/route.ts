@@ -5,28 +5,27 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(request: NextRequest) {
   try {
-    // ✅ 1. التحقق من الجلسة - المستخدم يجب أن يكون مسجلاً دخوله
+    // 1. التحقق من الجلسة مع اشتراط البريد الإلكتروني (حساب Google)
     const session = await getServerSession();
-    if (!session?.user?.id) {
+    if (!session?.user?.id || !session?.user?.email) {
       return NextResponse.json(
-        { error: 'يجب تسجيل الدخول لمشاركة التذكيرات' },
+        { error: 'يجب تسجيل الدخول بحساب Google لمشاركة التذكيرات' },
         { status: 401 }
       );
     }
 
-    // ✅ 2. قراءة البيانات من الطلب
+    // 2. قراءة المعرف فقط من الطلب (سيتم تجاهل text و reminderTime)
     const body = await request.json();
-    const { id, text, reminderTime } = body;
+    const { id } = body;
 
-    // ✅ 3. التحقق من صحة المدخلات
-    if (!id || !text || !reminderTime) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'جميع الحقول مطلوبة: id, text, reminderTime' },
+        { error: 'معرف التذكير مطلوب' },
         { status: 400 }
       );
     }
 
-    // ✅ 4. التحقق من نوع id (يجب أن يكون string صالح لـ ObjectId)
+    // 3. التحقق من صلاحية ObjectId
     let objectId: ObjectId;
     try {
       objectId = new ObjectId(id);
@@ -37,26 +36,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ 5. الاتصال بقاعدة البيانات والحفظ الآمن
+    // 4. الاتصال بقاعدة البيانات والتحقق من ملكية التذكير
     const client = await clientPromise;
     const db = client.db('smartyDB');
 
-    await db.collection('shared_reminders').insertOne({
-      _id: objectId,               // ✅ آمن: تم تحويله إلى ObjectId
-      text,
-      reminderTime,
-      userId: session.user.id,     // ✅ ربط التذكير بالمستخدم الحالي
-      userEmail: session.user.email,
-      createdAt: new Date(),
+    const originalReminder = await db.collection('reminders').findOne({
+      _id: objectId,
+      userId: session.user.id,   // الأهم: يمنع مشاركة تذكيرات الغير
     });
 
-    return NextResponse.json({ success: true });
+    if (!originalReminder) {
+      return NextResponse.json(
+        { error: 'التذكير غير موجود أو لا تملكه' },
+        { status: 404 }
+      );
+    }
+
+    // 5. إنشاء أو ضمان وجود تذكير مشترك (باستخدام نفس المعرف)
+    //    نستخدم $setOnInsert لكتابة البيانات فقط عند الإنشاء، وعدم الكتابة فوق الموجود
+    await db.collection('shared_reminders').updateOne(
+      { _id: objectId },
+      {
+        $setOnInsert: {
+          text: originalReminder.title,                // موثوق من قاعدة البيانات
+          reminderTime: originalReminder.reminderTime.toISOString(),
+          userId: session.user.id,
+          userEmail: session.user.email,
+          createdAt: new Date(),
+        }
+      },
+      { upsert: true }
+    );
+
+    // 6. إعادة معرف المشاركة (يمكن للواجهة نسخ الرابط)
+    return NextResponse.json({
+      success: true,
+      sharedId: objectId.toString(),
+    });
 
   } catch (error) {
-    // ✅ 6. معالجة الخطأ مع رسالة عامة للمستخدم
-    console.error('Error saving shared reminder:', error);
+    console.error('Error sharing reminder:', error);
     return NextResponse.json(
-      { error: 'حدث خطأ أثناء حفظ التذكير' },
+      { error: 'حدث خطأ أثناء مشاركة التذكير' },
       { status: 500 }
     );
   }
