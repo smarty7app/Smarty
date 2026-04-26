@@ -548,58 +548,96 @@ export default function SmartVoicePage() {
   };
 
   const createRecognition = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setResponse(t('recognition_failed'));
-      return null;
-    }
-    const instance = new SpeechRecognition();
-    instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
-    instance.continuous = true;
-    instance.interimResults = true;
-    instance.onstart = () => {
-      setIsListening(true);
-      setTranscript('');
-      setResponse('');
-      setRetryCount(0);
-      clearSilenceTimer();
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setResponse(t('recognition_failed'));
+    return null;
+  }
+  const instance = new SpeechRecognition();
+  instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
+  instance.continuous = true;
+  instance.interimResults = true;
+
+  // متغير لتجميع النص النهائي
+  let finalTranscriptAccumulated = '';
+
+  instance.onstart = () => {
+    setIsListening(true);
+    setTranscript('');
+    setResponse('');
+    setRetryCount(0);
+    finalTranscriptAccumulated = ''; // إعادة تعيين المجمع
+    clearSilenceTimer();
+    // لا نبدأ مؤقت الصمت هنا، ننتظر أول نتيجة
+  };
+
+  instance.onaudiostart = () => {
+    // تم اكتشاف صوت، نلغي مؤقت الصمت لمنع المعالجة أثناء الكلام
+    clearSilenceTimer();
+  };
+
+  instance.onaudioend = () => {
+    // انتهى الصوت، لنعدّ مؤقت الصمت لبدء العد بعد آخر صوت
+    clearSilenceTimer();
+    if (finalTranscriptAccumulated.trim()) {
       silenceTimerRef.current = setTimeout(() => {
-        if (isListeningRef.current) recognitionRef.current?.stop();
-        setResponse(t('no_speech_detected'));
-      }, 10000);
-    };
-    instance.onaudiostart = () => clearSilenceTimer();
-    instance.onaudioend = () => clearSilenceTimer();
-    instance.onresult = (event: any) => {
-      clearSilenceTimer();
-      let interimTranscript = '', finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcriptPart = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalTranscript += transcriptPart;
-        else interimTranscript += transcriptPart;
+        // توقف المستخدم عن الكلام، معالجة النص المتراكم
+        if (isListeningRef.current) {
+          recognitionRef.current?.stop();
+          setIsListening(false);
+          processText(finalTranscriptAccumulated.trim());
+        }
+      }, 2000); // ثانيتان من الصمت
+    }
+  };
+
+  instance.onresult = (event: any) => {
+    let interimTranscript = '';
+    // نجمع النتائج
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcriptPart = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalTranscriptAccumulated += transcriptPart; // تجميع النهائي
+      } else {
+        interimTranscript += transcriptPart;
       }
-      if (interimTranscript) setTranscript(interimTranscript);
-      if (finalTranscript) {
-        setTranscript(finalTranscript);
-        setIsListening(false);
-        processText(finalTranscript);
-      }
-    };
-    instance.onerror = (event: any) => {
-      console.error(event.error);
-      setIsListening(false);
-      setIsProcessing(false);
-      clearSilenceTimer();
-      switch (event.error) {
-        case 'not-allowed': setResponse(t('allow_mic')); break;
-        case 'no-speech': setResponse(t('no_speech')); break;
-        case 'network': setResponse(t('network_error')); break;
-        default: setResponse(t('recognition_failed'));
-      }
-    };
-    instance.onend = () => { setIsListening(false); clearSilenceTimer(); };
-    return instance;
-  }, [language, processText, clearSilenceTimer, t]);
+    }
+    // تحديث واجهة المستخدم
+    if (finalTranscriptAccumulated) {
+      setTranscript(finalTranscriptAccumulated);
+    } else if (interimTranscript) {
+      setTranscript(interimTranscript);
+    }
+  };
+
+  instance.onerror = (event: any) => {
+    console.error(event.error);
+    setIsListening(false);
+    setIsProcessing(false);
+    clearSilenceTimer();
+    // معالجة الأخطاء كما في السابق
+    switch (event.error) {
+      case 'not-allowed': setResponse(t('allow_mic')); break;
+      case 'no-speech': setResponse(t('no_speech')); break;
+      case 'network': setResponse(t('network_error')); break;
+      default: setResponse(t('recognition_failed'));
+    }
+    finalTranscriptAccumulated = '';
+  };
+
+  instance.onend = () => {
+    // لو انتهى التعرف لسبب آخر غير إيقافنا، نتعامل معه
+    setIsListening(false);
+    clearSilenceTimer();
+    // إذا كان هناك نص متراكم ولم تتم معالجته بعد (نادر) نعالجه
+    if (finalTranscriptAccumulated.trim() && !isProcessing) {
+      processText(finalTranscriptAccumulated.trim());
+    }
+    finalTranscriptAccumulated = '';
+  };
+
+  return instance;
+}, [language, processText, clearSilenceTimer, t]);
 
   const startLocalRecording = useCallback(async () => {
     if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
