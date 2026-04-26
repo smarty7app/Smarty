@@ -1,5 +1,7 @@
 // lib/date-parser.ts
 
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 // ==================== الخرائط اللغوية (للاستخدام الاحتياطي فقط) ====================
 
 // --- العربية ---
@@ -432,4 +434,4 @@ export function formatCountdown(isoString: string, lang: 'ar' | 'fr' | 'en' = 'a
   }
 
   return { text, isPast };
-      }
+}
