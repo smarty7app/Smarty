@@ -5,6 +5,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LanguageProvider } from '@/components/LanguageContext';
 import AuthProvider from '@/components/AuthProvider';
 import InstallPrompt from '@/components/InstallPrompt';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -109,6 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </ErrorBoundary>
           </LanguageProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
