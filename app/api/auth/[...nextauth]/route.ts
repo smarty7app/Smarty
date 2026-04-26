@@ -1,7 +1,9 @@
+import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+// ✅ التصحيح: نستورد default export وهو clientPromise
 import clientPromise from "@/lib/mongodb";
 
-export const authOptions = {
+const handler = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -12,15 +14,17 @@ export const authOptions = {
     signIn: "/login",
   },
   session: {
-    strategy: "jwt" as const,
+    strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async signIn({ user }: { user: any }) {
+    async signIn({ user }) {
       try {
+        // ✅ استخدم clientPromise مباشرة
         const client = await clientPromise;
         const db = client.db("smartyDB");
         const usersCollection = db.collection("users");
+
         const existingUser = await usersCollection.findOne({ email: user.email });
         if (!existingUser) {
           const result = await usersCollection.insertOne({
@@ -29,16 +33,19 @@ export const authOptions = {
             image: user.image,
             createdAt: new Date(),
           });
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الجديد
           user.id = result.insertedId.toString();
         } else {
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الموجود
           user.id = existingUser._id.toString();
         }
       } catch (error) {
         console.error("خطأ في حفظ المستخدم:", error);
+        // في حالة الفشل، نسمح بتسجيل الدخول لكن قد لا يعمل `id`
       }
       return true;
     },
-    async jwt({ token, user }: { token: any; user: any }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -46,7 +53,7 @@ export const authOptions = {
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: any }) {
+    async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -55,4 +62,6 @@ export const authOptions = {
       return session;
     },
   },
-};
+});
+
+export { handler as GET, handler as POST };
