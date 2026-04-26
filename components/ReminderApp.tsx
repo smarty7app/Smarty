@@ -232,7 +232,7 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
                   const isValid = isValidReminderTime(rem.reminderTime);
                   const exactTime = isValid ? formatDetectedTime(rem.reminderTime, 'ar') : (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date');
                   const countdownObj = isValid ? formatCountdown(rem.reminderTime, 'ar') : { text: (language === 'ar' ? 'تاريخ غير صالح' : 'Invalid date'), isPast: false };
-                  const cleanedText = cleanReminderText(rem.text);
+                  const cleanedText = cleanReminderText(rem.text, 'ar');
                   return (
                     <motion.div key={rem.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                       <div className={cn("bg-white dark:bg-zinc-900 p-5 rounded-[2.5rem] shadow-lg flex items-start gap-4", countdownObj.isPast && "opacity-70")}>
