@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import clientPromise from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth'; // ✅ تم تغيير مسار الاستيراد إلى الملف المخصص
 import { analyzeReminderInput } from '@/lib/date-parser';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -35,11 +35,29 @@ export async function POST(request: NextRequest) {
     // 3. بخلاف ذلك، نستخدم Groq للرد العادي (مع الذاكرة)
     let conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
     if (userId !== 'anonymous') {
-      // ... كود جلب السجل كما سبق
+      try {
+        const client = await clientPromise;
+        const db = client.db('smartyDB');
+        const conversations = db.collection('conversations');
+        const history = await conversations
+          .find({ userId })
+          .sort({ timestamp: -1 })
+          .limit(10)
+          .toArray();
+        conversationHistory = history.reverse().map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        }));
+      } catch (e) {
+        console.error('فشل جلب سجل المحادثة:', e);
+      }
     }
 
-    const messages = [
-      { role: 'system', content: '...' },
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+      {
+        role: 'system',
+        content: `أنت مساعد ذكي ومفيد اسمك "Smarty". أنت متخصص في مساعدة المستخدمين في إنشاء وإدارة التذكيرات والمواعيد. ردودك يجب أن تكون مختصرة ومفيدة باللغة العربية. تذكر دائمًا سياق المحادثة السابق مع المستخدم.`,
+      },
       ...conversationHistory,
       { role: 'user', content: prompt },
     ];
@@ -51,10 +69,22 @@ export async function POST(request: NextRequest) {
       max_tokens: 1024,
     });
 
-    const reply = completion.choices[0]?.message?.content || 'عذراً...';
+    const reply = completion.choices[0]?.message?.content || 'عذراً، لم أستطع معالجة طلبك.';
 
     // حفظ المحادثة
-    // ...
+    if (userId !== 'anonymous') {
+      try {
+        const client = await clientPromise;
+        const db = client.db('smartyDB');
+        const now = new Date();
+        await db.collection('conversations').insertMany([
+          { userId, role: 'user', content: prompt, timestamp: now },
+          { userId, role: 'assistant', content: reply, timestamp: new Date(now.getTime() + 1) },
+        ]);
+      } catch (e) {
+        console.error('فشل حفظ المحادثة:', e);
+      }
+    }
 
     return NextResponse.json({ type: 'text', reply });
   } catch (error) {
