@@ -217,10 +217,20 @@ export function analyzeReminderInput(text: string): CleanResult | null {
 
   const parsedDate = parseLocalDateTime(text);
   
+  // دالة مساعدة لتنسيق الوقت محلياً (بدون تحويل إلى UTC)
+  const formatLocalTime = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+  };
+
   if (parsedDate && parsedDate.getTime() > Date.now()) {
     return {
-      parsedText: text,                     // النص الأصلي الكامل الذي قاله المستخدم
-      reminderTime: parsedDate.toISOString(),
+      parsedText: text,   // النص الكامل الذي قاله المستخدم
+      reminderTime: formatLocalTime(parsedDate),   // وقت محلي صريح
       detectedLanguage: 'ar',
       confidence: 0.85,
       originalText: text,
@@ -231,7 +241,7 @@ export function analyzeReminderInput(text: string): CleanResult | null {
   const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
   return {
     parsedText: text,
-    reminderTime: fallbackDate.toISOString(),
+    reminderTime: formatLocalTime(fallbackDate),
     detectedLanguage: 'ar',
     confidence: 0.3,
     originalText: text,
