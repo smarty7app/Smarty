@@ -1,7 +1,5 @@
 // lib/date-parser.ts
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
 // ==================== الخرائط اللغوية (للاستخدام الاحتياطي فقط) ====================
 
 // --- العربية ---
