@@ -1,10 +1,9 @@
 import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth"; // استيراد من الملف الجديد
 import GoogleProvider from "next-auth/providers/google";
+// ✅ التصحيح: نستورد default export وهو clientPromise
 import clientPromise from "@/lib/mongodb";
 
-// ✅ تصدير authOptions ليتم استيراده في chat/route.ts
-export const authOptions = {
+const handler = NextAuth({
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -21,6 +20,7 @@ export const authOptions = {
   callbacks: {
     async signIn({ user }) {
       try {
+        // ✅ استخدم clientPromise مباشرة
         const client = await clientPromise;
         const db = client.db("smartyDB");
         const usersCollection = db.collection("users");
@@ -33,12 +33,15 @@ export const authOptions = {
             image: user.image,
             createdAt: new Date(),
           });
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الجديد
           user.id = result.insertedId.toString();
         } else {
+          // ✅ تعيين معرف قاعدة البيانات للمستخدم الموجود
           user.id = existingUser._id.toString();
         }
       } catch (error) {
         console.error("خطأ في حفظ المستخدم:", error);
+        // في حالة الفشل، نسمح بتسجيل الدخول لكن قد لا يعمل `id`
       }
       return true;
     },
@@ -59,7 +62,6 @@ export const authOptions = {
       return session;
     },
   },
-};
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
