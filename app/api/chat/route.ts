@@ -1,33 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import clientPromise from '@/lib/mongodb';
+import { analyzeReminderInput } from '@/lib/date-parser';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// ✅ كلمات مفتاحية للكشف الأولي السريع عن نية التذكير
+// كلمات مفتاحية للكشف الأولي عن نية التذكير
 const REMINDER_KEYWORDS = [
   'ذكرني', 'تذكير', 'تذكر', 'نبهني', 'موعد', 'حدث', 'مهمة',
   'أضف', 'سجل', 'دوّن', 'بكرة', 'غداً', 'اسبوع', 'ساعة', 'دقيقة',
+  'فكرني', 'أذكرني', 'نبّهني',
   'remind', 'reminder', 'task', 'appointment'
 ];
-
-// ✅ موجه خاص لـ Groq لاستخراج التذكير بصيغة JSON
-const REMINDER_EXTRACTION_PROMPT = `أنت مساعد ذكي متخصص في استخراج التذكيرات من النصوص العربية. حلل النص المعطى واستخرج المعلومات التالية بدقة:
-1. النص المنقى: أزل كلمات الأمر مثل "ذكرني"، "تذكير"، "أضف"، واحتفظ بجوهر المهمة.
-2. الوقت والتاريخ: استخرج أي ذكر للوقت أو التاريخ (ساعة، يوم، تاريخ نسبي مثل "غداً"، "بعد ساعة") وحوّله إلى صيغة ISO 8601 (مثال: 2026-04-27T08:00:00.000Z). إذا لم يذكر الوقت، افترض 9 صباحاً. إذا لم يذكر التاريخ، افترض أنه يقصد "غداً" أو الوقت القادم المناسب.
-
-أعد الرد حصراً بصيغة JSON التالية، ولا تضف أي كلام آخر:
-{
-  "isReminder": true,
-  "text": "النص المنقى هنا",
-  "reminderTime": "YYYY-MM-DDTHH:mm:ss.sssZ",
-  "confidence": 0.95
-}
-
-إذا كان النص لا يمثل طلب تذكير (مثل سؤال عام أو محادثة)، أعد فقط:
-{
-  "isReminder": false
-}`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,120 +21,105 @@ export async function POST(request: NextRequest) {
       return new NextResponse('النص غير صالح', { status: 400 });
     }
 
-    // ✅ فحص أولي: هل النص يبدو كطلب تذكير؟
+    // 1. فحص أولي: هل النص يبدو كطلب تذكير؟
     const looksLikeReminder = REMINDER_KEYWORDS.some(keyword =>
       prompt.toLowerCase().includes(keyword.toLowerCase())
     );
 
-    // إذا بدا كطلب تذكير، نحاول استخراجه عبر Groq
+    // 2. إذا كان تذكيراً، نستخدم التحليل المحلي (سريع ولا يفشل أبداً)
     if (looksLikeReminder) {
+      const localResult = analyzeReminderInput(prompt);
+      if (localResult && localResult.confidence >= 0.6) {
+        return NextResponse.json({
+          type: 'reminder_suggestion',
+          suggestion: {
+            text: localResult.parsedText || localResult.originalText,
+            reminderTime: localResult.reminderTime,
+            confidence: localResult.confidence,
+          },
+        });
+      }
+      // إذا فشل التحليل المحلي، نستمر إلى الدردشة العادية
+    }
+
+    // 3. الدردشة العادية (محاولة Groq أولاً، مع خطة بديلة)
+    let reply = 'أهلاً! كيف يمكنني مساعدتك اليوم؟';
+
+    try {
+      // جلب سجل المحادثة من MongoDB
+      let conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
+      if (userId && userId !== 'anonymous') {
+        try {
+          const client = await clientPromise;
+          const db = client.db('smartyDB');
+          const conversations = db.collection('conversations');
+          
+          const history = await conversations
+            .find({ userId })
+            .sort({ timestamp: -1 })
+            .limit(10)
+            .toArray();
+          
+          conversationHistory = history.reverse().map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          }));
+        } catch (dbError) {
+          console.error('فشل جلب سجل المحادثة:', dbError);
+        }
+      }
+
+      // محاولة استدعاء Groq
       try {
-        const extractionCompletion = await groq.chat.completions.create({
-          messages: [
-            { role: 'system', content: REMINDER_EXTRACTION_PROMPT },
-            { role: 'user', content: prompt },
-          ],
+        const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+          {
+            role: 'system',
+            content: `أنت مساعد ذكي ومفيد اسمك "Smarty". أنت متخصص في مساعدة المستخدمين في إنشاء وإدارة التذكيرات والمواعيد. ردودك يجب أن تكون مختصرة ومفيدة باللغة العربية. تذكر دائمًا سياق المحادثة السابق مع المستخدم.`,
+          },
+          ...conversationHistory,
+          { role: 'user', content: prompt },
+        ];
+
+        const completion = await groq.chat.completions.create({
+          messages,
           model: 'llama-3.3-70b-versatile',
-          temperature: 0.1,
-          max_tokens: 500,
-          response_format: { type: 'json_object' }, // نجبر Groq على إخراج JSON
+          temperature: 0.7,
+          max_tokens: 1024,
         });
 
-        const extractionReply = extractionCompletion.choices[0]?.message?.content || '';
-        let cleanJson = extractionReply.trim();
-        // تنظيف علامات markdown إن وجدت
-        if (cleanJson.startsWith('```')) {
-          cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        const groqReply = completion.choices[0]?.message?.content;
+        if (groqReply && groqReply.trim()) {
+          reply = groqReply;
         }
+      } catch (groqError) {
+        console.error('فشل استدعاء Groq، استخدام الرد الاحتياطي:', groqError);
+        // نستخدم الرد الاحتياطي المحدد مسبقاً
+      }
 
+      // حفظ المحادثة (بصمت، دون التأثير على الرد)
+      if (userId && userId !== 'anonymous') {
         try {
-          const parsed = JSON.parse(cleanJson);
-          if (
-            parsed.isReminder === true &&
-            typeof parsed.text === 'string' && parsed.text.trim().length > 0 &&
-            typeof parsed.reminderTime === 'string' && parsed.reminderTime.trim().length > 0
-          ) {
-            // ✅ إعادة اقتراح تذكير إلى الواجهة
-            return NextResponse.json({
-              type: 'reminder_suggestion',
-              suggestion: {
-                text: parsed.text.trim(),
-                reminderTime: parsed.reminderTime.trim(),
-                confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.9,
-              },
-            });
-          }
-        } catch (parseError) {
-          console.error('فشل تحليل JSON من Groq:', parseError);
+          const client = await clientPromise;
+          const db = client.db('smartyDB');
+          const conversations = db.collection('conversations');
+          
+          const now = new Date();
+          await conversations.insertMany([
+            { userId, role: 'user', content: prompt, timestamp: now },
+            { userId, role: 'assistant', content: reply, timestamp: new Date(now.getTime() + 1) },
+          ]).catch(e => console.error('فشل حفظ المحادثة بصمت:', e));
+        } catch (dbError) {
+          console.error('فشل حفظ المحادثة:', dbError);
         }
-      } catch (extractionError) {
-        console.error('فشل استخراج التذكير عبر Groq:', extractionError);
       }
-      // إذا فشل الاستخراج، نستمر إلى الدردشة العادية
+    } catch (error) {
+      console.error('خطأ في معالجة الدردشة:', error);
+      // نستخدم الرد الاحتياطي
     }
 
-    // ✅ الدردشة العادية (مع الذاكرة) – دون تغيير عن الإصدار القديم
-    let conversationHistory: { role: 'user' | 'assistant'; content: string }[] = [];
-    if (userId) {
-      try {
-        const client = await clientPromise;
-        const db = client.db('smartyDB');
-        const conversations = db.collection('conversations');
-        
-        const history = await conversations
-          .find({ userId })
-          .sort({ timestamp: -1 })
-          .limit(10)
-          .toArray();
-        
-        conversationHistory = history.reverse().map(msg => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        }));
-      } catch (dbError) {
-        console.error('فشل جلب سجل المحادثة:', dbError);
-      }
-    }
-
-    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-      {
-        role: 'system',
-        content: `أنت مساعد ذكي ومفيد اسمك "Smarty". أنت متخصص في مساعدة المستخدمين في إنشاء وإدارة التذكيرات والمواعيد. ردودك يجب أن تكون مختصرة ومفيدة باللغة العربية. تذكر دائمًا سياق المحادثة السابق مع المستخدم.`,
-      },
-      ...conversationHistory,
-      { role: 'user', content: prompt },
-    ];
-
-    const completion = await groq.chat.completions.create({
-      messages,
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      max_tokens: 1024,
-    });
-
-    const reply = completion.choices[0]?.message?.content || 'عذراً، لم أستطع معالجة طلبك.';
-
-    // حفظ المحادثة
-    if (userId) {
-      try {
-        const client = await clientPromise;
-        const db = client.db('smartyDB');
-        const conversations = db.collection('conversations');
-        
-        const now = new Date();
-        await conversations.insertMany([
-          { userId, role: 'user', content: prompt, timestamp: now },
-          { userId, role: 'assistant', content: reply, timestamp: new Date(now.getTime() + 1) },
-        ]);
-      } catch (dbError) {
-        console.error('فشل حفظ المحادثة:', dbError);
-      }
-    }
-
-    // ✅ الرد العادي – لاحظ أننا نعيد الآن JSON بدلاً من نص خام
     return NextResponse.json({ type: 'text', reply });
   } catch (error) {
-    console.error('Groq API error:', error instanceof Error ? error.message : error);
+    console.error('Chat API error:', error instanceof Error ? error.message : error);
     return NextResponse.json({ type: 'text', reply: 'حدث خطأ في الاتصال بالمساعد.' }, { status: 500 });
   }
-}
+            }
