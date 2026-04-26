@@ -62,12 +62,11 @@ function loadRemindersFromStorage(): Reminder[] {
 
 export default function ReminderApp({ initialReminderText }: { initialReminderText?: string | null }) {
   const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
-  // ✅ استخدام القيم الأولية مباشرة دون useEffect
-  const [inputText, setInputText] = useState(initialReminderText || '');
+  const [inputText, setInputText] = useState('');
   const [recurring, setRecurring] = useState<string>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [isAdding, setIsAdding] = useState(!!initialReminderText); // ✅ يفتح المودال إذا كان هناك نص
+  const [isAdding, setIsAdding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState('');
@@ -76,19 +75,15 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
-
-  // ✅ استقبال التذكيرات الجديدة من المساعد الصوتي
+   
   useEffect(() => {
-    const handleNewReminder = (event: CustomEvent) => {
-      const newReminder: Reminder = event.detail;
-      if (newReminder && newReminder.id && newReminder.text) {
-        setReminders(prev => [newReminder, ...prev]);
-        toast.success('تمت إضافة التذكير من المساعد الصوتي');
-      }
-    };
-    window.addEventListener('new_reminder', handleNewReminder as EventListener);
-    return () => window.removeEventListener('new_reminder', handleNewReminder as EventListener);
-  }, []);
+    if (initialReminderText) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInputText(initialReminderText);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAdding(true);
+    }
+  }, [initialReminderText]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
@@ -302,4 +297,4 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
       <footer className="py-8 text-center opacity-20 text-[10px] font-black uppercase">Smarty AI Reminder &copy; {new Date().getFullYear()}</footer>
     </div>
   );
-}
+            }
