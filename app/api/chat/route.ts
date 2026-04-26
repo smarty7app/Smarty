@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 import clientPromise from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
+import { authOptions } from "@/lib/auth";
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { analyzeReminderInput } from '@/lib/date-parser'; // تأكد من المسار
 
