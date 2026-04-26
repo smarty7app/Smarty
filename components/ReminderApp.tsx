@@ -62,11 +62,12 @@ function loadRemindersFromStorage(): Reminder[] {
 
 export default function ReminderApp({ initialReminderText }: { initialReminderText?: string | null }) {
   const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
+  // ✅ استخدام القيم الأولية مباشرة دون useEffect
   const [inputText, setInputText] = useState(initialReminderText || '');
-  const [isAdding, setIsAdding] = useState(!!initialReminderText);
+  const [recurring, setRecurring] = useState<string>('none');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAdding, setIsAdding] = useState(!!initialReminderText); // ✅ يفتح المودال إذا كان هناك نص
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [assistantMessage, setAssistantMessage] = useState('');
@@ -76,7 +77,7 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { t, isRTL, language } = useLanguage();
 
-  // ✅ استقبال التذكيرات الجديدة من المساعد الصوتي عبر حدث مخصص
+  // ✅ استقبال التذكيرات الجديدة من المساعد الصوتي
   useEffect(() => {
     const handleNewReminder = (event: CustomEvent) => {
       const newReminder: Reminder = event.detail;
@@ -85,7 +86,6 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
         toast.success('تمت إضافة التذكير من المساعد الصوتي');
       }
     };
-
     window.addEventListener('new_reminder', handleNewReminder as EventListener);
     return () => window.removeEventListener('new_reminder', handleNewReminder as EventListener);
   }, []);
@@ -185,18 +185,19 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
 
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-zinc-950 flex flex-col">
-      <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1>
-            <span className="text-[8px] font-bold text-white/30">Premium Assistant</span>
-          </div>
-        </div>
-        <div className="flex gap-1">
-          <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
-          <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
-          <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
-          <button onClick={() => notificationService?.requestPermission()} className="p-2.5 text-white/70 hover:text-white">{notificationsEnabled ? <Bell /> : <BellOff />}</button>
+     <header className="sticky top-0 bg-black/10 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-white/10">
+  <div className="flex items-center gap-3">
+    {/* تم حذف أيقونة الشعار */}
+    <div>
+      <h1 className="text-2xl font-black text-white">Smarty<span className="text-[10px] opacity-40">®</span></h1>
+      <span className="text-[8px] font-bold text-white/30">Premium Assistant</span>
+    </div>
+  </div>
+  <div className="flex gap-1">
+           <button onClick={() => setShowAbout(true)} className="p-2.5 text-white/70 hover:text-white"><Info className="w-5 h-5" /></button>
+           <button onClick={() => setShowSettings(true)} className="p-2.5 text-white/70 hover:text-white"><Settings className="w-5 h-5" /></button>
+           <button onClick={() => setSoundEnabled(!soundEnabled)} className="p-2.5 text-white/70 hover:text-white">{soundEnabled ? <Volume2 /> : <VolumeX />}</button>
+           <button onClick={() => notificationService?.requestPermission()} className="p-2.5 text-white/70 hover:text-white">{notificationsEnabled ? <Bell /> : <BellOff />}</button>
         </div>
       </header>
 
@@ -206,7 +207,7 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
           <input
             placeholder={t.search_reminders_placeholder}
             className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 pr-12 text-white font-bold outline-none focus:border-[#E65100]/50"
-          />
+          /> 
         </div>
 
         <div className="flex flex-col items-center justify-center my-8">
