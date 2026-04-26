@@ -849,41 +849,47 @@ export default function SmartVoicePage() {
 
         {/* ✅ بطاقة اقتراح التذكير */}
         <AnimatePresence>
-          {reminderSuggestion && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-md mt-6 bg-gradient-to-br from-emerald-500/20 to-green-600/20 backdrop-blur-lg rounded-2xl p-5 border border-emerald-400/30 shadow-lg"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-emerald-300" />
-                <h3 className="text-emerald-100 font-bold text-lg">تذكير مقترح</h3>
-              </div>
-              <p className="text-white text-xl font-bold mb-2">{reminderSuggestion.text}</p>
-              <p className="text-emerald-200 text-sm">
-                🕒 {new Date(reminderSuggestion.reminderTime).toLocaleString('ar-SA', {
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                })}
-              </p>
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={approveReminder}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-xl font-bold transition"
-                >
-                  موافق
-                </button>
-                <button
-                  onClick={rejectReminder}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {reminderSuggestion && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="w-full max-w-md mt-6 bg-gradient-to-br from-emerald-500/20 to-green-600/20 backdrop-blur-lg rounded-2xl p-5 border border-emerald-400/30 shadow-lg"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-5 h-5 text-emerald-300" />
+              <h3 className="text-emerald-100 font-bold text-lg">تذكير مقترح</h3>
+            </div>
+            {/* ✅ النص الكامل الذي قاله المستخدم */}
+            <p className="text-white text-xl font-bold mb-2">{reminderSuggestion.text}</p>
+            {/* ✅ الوقت بصيغة رقمية */}
+            <p className="text-emerald-200 text-sm">
+              🕒 {new Date(reminderSuggestion.reminderTime).toLocaleString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })}
+            </p>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={approveReminder}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-xl font-bold transition"
+              >
+                موافق
+              </button>
+              <button
+                onClick={rejectReminder}
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition"
+              >
+                إلغاء
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
         <div className="w-full max-w-md space-y-4 mt-10">
           {transcript && <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10"><p className="text-xs font-bold text-white/40 uppercase tracking-wider">{t('you')}</p><p className="text-white text-lg font-medium mt-1">{transcript}</p></div>}
