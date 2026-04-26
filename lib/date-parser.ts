@@ -4,7 +4,7 @@
 
 // --- العربية ---
 export const arabicDayMap: Record<string, number> = {
-  'الأحد': 0, 'الاثنين': 1, 'الإثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الاربعاء': 3,
+  'الأحد': 0, 'الاحد': 0, 'الاثنين': 1, 'الإثنين': 1, 'الثلاثاء': 2, 'الاربعاء': 3, 'الأربعاء': 3,
   'الخميس': 4, 'الجمعة': 5, 'السبت': 6
 };
 
@@ -67,7 +67,7 @@ export const englishNumeralMap: Record<string, number> = {
 // ==================== أنواع النتائج ====================
 
 export interface CleanResult {
-  parsedText: string;
+  parsedText: string;   // النص الكامل الذي قاله المستخدم (بدون تغيير)
   reminderTime: string;
   detectedLanguage: 'ar' | 'fr' | 'en';
   confidence: number;
@@ -79,33 +79,33 @@ export interface CleanResult {
 function parseLocalDateTime(text: string): Date | null {
   if (!text.trim()) return null;
   const now = new Date();
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().trim();
+
+  // استبدال الرموز العربية-الهندية
+  const normalized = lower.replace(/[٠-٩]/g, d => String.fromCharCode(d.charCodeAt(0) - 1632 + 48));
 
   // 1. معالجة "بعد X دقيقة/ساعة/يوم"
-  const durationMatch = text.match(/(?:بعد|خلال|في)\s+(.+)/i);
+  const durationMatch = normalized.match(/(?:بعد|خلال|في|بعدي|بعدين)\s+(.+)/i);
   if (durationMatch) {
     const durationText = durationMatch[1];
     let value = 1;
     let unit: 'minute' | 'hour' | 'day' | 'week' | null = null;
-    
+
     const numMatch = durationText.match(/(\d+)/);
     if (numMatch) value = parseInt(numMatch[1]);
     else {
       for (const [word, num] of Object.entries(arabicNumeralMap)) {
-        if (durationText.includes(word)) {
-          value = num;
-          break;
-        }
+        if (durationText.includes(word)) { value = num; break; }
       }
     }
-    
-    if (/(دقيقة|دقائق|دقيقتين)/.test(durationText)) unit = 'minute';
-    else if (/(ساعة|ساعات|ساعتين)/.test(durationText)) unit = 'hour';
-    else if (/(يوم|أيام|يومين)/.test(durationText)) unit = 'day';
-    else if (/(اسبوع|أسبوع|أسبوعين)/.test(durationText)) unit = 'week';
-    
+
+    if (/(دقيقة|دقائق|دقيقه|دقايق)/.test(durationText)) unit = 'minute';
+    else if (/(ساعة|ساعه|ساعات|ساعتين|سوايع)/.test(durationText)) unit = 'hour';
+    else if (/(يوم|أيام|ايام|يومين)/.test(durationText)) unit = 'day';
+    else if (/(اسبوع|أسبوع|اسابيع|أسابيع)/.test(durationText)) unit = 'week';
+
     if (unit) {
-      let targetDate = new Date(now);
+      const targetDate = new Date(now);
       switch (unit) {
         case 'minute': targetDate.setMinutes(now.getMinutes() + value); break;
         case 'hour': targetDate.setHours(now.getHours() + value); break;
@@ -118,47 +118,79 @@ function parseLocalDateTime(text: string): Date | null {
     }
   }
 
-  // 2. معالجة "غداً" و "بعد غد"
-  if (/غدا|غداً/.test(lower)) {
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + 1);
-    targetDate.setHours(9, 0, 0, 0);
-    return targetDate;
-  }
-  if (/بعد\s+غد/.test(lower)) {
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + 2);
-    targetDate.setHours(9, 0, 0, 0);
-    return targetDate;
-  }
-
-  // 3. معالجة الوقت المطلق (الساعة 3 مساءً)
-  const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(صباحا|مساء|ص|م|am|pm)?/i);
-  if (timeMatch) {
-    let hour = parseInt(timeMatch[1]);
-    let minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
-    const period = timeMatch[3]?.toLowerCase();
-    
-    if (period && (period.includes('مساء') || period === 'م' || period === 'pm')) {
-      if (hour < 12) hour += 12;
-    } else if (period && (period.includes('صباحا') || period === 'ص' || period === 'am')) {
-      if (hour === 12) hour = 0;
-    }
-    
-    const targetDate = new Date(now);
-    targetDate.setHours(hour, minute, 0, 0);
-    if (targetDate.getTime() < now.getTime()) {
-      targetDate.setDate(now.getDate() + 1);
-    }
-    if (!isNaN(targetDate.getTime())) {
+  // 2. أيام الأسبوع
+  for (const [name, targetDay] of Object.entries(arabicDayMap)) {
+    if (normalized.includes(name)) {
+      const currentDay = now.getDay();
+      let diff = targetDay - currentDay;
+      if (diff <= 0) diff += 7; // الأسبوع القادم
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() + diff);
+      targetDate.setHours(9, 0, 0, 0);
+      if (normalized.includes('الجاي') || normalized.includes('القادم') || normalized.includes('المقبل')) {
+        diff += 7;
+        targetDate.setDate(now.getDate() + diff);
+      }
       return targetDate;
     }
   }
 
-  // 4. معالجة "اسبوع"
-  if (/(اسبوع|أسبوع)/.test(lower)) {
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + 7);
+  // 3. غداً / بعد غد / بكرة
+  let dayOffset = 0;
+  if (/غدا|غداً|بكرة|بكرا/.test(normalized)) {
+    dayOffset = 1;
+    if (/بعد غد|بعد بكرة|بعد بكرا/.test(normalized)) dayOffset = 2;
+  } else if (/بعد غد|بعد بكرة|بعد بكرا/.test(normalized)) {
+    dayOffset = 2;
+  }
+
+  // 4. استخراج الوقت
+  let hour: number | null = null;
+  let minute = 0;
+
+  // أنماط الوقت المختلفة
+  const timePatterns = [
+    /(?:الساعة|الساعه|على|في|قبل|بعد)?\s*(\d{1,2})\s*(?::\s*(\d{2}))?\s*(صباحاً|صباحا|صباح|مساءً|مساءا|مساء|ص|م|am|pm)?/i,
+    /(?:الظهر|الضهر)/i,   // 12:00
+    /(?:العصر|العصر)/i,   // 15:00
+    /(?:المغرب|العشية|العشيه)/i, // 18:00
+    /(?:العشاء|الليل)/i,  // 20:00
+    /(?:الصباح|الصبح)/i,  // 06:00
+  ];
+
+  const timeMatch = normalized.match(timePatterns[0]);
+  if (timeMatch) {
+    hour = parseInt(timeMatch[1]);
+    minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    const period = timeMatch[3]?.toLowerCase();
+
+    if (period) {
+      if (period.includes('مساء') || period === 'م' || period === 'pm') {
+        if (hour < 12) hour += 12;
+      } else if (period.includes('صباح') || period === 'ص' || period === 'am') {
+        if (hour === 12) hour = 0;
+      }
+    }
+  } else if (timePatterns[1].test(normalized)) { hour = 12; minute = 0; }
+  else if (timePatterns[2].test(normalized)) { hour = 15; minute = 0; }
+  else if (timePatterns[3].test(normalized)) { hour = 18; minute = 0; }
+  else if (timePatterns[4].test(normalized)) { hour = 20; minute = 0; }
+  else if (timePatterns[5].test(normalized)) { hour = 6; minute = 0; }
+
+  const targetDate = new Date(now);
+  targetDate.setDate(now.getDate() + dayOffset);
+
+  if (hour !== null) {
+    targetDate.setHours(hour, minute, 0, 0);
+  } else {
+    targetDate.setHours(9, 0, 0, 0);
+  }
+
+  if (targetDate.getTime() <= now.getTime()) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  if (!isNaN(targetDate.getTime())) {
     return targetDate;
   }
 
@@ -167,47 +199,21 @@ function parseLocalDateTime(text: string): Date | null {
 
 // ==================== دوال التنظيف ====================
 
-export function cleanReminderText(text: string, language: 'ar' | 'fr' | 'en' = 'ar'): string {
-  let cleaned = text;
-
-  const commandWords: Record<'ar' | 'fr' | 'en', string[]> = {
-    ar: ['ذكرني', 'تذكير', 'تذكر', 'ذكر', 'أذكر', 'نذكر', 'موعد', 'حدث', 'مهمة'],
-    fr: ['rappelle', 'rappel', 'rappeler', 'tâche', 'rendez-vous', 'rdv'],
-    en: ['remind', 'reminder', 'remember', 'task', 'appointment', 'event']
-  };
-
-  const timeKeywords = [
-    'غدا', 'غداً', 'بعد غد', 'اليوم', 'صباحا', 'مساء', 'صباحاً', 'مساءً',
-    'الساعة', 'على الساعة', 'في الساعة', 'دقيقة', 'دقائق', 'دقيقتين', 'ساعة', 'ساعتين', 'ساعات',
-    'يوم', 'أيام', 'اسبوع', 'أسبوع', 'بعد', 'خلال', 'القادم', 'الجاي', 'المقبل',
-    'tomorrow', 'today', 'am', 'pm', 'o\'clock', 'hour', 'minute', 'hours', 'minutes', 'in', 'at', 'next',
-    'demain', 'aujourd\'hui', 'après-demain', 'heure', 'heures', 'minutes', 'dans', 'à', 'prochain'
-  ];
-
-  commandWords[language].forEach(word => {
-    cleaned = cleaned.replace(new RegExp(word, 'gi'), '').trim();
-  });
-
-  timeKeywords.forEach(keyword => {
-    cleaned = cleaned.replace(new RegExp(keyword, 'gi'), '').trim();
-  });
-
-  cleaned = cleaned.replace(/\d+/g, '').trim();
-  cleaned = cleaned.replace(/\s+/g, ' ').replace(/^[\s,،]+|[\s,،]+$/g, '').trim();
-
-  return cleaned || (language === 'ar' ? 'مهمة' : language === 'fr' ? 'Tâche' : 'Task');
+// ✅ دالة تنظيف بسيطة تحذف فقط الفراغات الزائدة ولا تمس الكلمات
+export function cleanReminderText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
 }
 
-// ==================== دالة التحليل الرئيسية (متزامنة) ====================
+// ==================== دالة التحليل الرئيسية ====================
 
 export function analyzeReminderInput(text: string): CleanResult | null {
   if (!text.trim()) return null;
 
   const parsedDate = parseLocalDateTime(text);
-  
+
   if (parsedDate && parsedDate.getTime() > Date.now()) {
     return {
-      parsedText: cleanReminderText(text, 'ar'),
+      parsedText: text,                // النص الأصلي الكامل
       reminderTime: parsedDate.toISOString(),
       detectedLanguage: 'ar',
       confidence: 0.85,
@@ -218,7 +224,7 @@ export function analyzeReminderInput(text: string): CleanResult | null {
   // القيمة الافتراضية: بعد ساعة
   const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
   return {
-    parsedText: cleanReminderText(text, 'ar'),
+    parsedText: text,
     reminderTime: fallbackDate.toISOString(),
     detectedLanguage: 'ar',
     confidence: 0.3,
@@ -268,7 +274,6 @@ export function formatCountdown(isoString: string, lang: 'ar' | 'fr' | 'en' = 'a
   const diffDays = Math.floor(absDiffMs / 86400000);
 
   let text = '';
-
   if (isPast) {
     if (diffMinutes < 1) text = 'الآن';
     else if (diffMinutes < 60) text = `منذ ${diffMinutes} دقيقة`;
@@ -285,6 +290,5 @@ export function formatCountdown(isoString: string, lang: 'ar' | 'fr' | 'en' = 'a
     else if (diffDays === 2) text = 'بعد غد';
     else text = `متبقي ${diffDays} يوم`;
   }
-
   return { text, isPast };
 }
