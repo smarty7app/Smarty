@@ -9,7 +9,6 @@ import {
   ArrowLeft, Wifi, WifiOff, Loader2, Mic, Volume2, Sparkles, MessageCircle,
   Download, Check, Trash2, HardDrive, X, AlertTriangle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react'; // ✅ جديد: لبطاقة الاقتراح
 
 // تعريف واجهات البيانات
 interface AIModel {
@@ -236,13 +235,6 @@ export default function SmartVoicePage() {
   const userEmail = session?.user?.email || '';
   const userName = session?.user?.name || '';
 
-  // ✅ حالة اقتراح التذكير
-  const [reminderSuggestion, setReminderSuggestion] = useState<{
-    text: string;
-    reminderTime: string;
-    confidence: number;
-  } | null>(null);
-
   // ========== دالة الترجمة ==========
   const t = useCallback((key: string): string => {
     const translations: Record<string, Record<string, string>> = {
@@ -432,35 +424,53 @@ export default function SmartVoicePage() {
   const isListeningRef = useRef(isListening);
   useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
 
+  // دالة نطق آمنة تنتظر تحميل الأصوات وتتعامل مع الأخطاء
   const speak = useCallback((text: string) => {
   return new Promise<void>((resolve) => {
+    // التحقق من دعم المتصفح
     if (!window.speechSynthesis) {
       console.warn('speechSynthesis not supported');
       setResponse(t('speech_synthesis_failed'));
       resolve();
       return;
     }
+
+    // إلغاء أي نطق سابق
     window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    // محاولة استخدام اللغة العربية بعدة صيغ
     utterance.lang = 'ar';
-    utterance.rate = 0.9;
+    
+    // محاولة ثانية: إذا فشل 'ar'، جرب 'ar-SA' أو 'ar-EG'
+    // هذا يتم تجربته تلقائياً عبر المتصفح
+    
+    utterance.rate = 0.9;  // أبطأ قليلاً لتحسين الفهم
     utterance.pitch = 1.0;
     utterance.volume = 1;
+
     utterance.onstart = () => {
       setIsSpeaking(true);
       setIsProcessing(false);
     };
+    
     utterance.onend = () => {
       setIsSpeaking(false);
       setRetryCount(0);
       resolve();
     };
+    
     utterance.onerror = (event) => {
       console.error('Speech synthesis error:', event);
       setIsSpeaking(false);
       setIsProcessing(false);
+      // لا نعرض خطأ للمستخدم، فقط نسكت
+      // setResponse(t('speech_synthesis_failed')); // يمكن تعليقها
       resolve();
     };
+
+    // محاولة اختيار صوت عربي إذا وجد
     const trySpeak = () => {
       const voices = window.speechSynthesis.getVoices();
       const arabicVoice = voices.find(voice => 
@@ -471,6 +481,7 @@ export default function SmartVoicePage() {
       if (arabicVoice) utterance.voice = arabicVoice;
       window.speechSynthesis.speak(utterance);
     };
+
     if (window.speechSynthesis.getVoices().length > 0) {
       trySpeak();
     } else {
@@ -479,7 +490,6 @@ export default function SmartVoicePage() {
   });
 }, [t]);
 
-  // ✅ تعديل processText ليتعامل مع JSON ويظهر الاقتراح
   const processText = useCallback(async (text: string) => {
     setIsProcessing(true);
     try {
@@ -487,30 +497,23 @@ export default function SmartVoicePage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text })
+        body: JSON.stringify({ prompt: text, userId, userEmail, userName, model: activeModel })
       });
       if (!res.ok) {
+        // سجل التفاصيل للمطور فقط
         console.error(`API responded with status ${res.status}`);
         if (res.status === 429) {
           setResponse(t('daily_limit_exceeded'));
         } else {
+          // أي خطأ آخر (500, 400, إلخ) نعرض رسالة عامة
           setResponse(t('connection_error'));
         }
         setIsProcessing(false);
         return;
       }
-      const data = await res.json();
-      if (data.type === 'reminder_suggestion') {
-        // عرض اقتراح التذكير
-        setReminderSuggestion(data.suggestion);
-        setResponse('');
-        setIsProcessing(false); // توقف مؤشر المعالجة لانتظار قرار المستخدم
-      } else {
-        // رد نصي عادي
-        const reply = data.reply || 'عذراً، لم أستطع معالجة طلبك.';
-        setResponse(reply);
-        await speak(reply);
-      }
+      const reply = await res.text();
+      setResponse(reply);
+      await speak(reply);
     } catch (error: any) {
       console.error(error);
       if (retryCount < 3 && error.message.includes('fetch')) {
@@ -518,126 +521,66 @@ export default function SmartVoicePage() {
         setResponse(`${t('retrying')} (${retryCount + 1}/3)...`);
         setTimeout(() => processText(text), 2000);
       } else {
+        // خطأ غير متوقع (مشكلة شبكة، إلخ) نعرض رسالة عامة
         setResponse(t('connection_error'));
         setIsProcessing(false);
       }
     }
-  }, [isOnline, retryCount, t, speak]);
-
-  // ✅ دوال الموافقة والرفض للتذكير المقترح
-  const approveReminder = () => {
-    if (!reminderSuggestion) return;
-    const newReminder = {
-      id: Math.random().toString(36).substring(2, 9),
-      text: reminderSuggestion.text,
-      reminderTime: reminderSuggestion.reminderTime,
-      isCompleted: false,
-    };
-    const saved = JSON.parse(localStorage.getItem('smarty_reminders') || '[]');
-    saved.unshift(newReminder);
-    localStorage.setItem('smarty_reminders', JSON.stringify(saved));
-    // إطلاق حدث لتحديث ReminderApp
-    window.dispatchEvent(new CustomEvent('new_reminder', { detail: newReminder }));
-    setResponse('✅ تم إضافة التذكير: ' + newReminder.text);
-    setReminderSuggestion(null);
-  };
-
-  const rejectReminder = () => {
-    setReminderSuggestion(null);
-    setResponse('تم إلغاء التذكير المقترح.');
-  };
+  }, [isOnline, userId, userEmail, userName, retryCount, activeModel, t, speak]);
 
   const createRecognition = useCallback(() => {
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    setResponse(t('recognition_failed'));
-    return null;
-  }
-  const instance = new SpeechRecognition();
-  instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
-  instance.continuous = true;
-  instance.interimResults = true;
-
-  // متغير لتجميع النص النهائي
-  let finalTranscriptAccumulated = '';
-
-  instance.onstart = () => {
-    setIsListening(true);
-    setTranscript('');
-    setResponse('');
-    setRetryCount(0);
-    finalTranscriptAccumulated = ''; // إعادة تعيين المجمع
-    clearSilenceTimer();
-    // لا نبدأ مؤقت الصمت هنا، ننتظر أول نتيجة
-  };
-
-  instance.onaudiostart = () => {
-    // تم اكتشاف صوت، نلغي مؤقت الصمت لمنع المعالجة أثناء الكلام
-    clearSilenceTimer();
-  };
-
-  instance.onaudioend = () => {
-    // انتهى الصوت، لنعدّ مؤقت الصمت لبدء العد بعد آخر صوت
-    clearSilenceTimer();
-    if (finalTranscriptAccumulated.trim()) {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setResponse(t('recognition_failed'));
+      return null;
+    }
+    const instance = new SpeechRecognition();
+    instance.lang = language === 'ar' ? 'ar-DZ' : 'en-US';
+    instance.continuous = true;
+    instance.interimResults = true;
+    instance.onstart = () => {
+      setIsListening(true);
+      setTranscript('');
+      setResponse('');
+      setRetryCount(0);
+      clearSilenceTimer();
       silenceTimerRef.current = setTimeout(() => {
-        // توقف المستخدم عن الكلام، معالجة النص المتراكم
-        if (isListeningRef.current) {
-          recognitionRef.current?.stop();
-          setIsListening(false);
-          processText(finalTranscriptAccumulated.trim());
-        }
-      }, 2000); // ثانيتان من الصمت
-    }
-  };
-
-  instance.onresult = (event: any) => {
-    let interimTranscript = '';
-    // نجمع النتائج
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcriptPart = event.results[i][0].transcript;
-      if (event.results[i].isFinal) {
-        finalTranscriptAccumulated += transcriptPart; // تجميع النهائي
-      } else {
-        interimTranscript += transcriptPart;
+        if (isListeningRef.current) recognitionRef.current?.stop();
+        setResponse(t('no_speech_detected'));
+      }, 10000);
+    };
+    instance.onaudiostart = () => clearSilenceTimer();
+    instance.onaudioend = () => clearSilenceTimer();
+    instance.onresult = (event: any) => {
+      clearSilenceTimer();
+      let interimTranscript = '', finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcriptPart = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += transcriptPart;
+        else interimTranscript += transcriptPart;
       }
-    }
-    // تحديث واجهة المستخدم
-    if (finalTranscriptAccumulated) {
-      setTranscript(finalTranscriptAccumulated);
-    } else if (interimTranscript) {
-      setTranscript(interimTranscript);
-    }
-  };
-
-  instance.onerror = (event: any) => {
-    console.error(event.error);
-    setIsListening(false);
-    setIsProcessing(false);
-    clearSilenceTimer();
-    // معالجة الأخطاء كما في السابق
-    switch (event.error) {
-      case 'not-allowed': setResponse(t('allow_mic')); break;
-      case 'no-speech': setResponse(t('no_speech')); break;
-      case 'network': setResponse(t('network_error')); break;
-      default: setResponse(t('recognition_failed'));
-    }
-    finalTranscriptAccumulated = '';
-  };
-
-  instance.onend = () => {
-    // لو انتهى التعرف لسبب آخر غير إيقافنا، نتعامل معه
-    setIsListening(false);
-    clearSilenceTimer();
-    // إذا كان هناك نص متراكم ولم تتم معالجته بعد (نادر) نعالجه
-    if (finalTranscriptAccumulated.trim() && !isProcessing) {
-      processText(finalTranscriptAccumulated.trim());
-    }
-    finalTranscriptAccumulated = '';
-  };
-
-  return instance;
-}, [language, processText, clearSilenceTimer, t]);
+      if (interimTranscript) setTranscript(interimTranscript);
+      if (finalTranscript) {
+        setTranscript(finalTranscript);
+        setIsListening(false);
+        processText(finalTranscript);
+      }
+    };
+    instance.onerror = (event: any) => {
+      console.error(event.error);
+      setIsListening(false);
+      setIsProcessing(false);
+      clearSilenceTimer();
+      switch (event.error) {
+        case 'not-allowed': setResponse(t('allow_mic')); break;
+        case 'no-speech': setResponse(t('no_speech')); break;
+        case 'network': setResponse(t('network_error')); break;
+        default: setResponse(t('recognition_failed'));
+      }
+    };
+    instance.onend = () => { setIsListening(false); clearSilenceTimer(); };
+    return instance;
+  }, [language, processText, clearSilenceTimer, t]);
 
   const startLocalRecording = useCallback(async () => {
     if (useLocalWhisper && !whisperDownloaded && !whisperDownloading) {
@@ -797,7 +740,7 @@ export default function SmartVoicePage() {
     return 0.65 + Math.sin(pulsePhase * 0.1) * 0.05;
   };
 
-  // ========== JSX ==========
+  // ========== JSX (مع الحفاظ على الشعار المتحرك نفسه) ==========
   return (
     <div className="min-h-screen bg-[#E65100] dark:bg-black flex flex-col transition-colors duration-300">
       <div className="sticky top-0 bg-black/10 dark:bg-white/5 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/10 dark:border-white/5 z-10">
@@ -891,45 +834,6 @@ export default function SmartVoicePage() {
             {!isListening && !isProcessing && !isSpeaking && !isModelLoading && isOnline && <div className="flex items-center justify-center gap-2"><MessageCircle className="w-4 h-4 text-white/40" /><p className="text-white/40 text-xs font-medium tracking-wide">{t('tap_to_speak')}</p></div>}
           </div>
         </div>
-
-        {/* ✅ بطاقة اقتراح التذكير */}
-        <AnimatePresence>
-          {reminderSuggestion && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-md mt-6 bg-gradient-to-br from-emerald-500/20 to-green-600/20 backdrop-blur-lg rounded-2xl p-5 border border-emerald-400/30 shadow-lg"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-emerald-300" />
-                <h3 className="text-emerald-100 font-bold text-lg">تذكير مقترح</h3>
-              </div>
-              <p className="text-white text-xl font-bold mb-2">{reminderSuggestion.text}</p>
-              <p className="text-emerald-200 text-sm">
-                🕒 {new Date(reminderSuggestion.reminderTime).toLocaleString('ar-SA', {
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                })}
-              </p>
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={approveReminder}
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-xl font-bold transition"
-                >
-                  موافق
-                </button>
-                <button
-                  onClick={rejectReminder}
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl font-bold transition"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <div className="w-full max-w-md space-y-4 mt-10">
           {transcript && <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10"><p className="text-xs font-bold text-white/40 uppercase tracking-wider">{t('you')}</p><p className="text-white text-lg font-medium mt-1">{transcript}</p></div>}
           {response && <div className="bg-gradient-to-r from-[#E65100]/20 to-amber-500/20 backdrop-blur-md rounded-2xl p-5 border border-white/10"><p className="text-xs font-bold text-white/40 uppercase tracking-wider">{t('smarty')}</p><p className="text-white text-lg font-medium mt-1">{response}</p></div>}
@@ -937,6 +841,7 @@ export default function SmartVoicePage() {
       </div>
 
       {showModelDialog && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowModelDialog(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto border border-white/10" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-black/90 backdrop-blur-md p-4 border-b border-white/10 flex justify-between items-center"><h2 className="text-lg font-bold text-white">{t('select_model')}</h2><button onClick={() => setShowModelDialog(false)} className="p-1 hover:bg-white/10 rounded-full"><X className="w-5 h-5 text-white/60" /></button></div>
@@ -975,6 +880,7 @@ export default function SmartVoicePage() {
       )}
 
       {showWhisperConsent && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setShowWhisperConsent(false)}>
           <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl max-w-md w-full border border-white/10" onClick={e => e.stopPropagation()}>
             <div className="p-6 text-center">
@@ -991,6 +897,7 @@ export default function SmartVoicePage() {
       )}
 
       {whisperDownloading && (
+        // ... (نفس الكود السابق، لم يتغير)
         <div className="fixed bottom-20 left-4 right-4 bg-black/90 backdrop-blur-md rounded-2xl p-4 border border-white/10 z-50">
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
