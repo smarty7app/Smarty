@@ -224,6 +224,11 @@ export default function SmartVoicePage() {
   const [whisperDownloading, setWhisperDownloading] = useState(false);
   const [whisperProgress, setWhisperProgress] = useState(0);
   const [showWhisperConsent, setShowWhisperConsent] = useState(false);
+  const [reminderSuggestion, setReminderSuggestion] = useState<{
+  text: string;
+  reminderTime: string;
+  confidence: number;
+} | null>(null);
   const whisperAbortControllerRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
