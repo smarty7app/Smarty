@@ -118,44 +118,56 @@ function parseLocalDateTime(text: string): Date | null {
     }
   }
 
-  // 2. معالجة "غداً" و "بعد غد"
-  if (/غدا|غداً/.test(lower)) {
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + 1);
-    targetDate.setHours(9, 0, 0, 0);
-    return targetDate;
+  // 2. تحديد إزاحة اليوم (غداً، بعد غد)
+  let dayOffset = 0;
+  if (/غدا|غداً|بكرة|بكرا/.test(lower)) {
+    dayOffset = 1;
   }
-  if (/بعد\s+غد/.test(lower)) {
-    const targetDate = new Date(now);
-    targetDate.setDate(now.getDate() + 2);
-    targetDate.setHours(9, 0, 0, 0);
-    return targetDate;
+  if (/بعد\s+غد|بعد بكرة|بعد بكرا/.test(lower)) {
+    dayOffset = 2;
   }
 
-  // 3. معالجة الوقت المطلق (الساعة 3 مساءً)
-  const timeMatch = text.match(/(\d{1,2})(?::(\d{2}))?\s*(صباحا|مساء|ص|م|am|pm)?/i);
+  // 3. معالجة الوقت المطلق (الساعة 3 مساءً، 7:00 مساء، إلخ)
+  let hour: number | null = null;
+  let minute = 0;
+
+  // نمط يلتقط "الساعة 7:00 مساءً"، "على 7 مساء"، "7:00 مساء"، إلخ
+  const timeMatch = text.match(/(?:الساعة|الساعه|على|في)?\s*(\d{1,2})\s*(?::\s*(\d{2}))?\s*(صباحاً|صباحا|صباح|مساءً|مساءا|مساء|ص|م|am|pm)?/i);
   if (timeMatch) {
-    let hour = parseInt(timeMatch[1]);
-    let minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    hour = parseInt(timeMatch[1]);
+    minute = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
     const period = timeMatch[3]?.toLowerCase();
-    
-    if (period && (period.includes('مساء') || period === 'م' || period === 'pm')) {
-      if (hour < 12) hour += 12;
-    } else if (period && (period.includes('صباحا') || period === 'ص' || period === 'am')) {
-      if (hour === 12) hour = 0;
+
+    if (period) {
+      if (period.includes('مساء') || period === 'م' || period === 'pm') {
+        if (hour < 12) hour += 12;
+      } else if (period.includes('صباح') || period === 'ص' || period === 'am') {
+        if (hour === 12) hour = 0;
+      }
     }
-    
-    const targetDate = new Date(now);
-    targetDate.setHours(hour, minute, 0, 0);
-    if (targetDate.getTime() < now.getTime()) {
-      targetDate.setDate(now.getDate() + 1);
-    }
-    if (!isNaN(targetDate.getTime())) {
-      return targetDate;
-    }
+    // إذا لم تُذكر فترة، نتعامل مع الساعة كما هي (قد تكون بنظام 24 ساعة)
   }
 
-  // 4. معالجة "اسبوع"
+  // 4. بناء التاريخ النهائي
+  const targetDate = new Date(now);
+  targetDate.setDate(now.getDate() + dayOffset);
+
+  if (hour !== null) {
+    targetDate.setHours(hour, minute, 0, 0);
+  } else {
+    targetDate.setHours(9, 0, 0, 0); // الوقت الافتراضي 9 صباحاً إذا لم يُذكر وقت
+  }
+
+  // إذا كان الوقت الناتج قد مضى (ولم يُذكر غداً)، نزيد يوماً
+  if (targetDate.getTime() <= now.getTime() && dayOffset === 0) {
+    targetDate.setDate(targetDate.getDate() + 1);
+  }
+
+  if (!isNaN(targetDate.getTime())) {
+    return targetDate;
+  }
+
+  // 5. معالجة "اسبوع" (إذا لم نجد أي شيء آخر)
   if (/(اسبوع|أسبوع)/.test(lower)) {
     const targetDate = new Date(now);
     targetDate.setDate(now.getDate() + 7);
@@ -207,7 +219,7 @@ export function analyzeReminderInput(text: string): CleanResult | null {
   
   if (parsedDate && parsedDate.getTime() > Date.now()) {
     return {
-      parsedText: cleanReminderText(text, 'ar'),
+      parsedText: text,                     // النص الأصلي الكامل الذي قاله المستخدم
       reminderTime: parsedDate.toISOString(),
       detectedLanguage: 'ar',
       confidence: 0.85,
@@ -218,7 +230,7 @@ export function analyzeReminderInput(text: string): CleanResult | null {
   // القيمة الافتراضية: بعد ساعة
   const fallbackDate = new Date(Date.now() + 60 * 60 * 1000);
   return {
-    parsedText: cleanReminderText(text, 'ar'),
+    parsedText: text,
     reminderTime: fallbackDate.toISOString(),
     detectedLanguage: 'ar',
     confidence: 0.3,
