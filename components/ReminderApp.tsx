@@ -62,8 +62,8 @@ function loadRemindersFromStorage(): Reminder[] {
 
 export default function ReminderApp({ initialReminderText }: { initialReminderText?: string | null }) {
   const [reminders, setReminders] = useState<Reminder[]>(loadRemindersFromStorage);
-  const [inputText, setInputText] = useState('');
-  const [recurring, setRecurring] = useState<string>('none');
+  const [inputText, setInputText] = useState(initialReminderText || '');
+  const [isAdding, setIsAdding] = useState(!!initialReminderText);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -89,13 +89,6 @@ export default function ReminderApp({ initialReminderText }: { initialReminderTe
     window.addEventListener('new_reminder', handleNewReminder as EventListener);
     return () => window.removeEventListener('new_reminder', handleNewReminder as EventListener);
   }, []);
-
-  useEffect(() => {
-    if (initialReminderText) {
-      setInputText(initialReminderText);
-      setIsAdding(true);
-    }
-  }, [initialReminderText]);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsMounted(true), 0);
