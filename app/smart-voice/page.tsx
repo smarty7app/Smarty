@@ -224,11 +224,6 @@ export default function SmartVoicePage() {
   const [whisperDownloading, setWhisperDownloading] = useState(false);
   const [whisperProgress, setWhisperProgress] = useState(0);
   const [showWhisperConsent, setShowWhisperConsent] = useState(false);
-  const [reminderSuggestion, setReminderSuggestion] = useState<{
-  text: string;
-  reminderTime: string;
-  confidence: number;
-} | null>(null);
   const whisperAbortControllerRef = useRef<AbortController | null>(null);
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -920,4 +915,4 @@ export default function SmartVoicePage() {
       <footer className="py-6 text-center"><p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">SMARTY AI ASSISTANT</p></footer>
     </div>
   );
-  }
+                                                               }
