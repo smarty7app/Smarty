@@ -1,0 +1,41 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile and subscription data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "subscriptionId": { "type": "string" },
+        "subscriptionStatus": { "type": "string", "enum": ["free", "basic", "pro"] },
+        "subscriptionExpiresAt": { "type": "string", "format": "date-time" },
+        "generationsCount": { "type": "integer", "description": "Number of images generated" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "SubscriptionPlan": {
+      "title": "Subscription Plan",
+      "description": "Available subscription plans",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "priceDZD": { "type": "number" },
+        "features": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document"
+    },
+    "/plans/{planId}": {
+      "schema": "SubscriptionPlan",
+      "description": "Static pricing information"
+    }
+  }
+}
