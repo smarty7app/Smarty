@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 function getAI() {
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   return new GoogleGenAI({ apiKey });
 }
 
@@ -18,7 +18,7 @@ export interface Message {
 async function _sendMessage(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
 
-  // If the user seems to be asking for an image, specifically use Imagen 4
+  // إذا كان المستخدم يطلب صورة، استخدم Imagen 4
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
   
   if (isImageRequest && !image) {
@@ -88,8 +88,12 @@ async function _sendMessage(history: Message[], message: string, model: string, 
 }
 
 export async function sendMessage(history: Message[], message: string, image?: { data: string; mimeType: string }) {
+  // النموذج الأساسي الجديد: gemini-1.5-pro (يدعم النصوص والصور والمستندات)
+  // ملاحظة: لا يزال يتم استخدام Imagen 4 لإنشاء الصور عند الطلب في _sendMessage
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
-  const primaryModel = (isImageRequest || image) ? "gemini-2.5-flash-image" : "gemini-3-flash-preview";
+  // إذا كان الطلب لإنشاء صورة، نستخدم نموذج المحادثة العادي (1.5-pro) بعد محاولة Imagen 4.
+  // في حالة رفع صورة (image موجود) أو طلب نص عادي، نستخدم 1.5-pro أيضاً.
+  const primaryModel = "gemini-1.5-pro";
 
   try {
     return await _sendMessage(history, message, primaryModel, image);
@@ -102,18 +106,17 @@ export async function sendMessage(history: Message[], message: string, image?: {
                              error?.message?.includes('permission denied');
 
     if (isPermissionError) {
-      if (primaryModel !== "gemini-3-flash-preview") {
+      // محاولات احتياطية بنماذج أخرى في حالة فشل 1.5-pro بسبب الأذونات
+      try {
+        return await _sendMessage(history, message, "gemini-1.5-flash", image);
+      } catch (e) {
         try {
-          return await _sendMessage(history, message, "gemini-3-flash-preview", image);
-        } catch (e) {
+          return await _sendMessage(history, message, "gemini-2.0-flash", image);
+        } catch (e2) {
           try {
-            return await _sendMessage(history, message, "gemini-flash-latest", image);
-          } catch (e2) {}
+            return await _sendMessage(history, message, "gemini-3-flash-preview", image);
+          } catch (e3) {}
         }
-      } else {
-        try {
-          return await _sendMessage(history, message, "gemini-3.1-flash-lite", image);
-        } catch (e) {}
       }
       throw new Error("Permission Denied: Please check your Gemini API key in Settings > Secrets.");
     }
@@ -124,7 +127,7 @@ export async function sendMessage(history: Message[], message: string, image?: {
 async function* _sendMessageStream(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
 
-  // If image request, use Imagen 4
+  // إذا كان طلب صورة، استخدم Imagen 4
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
   
   if (isImageRequest && !image) {
@@ -199,8 +202,8 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
 }
 
 export async function* sendMessageStream(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
-  const primaryModel = (isImageRequest || image) ? "gemini-2.5-flash-image" : "gemini-3-flash-preview";
+  // النموذج الأساسي الجديد: gemini-1.5-pro
+  const primaryModel = "gemini-1.5-pro";
 
   try {
     const stream = _sendMessageStream(history, message, primaryModel, image);
@@ -216,35 +219,32 @@ export async function* sendMessageStream(history: Message[], message: string, im
                              error?.message?.includes('permission denied');
 
     if (isPermissionError) {
-      if (primaryModel !== "gemini-3-flash-preview") {
+      // محاولات احتياطية بنماذج أخرى في حالة فشل 1.5-pro
+      try {
+        const fallbackStream = _sendMessageStream(history, message, "gemini-1.5-flash", image);
+        for await (const chunk of fallbackStream) {
+          yield chunk;
+        }
+        return;
+      } catch (e) {
+        console.warn("gemini-1.5-flash failed, trying gemini-2.0-flash:", e);
         try {
-          const fallbackStream = _sendMessageStream(history, message, "gemini-3-flash-preview", image);
-          for await (const chunk of fallbackStream) {
+          const fallbackStream2 = _sendMessageStream(history, message, "gemini-2.0-flash", image);
+          for await (const chunk of fallbackStream2) {
             yield chunk;
           }
           return;
-        } catch (e) {
-          console.warn("gemini-3-flash-preview failed, trying gemini-flash-latest:", e);
+        } catch (e2) {
+          console.warn("gemini-2.0-flash failed, trying gemini-3-flash-preview:", e2);
           try {
-            const ultraFallbackStream = _sendMessageStream(history, message, "gemini-flash-latest", image);
-            for await (const chunk of ultraFallbackStream) {
+            const fallbackStream3 = _sendMessageStream(history, message, "gemini-3-flash-preview", image);
+            for await (const chunk of fallbackStream3) {
               yield chunk;
             }
             return;
-          } catch (e2) {
-            console.error("Ultimate fallback failed:", e2);
+          } catch (e3) {
+            console.error("All fallback models failed:", e3);
           }
-        }
-      } else {
-        // Even gemini-3-flash-preview failed with permission denied, try lite
-        try {
-          const liteStream = _sendMessageStream(history, message, "gemini-3.1-flash-lite", image);
-          for await (const chunk of liteStream) {
-            yield chunk;
-          }
-          return;
-        } catch (e) {
-          console.error("Lite fallback failed:", e);
         }
       }
       
