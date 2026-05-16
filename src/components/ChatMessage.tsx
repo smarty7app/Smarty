@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { User, ZoomIn, Download, Sparkles } from "lucide-react";
+import { User, ZoomIn, Download, Sparkles, FileText, File, FileImage, FileArchive } from "lucide-react";
 import ImageModal from "./ImageModal";
-
 import ReactMarkdown from "react-markdown";
 
 interface ChatMessageProps {
@@ -12,6 +11,11 @@ interface ChatMessageProps {
   image?: {
     data: string;
     mimeType: string;
+  };
+  file?: {           // جديد: دعم الملفات
+    data: string;    // base64
+    mimeType: string;
+    name: string;
   };
   key?: React.Key;
   t: {
@@ -24,21 +28,44 @@ interface ChatMessageProps {
   isLoading?: boolean;
 }
 
-export default function ChatMessage({ role, text, status, image, t, isDarkMode, isLoading }: ChatMessageProps) {
+// دالة مساعدة لعرض أيقونة مناسبة حسب نوع الملف
+const getFileIcon = (mimeType: string) => {
+  if (mimeType.startsWith('image/')) return <FileImage size={24} />;
+  if (mimeType === 'application/pdf') return <FileText size={24} />;
+  if (mimeType.includes('word') || mimeType.includes('document')) return <FileText size={24} />;
+  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return <FileArchive size={24} />;
+  return <File size={24} />;
+};
+
+// دالة لتحويل base64 إلى رابط تحميل للملفات (غير الصور)
+const getFileUrl = (base64: string, mimeType: string) => {
+  return `data:${mimeType};base64,${base64}`;
+};
+
+export default function ChatMessage({ role, text, status, image, file, t, isDarkMode, isLoading }: ChatMessageProps) {
   const isUser = role === 'user';
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const imageUrl = image ? `data:${image.mimeType};base64,${image.data}` : null;
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = (e: React.MouseEvent, url: string, filename: string) => {
     e.stopPropagation();
-    if (!imageUrl) return;
     const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = `ai-generated-${Date.now()}.png`;
+    link.href = url;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleImageDownload = (e: React.MouseEvent) => {
+    if (!imageUrl) return;
+    handleDownload(e, imageUrl, `ai-generated-${Date.now()}.png`);
+  };
+
+  const handleFileDownload = (e: React.MouseEvent) => {
+    if (!file) return;
+    const url = getFileUrl(file.data, file.mimeType);
+    handleDownload(e, url, file.name);
   };
 
   return (
@@ -55,7 +82,8 @@ export default function ChatMessage({ role, text, status, image, t, isDarkMode, 
               isUser ? 'items-end text-right' : 'items-start text-left'
             }`}
           >
-            {isLoading && !text && !image && (
+            {/* حالة التحميل (النص والصورة) - كما هي */}
+            {isLoading && !text && !image && !file && (
               <div className="flex flex-col gap-2">
                 {status === 'thinking' && (
                   <div className={`px-4 py-3 rounded-2xl rounded-tr-none shadow-sm border flex items-center gap-3 ${
@@ -85,6 +113,7 @@ export default function ChatMessage({ role, text, status, image, t, isDarkMode, 
               </div>
             )}
 
+            {/* عرض الصورة (كما هي مع إضافة دالة التحميل المعدلة) */}
             {image && (
               <div 
                 className={`relative overflow-hidden rounded-2xl border shadow-lg cursor-zoom-in group max-w-full ${
@@ -103,7 +132,7 @@ export default function ChatMessage({ role, text, status, image, t, isDarkMode, 
                     <ZoomIn size={24} />
                   </div>
                   <button 
-                    onClick={handleDownload}
+                    onClick={handleImageDownload}
                     className="p-3 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition-colors" 
                     title={t.download}
                   >
@@ -112,7 +141,34 @@ export default function ChatMessage({ role, text, status, image, t, isDarkMode, 
                 </div>
               </div>
             )}
+
+            {/* عرض الملف (جديد) */}
+            {file && !image && (
+              <div 
+                className={`relative flex items-center gap-4 p-4 rounded-2xl border shadow-sm max-w-sm ${
+                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'
+                }`}
+              >
+                <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
+                  {getFileIcon(file.mimeType)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{file.name}</p>
+                  <p className="text-xs opacity-60 mt-1">{Math.round(file.data.length * 0.75 / 1024)} KB</p>
+                </div>
+                <button
+                  onClick={handleFileDownload}
+                  className={`p-2 rounded-full transition-colors ${
+                    isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-100'
+                  }`}
+                  title={t.download}
+                >
+                  <Download size={18} />
+                </button>
+              </div>
+            )}
             
+            {/* عرض النص (كما هو مع دعم Markdown) */}
             {text && (
               <div 
                 className={`px-5 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm transition-all border prose prose-sm max-w-none ${
@@ -130,7 +186,6 @@ export default function ChatMessage({ role, text, status, image, t, isDarkMode, 
           </div>
         </div>
       </motion.div>
-
 
       {imageUrl && (
         <ImageModal 
