@@ -4,52 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smarty AI</title>
+    <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <meta name="theme-color" content="#f97316" />
-    <!-- إضافة معالج الأخطاء العالمي -->
-    <script>
-      // معالج أخطاء عالمي يعرض الخطأ على الشاشة
-      window.onerror = function(msg, url, line, col, error) {
-        var errorDiv = document.createElement('div');
-        errorDiv.style.position = 'fixed';
-        errorDiv.style.bottom = '0';
-        errorDiv.style.left = '0';
-        errorDiv.style.width = '100%';
-        errorDiv.style.backgroundColor = 'red';
-        errorDiv.style.color = 'white';
-        errorDiv.style.padding = '15px';
-        errorDiv.style.fontSize = '14px';
-        errorDiv.style.zIndex = '99999';
-        errorDiv.style.wordWrap = 'break-word';
-        errorDiv.style.maxHeight = '50%';
-        errorDiv.style.overflow = 'auto';
-        errorDiv.innerText = ' خطأ: ' + msg + '\nفي: ' + url + '\nالسطر: ' + line;
-        document.body.appendChild(errorDiv);
-        console.error(msg, error);
-        return false;
-      };
-      
-      // التحقق من تحميل التطبيق بعد 5 ثوانٍ
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          var root = document.getElementById('root');
-          if (root && root.innerHTML === '') {
-            var warnDiv = document.createElement('div');
-            warnDiv.style.position = 'fixed';
-            warnDiv.style.top = '0';
-            warnDiv.style.left = '0';
-            warnDiv.style.width = '100%';
-            warnDiv.style.backgroundColor = 'orange';
-            warnDiv.style.color = 'black';
-            warnDiv.style.padding = '10px';
-            warnDiv.style.textAlign = 'center';
-            warnDiv.style.zIndex = '99999';
-            warnDiv.innerText = ' التطبيق لم يتم تحميله بعد 5 ثوانٍ. تحقق من اتصال الإنترنت أو ابحث عن أخطاء حمراء أعلاه.';
-            document.body.appendChild(warnDiv);
-          }
-        }, 5000);
-      });
-    </script>
   </head>
   <body>
     <div id="root"></div>
