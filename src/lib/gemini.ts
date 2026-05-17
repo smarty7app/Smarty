@@ -21,7 +21,7 @@ export interface Message {
 
 // التحقق مما إذا كان الطلب يتطلب صورة
 function isImageRequest(message: string): boolean {
-  return /انشئ|صورة|صمم|ارسم|image|generate|create|draw|ارسم لي|صمم لي/i.test(message);
+  return /صورة|صمم|ارسم|أنشئ|انشئ|لوجو|شعار|خلفية|بوستر|تصميم|image|generate|draw|logo|poster|design|banner/i.test(message);
 }
 
 /**
