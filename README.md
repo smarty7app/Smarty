@@ -1,91 +1,29 @@
-# 🤖 Smarty AI Assistant
+# Smarty AI - Pro Business Tool
 
-مساعد ذكاء اصطناعي متكامل مبني على Gemini AI لإنشاء المحتوى التسويقي.
+منصة ذكية متخصصة لأصحاب المشاريع والتجار لإنشاء صور إعلانية احترافية ومحتوى تسويقي باستخدام الذكاء الاصطناعي (Gemini UI).
 
-## ✅ الإصلاحات المُطبَّقة
+## المميزات
+- **تصوير منتجات احترافي**: تحويل الصور العادية إلى صور استوديو.
+- **صناعة محتوى إعلاني**: توليد نصوص تسويقية ذكية.
+- **نظام اشتراكات**: باقات (400دج و 700دج) مع حدود مجانية لإنتاج الصور.
+- **دعم لغات متعددة**: العربية، الإنجليزية، والفرنسية.
 
-| المشكلة | الحل |
-|---------|------|
-| `vite.config.ts` لا يقرأ متغيرات `.env` في وضع التطوير | إضافة `loadEnv` من Vite لقراءة الملف بشكل صحيح |
-| نموذج `gemini-2.0-flash-exp` غير مستقر | إضافة fallback تلقائي بين النماذج: `gemini-2.0-flash` → `gemini-2.0-flash-exp` → `gemini-1.5-pro` |
-| نموذج Imagen يفشل بصمت | إضافة fallback بين `imagen-3.0-generate-002` و `imagen-3.0-generate-001` |
-| Firebase يتعطل إذا لم تكن متغيراته موجودة | التطبيق يعمل الآن في "وضع Demo" تلقائياً بدون Firebase |
-| لا يوجد طريقة لإدخال مفتاح API من الواجهة | إضافة نافذة لإدخال مفتاح Gemini مباشرة من الإعدادات |
-| المستخدم محاصر في شاشة تسجيل الدخول | إضافة خيار "المتابعة كضيف" بدون تسجيل دخول |
-| `.env.example` غير مكتمل | إضافة جميع المتغيرات المطلوبة مع شرح |
-| خطأ Firebase عند إعادة التهيئة (HMR) | إضافة `getApps().length > 0` لتجنب التهيئة المزدوجة |
+## التقنيات المستخدمة
+- **React + Vite** (Frontend)
+- **Tailwind CSS** (Styling)
+- **Firebase** (Auth & Firestore)
+- **Gemini AI API** (AI Logic)
+- **Motion (Framer Motion)** (Animations)
 
-## 🚀 التشغيل السريع
+## التشغيل المحلي
+1. قم بتثبيت المكتبات: `npm install`
+2. هيئ ملف `.env`: قم بنسخ `.env.example` إلى `.env` وأضف مفتاح `GEMINI_API_KEY`.
+3. شغل التطبيق: `npm run dev`
 
-### 1. المتطلبات
-- Node.js 18+
-- مفتاح Gemini API من [aistudio.google.com](https://aistudio.google.com/apikey) (مجاني)
+## الاستضافة على Vercel
+1. ارفع المشروع على GitHub.
+2. اربط المستودع بمنصة Vercel.
+3. أضف المتغيرات البيئية (Environment Variables) في إعدادات Vercel.
+4. استخدم إعدادات Build الافتراضية لـ Vite (`npm run build`).
 
-### 2. التثبيت
-```bash
-git clone https://github.com/smarty7app/Smarty.git
-cd Smarty
-npm install
-```
-
-### 3. إعداد المتغيرات
-```bash
-cp .env.example .env
-```
-
-ثم افتح `.env` وأضف مفتاح Gemini:
-```
-VITE_GEMINI_API_KEY=AIza_your_key_here
-```
-
-### 4. التشغيل
-```bash
-npm run dev
-```
-
-افتح `http://localhost:3000` في المتصفح.
-
-## 🔑 مفتاح API
-
-التطبيق يبحث عن المفتاح بهذا الترتيب:
-1. متغير `VITE_GEMINI_API_KEY` في ملف `.env`
-2. متغير `GEMINI_API_KEY` في ملف `.env`  
-3. المفتاح المُدخَل يدوياً من واجهة الإعدادات (يُحفظ في localStorage)
-
-## 🔥 Firebase (اختياري)
-
-إذا لم تُضف متغيرات Firebase، يعمل التطبيق في **وضع Demo** مع:
-- حفظ المحادثات في localStorage (محلياً)
-- خيار "المتابعة كضيف" بدون تسجيل دخول
-- جميع وظائف AI تعمل بشكل كامل
-
-لتفعيل Firebase (للمصادقة والتخزين السحابي):
-1. اذهب إلى [console.firebase.google.com](https://console.firebase.google.com)
-2. أنشئ مشروعاً جديداً
-3. فعّل **Authentication** (Google Provider)
-4. فعّل **Firestore Database**
-5. أضف متغيرات `VITE_FIREBASE_*` في ملف `.env`
-
-## 📦 النشر على Vercel
-
-```bash
-npm run build
-```
-
-في Vercel، أضف متغير البيئة:
-- `GEMINI_API_KEY` = مفتاح Gemini الخاص بك
-
-## 🏗️ هيكل المشروع
-
-```
-src/
-├── App.tsx              # المكوّن الرئيسي (مُصلَح بالكامل)
-├── lib/
-│   ├── gemini.ts        # تكامل Gemini AI (مُصلَح + fallback)
-│   └── firebase.ts      # تهيئة Firebase (مُصلَح + وضع Demo)
-└── components/
-    ├── ChatInput.tsx    # حقل الإدخال
-    ├── ChatMessage.tsx  # عرض الرسائل
-    ├── LandingPage.tsx  # الصفحة الترحيبية
-    └── ...
-```
+© 2026 Smarty AI.
