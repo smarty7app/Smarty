@@ -1,80 +1,84 @@
 // src/lib/together.ts
-// Together AI API - لإنشاء الصور بسعر رخيص جداً (~$0.0016 لكل صورة)
-
-const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
-const TOGETHER_API_URL = "https://api.together.xyz/v1/images/generations";
 
 export interface GeneratedImage {
-  data: string;      // يمكن أن يكون Base64 أو رابط URL (مرن)
+  data: string;
   mimeType: string;
-  url?: string;      // الرابط المباشر إن وُجد
+  url?: string;
 }
 
 /**
- * توليد صورة باستخدام نموذج SDXL أو FLUX
- * @param prompt وصف الصورة المطلوبة
- * @param model اسم النموذج (افتراضي: SDXL)
- * @returns بيانات الصورة (يفضل استخدام الرابط المباشر)
+ * توليد صورة عبر Pollinations AI
  */
 export async function generateImageWithTogether(
   prompt: string,
-  model: string = "stabilityai/stable-diffusion-xl-base-1.0"
+  model: string = "flux"
 ): Promise<GeneratedImage> {
-  if (!TOGETHER_API_KEY) {
-    throw new Error("❌ VITE_TOGETHER_API_KEY is not set");
-  }
 
-  const response = await fetch(TOGETHER_API_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${TOGETHER_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: model,
-      prompt: prompt,
-      negative_prompt: "low quality, blurry, distorted, watermark, text",
-      width: 1024,
-      height: 1024,
-      steps: 30,
-      n: 1,
-    }),
-  });
+  const imageUrl =
+    `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=${model}&width=1024&height=1024&nologo=true`;
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Together AI error:", error);
-    throw new Error(`Image generation failed: ${response.status}`);
-  }
+  try {
 
-  const data = await response.json();
-  
-  if (data.data && data.data[0] && data.data[0].url) {
-    const imageUrl = data.data[0].url;
-    // نعيد الرابط مباشرة دون تحويل إلى Base64
-    // هذا أسرع ويتجنب مشاكل CORS وحجم البيانات
+    // تحميل الصورة
+    const response = await fetch(imageUrl);
+
+    if (!response.ok) {
+      throw new Error("Failed to generate image");
+    }
+
+    const blob = await response.blob();
+
+    // تحويلها إلى Base64
+    const base64Data = await blobToBase64(blob);
+
     return {
-      data: imageUrl,      // الرابط يُستخدم كـ "data"
+      data: base64Data,
       mimeType: "image/png",
       url: imageUrl,
     };
+
+  } catch (error) {
+    console.error("Pollinations Error:", error);
+    throw error;
   }
-  
-  throw new Error("No image generated");
 }
 
 /**
- * حساب التكلفة التقريبية لكل صورة
+ * تحويل Blob إلى Base64
+ */
+async function blobToBase64(blob: Blob): Promise<string> {
+
+  return new Promise((resolve, reject) => {
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+
+      const base64 = reader.result as string;
+
+      resolve(base64.split(',')[1]);
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(blob);
+
+  });
+
+}
+
+/**
+ * التكلفة = مجانية
  */
 export function estimateImageCost(): number {
-  return 0.0016;
+  return 0;
 }
 
 /**
- * باقات الصور المقترحة حسب اشتراك المستخدم
+ * خطط الصور
  */
 export const imagePlans = {
-  free: 3,
-  starter: 50,
-  pro: 150,
+  free: Infinity,
+  starter: Infinity,
+  pro: Infinity,
 };
