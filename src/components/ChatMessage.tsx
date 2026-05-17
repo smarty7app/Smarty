@@ -87,7 +87,7 @@ export default function ChatMessage({ role, text, status, image, file, t, isDark
               <div className="flex flex-col gap-2">
                 {status === 'thinking' && (
                   <div className={`px-4 py-3 rounded-2xl rounded-tr-none shadow-sm border flex items-center gap-3 ${
-                    isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-white border-slate-100 text-slate-500'
+                    isDarkMode ? 'bg-slate-800 border-white/[0.07] text-slate-400' : 'bg-white border-slate-100 text-slate-500'
                   }`}>
                     <span className="text-sm italic">{t.thinking}</span>
                   </div>
@@ -95,7 +95,7 @@ export default function ChatMessage({ role, text, status, image, file, t, isDark
                 
                 {status === 'generating' && (
                   <div className={`w-full max-w-[300px] aspect-square rounded-2xl border flex flex-col items-center justify-center p-8 text-center gap-4 ${
-                    isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'
+                    isDarkMode ? 'bg-slate-800 border-white/[0.07]' : 'bg-white border-slate-100'
                   }`}>
                     <p className="text-sm font-medium text-slate-500">{t.generatingImage}</p>
                     <div className="flex gap-1.5">
@@ -117,7 +117,7 @@ export default function ChatMessage({ role, text, status, image, file, t, isDark
             {image && (
               <div 
                 className={`relative overflow-hidden rounded-2xl border shadow-lg cursor-zoom-in group max-w-full ${
-                  isDarkMode ? 'border-slate-700' : 'border-slate-100'
+                  isDarkMode ? 'border-white/[0.07]' : 'border-slate-100'
                 }`}
                 onClick={() => setIsModalOpen(true)}
               >
@@ -146,7 +146,7 @@ export default function ChatMessage({ role, text, status, image, file, t, isDark
             {file && !image && (
               <div 
                 className={`relative flex items-center gap-4 p-4 rounded-2xl border shadow-sm max-w-sm ${
-                  isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'
+                  isDarkMode ? 'bg-slate-800 border-white/[0.07]' : 'bg-white border-slate-100'
                 }`}
               >
                 <div className={`p-2 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-slate-100'}`}>
@@ -171,11 +171,11 @@ export default function ChatMessage({ role, text, status, image, file, t, isDark
             {/* عرض النص (كما هو مع دعم Markdown) */}
             {text && (
               <div 
-                className={`px-5 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm transition-all border prose prose-sm max-w-none ${
+                className={`px-5 py-3 rounded-2xl text-[15px] leading-relaxed shadow-sm transition-all border prose-chat max-w-none ${
                   isUser 
-                    ? 'bg-orange-500 text-white rounded-tr-none border-orange-400 prose-invert' 
+                    ? 'bg-orange-500 text-white rounded-br-md shadow-orange border-orange-500/20' 
                     : isDarkMode
-                      ? 'bg-slate-800 text-slate-200 rounded-tl-none border-slate-700 prose-invert'
+                      ? 'bg-white/[0.04] text-slate-200 rounded-tl-none border-white/[0.07] prose-invert'
                       : 'bg-white text-slate-800 rounded-tl-none border-slate-100'
                 }`}
                 dir="auto"

@@ -5,7 +5,6 @@ import { SmartyLogo } from './SmartyLogo';
 import Pricing from './Pricing';
 
 interface LandingPageProps {
-  onContinueAsGuest?: () => void;
   onLogin: () => void;
   isLoggingIn?: boolean;
   lang: string;
@@ -15,7 +14,7 @@ interface LandingPageProps {
   onLanguageChange: (lang: 'ar' | 'en' | 'fr') => void;
 }
 
-export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, onInstall, showInstall, onLanguageChange, onContinueAsGuest }: LandingPageProps) {
+export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, onInstall, showInstall, onLanguageChange }: LandingPageProps) {
   const t = {
     ar: {
       heroTitle: "حوّل أي فكرة أو منتج إلى حملة تسويقية جاهزة خلال دقائق بالذكاء الاصطناعي",
@@ -27,7 +26,6 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "باقات التجار",
       login: "تسجيل الدخول",
       install: "تحميل التطبيق",
-      continueAsGuest: "المتابعة كضيف",
       footer: "© 2026 Smarty AI. صُنع بفخر للعالم العربي.",
       footerNote: "مصمم لأصحاب المشاريع، المتاجر الإلكترونية، وصناع المحتوى.",
       featureList: [
@@ -56,7 +54,6 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "Merchant Plans",
       login: "Login",
       install: "Install App",
-      continueAsGuest: "Continue as Guest",
       footer: "© 2026 Smarty AI. Proudly made for the Arabic world.",
       footerNote: "Designed for entrepreneurs, e-commerce stores, and content creators.",
       featureList: [
@@ -85,7 +82,6 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "Forfaits Marchands",
       login: "Connexion",
       install: "Installer l'App",
-      continueAsGuest: "Continuer comme invité",
       footer: "© 2026 Smarty AI. Fièrement créé pour le monde arabe.",
       footerNote: "Conçu pour les entrepreneurs, les boutiques en ligne et les créateurs de contenu.",
       featureList: [
@@ -107,9 +103,9 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
   }[lang] || { /* fallback en translations */ };
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} ${lang === 'ar' ? 'font-sans' : ''}`} dir="rtl">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-[#0d0f12] text-white' : 'bg-white text-slate-900'} ${lang === 'ar' ? 'font-sans' : ''}`} dir="rtl">
       {/* Navbar */}
-      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
+      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-[#13161c]/80 border-white/[0.07]' : 'bg-white/80 border-slate-100'}`}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SmartyLogo size={32} />
@@ -152,7 +148,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
         <motion.h1 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`text-4xl md:text-6xl font-bold mb-6 max-w-4xl mx-auto leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+          className={`text-4xl md:text-6xl font-black mb-6 max-w-4xl mx-auto leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
         >
           {t.heroTitle}
         </motion.h1>
@@ -172,7 +168,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
             transition={{ delay: 0.2 }}
             onClick={onLogin}
             disabled={isLoggingIn}
-            className="flex items-center justify-center gap-2 bg-orange-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:bg-orange-600 hover:scale-105 shadow-xl shadow-orange-500/20 active:scale-95 disabled:opacity-70 disabled:scale-100 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-2 bg-orange-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:bg-orange-600 hover:scale-105 shadow-xl shadow-orange-500/20 btn-shine active:scale-95 disabled:opacity-70 disabled:scale-100 disabled:cursor-not-allowed"
           >
             {isLoggingIn ? (
               <Loader2 size={20} className="animate-spin" />
@@ -191,31 +187,18 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
               transition={{ delay: 0.3 }}
               onClick={onInstall}
               className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all border ${
-                isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                isDarkMode ? 'bg-white/[0.04] border-white/[0.07] text-white hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
               <Download size={20} />
               <span className="select-none">{t.install}</span>
             </motion.button>
           )}
-          {onContinueAsGuest && (
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              onClick={onContinueAsGuest}
-              className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all border ${
-                isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
-              }`}
-            >
-              <span className="select-none">{t.continueAsGuest}</span>
-            </motion.button>
-          )}
         </div>
       </header>
 
       {/* Features Grid */}
-      <section className={`py-20 px-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+      <section className={`py-20 px-4 ${isDarkMode ? 'bg-white/[0.025]' : 'bg-slate-50'}`}>
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-16">{t.features}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -225,8 +208,8 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className={`p-6 rounded-2xl border transition-all hover:shadow-xl ${
-                  isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'
+                className={`p-6 rounded-2xl border transition-all hover:shadow-xl card-hover ${
+                  isDarkMode ? 'bg-white/[0.03] border-white/[0.07]' : 'bg-white border-slate-100 shadow-sm'
                 }`}
               >
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${isDarkMode ? 'bg-slate-800' : 'bg-orange-50'}`}>
@@ -258,7 +241,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
               </ul>
             </div>
 
-            <div className={`p-1 rounded-3xl border shadow-2xl relative ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+            <div className={`p-1 rounded-3xl border shadow-2xl relative ${isDarkMode ? 'bg-white/[0.04] border-white/[0.07]' : 'bg-slate-100 border-slate-200'}`}>
                <div className={`p-6 rounded-[1.4rem] ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
                 <div className="space-y-6">
                   <div className="flex gap-4 items-start">
@@ -276,7 +259,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {t.interactiveResponse.map((item, idx) => (
                           <div key={idx} className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
-                            isDarkMode ? 'bg-slate-800 border-slate-700 text-orange-400' : 'bg-white border-orange-100 text-orange-600'
+                            isDarkMode ? 'bg-white/[0.04] border-white/[0.07] text-orange-400' : 'bg-white border-orange-100 text-orange-600'
                           }`}>
                             {item}
                           </div>
@@ -299,7 +282,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       {/* Final CTA Section */}
       <section className="py-20 px-4">
         <div className={`max-w-5xl mx-auto p-12 md:p-20 rounded-3xl border relative overflow-hidden text-center ${
-          isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-950 border-slate-900 text-white shadow-2xl'
+          isDarkMode ? 'bg-white/[0.04] border-white/[0.07]' : 'bg-slate-950 border-slate-900 text-white shadow-2xl'
         }`}>
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500" />
           
@@ -324,7 +307,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       </section>
 
       {/* Footer */}
-      <footer className={`py-12 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+      <footer className={`py-12 border-t ${isDarkMode ? 'border-white/[0.07]' : 'border-slate-100'}`}>
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className={`font-bold mb-4 ${isDarkMode ? 'text-slate-200' : 'text-slate-900'}`}>{t.footerNote}</p>
           <p className="text-slate-500 text-sm">

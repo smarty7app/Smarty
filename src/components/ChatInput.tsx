@@ -113,7 +113,7 @@ export default function ChatInput({ onSend, onSendFile, isLoading, t, lang, isDa
   const isFileMode = !!selectedFile;
 
   return (
-    <div className={`relative flex flex-col gap-2 p-2 border transition-all duration-300 ${isDarkMode ? 'bg-slate-800 border-slate-700 shadow-xl' : 'bg-white border-slate-200 shadow-lg'} rounded-2xl`}>
+    <div className={`relative flex flex-col gap-2 p-2 border transition-all duration-300 ${isDarkMode ? 'bg-white/[0.04] border-white/[0.07]' : 'bg-white border-slate-200 shadow-md'} rounded-2xl input-glow`}>
       {/* عرض الصورة المختارة */}
       {selectedImage && (
         <div className="relative inline-block self-start m-2">
