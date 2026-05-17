@@ -2,7 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// 🔥 تهيئة Firebase من متغيرات البيئة - الطريقة القياسية
 // يجب أن تبدأ جميع المتغيرات بـ VITE_
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
