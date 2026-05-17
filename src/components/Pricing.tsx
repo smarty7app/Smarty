@@ -22,7 +22,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'starter',
-      name: 'المبتدئة',
+      name: 'Pro',
       price: '400 دج/شهر',
       features: ['محادثات أسرع', 'المزيد من تحليل الصور', 'أولوية في الدعم'],
       cta: 'اشترك الآن',
@@ -30,7 +30,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'pro',
-      name: 'الاحترافية',
+      name: 'Ultra',
       price: '700 دج/شهر',
       features: ['كل شيء غير محدود', 'توليد صور متقدم', 'دعم فني خاص'],
       cta: 'كن محترفاً'
@@ -46,7 +46,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'starter',
-      name: 'Starter',
+      name: 'Pro',
       price: '400 DZD/mo',
       features: ['Faster responses', 'More image analysis', 'Priority support'],
       cta: 'Subscribe now',
@@ -54,7 +54,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'pro',
-      name: 'Professional',
+      name: 'Ultra',
       price: '700 DZD/mo',
       features: ['Unlimited everything', 'Advanced image generation', 'Dedicated support'],
       cta: 'Go Pro'
@@ -70,7 +70,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'starter',
-      name: 'Starter',
+      name: 'Pro',
       price: '400 DZD/mois',
       features: ['Réponses plus rapides', 'Plus d\'analyse d\'images', 'Support prioritaire'],
       cta: 'S\'abonner maintenant',
@@ -78,7 +78,7 @@ const plans: Record<string, Plan[]> = {
     },
     {
       id: 'pro',
-      name: 'Professionnel',
+      name: 'Ultra',
       price: '700 DZD/mois',
       features: ['Tout illimité', 'Génération d\'images avancée', 'Support dédié'],
       cta: 'Devenir Pro'
