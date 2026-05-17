@@ -4,7 +4,6 @@ function getAI() {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     console.error("❌ VITE_GEMINI_API_KEY is not set");
-    // إرجاع كائن وهمي لتجنب إيقاف التطبيق (سيظهر خطأ في الاستدعاء)
     return null;
   }
   return new GoogleGenAI({ apiKey });
@@ -15,19 +14,17 @@ export interface Message {
   text: string;
   status?: 'thinking' | 'generating';
   image?: {
-    data: string; // base64
+    data: string;
     mimeType: string;
   };
 }
 
 async function _sendMessage(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
-  if (!ai) throw new Error("Gemini API key missing");
+  if (!ai) throw new Error("API key missing");
 
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
   
-  // إذا كان طلب صورة ولم يتم رفع صورة، نحاول استخدام Imagen 4 (يتطلب تفعيل الفوترة)
-  // لكن هذا اختياري، يمكن إزالته إذا لم تكن الفوترة مفعلة.
   if (isImageRequest && !image) {
     try {
       const imgResponse = await ai.models.generateImages({
@@ -42,14 +39,13 @@ async function _sendMessage(history: Message[], message: string, model: string, 
       if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
         const base64Data = imgResponse.generatedImages[0].image.imageBytes;
         return {
-          text: "تم إنشاء الصورة بنجاح بواسطة Imagen 4.",
+          text: "تم إنشاء الصورة بنجاح.",
           image: { data: base64Data, mimeType: 'image/jpeg' },
           status: 'done'
         };
       }
     } catch (e) {
-      console.warn("Imagen 4 failed (可能需要 billing):", e);
-      // نكمل إلى المحادثة العادية
+      console.warn("Imagen 4 failed:", e);
     }
   }
 
@@ -94,49 +90,26 @@ async function _sendMessage(history: Message[], message: string, model: string, 
 }
 
 export async function sendMessage(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  // استخدام نموذج مجاني ومستقر
   const primaryModel = "gemini-2.0-flash-exp";
 
   try {
     return await _sendMessage(history, message, primaryModel, image);
   } catch (error: any) {
-    console.warn(`Error with ${primaryModel}:`, error);
-
-    const isPermissionError = error?.status === 403 ||
-                             error?.message?.includes('403') ||
-                             error?.message?.includes('PERMISSION_DENIED') ||
-                             error?.message?.includes('permission denied');
-
-    if (isPermissionError) {
-      // محاولات احتياطية بنماذج أخرى مجانية
-      const fallbackModels = [
-        "gemini-1.5-flash",
-        "gemini-2.0-flash-lite"
-      ];
-      for (const fallbackModel of fallbackModels) {
-        try {
-          console.log(`Trying fallback model: ${fallbackModel}`);
-          return await _sendMessage(history, message, fallbackModel, image);
-        } catch (e) {
-          console.warn(`Fallback ${fallbackModel} failed:`, e);
-        }
-      }
-      throw new Error("عذراً، لا يمكن الاتصال بخدمة الذكاء الاصطناعي حالياً. يرجى التحقق من مفتاح API.");
-    }
-    throw error;
+    console.error("sendMessage error:", error);
+    throw new Error("حدث خطأ أثناء الاتصال. يرجى المحاولة مرة أخرى.");
   }
 }
 
 async function* _sendMessageStream(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
   if (!ai) {
-    yield { text: "⚠️ مفتاح API غير موجود. يرجى إضافة VITE_GEMINI_API_KEY في ملف .env" };
+    console.error("AI not initialized");
+    yield { text: "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى." };
     return;
   }
 
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
 
-  // إذا كان طلب صورة ولم يتم رفع صورة، نحاول Imagen 4
   if (isImageRequest && !image) {
     yield { status: 'generating' };
     try {
@@ -152,7 +125,7 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
       if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
         const base64Data = imgResponse.generatedImages[0].image.imageBytes;
         yield {
-          text: "تم إنشاء الصورة بنجاح باستخدام Imagen 4.",
+          text: "تم إنشاء الصورة بنجاح.",
           image: { data: base64Data, mimeType: 'image/jpeg' },
           status: 'done'
         };
@@ -160,7 +133,6 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
       }
     } catch (e) {
       console.warn("Imagen 4 failed in stream:", e);
-      // نكمل إلى المحادثة النصية
     }
   }
 
@@ -216,33 +188,7 @@ export async function* sendMessageStream(history: Message[], message: string, im
       yield chunk;
     }
   } catch (error: any) {
-    console.warn(`Error with ${primaryModel}:`, error);
-
-    const isPermissionError = error?.status === 403 ||
-                             error?.message?.includes('403') ||
-                             error?.message?.includes('PERMISSION_DENIED') ||
-                             error?.message?.includes('permission denied');
-
-    if (isPermissionError) {
-      const fallbackModels = [
-        "gemini-1.5-flash",
-        "gemini-2.0-flash-lite"
-      ];
-      for (const fallbackModel of fallbackModels) {
-        try {
-          console.log(`Trying fallback stream model: ${fallbackModel}`);
-          const fallbackStream = _sendMessageStream(history, message, fallbackModel, image);
-          for await (const chunk of fallbackStream) {
-            yield chunk;
-          }
-          return;
-        } catch (e) {
-          console.warn(`Fallback stream ${fallbackModel} failed:`, e);
-        }
-      }
-      yield { text: "عذراً، لا يمكن الاتصال بخدمة الذكاء الاصطناعي حالياً. يرجى المحاولة لاحقاً." };
-      return;
-    }
-    yield { text: "عذراً، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى." };
+    console.error("sendMessageStream error:", error);
+    yield { text: "عذراً، حدث خطأ. يرجى المحاولة مرة أخرى." };
   }
 }
