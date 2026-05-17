@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CreditCard, ShieldCheck, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, CreditCard, ShieldCheck, ArrowRight, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -13,13 +13,31 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ isOpen, onClose, planName, planPrice, lang, isDarkMode, onPaymentSuccess }: PaymentModalProps) {
-  const [step, setStep] = useState<'info' | 'processing' | 'success'>('info');
+  const [step, setStep] = useState<'info' | 'processing' | 'success' | 'error'>('info');
   const [paymentMethod, setPaymentMethod] = useState<'dahabia' | 'cib'>('dahabia');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [errors, setErrors] = useState<{ cardNumber?: string; expiry?: string; cvv?: string }>({});
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep('info');
+      setCardNumber('');
+      setExpiry('');
+      setCvv('');
+      setErrors({});
+      setErrorMessage('');
+      setPaymentMethod('dahabia');
+    }
+  }, [isOpen]);
 
   const t = {
     ar: {
       title: "دفع آمن",
-      subtitle: "أنت بصدد الاشتراك في بخطة",
+      subtitle: "أنت بصدد الاشتراك بخطة",
       chooseMethod: "اختر وسيلة الدفع",
       cardNumber: "رقم البطاقة",
       expiry: "تاريخ انتهاء الصلاحية",
@@ -31,6 +49,12 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
       start: "ابدأ الاستخدام الآن",
       dahabia: "بطاقة الذهبية",
       cib: "بطاقة CIB البنكية",
+      errorTitle: "فشل الدفع",
+      errorDesc: "حدث خطأ أثناء معالجة الدفع. يرجى المحاولة مرة أخرى.",
+      retry: "إعادة المحاولة",
+      invalidCard: "رقم البطاقة غير صالح (16 رقم)",
+      invalidExpiry: "تاريخ انتهاء غير صالح (MM/YY)",
+      invalidCvv: "الرمز السري غير صالح (3-4 أرقام)",
     },
     en: {
       title: "Secure Payment",
@@ -46,19 +70,100 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
       start: "Start Using Now",
       dahabia: "Edahabia Card",
       cib: "CIB Bank Card",
+      errorTitle: "Payment Failed",
+      errorDesc: "An error occurred while processing your payment. Please try again.",
+      retry: "Retry",
+      invalidCard: "Invalid card number (16 digits)",
+      invalidExpiry: "Invalid expiry date (MM/YY)",
+      invalidCvv: "Invalid CVV (3-4 digits)",
     }
   }[lang === 'ar' ? 'ar' : 'en'];
 
-  const handlePay = () => {
+  // Validation functions
+  const validateCardNumber = (num: string) => {
+    const cleaned = num.replace(/\s/g, '');
+    return /^\d{16}$/.test(cleaned);
+  };
+  const validateExpiry = (exp: string) => {
+    return /^(0[1-9]|1[0-2])\/\d{2}$/.test(exp);
+  };
+  const validateCvv = (c: string) => {
+    return /^\d{3,4}$/.test(c);
+  };
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    if (!validateCardNumber(cardNumber)) newErrors.cardNumber = t.invalidCard;
+    if (!validateExpiry(expiry)) newErrors.expiry = t.invalidExpiry;
+    if (!validateCvv(cvv)) newErrors.cvv = t.invalidCvv;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Simulate API call – replace with actual backend integration
+  const callPaymentApi = async () => {
+    // Simulate network request
+    return new Promise<{ success: boolean; error?: string }>((resolve) => {
+      setTimeout(() => {
+        // For demo, always succeed after 2 secs.
+        // In real implementation, you would call your backend endpoint.
+        resolve({ success: true });
+      }, 2000);
+    });
+  };
+
+  const handlePay = async () => {
+    if (!validateForm()) return;
     setStep('processing');
-    setTimeout(() => {
-      setStep('success');
-    }, 3000);
+    setErrorMessage('');
+    try {
+      const result = await callPaymentApi();
+      if (result.success) {
+        setStep('success');
+      } else {
+        throw new Error(result.error || 'Payment failed');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(err instanceof Error ? err.message : t.errorDesc);
+      setStep('error');
+    }
   };
 
   const handleFinalize = () => {
     onPaymentSuccess();
     setStep('info');
+    onClose(); // close modal after success
+  };
+
+  const handleRetry = () => {
+    setStep('info');
+    setErrorMessage('');
+    setErrors({});
+  };
+
+  // Format card number with spaces every 4 digits
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\s/g, '').slice(0, 16);
+    const parts = cleaned.match(/.{1,4}/g);
+    return parts ? parts.join(' ') : cleaned;
+  };
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\s/g, '');
+    if (raw.length <= 16) {
+      setCardNumber(formatCardNumber(raw));
+    }
+  };
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+      value = value.slice(0,2) + '/' + value.slice(2,4);
+    }
+    setExpiry(value.slice(0,5));
+  };
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setCvv(value.slice(0,4));
   };
 
   return (
@@ -128,27 +233,40 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
                       <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input 
                         type="text" 
+                        value={cardNumber}
+                        onChange={handleCardChange}
                         placeholder="0000 0000 0000 0000"
                         className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${
-                          isDarkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500' : 'bg-slate-50 border-slate-100 focus:border-orange-500'
-                        }`}
+                          errors.cardNumber ? 'border-red-500' : (isDarkMode ? 'border-slate-700 focus:border-orange-500' : 'border-slate-100 focus:border-orange-500')
+                        } ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}
                       />
+                      {errors.cardNumber && <p className="text-xs text-red-500 mt-1">{errors.cardNumber}</p>}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <input 
-                        type="text" 
-                        placeholder="MM/YY"
-                        className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
-                          isDarkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500' : 'bg-slate-50 border-slate-100 focus:border-orange-500'
-                        }`}
-                      />
-                      <input 
-                        type="password" 
-                        placeholder="CVV"
-                        className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
-                          isDarkMode ? 'bg-slate-800 border-slate-700 focus:border-orange-500' : 'bg-slate-50 border-slate-100 focus:border-orange-500'
-                        }`}
-                      />
+                      <div>
+                        <input 
+                          type="text" 
+                          value={expiry}
+                          onChange={handleExpiryChange}
+                          placeholder="MM/YY"
+                          className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
+                            errors.expiry ? 'border-red-500' : (isDarkMode ? 'border-slate-700 focus:border-orange-500' : 'border-slate-100 focus:border-orange-500')
+                          } ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}
+                        />
+                        {errors.expiry && <p className="text-xs text-red-500 mt-1">{errors.expiry}</p>}
+                      </div>
+                      <div>
+                        <input 
+                          type="password" 
+                          value={cvv}
+                          onChange={handleCvvChange}
+                          placeholder="CVV"
+                          className={`w-full px-4 py-3 rounded-xl border outline-none transition-all ${
+                            errors.cvv ? 'border-red-500' : (isDarkMode ? 'border-slate-700 focus:border-orange-500' : 'border-slate-100 focus:border-orange-500')
+                          } ${isDarkMode ? 'bg-slate-800' : 'bg-slate-50'}`}
+                        />
+                        {errors.cvv && <p className="text-xs text-red-500 mt-1">{errors.cvv}</p>}
+                      </div>
                     </div>
                   </div>
 
@@ -188,6 +306,29 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
               </div>
             )}
 
+            {step === 'error' && (
+              <div className="p-10 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6">
+                  <AlertCircle size={40} />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">{t.errorTitle}</h3>
+                <p className="text-slate-500 mb-6">{errorMessage || t.errorDesc}</p>
+                <div className="flex gap-3">
+                  <button 
+                    onClick={handleRetry}
+                    className="flex-1 bg-orange-500 text-white py-4 rounded-xl font-bold hover:bg-orange-600 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    {t.retry}
+                  </button>
+                  <button 
+                    onClick={onClose}
+                    className="flex-1 border border-slate-300 dark:border-slate-700 py-4 rounded-xl font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+                  >
+                    {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button 
               onClick={onClose}
