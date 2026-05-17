@@ -5,6 +5,7 @@ import { SmartyLogo } from './SmartyLogo';
 import Pricing from './Pricing';
 
 interface LandingPageProps {
+  onContinueAsGuest?: () => void;
   onLogin: () => void;
   isLoggingIn?: boolean;
   lang: string;
@@ -14,7 +15,7 @@ interface LandingPageProps {
   onLanguageChange: (lang: 'ar' | 'en' | 'fr') => void;
 }
 
-export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, onInstall, showInstall, onLanguageChange }: LandingPageProps) {
+export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, onInstall, showInstall, onLanguageChange, onContinueAsGuest }: LandingPageProps) {
   const t = {
     ar: {
       heroTitle: "حوّل أي فكرة أو منتج إلى حملة تسويقية جاهزة خلال دقائق بالذكاء الاصطناعي",
@@ -26,6 +27,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "باقات التجار",
       login: "تسجيل الدخول",
       install: "تحميل التطبيق",
+      continueAsGuest: "المتابعة كضيف",
       footer: "© 2026 Smarty AI. صُنع بفخر للعالم العربي.",
       footerNote: "مصمم لأصحاب المشاريع، المتاجر الإلكترونية، وصناع المحتوى.",
       featureList: [
@@ -54,6 +56,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "Merchant Plans",
       login: "Login",
       install: "Install App",
+      continueAsGuest: "Continue as Guest",
       footer: "© 2026 Smarty AI. Proudly made for the Arabic world.",
       footerNote: "Designed for entrepreneurs, e-commerce stores, and content creators.",
       featureList: [
@@ -82,6 +85,7 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
       pricing: "Forfaits Marchands",
       login: "Connexion",
       install: "Installer l'App",
+      continueAsGuest: "Continuer comme invité",
       footer: "© 2026 Smarty AI. Fièrement créé pour le monde arabe.",
       footerNote: "Conçu pour les entrepreneurs, les boutiques en ligne et les créateurs de contenu.",
       featureList: [
@@ -192,6 +196,19 @@ export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, on
             >
               <Download size={20} />
               <span className="select-none">{t.install}</span>
+            </motion.button>
+          )}
+          {onContinueAsGuest && (
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              onClick={onContinueAsGuest}
+              className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all border ${
+                isDarkMode ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              <span className="select-none">{t.continueAsGuest}</span>
             </motion.button>
           )}
         </div>
