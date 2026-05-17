@@ -4,6 +4,8 @@ function getAI() {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     console.error("❌ VITE_GEMINI_API_KEY is not set");
+    // إرجاع كائن وهمي لتجنب إيقاف التطبيق (سيظهر خطأ في الاستدعاء)
+    return null;
   }
   return new GoogleGenAI({ apiKey });
 }
@@ -20,20 +22,42 @@ export interface Message {
 
 async function _sendMessage(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
+  if (!ai) throw new Error("Gemini API key missing");
 
-  // إذا كان المستخدم يطلب صورة، نستخدم Imagen 4 كحل احتياطي إذا فشل النموذج الأساسي
-  // لكننا سنعتمد أساساً على النموذج الأساسي (gemini-2.5-flash-image) لتوليد الصور.
-  // نترك هذه الكتلة كـ fallback فقط.
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
   
-  // سنقوم بتوليد الصورة عبر النموذج الأساسي، لذلك لا حاجة لاستدعاء Imagen 4 هنا.
-  // إذا أردت الاحتفاظ بـ Imagen 4 كخيار ثانوي، يمكنك تركه كما هو، لكنه لن يُستخدم عادةً.
+  // إذا كان طلب صورة ولم يتم رفع صورة، نحاول استخدام Imagen 4 (يتطلب تفعيل الفوترة)
+  // لكن هذا اختياري، يمكن إزالته إذا لم تكن الفوترة مفعلة.
+  if (isImageRequest && !image) {
+    try {
+      const imgResponse = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: message,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/jpeg',
+          aspectRatio: '1:1',
+        },
+      });
+      if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
+        const base64Data = imgResponse.generatedImages[0].image.imageBytes;
+        return {
+          text: "تم إنشاء الصورة بنجاح بواسطة Imagen 4.",
+          image: { data: base64Data, mimeType: 'image/jpeg' },
+          status: 'done'
+        };
+      }
+    } catch (e) {
+      console.warn("Imagen 4 failed (可能需要 billing):", e);
+      // نكمل إلى المحادثة العادية
+    }
+  }
 
   const contents = history.map(m => ({
     role: m.role,
     parts: [
       { text: m.text },
-      ...(m.image ? [{ inlineData: { data: m.image.data, mimeType: m.image.mimeType } } ] : [])
+      ...(m.image ? [{ inlineData: { data: m.image.data, mimeType: m.image.mimeType } }] : [])
     ]
   }));
 
@@ -41,14 +65,13 @@ async function _sendMessage(history: Message[], message: string, model: string, 
   if (image) {
     currentParts.push({ inlineData: { data: image.data, mimeType: image.mimeType } });
   }
-
   contents.push({ role: 'user', parts: currentParts });
 
   const response = await ai.models.generateContent({
     model: model,
     contents,
     config: {
-      systemInstruction: "أنت Smarty AI، مساعد ذكي ومحترف في التسويق وكتابة المحتوى وإنشاء الصور الاحترافية. أجب باللغة العربية بشكل أساسي. كن مفيداً ومختصراً. يمكنك إنشاء صور بناءً على طلب المستخدم.",
+      systemInstruction: "أنت Smarty AI، مساعد ذكي ومحترف في التسويق وكتابة المحتوى. أجب باللغة العربية بشكل أساسي. كن مفيداً ومختصراً.",
     }
   });
 
@@ -67,37 +90,12 @@ async function _sendMessage(history: Message[], message: string, model: string, 
     }
   }
 
-  // إذا فشل النموذج الأساسي في توليد الصورة وكان الطلب صورة، نحاول Imagen 4 كـ fallback
-  if (isImageRequest && !generatedImage && !image) {
-    try {
-      const imgResponse = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: message,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '1:1',
-        },
-      });
-      if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
-        const base64Data = imgResponse.generatedImages[0].image.imageBytes;
-        return {
-          text: "تم إنشاء الصورة بنجاح (باستخدام Imagen 4).",
-          image: { data: base64Data, mimeType: 'image/jpeg' },
-          status: 'done'
-        };
-      }
-    } catch (e) {
-      console.warn("Imagen 4 fallback failed:", e);
-    }
-  }
-
   return { text, image: generatedImage };
 }
 
 export async function sendMessage(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  // النموذج الأساسي الجديد: gemini-2.5-flash-image (يدعم النصوص والصور معاً)
-  const primaryModel = "gemini-2.5-flash-image";
+  // استخدام نموذج مجاني ومستقر
+  const primaryModel = "gemini-2.0-flash-exp";
 
   try {
     return await _sendMessage(history, message, primaryModel, image);
@@ -110,9 +108,8 @@ export async function sendMessage(history: Message[], message: string, image?: {
                              error?.message?.includes('permission denied');
 
     if (isPermissionError) {
-      // محاولات احتياطية بنماذج أخرى في حالة فشل النموذج الجديد
+      // محاولات احتياطية بنماذج أخرى مجانية
       const fallbackModels = [
-        "gemini-2.0-flash-exp",
         "gemini-1.5-flash",
         "gemini-2.0-flash-lite"
       ];
@@ -132,57 +129,15 @@ export async function sendMessage(history: Message[], message: string, image?: {
 
 async function* _sendMessageStream(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
+  if (!ai) {
+    yield { text: "⚠️ مفتاح API غير موجود. يرجى إضافة VITE_GEMINI_API_KEY في ملف .env" };
+    return;
+  }
 
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
 
-  yield { status: 'thinking' };
-  const contents = history.map(m => ({
-    role: m.role,
-    parts: [
-      { text: m.text },
-      ...(m.image ? [{ inlineData: { data: m.image.data, mimeType: m.image.mimeType } } ] : [])
-    ]
-  }));
-
-  const currentParts: any[] = [{ text: message }];
-  if (image) {
-    currentParts.push({ inlineData: { data: image.data, mimeType: image.mimeType } });
-  }
-
-  contents.push({ role: 'user', parts: currentParts });
-
-  const stream = await ai.models.generateContentStream({
-    model: model,
-    contents,
-    config: {
-      systemInstruction: "أنت Smarty AI، مساعد ذكي متخصص في التسويق وإنشاء المحتوى والصور. أجب باللغة العربية. كن مختصراً ومفيداً.",
-    }
-  });
-
-  let generatedImage: { data: string; mimeType: string } | undefined = undefined;
-  let accumulatedText = "";
-
-  for await (const chunk of stream) {
-    const candidates = chunk.candidates;
-    if (candidates && candidates[0].content.parts) {
-      for (const part of candidates[0].content.parts) {
-        if (part.text) {
-          accumulatedText += part.text;
-          yield { text: part.text };
-        }
-        if (part.inlineData && !generatedImage) {
-          generatedImage = {
-            data: part.inlineData.data,
-            mimeType: part.inlineData.mimeType
-          };
-          yield { image: generatedImage };
-        }
-      }
-    }
-  }
-
-  // إذا لم يتم توليد صورة وكان الطلب صورة، نحاول Imagen 4 كـ fallback (في وضع البث)
-  if (isImageRequest && !generatedImage && !image) {
+  // إذا كان طلب صورة ولم يتم رفع صورة، نحاول Imagen 4
+  if (isImageRequest && !image) {
     yield { status: 'generating' };
     try {
       const imgResponse = await ai.models.generateImages({
@@ -197,18 +152,63 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
       if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
         const base64Data = imgResponse.generatedImages[0].image.imageBytes;
         yield {
-          text: " (تم إنشاء الصورة باستخدام Imagen 4)",
+          text: "تم إنشاء الصورة بنجاح باستخدام Imagen 4.",
           image: { data: base64Data, mimeType: 'image/jpeg' },
+          status: 'done'
         };
+        return;
       }
     } catch (e) {
-      console.warn("Imagen 4 fallback in stream failed:", e);
+      console.warn("Imagen 4 failed in stream:", e);
+      // نكمل إلى المحادثة النصية
+    }
+  }
+
+  yield { status: 'thinking' };
+  const contents = history.map(m => ({
+    role: m.role,
+    parts: [
+      { text: m.text },
+      ...(m.image ? [{ inlineData: { data: m.image.data, mimeType: m.image.mimeType } }] : [])
+    ]
+  }));
+
+  const currentParts: any[] = [{ text: message }];
+  if (image) {
+    currentParts.push({ inlineData: { data: image.data, mimeType: image.mimeType } });
+  }
+  contents.push({ role: 'user', parts: currentParts });
+
+  const stream = await ai.models.generateContentStream({
+    model: model,
+    contents,
+    config: {
+      systemInstruction: "أنت Smarty AI، مساعد ذكي للتسويق وكتابة المحتوى. أجب بالعربية.",
+    }
+  });
+
+  for await (const chunk of stream) {
+    const candidates = chunk.candidates;
+    if (candidates && candidates[0].content.parts) {
+      for (const part of candidates[0].content.parts) {
+        if (part.text) {
+          yield { text: part.text };
+        }
+        if (part.inlineData) {
+          yield {
+            image: {
+              data: part.inlineData.data,
+              mimeType: part.inlineData.mimeType
+            }
+          };
+        }
+      }
     }
   }
 }
 
 export async function* sendMessageStream(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  const primaryModel = "gemini-2.5-flash-image";
+  const primaryModel = "gemini-2.0-flash-exp";
 
   try {
     const stream = _sendMessageStream(history, message, primaryModel, image);
@@ -225,7 +225,6 @@ export async function* sendMessageStream(history: Message[], message: string, im
 
     if (isPermissionError) {
       const fallbackModels = [
-        "gemini-2.0-flash-exp",
         "gemini-1.5-flash",
         "gemini-2.0-flash-lite"
       ];
