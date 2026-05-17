@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Sparkles, Download, Send, ImagePlus, Loader2, User as UserIcon, X, Menu, Settings, MessageSquare, Plus, MoreVertical, Pencil, Trash, Globe, Sun, Moon, Check, LogOut } from "lucide-react";
+import { 
+  Sparkles, Download, Send, ImagePlus, Loader2, User as UserIcon, 
+  X, Menu, Settings, MessageSquare, Plus, MoreVertical, Pencil, 
+  Trash, Globe, Sun, Moon, Check, LogOut, Copy, CheckCheck, 
+  AlertCircle, Info, WifiOff 
+} from "lucide-react";
 import { SmartyLogo } from "./components/SmartyLogo";
 import ChatMessage from "./components/ChatMessage";
 import ChatInput from "./components/ChatInput";
@@ -25,6 +30,7 @@ import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment } from "fire
 
 type Language = 'ar' | 'en' | 'fr';
 
+// ==================== الترجمات ====================
 const translations = {
   ar: {
     newChat: "محادثة جديدة",
@@ -33,6 +39,8 @@ const translations = {
     settings: "الإعدادات",
     editName: "تعديل الاسم",
     delete: "حذف",
+    deleteConfirm: "هل أنت متأكد من حذف هذه المحادثة؟",
+    cancel: "إلغاء",
     poweredBy: "مدعوم بواسطة Smarty AI Core",
     copyright: "حقوق الطبع والنشر © 2026",
     welcomeTitle: "Smarty AI",
@@ -58,7 +66,15 @@ const translations = {
     limitError: "لقد استهلكت جميع محاولات إنتاج الصور المجانية (4). يرجى الاشتراك للمتابعة.",
     logout: "تسجيل الخروج",
     profile: "الملف الشخصي",
-    aiPowered: "ذكاء مدعوم بالذكاء الاصطناعي"
+    aiPowered: "ذكاء مدعوم بالذكاء الاصطناعي",
+    copy: "نسخ",
+    copied: "تم النسخ!",
+    connectionError: "خطأ في الاتصال. تأكد من اتصالك بالإنترنت.",
+    sessionLoaded: "تم تحميل المحادثة",
+    sessionDeleted: "تم حذف المحادثة",
+    sessionRenamed: "تم تعديل الاسم",
+    upgradeSuccess: "تم الترقية بنجاح!",
+    confirmDelete: "تأكيد الحذف"
   },
   en: {
     newChat: "New Chat",
@@ -67,6 +83,8 @@ const translations = {
     settings: "Settings",
     editName: "Edit Name",
     delete: "Delete",
+    deleteConfirm: "Are you sure you want to delete this chat?",
+    cancel: "Cancel",
     poweredBy: "Powered by Smarty AI Core",
     copyright: "Copyright © 2026",
     welcomeTitle: "Smarty AI",
@@ -92,7 +110,15 @@ const translations = {
     limitError: "You have consumed all your free image generation attempts (4). Please subscribe to continue.",
     logout: "Logout",
     profile: "Profile",
-    aiPowered: "AI Powered Intelligence"
+    aiPowered: "AI Powered Intelligence",
+    copy: "Copy",
+    copied: "Copied!",
+    connectionError: "Connection error. Please check your internet.",
+    sessionLoaded: "Chat loaded",
+    sessionDeleted: "Chat deleted",
+    sessionRenamed: "Name updated",
+    upgradeSuccess: "Upgrade successful!",
+    confirmDelete: "Confirm Delete"
   },
   fr: {
     newChat: "Nouvelle discussion",
@@ -101,6 +127,8 @@ const translations = {
     settings: "Paramètres",
     editName: "Modifier le nom",
     delete: "Supprimer",
+    deleteConfirm: "Voulez-vous vraiment supprimer cette discussion ?",
+    cancel: "Annuler",
     poweredBy: "Propulsé par Smarty AI Core",
     copyright: "Droits d'auteur © 2026",
     welcomeTitle: "Smarty AI",
@@ -125,10 +153,19 @@ const translations = {
     limitError: "Vous avez consommé toutes vos tentatives de génération d'images gratuites (4). Veuillez vous abonner pour continuer.",
     logout: "Déconnexion",
     profile: "Profil",
-    aiPowered: "Intelligence Propulsée par l'IA"
+    aiPowered: "Intelligence Propulsée par l'IA",
+    copy: "Copier",
+    copied: "Copié !",
+    connectionError: "Erreur de connexion. Vérifiez votre internet.",
+    sessionLoaded: "Discussion chargée",
+    sessionDeleted: "Discussion supprimée",
+    sessionRenamed: "Nom modifié",
+    upgradeSuccess: "Abonnement réussi !",
+    confirmDelete: "Confirmer la suppression"
   }
 };
 
+// ==================== أنواع البيانات ====================
 interface ChatSession {
   id: string;
   title: string;
@@ -136,87 +173,114 @@ interface ChatSession {
   messages: Message[];
 }
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
+interface ToastMessage {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  text: string;
 }
 
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
-  }
-}
+// ==================== مكون الإشعارات ====================
+const Toast = ({ message, onClose, isDarkMode }: { message: ToastMessage; onClose: () => void; isDarkMode: boolean }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
+  const bgColor = {
+    success: isDarkMode ? 'bg-green-600' : 'bg-green-500',
+    error: isDarkMode ? 'bg-red-600' : 'bg-red-500',
+    info: isDarkMode ? 'bg-blue-600' : 'bg-blue-500',
+    warning: isDarkMode ? 'bg-yellow-600' : 'bg-yellow-500'
+  }[message.type];
 
+  const Icon = {
+    success: CheckCheck,
+    error: AlertCircle,
+    info: Info,
+    warning: AlertCircle
+  }[message.type];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 50, y: -20 }}
+      animate={{ opacity: 1, x: 0, y: 0 }}
+      exit={{ opacity: 0, x: 50 }}
+      className={`fixed top-20 right-4 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl ${bgColor} text-white`}
+    >
+      <Icon size={20} />
+      <span className="text-sm font-medium">{message.text}</span>
+      <button onClick={onClose} className="opacity-70 hover:opacity-100">
+        <X size={16} />
+      </button>
+    </motion.div>
+  );
+};
+
+// ==================== التطبيق الرئيسي ====================
 export default function App() {
+  // حالة المستخدم
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // حالة المحادثة
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  
+  // حالة الشريط الجانبي
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // حالة الإعدادات
   const [lang, setLang] = useState<Language>('ar');
-  const [isDarkMode, setIsDarkMode] = useState(true); // true = الوضع الليلي افتراضي
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // حالة الاشتراك والدفع
   const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<{id: string, name: string, price: string} | null>(null);
+  
+  // حالة عامة
   const [hasApiKey, setHasApiKey] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const t = translations[lang];
 
-  // Check if running as PWA
+  // ==================== دوال مساعدة ====================
+  const showToast = useCallback((text: string, type: ToastMessage['type'] = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, type, text }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  // ==================== PWA ====================
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
       setIsStandalone(true);
     }
   }, []);
 
-  // PWA Install Prompt Listener
   useEffect(() => {
     const handler = (e: any) => {
       e.preventDefault();
@@ -232,51 +296,67 @@ export default function App() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
+        showToast("تم تثبيت التطبيق بنجاح", "success");
       }
     }
   };
 
-  // Auth Listener
+  // ==================== مراقبة الاتصال ====================
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      showToast("تم استعادة الاتصال بالإنترنت", "success");
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      showToast(t.connectionError, "error");
+    };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [t.connectionError, showToast]);
+
+  // ==================== المصادقة ====================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Sync user to Firestore
         const userRef = doc(db, 'users', currentUser.uid);
-        let userSnap;
         try {
-          userSnap = await getDoc(userRef);
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
-        }
-        
-        if (userSnap && !userSnap.exists()) {
-          const initialData = {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            photoURL: currentUser.photoURL,
-            subscriptionStatus: 'free',
-            subscriptionExpiresAt: null,
-            generationsCount: 0,
-            createdAt: serverTimestamp()
-          };
-          try {
+          const userSnap = await getDoc(userRef);
+          if (!userSnap.exists()) {
+            const initialData = {
+              uid: currentUser.uid,
+              email: currentUser.email,
+              displayName: currentUser.displayName,
+              photoURL: currentUser.photoURL,
+              subscriptionStatus: 'free',
+              subscriptionExpiresAt: null,
+              generationsCount: 0,
+              createdAt: serverTimestamp()
+            };
             await setDoc(userRef, initialData);
-          } catch (error) {
-            handleFirestoreError(error, OperationType.CREATE, `users/${currentUser.uid}`);
+            setUserData(initialData);
+          } else {
+            setUserData(userSnap.data());
           }
-          setUserData(initialData);
-        } else if (userSnap) {
-          setUserData(userSnap.data());
+        } catch (error) {
+          console.error("Firestore error:", error);
+          showToast("حدث خطأ في مزامنة البيانات", "error");
         }
       } else {
         setUserData(null);
+        setHistory([]);
+        setMessages([]);
+        setActiveSessionId(null);
       }
       setAuthLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [showToast]);
 
   const handleLogin = async () => {
     if (isLoggingIn) return;
@@ -284,11 +364,11 @@ export default function App() {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      showToast("تم تسجيل الدخول بنجاح", "success");
     } catch (error: any) {
-      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        // Silently handle
-      } else {
+      if (!['auth/cancelled-popup-request', 'auth/popup-closed-by-user'].includes(error.code)) {
         console.error("Login failed", error);
+        showToast("فشل تسجيل الدخول، حاول مرة أخرى", "error");
       }
     } finally {
       setIsLoggingIn(false);
@@ -298,29 +378,20 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setMessages([]);
-      setHistory([]);
+      showToast("تم تسجيل الخروج", "info");
     } catch (error) {
       console.error("Logout failed", error);
+      showToast("حدث خطأ أثناء تسجيل الخروج", "error");
     }
   };
 
-  // Close dropdowns on click outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setActiveDropdownId(null);
-      setIsSettingsOpen(false);
-    };
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
-  }, []);
-
-  // Load history, lang, and theme on mount
+  // ==================== إدارة المحادثات المحلية ====================
   useEffect(() => {
     const savedHistory = localStorage.getItem('chat_history');
     if (savedHistory) {
       try {
-        setHistory(JSON.parse(savedHistory));
+        const parsed = JSON.parse(savedHistory);
+        setHistory(parsed);
       } catch (e) {
         console.error("Failed to load history", e);
       }
@@ -332,61 +403,11 @@ export default function App() {
     }
 
     const savedTheme = localStorage.getItem('chat_theme');
-    if (savedTheme === 'dark') {
-      setIsDarkMode(true);
-    }
-
-    // Check API Key status
-    const checkApiKey = async () => {
-      if (typeof window !== 'undefined' && (window as any).aistudio) {
-        try {
-          const selected = await (window as any).aistudio.hasSelectedApiKey();
-          setHasApiKey(selected);
-        } catch (e) {
-          console.error("API Key check error", e);
-        }
-      }
-    };
-    checkApiKey();
+    if (savedTheme === 'light') setIsDarkMode(false);
+    else if (savedTheme === 'dark') setIsDarkMode(true);
   }, []);
 
-  const handleOpenKeyDialog = async () => {
-    if (typeof window !== 'undefined' && (window as any).aistudio) {
-      try {
-        await (window as any).aistudio.openSelectKey();
-        setHasApiKey(true);
-      } catch (e) {
-        console.error("Failed to open key dialog", e);
-      }
-    }
-  };
-
-  // Group history by date
-  const groupHistory = () => {
-    const groups: { [key: string]: ChatSession[] } = {
-      Today: [],
-      Yesterday: [],
-      Previous: []
-    };
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const yesterday = today - 86400000;
-
-    history.forEach(session => {
-      if (session.timestamp >= today) {
-        groups.Today.push(session);
-      } else if (session.timestamp >= yesterday) {
-        groups.Yesterday.push(session);
-      } else {
-        groups.Previous.push(session);
-      }
-    });
-
-    return groups;
-  };
-
-  // Persist history to localStorage whenever it changes
+  // حفظ المحادثات في localStorage مع ضغط تلقائي
   useEffect(() => {
     if (history.length === 0) return;
 
@@ -400,66 +421,105 @@ export default function App() {
     };
 
     if (!trySave(history)) {
-      console.warn("Chat history exceeds storage quota. Compacting...");
-      
-      // Strategy 1: Remove images and files from older sessions (keep assets for top 2)
-      const compacted = history.map((session, index) => {
-        if (index > 1) {
-          return {
-            ...session,
-            messages: session.messages.map(msg => ({ ...msg, image: undefined, file: undefined }))
-          };
-        }
-        return session;
-      });
-
-      if (!trySave(compacted)) {
-        // Strategy 2: Remove ALL images and files
-        const noAssets = history.map(session => ({
-          ...session,
-          messages: session.messages.map(msg => ({ ...msg, image: undefined, file: undefined }))
-        }));
-
-        if (!trySave(noAssets)) {
-          // Strategy 3: Keep only 5 most recent sessions, no assets
-          const minimal = noAssets.slice(0, 5);
-          if (trySave(minimal)) {
-            setHistory(minimal);
-          } else {
-            localStorage.removeItem('chat_history');
-            setHistory([]);
-          }
-        } else {
-          setHistory(noAssets);
-        }
-      } else {
+      console.warn("Storage quota exceeded, compacting history...");
+      const compacted = history.map(session => ({
+        ...session,
+        messages: session.messages.map(msg => ({
+          ...msg,
+          image: undefined,
+          file: undefined
+        }))
+      }));
+      if (trySave(compacted)) {
         setHistory(compacted);
+      } else {
+        const minimal = compacted.slice(0, 10);
+        if (trySave(minimal)) setHistory(minimal);
+        else localStorage.removeItem('chat_history');
       }
     }
   }, [history]);
 
-  // Change language
-  const changeLang = (l: Language) => {
+  // ==================== دوال الإعدادات ====================
+  const changeLang = useCallback((l: Language) => {
     setLang(l);
     localStorage.setItem('chat_lang', l);
-  };
+    showToast(`اللغة: ${l.toUpperCase()}`, "info");
+  }, [showToast]);
 
-  const toggleDarkMode = () => {
-    const newValue = !isDarkMode;
-    setIsDarkMode(newValue);
-    localStorage.setItem('chat_theme', newValue ? 'dark' : 'light');
-  };
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => !prev);
+    localStorage.setItem('chat_theme', !isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // ==================== إدارة الجلسات ====================
+  const groupHistory = useMemo(() => {
+    const groups: { [key: string]: ChatSession[] } = { Today: [], Yesterday: [], Previous: [] };
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    history.forEach(session => {
+      if (session.timestamp >= today) groups.Today.push(session);
+      else if (session.timestamp >= yesterday) groups.Yesterday.push(session);
+      else groups.Previous.push(session);
+    });
+    return groups;
+  }, [history]);
 
-  // Core handler that handles basic message workflow
-  const handleSendMessageWorkflow = async (userMessage: Message) => {
+  const startNewChat = useCallback(() => {
+    setMessages([]);
+    setActiveSessionId(null);
+    setIsSidebarOpen(false);
+    if (textareaRef.current) textareaRef.current.focus();
+  }, []);
+
+  const loadSession = useCallback(async (session: ChatSession) => {
+    if (isLoadingSession) return;
+    setIsLoadingSession(true);
+    setMessages(session.messages);
+    setActiveSessionId(session.id);
+    setIsSidebarOpen(false);
+    setTimeout(() => scrollToBottom(), 100);
+    setTimeout(() => setIsLoadingSession(false), 300);
+    showToast(t.sessionLoaded, "info");
+  }, [scrollToBottom, t.sessionLoaded, showToast, isLoadingSession]);
+
+  const deleteSession = useCallback(async (id: string) => {
+    setHistory(prev => prev.filter(s => s.id !== id));
+    if (activeSessionId === id) {
+      setMessages([]);
+      setActiveSessionId(null);
+    }
+    setActiveDropdownId(null);
+    setDeleteConfirmId(null);
+    showToast(t.sessionDeleted, "success");
+  }, [activeSessionId, t.sessionDeleted, showToast]);
+
+  const startRename = useCallback((session: ChatSession, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingSessionId(session.id);
+    setEditingTitle(session.title);
+    setActiveDropdownId(null);
+  }, []);
+
+  const saveRename = useCallback((id: string) => {
+    if (editingTitle.trim()) {
+      setHistory(prev => prev.map(s => 
+        s.id === id ? { ...s, title: editingTitle.trim() } : s
+      ));
+      showToast(t.sessionRenamed, "success");
+    }
+    setEditingSessionId(null);
+  }, [editingTitle, t.sessionRenamed, showToast]);
+
+  // ==================== إرسال الرسائل ====================
+  const handleSendMessageWorkflow = useCallback(async (userMessage: Message) => {
+    if (!isOnline) {
+      showToast(t.connectionError, "error");
+      return;
+    }
+
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setIsLoading(true);
@@ -474,10 +534,9 @@ export default function App() {
         timestamp: Date.now(),
         messages: [userMessage]
       };
-      setHistory(prev => [newSession, ...prev.slice(0, 19)]);
+      setHistory(prev => [newSession, ...prev.slice(0, 49)]);
       setActiveSessionId(newId);
     } else {
-      // Update history with user message
       setHistory(prev => prev.map(s => 
         s.id === currentSessionId 
           ? { ...s, messages: newMessages, timestamp: Date.now() } 
@@ -491,52 +550,40 @@ export default function App() {
       let hasIncremented = false;
       
       setMessages(prev => [...prev, { role: 'model', text: "", status: 'thinking' }]);
+      scrollToBottom();
       
       const stream = sendMessageStream(newMessages, userMessage.text, userMessage.image);
       
       for await (const chunk of stream) {
-        if (chunk.text) {
-          fullResponse += chunk.text;
-        }
-        
-        if (chunk.image) {
-          modelImage = chunk.image;
-        }
+        if (chunk.text) fullResponse += chunk.text;
+        if (chunk.image) modelImage = chunk.image;
         
         setMessages(prev => {
           const next = [...prev];
           const lastIndex = next.length - 1;
           if (next[lastIndex].role === 'model') {
             const updatedMsg = { ...next[lastIndex], text: fullResponse };
-            if (chunk.image) {
-              updatedMsg.image = chunk.image;
-            }
-            if (chunk.status) {
-              updatedMsg.status = chunk.status as any;
-            }
+            if (chunk.image) updatedMsg.image = chunk.image;
+            if (chunk.status) updatedMsg.status = chunk.status as any;
             next[lastIndex] = updatedMsg;
           }
           return next;
         });
 
-        // Increment count only once per message if image is generated
         if (chunk.image && user && !hasIncremented) {
           hasIncremented = true;
           const userRef = doc(db, 'users', user.uid);
-          updateDoc(userRef, {
-            generationsCount: increment(1)
-          }).then(() => {
-            setUserData((prev: any) => ({
-              ...prev,
-              generationsCount: (prev?.generationsCount || 0) + 1
-            }));
-          }).catch(error => {
-            handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+          updateDoc(userRef, { generationsCount: increment(1) }).catch(err => {
+            console.error("Failed to update count:", err);
           });
+          setUserData((prev: any) => ({
+            ...prev,
+            generationsCount: (prev?.generationsCount || 0) + 1
+          }));
         }
+        scrollToBottom();
       }
 
-      // Final history sync
       const finalBotMessage: Message = { role: 'model', text: fullResponse, image: modelImage };
       setHistory(prev => prev.map(s => 
         s.id === currentSessionId 
@@ -553,83 +600,43 @@ export default function App() {
       );
       
       let errorMsg = t.errorMessage;
-      if (isQuotaError) errorMsg = (t as any).quotaError;
-      if (isPermissionError) errorMsg = (t as any).permissionError;
+      if (isQuotaError) errorMsg = t.quotaError;
+      if (isPermissionError) errorMsg = t.permissionError;
 
-      setMessages(prev => [
-          ...prev, 
-          { role: 'model', text: errorMsg }
-      ]);
+      setMessages(prev => [...prev, { role: 'model', text: errorMsg }]);
+      showToast(errorMsg, "error");
     } finally {
       setIsLoading(false);
+      scrollToBottom();
     }
-  };
+  }, [messages, activeSessionId, user, isOnline, t, showToast, scrollToBottom]);
 
-  const handleSend = async (text: string, image?: { data: string; mimeType: string }) => {
-    // Check generation limit if it's likely an image request
+  const handleSend = useCallback(async (text: string, image?: { data: string; mimeType: string }) => {
     const imageKeywords = ['صورة', 'صمم', 'أنشئ', 'صوره', 'image', 'picture', 'generate', 'draw', 'ارسم'];
     const isLikelyImageRequest = imageKeywords.some(k => text.toLowerCase().includes(k));
 
     if (isLikelyImageRequest && userData?.subscriptionStatus === 'free' && (userData?.generationsCount || 0) >= 4) {
       setIsSubscriptionModalOpen(true);
+      showToast(t.limitError, "warning");
       return;
     }
 
     const userMessage: Message = { role: 'user', text, image };
     await handleSendMessageWorkflow(userMessage);
-  };
+  }, [userData, t.limitError, handleSendMessageWorkflow, showToast]);
 
-  // Handler for uploading documents/files from ChatInput
-  const handleSendFile = async (text: string, file: { data: string; mimeType: string; name: string }) => {
-    const userMessage: Message = { role: 'user', text, file };
+  const handleSendFile = useCallback(async (text: string, file: { data: string; mimeType: string; name: string }) => {
+    const userMessage: Message = { role: 'user', text, file } as Message;
     await handleSendMessageWorkflow(userMessage);
-  };
+  }, [handleSendMessageWorkflow]);
 
-  const clearChat = () => {
-    setMessages([]);
-    setActiveSessionId(null);
-  };
-
-  const loadSession = (session: ChatSession) => {
-    setMessages(session.messages);
-    setActiveSessionId(session.id);
-    setIsSidebarOpen(false);
-  };
-
-  const startNewChat = () => {
-    setMessages([]);
-    setActiveSessionId(null);
-    setIsSidebarOpen(false);
-  };
-
-  const deleteSession = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setHistory(prev => prev.filter(s => s.id !== id));
-    setActiveDropdownId(null);
-  };
-
-  const startRename = (session: ChatSession, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingSessionId(session.id);
-    setEditingTitle(session.title);
-    setActiveDropdownId(null);
-  };
-
-  const saveRename = (id: string) => {
-    setHistory(prev => prev.map(s => 
-      s.id === id ? { ...s, title: editingTitle || s.title } : s
-    ));
-    setEditingSessionId(null);
-  };
-
-  const handleSelectPlan = (planId: string) => {
+  // ==================== الاشتراك والدفع ====================
+  const handleSelectPlan = useCallback((planId: string) => {
     if (!user) return;
-    
     const planDetails = {
-      starter: { ar: { name: 'pro', price: '400' }, en: { name: 'Starter', price: '400' } },
-      pro: { ar: { name: 'ultra', price: '700' }, en: { name: 'Professional', price: '700' } }
+      starter: { ar: { name: 'باقة Pro', price: '400' }, en: { name: 'Pro Plan', price: '400' } },
+      pro: { ar: { name: 'باقة Ultra', price: '700' }, en: { name: 'Ultra Plan', price: '700' } }
     }[planId as 'starter' | 'pro'];
-
     if (planDetails) {
       setSelectedPlanForPayment({
         id: planId,
@@ -638,31 +645,44 @@ export default function App() {
       });
       setIsPaymentModalOpen(true);
     }
-  };
+  }, [user, lang]);
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = useCallback(async () => {
     if (!user || !selectedPlanForPayment) return;
-    
     try {
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         subscriptionStatus: selectedPlanForPayment.id,
         subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       });
-      
-      setUserData((prev: any) => ({
-        ...prev,
-        subscriptionStatus: selectedPlanForPayment.id
-      }));
-      
+      setUserData((prev: any) => ({ ...prev, subscriptionStatus: selectedPlanForPayment.id }));
       setIsPaymentModalOpen(false);
       setIsSubscriptionModalOpen(false);
       setSelectedPlanForPayment(null);
+      showToast(t.upgradeSuccess, "success");
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+      console.error(error);
+      showToast("حدث خطأ أثناء الترقية", "error");
     }
-  };
+  }, [user, selectedPlanForPayment, t.upgradeSuccess, showToast]);
 
+  // ==================== إغلاق القوائم ====================
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveDropdownId(null);
+      setIsSettingsOpen(false);
+      setDeleteConfirmId(null);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // ==================== التمرير التلقائي ====================
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
+
+  // ==================== حالة التحميل ====================
   if (authLoading) {
     return (
       <div className={`h-screen w-full flex items-center justify-center ${isDarkMode ? 'bg-[#0d0f12]' : 'bg-white'}`}>
@@ -685,8 +705,24 @@ export default function App() {
     );
   }
 
+  // ==================== عرض التطبيق الرئيسي ====================
   return (
     <div className={`flex h-screen ${isDarkMode ? 'bg-[#0d0f12] text-white' : 'bg-[#FAFAFA] text-slate-900'} font-sans selection:bg-orange-500/10 transition-all duration-300 ${isDarkMode ? 'dark' : ''}`} dir="rtl">
+      {/* الإشعارات */}
+      <AnimatePresence>
+        {toasts.map(toast => (
+          <Toast key={toast.id} message={toast} onClose={() => removeToast(toast.id)} isDarkMode={isDarkMode} />
+        ))}
+      </AnimatePresence>
+
+      {/* مؤشر عدم الاتصال */}
+      {!isOnline && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg flex items-center gap-2">
+          <WifiOff size={16} />
+          <span>لا يوجد اتصال بالإنترنت</span>
+        </div>
+      )}
+
       {/* Sidebar Overlay */}
       <AnimatePresence>
         {isSidebarOpen && (
@@ -730,7 +766,7 @@ export default function App() {
                 <p className="text-[10px] uppercase tracking-[0.2em] font-black">{t.noHistory}</p>
               </div>
             ) : (
-              Object.entries(groupHistory()).map(([title, sessions]) => sessions.length > 0 && (
+              Object.entries(groupHistory).map(([title, sessions]) => sessions.length > 0 && (
                 <div key={title} className="space-y-4">
                   <p className="text-[10px] uppercase tracking-[0.3em] font-black text-white/30 mb-2 px-3">
                     {lang === 'ar' ? (title === 'Today' ? 'اليوم' : title === 'Yesterday' ? 'أمس' : 'السابق') : title}
@@ -794,7 +830,10 @@ export default function App() {
                                       <span>{t.editName}</span>
                                     </button>
                                     <button
-                                      onClick={(e) => deleteSession(session.id, e)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteConfirmId(session.id);
+                                      }}
                                       className="flex items-center gap-3 w-full px-4 py-3 text-xs font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
                                     >
                                       <Trash size={12} />
@@ -806,6 +845,38 @@ export default function App() {
                             </div>
                           </div>
                         )}
+                        
+                        {/* نافذة تأكيد الحذف */}
+                        <AnimatePresence>
+                          {deleteConfirmId === session.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className={`p-6 rounded-2xl shadow-xl max-w-sm w-full mx-4 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                                <h3 className="text-lg font-bold mb-2">{t.confirmDelete}</h3>
+                                <p className="text-sm opacity-70 mb-6">{t.deleteConfirm}</p>
+                                <div className="flex gap-3 justify-end">
+                                  <button
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white font-medium"
+                                  >
+                                    {t.cancel}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteSession(session.id)}
+                                    className="px-4 py-2 rounded-lg bg-red-500 text-white font-medium"
+                                  >
+                                    {t.delete}
+                                  </button>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     ))}
                   </div>
@@ -881,7 +952,7 @@ export default function App() {
                       className="flex items-center gap-3 w-full p-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all"
                     >
                       <LogOut size={14} />
-                      <span>{t.logout || "Logout"}</span>
+                      <span>{t.logout}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -987,6 +1058,11 @@ export default function App() {
                 </motion.div>
               ) : (
                 <div className="space-y-6 max-w-3xl mx-auto">
+                  {isLoadingSession && (
+                    <div className="flex justify-center py-4">
+                      <Loader2 size={24} className="animate-spin text-orange-500" />
+                    </div>
+                  )}
                   {messages.map((msg, index) => (
                     <ChatMessage 
                       key={index} 
@@ -1050,4 +1126,4 @@ export default function App() {
       />
     </div>
   );
-}
+          }
