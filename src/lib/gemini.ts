@@ -2,6 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 
 function getAI() {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("❌ VITE_GEMINI_API_KEY is not set");
+  }
   return new GoogleGenAI({ apiKey });
 }
 
@@ -18,33 +21,13 @@ export interface Message {
 async function _sendMessage(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
   const ai = getAI();
 
-  // إذا كان المستخدم يطلب صورة، استخدم Imagen 4
+  // إذا كان المستخدم يطلب صورة، نستخدم Imagen 4 كحل احتياطي إذا فشل النموذج الأساسي
+  // لكننا سنعتمد أساساً على النموذج الأساسي (gemini-2.5-flash-image) لتوليد الصور.
+  // نترك هذه الكتلة كـ fallback فقط.
   const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
   
-  if (isImageRequest && !image) {
-    try {
-      const imgResponse = await ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: message,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio: '1:1',
-        },
-      });
-      
-      if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
-        const base64Data = imgResponse.generatedImages[0].image.imageBytes;
-        return { 
-          text: "تم إنشاء الصورة بنجاح بواسطة Imagen 4.", 
-          image: { data: base64Data, mimeType: 'image/jpeg' },
-          status: 'done' as any
-        };
-      }
-    } catch (e) {
-      console.warn("Imagen 4 failed, falling back to Gemini:", e);
-    }
-  }
+  // سنقوم بتوليد الصورة عبر النموذج الأساسي، لذلك لا حاجة لاستدعاء Imagen 4 هنا.
+  // إذا أردت الاحتفاظ بـ Imagen 4 كخيار ثانوي، يمكنك تركه كما هو، لكنه لن يُستخدم عادةً.
 
   const contents = history.map(m => ({
     role: m.role,
@@ -65,7 +48,7 @@ async function _sendMessage(history: Message[], message: string, model: string, 
     model: model,
     contents,
     config: {
-      systemInstruction: "أنت Smarty AI، مساعد ذكي ولطيف ومحترف في التسويق وكتابة المحتوى. أجب باللغة العربية بشكل أساسي إلا إذا طلب المستخدم لغة أخرى. كن مفيداً ومختصراً وواضحاً. لا تبالغ في استخدام رموز التنسيق مثل النجوم (*) والهاشتاق (#) لجعل النص يبدو أنظف وأسهل في القراءة. استخدم التنسيق فقط عند الضرورة القصوى لتنظيم العناوين أو القوائم بشكل بسيط. لا تذكر اسمك 'Smarty AI' في بداية حديثك. يمكنك الآن إنشاء وتعديل الصور بشكل احترافي.",
+      systemInstruction: "أنت Smarty AI، مساعد ذكي ومحترف في التسويق وكتابة المحتوى وإنشاء الصور الاحترافية. أجب باللغة العربية بشكل أساسي. كن مفيداً ومختصراً. يمكنك إنشاء صور بناءً على طلب المستخدم.",
     }
   });
 
@@ -84,54 +67,8 @@ async function _sendMessage(history: Message[], message: string, model: string, 
     }
   }
 
-  return { text, image: generatedImage };
-}
-
-export async function sendMessage(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  // النموذج الأساسي الجديد: gemini-1.5-pro (يدعم النصوص والصور والمستندات)
-  // ملاحظة: لا يزال يتم استخدام Imagen 4 لإنشاء الصور عند الطلب في _sendMessage
-  const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
-  // إذا كان الطلب لإنشاء صورة، نستخدم نموذج المحادثة العادي (1.5-pro) بعد محاولة Imagen 4.
-  // في حالة رفع صورة (image موجود) أو طلب نص عادي، نستخدم 1.5-pro أيضاً.
-  const primaryModel = "gemini-1.5-pro";
-
-  try {
-    return await _sendMessage(history, message, primaryModel, image);
-  } catch (error: any) {
-    console.warn(`Error with ${primaryModel}:`, error);
-
-    const isPermissionError = error?.status === 403 || 
-                             error?.message?.includes('403') || 
-                             error?.message?.includes('PERMISSION_DENIED') ||
-                             error?.message?.includes('permission denied');
-
-    if (isPermissionError) {
-      // محاولات احتياطية بنماذج أخرى في حالة فشل 1.5-pro بسبب الأذونات
-      try {
-        return await _sendMessage(history, message, "gemini-1.5-flash", image);
-      } catch (e) {
-        try {
-          return await _sendMessage(history, message, "gemini-2.0-flash", image);
-        } catch (e2) {
-          try {
-            return await _sendMessage(history, message, "gemini-3-flash-preview", image);
-          } catch (e3) {}
-        }
-      }
-      throw new Error("Permission Denied: Please check your Gemini API key in Settings > Secrets.");
-    }
-    throw error;
-  }
-}
-
-async function* _sendMessageStream(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
-  const ai = getAI();
-
-  // إذا كان طلب صورة، استخدم Imagen 4
-  const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
-  
-  if (isImageRequest && !image) {
-    yield { status: 'generating' };
+  // إذا فشل النموذج الأساسي في توليد الصورة وكان الطلب صورة، نحاول Imagen 4 كـ fallback
+  if (isImageRequest && !generatedImage && !image) {
     try {
       const imgResponse = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',
@@ -142,20 +79,61 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
           aspectRatio: '1:1',
         },
       });
-      
       if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
         const base64Data = imgResponse.generatedImages[0].image.imageBytes;
-        yield { 
-          text: "تم إنشاء الصورة بنجاح بواسطة Imagen 4.", 
+        return {
+          text: "تم إنشاء الصورة بنجاح (باستخدام Imagen 4).",
           image: { data: base64Data, mimeType: 'image/jpeg' },
-          status: 'done' as any
+          status: 'done'
         };
-        return;
       }
     } catch (e) {
-      console.warn("Imagen 4 failed in stream, falling back to Gemini:", e);
+      console.warn("Imagen 4 fallback failed:", e);
     }
   }
+
+  return { text, image: generatedImage };
+}
+
+export async function sendMessage(history: Message[], message: string, image?: { data: string; mimeType: string }) {
+  // النموذج الأساسي الجديد: gemini-2.5-flash-image (يدعم النصوص والصور معاً)
+  const primaryModel = "gemini-2.5-flash-image";
+
+  try {
+    return await _sendMessage(history, message, primaryModel, image);
+  } catch (error: any) {
+    console.warn(`Error with ${primaryModel}:`, error);
+
+    const isPermissionError = error?.status === 403 ||
+                             error?.message?.includes('403') ||
+                             error?.message?.includes('PERMISSION_DENIED') ||
+                             error?.message?.includes('permission denied');
+
+    if (isPermissionError) {
+      // محاولات احتياطية بنماذج أخرى في حالة فشل النموذج الجديد
+      const fallbackModels = [
+        "gemini-2.0-flash-exp",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-lite"
+      ];
+      for (const fallbackModel of fallbackModels) {
+        try {
+          console.log(`Trying fallback model: ${fallbackModel}`);
+          return await _sendMessage(history, message, fallbackModel, image);
+        } catch (e) {
+          console.warn(`Fallback ${fallbackModel} failed:`, e);
+        }
+      }
+      throw new Error("عذراً، لا يمكن الاتصال بخدمة الذكاء الاصطناعي حالياً. يرجى التحقق من مفتاح API.");
+    }
+    throw error;
+  }
+}
+
+async function* _sendMessageStream(history: Message[], message: string, model: string, image?: { data: string; mimeType: string }) {
+  const ai = getAI();
+
+  const isImageRequest = /انشئ|صورة|صمم|ارسم|image|generate|create|draw/i.test(message);
 
   yield { status: 'thinking' };
   const contents = history.map(m => ({
@@ -177,33 +155,60 @@ async function* _sendMessageStream(history: Message[], message: string, model: s
     model: model,
     contents,
     config: {
-      systemInstruction: "أنت Smarty AI، مساعد ذكي ولطيف ومحترف في التسويق وكتابة المحتوى. أجب باللغة العربية بشكل أساسي إلا إذا طلب المستخدم لغة أخرى. كن مفيداً ومختصراً وواضحاً. لا تبالغ في استخدام رموز التنسيق مثل النجوم (*) والهاشتاق (#) لجعل النص يبدو أنظف وأسهل في القراءة. استخدم التنسيق فقط عند الضرورة القصوى لتنظيم العناوين أو القوائم بشكل بسيط. لا تذكر اسمك 'Smarty AI' في بداية حديثك. يمكنك الآن إنشاء وتعديل الصور بشكل احترافي.",
+      systemInstruction: "أنت Smarty AI، مساعد ذكي متخصص في التسويق وإنشاء المحتوى والصور. أجب باللغة العربية. كن مختصراً ومفيداً.",
     }
   });
+
+  let generatedImage: { data: string; mimeType: string } | undefined = undefined;
+  let accumulatedText = "";
 
   for await (const chunk of stream) {
     const candidates = chunk.candidates;
     if (candidates && candidates[0].content.parts) {
       for (const part of candidates[0].content.parts) {
         if (part.text) {
+          accumulatedText += part.text;
           yield { text: part.text };
         }
-        if (part.inlineData) {
-          yield { 
-            image: { 
-              data: part.inlineData.data, 
-              mimeType: part.inlineData.mimeType 
-            } 
+        if (part.inlineData && !generatedImage) {
+          generatedImage = {
+            data: part.inlineData.data,
+            mimeType: part.inlineData.mimeType
           };
+          yield { image: generatedImage };
         }
       }
+    }
+  }
+
+  // إذا لم يتم توليد صورة وكان الطلب صورة، نحاول Imagen 4 كـ fallback (في وضع البث)
+  if (isImageRequest && !generatedImage && !image) {
+    yield { status: 'generating' };
+    try {
+      const imgResponse = await ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: message,
+        config: {
+          numberOfImages: 1,
+          outputMimeType: 'image/jpeg',
+          aspectRatio: '1:1',
+        },
+      });
+      if (imgResponse.generatedImages && imgResponse.generatedImages.length > 0) {
+        const base64Data = imgResponse.generatedImages[0].image.imageBytes;
+        yield {
+          text: " (تم إنشاء الصورة باستخدام Imagen 4)",
+          image: { data: base64Data, mimeType: 'image/jpeg' },
+        };
+      }
+    } catch (e) {
+      console.warn("Imagen 4 fallback in stream failed:", e);
     }
   }
 }
 
 export async function* sendMessageStream(history: Message[], message: string, image?: { data: string; mimeType: string }) {
-  // النموذج الأساسي الجديد: gemini-1.5-pro
-  const primaryModel = "gemini-1.5-pro";
+  const primaryModel = "gemini-2.5-flash-image";
 
   try {
     const stream = _sendMessageStream(history, message, primaryModel, image);
@@ -212,45 +217,33 @@ export async function* sendMessageStream(history: Message[], message: string, im
     }
   } catch (error: any) {
     console.warn(`Error with ${primaryModel}:`, error);
-    
-    const isPermissionError = error?.status === 403 || 
-                             error?.message?.includes('403') || 
+
+    const isPermissionError = error?.status === 403 ||
+                             error?.message?.includes('403') ||
                              error?.message?.includes('PERMISSION_DENIED') ||
                              error?.message?.includes('permission denied');
 
     if (isPermissionError) {
-      // محاولات احتياطية بنماذج أخرى في حالة فشل 1.5-pro
-      try {
-        const fallbackStream = _sendMessageStream(history, message, "gemini-1.5-flash", image);
-        for await (const chunk of fallbackStream) {
-          yield chunk;
-        }
-        return;
-      } catch (e) {
-        console.warn("gemini-1.5-flash failed, trying gemini-2.0-flash:", e);
+      const fallbackModels = [
+        "gemini-2.0-flash-exp",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash-lite"
+      ];
+      for (const fallbackModel of fallbackModels) {
         try {
-          const fallbackStream2 = _sendMessageStream(history, message, "gemini-2.0-flash", image);
-          for await (const chunk of fallbackStream2) {
+          console.log(`Trying fallback stream model: ${fallbackModel}`);
+          const fallbackStream = _sendMessageStream(history, message, fallbackModel, image);
+          for await (const chunk of fallbackStream) {
             yield chunk;
           }
           return;
-        } catch (e2) {
-          console.warn("gemini-2.0-flash failed, trying gemini-3-flash-preview:", e2);
-          try {
-            const fallbackStream3 = _sendMessageStream(history, message, "gemini-3-flash-preview", image);
-            for await (const chunk of fallbackStream3) {
-              yield chunk;
-            }
-            return;
-          } catch (e3) {
-            console.error("All fallback models failed:", e3);
-          }
+        } catch (e) {
+          console.warn(`Fallback stream ${fallbackModel} failed:`, e);
         }
       }
-      
-      throw new Error("Permission Denied: Please check your Gemini API key in Settings > Secrets. You may need to select a billing-enabled key for some models.");
+      yield { text: "عذراً، لا يمكن الاتصال بخدمة الذكاء الاصطناعي حالياً. يرجى المحاولة لاحقاً." };
+      return;
     }
-    
-    throw error;
+    yield { text: "عذراً، حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى." };
   }
 }
