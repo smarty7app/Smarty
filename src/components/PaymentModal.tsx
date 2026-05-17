@@ -37,7 +37,7 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
   const t = {
     ar: {
       title: "دفع آمن",
-      subtitle: "أنت بصدد الاشتراك بخطة",
+      subtitle: "أنت بصدد الاشتراك في بخطة",
       chooseMethod: "اختر وسيلة الدفع",
       cardNumber: "رقم البطاقة",
       expiry: "تاريخ انتهاء الصلاحية",
@@ -76,8 +76,29 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
       invalidCard: "Invalid card number (16 digits)",
       invalidExpiry: "Invalid expiry date (MM/YY)",
       invalidCvv: "Invalid CVV (3-4 digits)",
+    },
+    fr: {
+      title: "Paiement Sécurisé",
+      subtitle: "Vous vous abonnez à",
+      chooseMethod: "Choisissez le mode de paiement",
+      cardNumber: "Numéro de carte",
+      expiry: "Date d'expiration",
+      cvv: "CVV",
+      payNow: "Payer maintenant",
+      processing: "Traitement du paiement...",
+      success: "Paiement réussi !",
+      welcome: "Bienvenue dans l'expérience Pro",
+      start: "Commencer maintenant",
+      dahabia: "Carte Edahabia",
+      cib: "Carte bancaire CIB",
+      errorTitle: "Échec du paiement",
+      errorDesc: "Une erreur s'est produite lors du traitement de votre paiement. Veuillez réessayer.",
+      retry: "Réessayer",
+      invalidCard: "Numéro de carte invalide (16 chiffres)",
+      invalidExpiry: "Date d'expiration invalide (MM/AA)",
+      invalidCvv: "CVV invalide (3-4 chiffres)",
     }
-  }[lang === 'ar' ? 'ar' : 'en'];
+  }[lang === 'ar' ? 'ar' : (lang === 'fr' ? 'fr' : 'en')];
 
   // Validation functions
   const validateCardNumber = (num: string) => {
@@ -102,11 +123,8 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
 
   // Simulate API call – replace with actual backend integration
   const callPaymentApi = async () => {
-    // Simulate network request
     return new Promise<{ success: boolean; error?: string }>((resolve) => {
       setTimeout(() => {
-        // For demo, always succeed after 2 secs.
-        // In real implementation, you would call your backend endpoint.
         resolve({ success: true });
       }, 2000);
     });
@@ -133,7 +151,7 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
   const handleFinalize = () => {
     onPaymentSuccess();
     setStep('info');
-    onClose(); // close modal after success
+    onClose();
   };
 
   const handleRetry = () => {
@@ -195,7 +213,7 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-orange-500">{planPrice}</div>
-                    <div className="text-xs text-slate-500">{lang === 'ar' ? 'دج / شهر' : 'DZD / mo'}</div>
+                    <div className="text-xs text-slate-500">{lang === 'ar' ? 'دج / شهر' : (lang === 'fr' ? 'DZD / mois' : 'DZD / mo')}</div>
                   </div>
                 </div>
 
@@ -285,7 +303,7 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
               <div className="p-12 text-center">
                 <Loader2 size={48} className="mx-auto text-orange-500 animate-spin mb-4" />
                 <h3 className="text-xl font-bold mb-2">{t.processing}</h3>
-                <p className="text-slate-500">{lang === 'ar' ? 'يتم الاتصال بخوادم SATIM بأمان...' : 'Safely connecting to SATIM servers...'}</p>
+                <p className="text-slate-500">{lang === 'ar' ? 'يتم الاتصال بخوادم SATIM بأمان...' : (lang === 'fr' ? 'Connexion sécurisée aux serveurs SATIM...' : 'Safely connecting to SATIM servers...')}</p>
               </div>
             )}
 
@@ -324,7 +342,7 @@ export default function PaymentModal({ isOpen, onClose, planName, planPrice, lan
                     onClick={onClose}
                     className="flex-1 border border-slate-300 dark:border-slate-700 py-4 rounded-xl font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
                   >
-                    {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                    {lang === 'ar' ? 'إلغاء' : (lang === 'fr' ? 'Annuler' : 'Cancel')}
                   </button>
                 </div>
               </div>
