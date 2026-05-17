@@ -631,8 +631,8 @@ export default function App() {
     if (!user) return;
     
     const planDetails = {
-      starter: { ar: { name: 'المبتدئة', price: '400' }, en: { name: 'Starter', price: '400' } },
-      pro: { ar: { name: 'الاحترافية', price: '700' }, en: { name: 'Professional', price: '700' } }
+      starter: { ar: { name: 'pro', price: '400' }, en: { name: 'Starter', price: '400' } },
+      pro: { ar: { name: 'ultra', price: '700' }, en: { name: 'Professional', price: '700' } }
     }[planId as 'starter' | 'pro'];
 
     if (planDetails) {
