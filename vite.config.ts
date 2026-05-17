@@ -4,12 +4,14 @@ import path from 'path';
 import { defineConfig } from 'vite';
 
 export default defineConfig(() => {
-  // اقرأ المفتاح مباشرة من process.env (متاح في Render)
+  // قراءة المفتاح من بيئة الخادم
   const geminiApiKey = process.env.GEMINI_API_KEY || '';
-
+  
   return {
     plugins: [react(), tailwindcss()],
     define: {
+      // جعل المفتاح متاحاً لكل من الطريقتين لضمان الوصول إليه
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiApiKey),
       'process.env.GEMINI_API_KEY': JSON.stringify(geminiApiKey),
     },
     resolve: {
