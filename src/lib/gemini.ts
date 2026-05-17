@@ -10,6 +10,12 @@ export interface Message {
   image?: {
     data: string;
     mimeType: string;
+    url?: string;
+  };
+  file?: {           // دعم الملفات المرفوعة
+    data: string;
+    mimeType: string;
+    name: string;
   };
 }
 
@@ -103,8 +109,17 @@ async function* _sendTextMessageStream(history: Message[], message: string, imag
 
 /**
  * الدالة الرئيسية التي يستدعيها ملف App.tsx مع دعم الـ Generator (yield)
+ * @param history سجل المحادثة السابق
+ * @param message نص الرسالة الجديدة
+ * @param image صورة مرفوعة (اختياري)
+ * @param file ملف مرفوع (اختياري، لا تستخدمه Gemini حالياً)
  */
-export async function* sendMessageStream(history: Message[], message: string, image?: { data: string; mimeType: string }) {
+export async function* sendMessageStream(
+  history: Message[],
+  message: string,
+  image?: { data: string; mimeType: string },
+  file?: { data: string; mimeType: string; name: string }  // إضافة دعم الملفات
+) {
   const isRequestingImage = isImageRequest(message);
   
   // إذا طلب المستخدم صورة (ولم يرفع صورة مسبقاً للتحليل)، توجه إلى Together AI
@@ -126,6 +141,7 @@ export async function* sendMessageStream(history: Message[], message: string, im
   }
   
   // للطلبات النصية أو تحليل الصور المرفوعة، توجه إلى Gemini
+  // الملفات (file) لا تُستخدم حالياً في Gemini، ولكن يمكن تمريرها إذا أردت مستقبلاً
   try {
     const stream = _sendTextMessageStream(history, message, image);
     for await (const chunk of stream) {
@@ -135,4 +151,4 @@ export async function* sendMessageStream(history: Message[], message: string, im
     console.error("Stream Root Error:", error);
     yield { text: "عذراً، حدث خطأ غير متوقع." };
   }
-}
+  }
