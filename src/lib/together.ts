@@ -5,16 +5,16 @@ const TOGETHER_API_KEY = import.meta.env.VITE_TOGETHER_API_KEY;
 const TOGETHER_API_URL = "https://api.together.xyz/v1/images/generations";
 
 export interface GeneratedImage {
-  data: string; // base64
+  data: string;      // يمكن أن يكون Base64 أو رابط URL (مرن)
   mimeType: string;
-  url?: string;
+  url?: string;      // الرابط المباشر إن وُجد
 }
 
 /**
  * توليد صورة باستخدام نموذج SDXL أو FLUX
  * @param prompt وصف الصورة المطلوبة
  * @param model اسم النموذج (افتراضي: SDXL)
- * @returns بيانات الصورة بصيغة base64
+ * @returns بيانات الصورة (يفضل استخدام الرابط المباشر)
  */
 export async function generateImageWithTogether(
   prompt: string,
@@ -49,13 +49,12 @@ export async function generateImageWithTogether(
 
   const data = await response.json();
   
-  // Together AI يعيد رابط الصورة وليس base64 مباشرة
   if (data.data && data.data[0] && data.data[0].url) {
-    // نحتاج إلى تحويل الرابط إلى base64 لتوافقه مع باقي التطبيق
     const imageUrl = data.data[0].url;
-    const base64Data = await fetchImageAsBase64(imageUrl);
+    // نعيد الرابط مباشرة دون تحويل إلى Base64
+    // هذا أسرع ويتجنب مشاكل CORS وحجم البيانات
     return {
-      data: base64Data,
+      data: imageUrl,      // الرابط يُستخدم كـ "data"
       mimeType: "image/png",
       url: imageUrl,
     };
@@ -65,27 +64,9 @@ export async function generateImageWithTogether(
 }
 
 /**
- * تحويل رابط الصورة إلى base64
- */
-async function fetchImageAsBase64(url: string): Promise<string> {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
-      resolve(base64.split(',')[1]); // نزيل البادئة data:image/...
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-/**
  * حساب التكلفة التقريبية لكل صورة
  */
 export function estimateImageCost(): number {
-  // SDXL يكلف حوالي $0.0016 لكل صورة
   return 0.0016;
 }
 
@@ -93,7 +74,7 @@ export function estimateImageCost(): number {
  * باقات الصور المقترحة حسب اشتراك المستخدم
  */
 export const imagePlans = {
-  free: 3,      // 3 صور مجانية شهرياً
-  starter: 50,  // 50 صورة (باقة 400 دج)
-  pro: 150,     // 150 صورة (باقة 700 دج)
+  free: 3,
+  starter: 50,
+  pro: 150,
 };
