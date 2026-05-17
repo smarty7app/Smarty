@@ -18,6 +18,21 @@
     0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
     30% { transform: translateY(-4px); opacity: 1; }
   }
+
+  @keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.2); opacity: 0; }
+  }
 }
 
 @layer base {
@@ -50,6 +65,24 @@
   }
   .typing-dot:nth-child(2) { animation-delay: 0.15s; }
   .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+  /* ─── Toast notifications ─── */
+  .toast-slide-in {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+  .toast-slide-out {
+    animation: slideOutRight 0.2s ease-in forwards;
+  }
+
+  /* ─── Pulse ring for file drop area ─── */
+  .drop-zone-pulse::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    pointer-events: none;
+  }
 
   /* ─── Gradient text ─── */
   .text-gradient {
@@ -151,5 +184,40 @@
   }
   .card-hover:hover {
     transform: translateY(-2px);
+  }
+
+  /* ─── File preview styling (للتحسين) ─── */
+  .file-preview {
+    transition: all 0.2s ease;
+  }
+  .file-preview:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* ─── حاوية الملفات المرفوعة ─── */
+  .attachment-container {
+    scrollbar-width: thin;
+  }
+  .attachment-container::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  /* ─── تحسين عرض الصورة في رسالة الدردشة أثناء التحميل ─── */
+  .image-loading {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .image-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* ─── زر الإرسال مع تأثير التحميل ─── */
+  .send-button-loading {
+    cursor: wait;
+    filter: grayscale(0.3);
   }
 }
