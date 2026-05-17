@@ -58,12 +58,7 @@ const translations = {
     limitError: "لقد استهلكت جميع محاولات إنتاج الصور المجانية (4). يرجى الاشتراك للمتابعة.",
     logout: "تسجيل الخروج",
     profile: "الملف الشخصي",
-    aiPowered: "ذكاء مدعوم بالذكاء الاصطناعي",
-    apiKeySettings: "إعدادات مفتاح API (اختياري)",
-    apiKeyStatus: "حالة المفتاح",
-    apiKeySelected: "تم اختيار المفتاح",
-    apiKeyNotSelected: "لم يتم الاختيار",
-    apiKeyButton: "ضبط مفتاح API للنموذج المتقدم"
+    aiPowered: "ذكاء مدعوم بالذكاء الاصطناعي"
   },
   en: {
     newChat: "New Chat",
@@ -97,12 +92,7 @@ const translations = {
     limitError: "You have consumed all your free image generation attempts (4). Please subscribe to continue.",
     logout: "Logout",
     profile: "Profile",
-    aiPowered: "AI Powered Intelligence",
-    apiKeySettings: "API Key Settings (Optional)",
-    apiKeyStatus: "Key Status",
-    apiKeySelected: "Key Selected",
-    apiKeyNotSelected: "Not Selected",
-    apiKeyButton: "Set API Key for Pro Model"
+    aiPowered: "AI Powered Intelligence"
   },
   fr: {
     newChat: "Nouvelle discussion",
@@ -135,12 +125,7 @@ const translations = {
     limitError: "Vous avez consommé toutes vos tentatives de génération d'images gratuites (4). Veuillez vous abonner pour continuer.",
     logout: "Déconnexion",
     profile: "Profil",
-    aiPowered: "Intelligence Propulsée par l'IA",
-    apiKeySettings: "Paramètres de la clé API (Optionnel)",
-    apiKeyStatus: "État de la clé",
-    apiKeySelected: "Clé sélectionnée",
-    apiKeyNotSelected: "Non sélectionnée",
-    apiKeyButton: "Définir la clé API pour le modèle Pro"
+    aiPowered: "Intelligence Propulsée par l'IA"
   }
 };
 
