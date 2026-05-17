@@ -386,7 +386,6 @@ export default function App() {
     return groups;
   };
 
-
   // Persist history to localStorage whenever it changes
   useEffect(() => {
     if (history.length === 0) return;
@@ -403,27 +402,27 @@ export default function App() {
     if (!trySave(history)) {
       console.warn("Chat history exceeds storage quota. Compacting...");
       
-      // Strategy: Remove images from older sessions (keep images for top 2)
+      // Strategy 1: Remove images and files from older sessions (keep assets for top 2)
       const compacted = history.map((session, index) => {
         if (index > 1) {
           return {
             ...session,
-            messages: session.messages.map(msg => ({ ...msg, image: undefined }))
+            messages: session.messages.map(msg => ({ ...msg, image: undefined, file: undefined }))
           };
         }
         return session;
       });
 
       if (!trySave(compacted)) {
-        // Strategy 2: Remove ALL images
-        const noImages = history.map(session => ({
+        // Strategy 2: Remove ALL images and files
+        const noAssets = history.map(session => ({
           ...session,
-          messages: session.messages.map(msg => ({ ...msg, image: undefined }))
+          messages: session.messages.map(msg => ({ ...msg, image: undefined, file: undefined }))
         }));
 
-        if (!trySave(noImages)) {
-          // Strategy 3: Keep only 5 most recent sessions, no images
-          const minimal = noImages.slice(0, 5);
+        if (!trySave(noAssets)) {
+          // Strategy 3: Keep only 5 most recent sessions, no assets
+          const minimal = noAssets.slice(0, 5);
           if (trySave(minimal)) {
             setHistory(minimal);
           } else {
@@ -431,7 +430,7 @@ export default function App() {
             setHistory([]);
           }
         } else {
-          setHistory(noImages);
+          setHistory(noAssets);
         }
       } else {
         setHistory(compacted);
@@ -459,17 +458,8 @@ export default function App() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async (text: string, image?: { data: string; mimeType: string }) => {
-    // Check generation limit if it's likely an image request
-    const imageKeywords = ['صورة', 'صمم', 'أنشئ', 'صوره', 'image', 'picture', 'generate', 'draw', 'ارسم'];
-    const isLikelyImageRequest = imageKeywords.some(k => text.toLowerCase().includes(k));
-
-    if (isLikelyImageRequest && userData?.subscriptionStatus === 'free' && (userData?.generationsCount || 0) >= 4) {
-      setIsSubscriptionModalOpen(true);
-      return;
-    }
-
-    const userMessage: Message = { role: 'user', text, image };
+  // Core handler that handles basic message workflow
+  const handleSendMessageWorkflow = async (userMessage: Message) => {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setIsLoading(true);
@@ -480,7 +470,7 @@ export default function App() {
       currentSessionId = newId;
       const newSession: ChatSession = {
         id: newId,
-        title: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+        title: userMessage.text.substring(0, 30) + (userMessage.text.length > 30 ? '...' : ''),
         timestamp: Date.now(),
         messages: [userMessage]
       };
@@ -502,7 +492,7 @@ export default function App() {
       
       setMessages(prev => [...prev, { role: 'model', text: "", status: 'thinking' }]);
       
-      const stream = sendMessageStream(newMessages, text, image);
+      const stream = sendMessageStream(newMessages, userMessage.text, userMessage.image);
       
       for await (const chunk of stream) {
         if (chunk.text) {
@@ -573,6 +563,26 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSend = async (text: string, image?: { data: string; mimeType: string }) => {
+    // Check generation limit if it's likely an image request
+    const imageKeywords = ['صورة', 'صمم', 'أنشئ', 'صوره', 'image', 'picture', 'generate', 'draw', 'ارسم'];
+    const isLikelyImageRequest = imageKeywords.some(k => text.toLowerCase().includes(k));
+
+    if (isLikelyImageRequest && userData?.subscriptionStatus === 'free' && (userData?.generationsCount || 0) >= 4) {
+      setIsSubscriptionModalOpen(true);
+      return;
+    }
+
+    const userMessage: Message = { role: 'user', text, image };
+    await handleSendMessageWorkflow(userMessage);
+  };
+
+  // Handler for uploading documents/files from ChatInput
+  const handleSendFile = async (text: string, file: { data: string; mimeType: string; name: string }) => {
+    const userMessage: Message = { role: 'user', text, file };
+    await handleSendMessageWorkflow(userMessage);
   };
 
   const clearChat = () => {
@@ -863,8 +873,6 @@ export default function App() {
                     </div>
                   </div>
 
-
-
                   <div className="h-[1px] bg-white/[0.04] my-2 mx-4" />
                   
                   <div className="p-3">
@@ -919,7 +927,6 @@ export default function App() {
             </button>
             <div className="flex items-center gap-2">
                <SmartyLogo size={32} className="sm:hidden" />
-
             </div>
           </div>
           
@@ -952,8 +959,6 @@ export default function App() {
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col items-center justify-center text-center py-20 md:py-32"
                 >
-                  {/* Logo removed as per user request */}
-                  
                   <h2 className={`text-4xl md:text-5xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
                     {t.welcomeTitle}
                   </h2>
@@ -988,6 +993,7 @@ export default function App() {
                       role={msg.role} 
                       text={msg.text} 
                       image={msg.image} 
+                      file={msg.file}
                       status={msg.status}
                       t={{ zoom: t.zoom, download: t.download, thinking: t.thinking, generatingImage: t.generatingImage }} 
                       isDarkMode={isDarkMode}
@@ -1008,6 +1014,7 @@ export default function App() {
             <div className="relative">
               <ChatInput 
                 onSend={handleSend} 
+                onSendFile={handleSendFile}
                 isLoading={isLoading} 
                 t={{ placeholder: t.placeholder, delete: t.delete }} 
                 lang={lang}
@@ -1042,7 +1049,5 @@ export default function App() {
         onPaymentSuccess={handlePaymentSuccess}
       />
     </div>
-
   );
 }
-
