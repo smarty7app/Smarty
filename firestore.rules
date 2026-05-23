@@ -6,54 +6,128 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helpers
-    function isSignedIn() { 
-      return request.auth != null; 
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
     }
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-
-    function isValidUser(data) {
-      let hasRequiredKeys = data.keys().hasAll(['uid', 'email']);
-      let isIdValid = data.uid == request.auth.uid;
-      let isEmailValid = data.email is string && data.email.size() <= 256;
-      
-      // Optional fields can be null or string
-      let isNameValid = data.get('displayName', '') == null || (data.get('displayName', '') is string && data.get('displayName', '').size() <= 100);
-      let isPhotoValid = data.get('photoURL', '') == null || (data.get('photoURL', '') is string && data.get('photoURL', '').size() <= 512);
-      
-      let isGenerationsValid = (data.get('generationsCount', 0) is int);
-      let isStatusValid = (data.get('subscriptionStatus', 'free') in ['free', 'basic', 'pro']);
-      let isExpiryValid = data.get('subscriptionExpiresAt', '') == null || data.get('subscriptionExpiresAt', '') is string;
-
-      return hasRequiredKeys && isIdValid && isEmailValid && isNameValid && isPhotoValid && isGenerationsValid && isStatusValid && isExpiryValid;
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Users collection
-    match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(incoming()) && 
-                    incoming().get('generationsCount', 0) == 0 &&
-                    incoming().get('subscriptionStatus', 'free') == 'free' &&
-                    incoming().createdAt == request.time;
-      
-      allow update: if isOwner(userId) && isValidUser(incoming()) && (
-        // Action: Profile Update
-        (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL'])) ||
-        // Action: Increment Generations
-        (incoming().diff(existing()).affectedKeys().hasOnly(['generationsCount']) && 
-         incoming().generationsCount == (existing().get('generationsCount', 0) + 1)) ||
-        // Action: Subscription Update
-        (incoming().diff(existing()).affectedKeys().hasOnly(['subscriptionStatus', 'subscriptionExpiresAt']))
+    function isAdmin() {
+      return isSignedIn() && (
+        ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "12benabdallah@gmail.com") || 
+        ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "17benabdallah@gmail.com") ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == "admin")
       );
     }
 
-    // Plans collection
-    match /plans/{planId} {
-      allow read: if true;
-      allow write: if false; // System only
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (existing().get('userId', '') == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (
+                    (existing().get('userId', '') == request.auth.uid && (request.query.limit == null || request.query.limit <= 100)) ||
+                    isAdmin()
+                  );
+      
+      allow create: if isSignedIn() && 
+                    (incoming().get('customerName', '') is string) &&
+                    (incoming().get('phoneNumber', '') is string) &&
+                    incoming().get('userId', '') == request.auth.uid &&
+                    incoming().get('createdAt', request.time) == request.time;
+      
+      allow update: if isSignedIn() && 
+                    (existing().get('userId', '') == request.auth.uid || isAdmin()) &&
+                    (incoming().get('customerName', '') is string) &&
+                    (incoming().get('phoneNumber', '') is string) &&
+                    incoming().get('userId', '') == existing().get('userId', '') &&
+                    incoming().get('createdAt', request.time) == existing().get('createdAt', request.time) && (
+                      incoming().diff(existing()).affectedKeys().hasAny(['status', 'deliveryType', 'commune', 'customerName', 'phoneNumber', 'wilaya', 'possibleFake', 'note', 'shippingCompany', 'trackingNumber', 'labelUrl', 'locationUrl', 'items', 'shippingFee', 'totalPrice'])
+                    );
+      
+      allow delete: if isSignedIn() && (existing().get('userId', '') == request.auth.uid || isAdmin());
+    }
+
+    // --- OrderItem Validation ---
+    function isValidOrderItem(data) {
+      return data.orderId is string &&
+             data.productName is string && data.productName.size() <= 250 &&
+             data.quantity is int && data.quantity >= 0 &&
+             data.size is string && data.size.size() <= 50 &&
+             data.color is string && data.color.size() <= 50;
+    }
+
+    match /orderItems/{itemId} {
+      // Identity check: The parent order must belong to the user
+      function parentOrderBelongsToUser(orderId) {
+        return get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid;
+      }
+
+      allow read, list: if isSignedIn() && (parentOrderBelongsToUser(existing().orderId) || isAdmin());
+      
+      allow create: if isSignedIn() && 
+                    isValidOrderItem(incoming()) && 
+                    parentOrderBelongsToUser(incoming().orderId);
+      
+      allow update: if isSignedIn() && 
+                    (parentOrderBelongsToUser(existing().orderId) || isAdmin()) &&
+                    isValidOrderItem(incoming()) &&
+                    incoming().orderId == existing().orderId &&
+                    incoming().diff(existing()).affectedKeys().hasAny(['productName', 'quantity', 'size', 'color']);
+      
+      allow delete: if isSignedIn() && (parentOrderBelongsToUser(existing().orderId) || isAdmin());
+    }
+
+    match /inventory/{itemId} {
+      allow read, list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    function isValidUser(data) {
+      return (data.planType == null || data.planType in ['free', 'pro', 'unlimited']) &&
+             (data.orderCounter == null || data.orderCounter is int) &&
+             (data.subscriptionStatus == null || data.subscriptionStatus in ['active', 'pending_verification', 'expired']);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && 
+                    incoming().planType == "free" && 
+                    incoming().orderCounter == 0 &&
+                    incoming().subscriptionStatus == "active";
+      allow update: if (isOwner(userId) || isAdmin()) && 
+                    isValidUser(incoming()) &&
+                    (isAdmin() || (
+                      incoming().get('email', '') == existing().get('email', '') &&
+                      incoming().diff(existing()).affectedKeys().hasAny(['orderCounter', 'displayName', 'subscriptionStatus'])
+                    ));
+      allow list: if isAdmin();
+    }
+
+    match /subscription_requests/{requestId} {
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && incoming().status == "pending";
+      allow list: if isSignedIn() && (isAdmin() || request.query.limit <= 100);
+      allow update: if isAdmin();
+    }
+
+    match /merchant_configs/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
     }
   }
 }

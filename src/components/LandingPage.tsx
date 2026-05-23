@@ -1,320 +1,362 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { Sparkles, Image as ImageIcon, Globe, MessageSquare, Shield, Rocket, ArrowRight, LogIn, Tent, Compass, Sun, Map, Download, Loader2 } from 'lucide-react';
-import { SmartyLogo } from './SmartyLogo';
-import Pricing from './Pricing';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Zap, Cpu, Shield, Truck, Activity, CheckCircle, Download, X, Info } from "lucide-react";
+import { Logo, FeatureCard } from "./CommonUI";
+import { Language } from "../lib/translations";
+import { signInWithPopup } from 'firebase/auth'; // 1. استيراد نافذة المصادقة من حزمة الفايربيس الأساسية
+import { auth, googleProvider } from '../lib/firebase'; // 2. استيراد المتغيرات المهيأة من ملفك الصحيح
 
-interface LandingPageProps {
-  onLogin: () => void;
-  isLoggingIn?: boolean;
-  lang: string;
-  isDarkMode: boolean;
-  onInstall?: () => void;
-  showInstall?: boolean;
-  onLanguageChange: (lang: 'ar' | 'en' | 'fr') => void;
-}
+export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean }) {
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [showGuide, setShowGuide] = useState(false);
+  const [installed, setInstalled] = useState(false);
 
-export default function LandingPage({ onLogin, isLoggingIn, lang, isDarkMode, onInstall, showInstall, onLanguageChange }: LandingPageProps) {
-  const t = {
-    ar: {
-      heroTitle: "حوّل أي فكرة أو منتج إلى حملة تسويقية جاهزة خلال دقائق بالذكاء الاصطناعي",
-      heroSubtitle: "أرسل صورة منتجك أو تحدث مع Smarty AI... وسيحوّلها تلقائيًا إلى صور احترافية، إعلانات تسويقية جاهزة، وتحليل سوق كامل داخل دردشة واحدة.",
-      cta: "جرّبه مجانًا الآن",
-      ctaSecondary: "ابدأ أول مشروعك خلال دقائق",
-      trustText: "لا تحتاج خبرة في التصميم أو التسويق. فقط تحدث مع الذكاء الاصطناعي.",
-      features: "مجرد دردشة… والباقي يحدث تلقائيًا",
-      pricing: "باقات التجار",
-      login: "تسجيل الدخول",
-      install: "تحميل التطبيق",
-      footer: "© 2026 Smarty AI. صُنع بفخر للعالم العربي.",
-      footerNote: "مصمم لأصحاب المشاريع، المتاجر الإلكترونية، وصناع المحتوى.",
-      featureList: [
-        { title: "🎨 تصميم منتجات احترافي", desc: "أرسل صورة عادية من هاتفك، واحصل على صور استوديو احترافية جاهزة للإعلانات والمتاجر الإلكترونية.", icon: ImageIcon },
-        { title: "✍️ كتابة إعلانات تزيد المبيعات", desc: "احصل على عناوين جذابة، منشورات تسويقية، وسيناريوهات إعلانية مكتوبة بالذكاء الاصطناعي خلال ثوانٍ.", icon: Sparkles },
-        { title: "📈 تحليل سوق ذكي", desc: "اكتشف المنتجات الرائجة، المنافسين، واتجاهات السوق قبل أن تبدأ البيع.", icon: Map },
-        { title: "🤖 مساعد أعمال متكامل", desc: "بدل استخدام عشرات الأدوات… Smarty AI يجمع التصميم، التسويق، والتحليل في مكان واحد.", icon: Shield }
-      ],
-      interactiveTitle: "جرّب بنفسك",
-      interactivePrompt: '"حوّل هذه الصورة إلى إعلان احترافي لفيسبوك مع وصف تسويقي جذاب"',
-      interactiveResponse: ["صورة منتج احترافية", "عنوان إعلاني قوي", "وصف تسويقي جاهز", "اقتراح جمهور مستهدف"],
-      whyTitle: "لماذا Smarty AI مختلف؟",
-      whyList: ["كل شيء داخل دردشة واحدة", "نتائج خلال ثوانٍ", "سهل لأي صاحب مشروع", "لا تحتاج خبرة تقنية", "مدعوم بالذكاء الاصطناعي"],
-      finalCtaTitle: "ابدأ البيع بذكاء",
-      finalCtaSubtitle: "حوّل أفكارك ومنتجاتك إلى محتوى احترافي وتسويق فعّال باستخدام قوة الذكاء الاصطناعي.",
-      finalCtaButtons: ["ابدأ الآن مجانًا", "جرّب Smarty AI"],
-      aiPowered: "ذكاء مدعوم بالذكاء الاصطناعي"
-    },
-    en: {
-      heroTitle: "Turn Any Idea or Product into a Ready-to-Launch Marketing Campaign in Minutes with AI",
-      heroSubtitle: "Send a product photo or talk to Smarty AI... and it will automatically transform it into professional shots, ready-to-use ads, and full market analysis inside a single chat.",
-      cta: "Try it free now",
-      ctaSecondary: "Start your first project in minutes",
-      trustText: "No design or marketing experience needed. Just talk to AI.",
-      features: "Just a Chat... and the rest happens automatically",
-      pricing: "Merchant Plans",
-      login: "Login",
-      install: "Install App",
-      footer: "© 2026 Smarty AI. Proudly made for the Arabic world.",
-      footerNote: "Designed for entrepreneurs, e-commerce stores, and content creators.",
-      featureList: [
-        { title: "🎨 Pro Product Design", desc: "Send a normal photo from your phone and get studio-quality shots ready for ads and e-shops.", icon: ImageIcon },
-        { title: "✍️ Ad Copy that Sells", desc: "Get catchy headlines, marketing posts, and ad scripts written by AI in seconds.", icon: Sparkles },
-        { title: "📈 Smart Market Analysis", desc: "Discover trending products, competitors, and market trends before you start selling.", icon: Map },
-        { title: "🤖 All-in-One Business Assistant", desc: "Instead of using dozens of tools... Smarty AI combines design, marketing, and analysis in one place.", icon: Shield }
-      ],
-      interactiveTitle: "Try it yourself",
-      interactivePrompt: '"Turn this image into a professional Facebook ad with an engaging marketing description"',
-      interactiveResponse: ["Professional product shot", "Strong ad headline", "Ready-to-use marketing copy", "Target audience suggestion"],
-      whyTitle: "Why Choose Smarty AI?",
-      whyList: ["Everything inside one chat", "Results in seconds", "Easy for any business owner", "No technical experience needed", "Powered by AI"],
-      finalCtaTitle: "Start Selling Smarter",
-      finalCtaSubtitle: "Turn your ideas and products into professional content and effective marketing with the power of AI.",
-      finalCtaButtons: ["Start now for free", "Try Smarty AI"],
-      aiPowered: "AI Powered Intelligence"
-    },
-    fr: {
-      heroTitle: "Transformez n'importe quelle idée ou produit en campagne marketing prête en quelques minutes grâce à l'IA",
-      heroSubtitle: "Envoyez une photo de produit ou parlez à Smarty AI... et il la transformera automatiquement en clichés pro, publicités prêtes à l'emploi et analyse de marché complète dans un seul chat.",
-      cta: "Essayez gratuitement maintenant",
-      ctaSecondary: "Lancez votre premier projet en quelques minutes",
-      trustText: "Aucune expérience en design ou marketing requise. Parlez simplement à l'IA.",
-      features: "Juste une discussion... et le reste se fait automatiquement",
-      pricing: "Forfaits Marchands",
-      login: "Connexion",
-      install: "Installer l'App",
-      footer: "© 2026 Smarty AI. Fièrement créé pour le monde arabe.",
-      footerNote: "Conçu pour les entrepreneurs, les boutiques en ligne et les créateurs de contenu.",
-      featureList: [
-        { title: "🎨 Design Produit Pro", desc: "Envoyez une photo simple de votre téléphone et obtenez des clichés de studio prêts pour vos pubs et e-boutiques.", icon: ImageIcon },
-        { title: "✍️ Rédaction Publicitaire", desc: "Obtenez des titres accrocheurs, des posts marketing et des scripts publicitaires écrits par l'IA en quelques secondes.", icon: Sparkles },
-        { title: "📈 Analyse de Marché", desc: "Découvrez les produits tendances, les concurrents et les tendances du marché avant de commencer à vendre.", icon: Map },
-        { title: "🤖 Assistant Business", desc: "Au lieu d'utiliser des dizaines d'outils... Smarty AI réunit design, marketing et analyse en un seul endroit.", icon: Shield }
-      ],
-      interactiveTitle: "Essayez par vous-même",
-      interactivePrompt: '"Transformez cette image en une publicité Facebook professionnelle avec une description marketing engageante"',
-      interactiveResponse: ["Photo de produit pro", "Titre publicitaire fort", "Copie marketing prête à l'emploi", "Suggestion d'audience cible"],
-      whyTitle: "Pourquoi choisir Smarty AI ?",
-      whyList: ["Tout dans un seul chat", "Résultats en quelques secondes", "Facile pour tout entrepreneur", "Aucune expérience technique requise", "Propulsé par l'IA"],
-      finalCtaTitle: "Vendre plus intelligemment",
-      finalCtaSubtitle: "Transformez vos idées et produits en contenu professionnel et marketing efficace grâce à la puissance de l'IA.",
-      finalCtaButtons: ["Commencez maintenant gratuitement", "Essayez Smarty AI"],
-      aiPowered: "Intelligence Propulsée par l'IA"
+  useEffect(() => {
+    // Check if prompt is already stashed in window
+    if ((window as any).deferredPrompt) {
+      setInstallPrompt((window as any).deferredPrompt);
     }
-  }[lang] || { /* fallback en translations */ };
+
+    const handlePrompt = () => {
+      setInstallPrompt((window as any).deferredPrompt);
+    };
+
+    window.addEventListener('pwaPromptAvailable', handlePrompt);
+    
+    // Check if already in standalone custom display mode
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstalled(true);
+    }
+
+    const handleAppInstalled = () => {
+      setInstalled(true);
+      setInstallPrompt(null);
+      (window as any).deferredPrompt = null;
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('pwaPromptAvailable', handlePrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  // دالة مخصصة للتعامل مع تسجيل الدخول المنبثق لحساب جوجل المربوط بـ Gemini Project
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("👋 تم تسجيل الدخول بنجاح للمستخدم:", result.user.displayName);
+      // بعد نجاح الدخول، نقوم باستدعاء دالة تحديث حالة التطبيق الممررة من الـ App.tsx
+      signIn(); 
+    } catch (error) {
+      console.error("❌ حدث خطأ أثناء عملية الدخول عبر جوجل:", error);
+    }
+  };
+
+  const handleInstallClick = async () => {
+    if (installed) return;
+
+    if (installPrompt) {
+      installPrompt.prompt();
+      try {
+        const { outcome } = await installPrompt.userChoice;
+        console.log(`User response to install prompt: ${outcome}`);
+        if (outcome === 'accepted') {
+          setInstalled(true);
+          setInstallPrompt(null);
+          (window as any).deferredPrompt = null;
+        }
+      } catch (err) {
+        console.error("Installation choice error:", err);
+      }
+    } else {
+      setShowGuide(true);
+    }
+  };
+
+  const plans = [
+    {
+      id: "free",
+      name: t.plan_free_name,
+      price: "0 DA",
+      features: [
+        t.feature_orders_30,
+        t.feature_basic_extraction,
+        t.feature_community_support,
+      ],
+      color: "zinc"
+    },
+    {
+      id: "pro",
+      name: t.plan_pro_name,
+      price: "700 DA",
+      features: [
+        t.feature_orders_350,
+        t.feature_faster_extraction,
+        t.feature_yalidine_integration,
+        t.feature_email_support,
+      ],
+      color: "blue",
+      popular: true
+    },
+    {
+      id: "unlimited",
+      name: t.plan_unlimited_name,
+      price: "2000 DA",
+      features: [
+        t.feature_orders_unlimited,
+        t.feature_full_couriers,
+        t.feature_priority_support,
+        t.feature_api_access,
+      ],
+      color: "yellow"
+    }
+  ];
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'} ${lang === 'ar' ? 'font-sans' : ''}`} dir="rtl">
-      {/* Navbar */}
-      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[#0B0F19] text-white font-sans selection:bg-blue-500/30 overflow-x-hidden" dir={isRtl ? "rtl" : "ltr"}>
+      <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#0B0F19]/80 backdrop-blur-md px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <SmartyLogo size={32} />
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 mr-4">
-              {['ar', 'en', 'fr'].map((l) => (
-                <button
-                  key={l}
-                  onClick={() => onLanguageChange(l as any)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                    lang === l 
-                      ? 'bg-orange-500 text-white' 
-                      : `text-slate-500 hover:text-orange-500 ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`
-                  }`}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
+            <div className="w-8 h-8 rounded-lg overflow-hidden crystal-button p-1 flex items-center justify-center">
+              <Logo className="w-full h-full text-blue-400" />
             </div>
-
-            <button 
-              onClick={onLogin}
-              disabled={isLoggingIn}
-              className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-orange-600 transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isLoggingIn ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <LogIn size={18} />
-              )}
-              <span className="select-none">{t.login}</span>
-            </button>
+            <span className="text-xl font-bold tracking-tight glow-text">SmartyAi Order</span>
+          </div>
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* تحديث الحدث ليقوم بالدخول الفعلي عبر جوجل */}
+            <button onClick={handleGoogleSignIn} className="px-5 py-2 bg-white text-black rounded-xl font-bold text-sm tracking-tight hover:scale-105 transition-all active:scale-95">{t.login_button}</button>
           </div>
         </div>
       </nav>
-
-      <header className="pt-32 pb-20 px-4 text-center">
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`text-4xl md:text-6xl font-bold mb-6 max-w-4xl mx-auto leading-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-        >
-          {t.heroTitle}
-        </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto mb-10"
-        >
-          {t.heroSubtitle}
-        </motion.p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            onClick={onLogin}
-            disabled={isLoggingIn}
-            className="flex items-center justify-center gap-2 bg-orange-500 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:bg-orange-600 hover:scale-105 shadow-xl shadow-orange-500/20 active:scale-95 disabled:opacity-70 disabled:scale-100 disabled:cursor-not-allowed"
-          >
-            {isLoggingIn ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <>
-                <span className="select-none">{t.cta}</span>
-                <ArrowRight size={20} />
-              </>
-            )}
-          </motion.button>
+      <section className="relative pt-40 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-500/10 blur-[120px] rounded-full -z-10" />
+        <div className="max-w-7xl mx-auto text-center space-y-8">
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-[1.2] max-w-4xl mx-auto">{t.landing_hero_title}</motion.h1>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">{t.landing_hero_subtitle}</motion.p>
           
-          {showInstall && (
-            <motion.button
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              onClick={onInstall}
-              className={`flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all border ${
-                isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xs sm:max-w-xl mx-auto pt-4">
+            {/* تحديث زر الـ CTA البداية السريعة ليطلق نافذة جوجل */}
+            <button 
+              onClick={handleGoogleSignIn} 
+              className="w-full sm:w-auto px-8 py-5 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-[0_0_30px_rgba(37,99,235,0.4)] hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-3 cursor-pointer"
             >
-              <Download size={20} />
-              <span className="select-none">{t.install}</span>
-            </motion.button>
-          )}
-        </div>
-      </header>
-
-      {/* Features Grid */}
-      <section className={`py-20 px-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-16">{t.features}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {t.featureList.map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className={`p-6 rounded-2xl border transition-all hover:shadow-xl ${
-                  isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm'
-                }`}
+              <Zap className="w-6 h-6" /> 
+              <span>{t.landing_cta}</span>
+            </button>
+            
+            {!installed && (
+              <button 
+                onClick={handleInstallClick} 
+                className="w-full sm:w-auto px-8 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all active:scale-95 flex items-center justify-center gap-3 cursor-pointer bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-white"
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${isDarkMode ? 'bg-slate-800' : 'bg-orange-50'}`}>
-                  <feature.icon className="text-orange-500" size={24} />
+                <Download className="w-6 h-6 text-blue-400" /> 
+                <span>{t.pwa_install_btn}</span>
+              </button>
+            )}
+          </div>
+          
+          <div className="pt-20">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-8">Integrated with Algerian Logistics Leaders</p>
+            <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-700">
+              {['Yalidine', 'ZR Express', 'Nord Express', 'Sud Express', 'Procolis', 'Maystro', 'Ecotrack', 'Anderson'].map(name => (
+                <span key={name} className="text-xl font-black italic tracking-tighter hover:text-blue-400 transition-colors">{name}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      <section className="py-20 px-6 bg-black/20">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <FeatureCard icon={<Cpu className="w-6 h-6 text-blue-400" />} title={t.landing_feature_1_title} desc={t.landing_feature_1_desc} />
+          <FeatureCard icon={<Shield className="w-6 h-6 text-red-500" />} title={t.landing_feature_2_title} desc={t.landing_feature_2_desc} />
+          <FeatureCard icon={<Truck className="w-6 h-6 text-green-400" />} title={t.landing_feature_3_title} desc={t.landing_feature_3_desc} />
+          <FeatureCard icon={<Activity className="w-6 h-6 text-yellow-400" />} title={t.landing_feature_4_title} desc={t.landing_feature_4_desc} />
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20 space-y-4">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">{t.sub_upgrade || "Upgrade Plans"}</h2>
+            <p className="text-zinc-400 text-lg max-w-2xl mx-auto">{t.landing_pricing_subtitle || "Choose the best plan for your business."}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {plans.map((plan) => (
+              <div 
+                key={plan.id}
+                className={`
+                  relative p-8 rounded-[2.5rem] border transition-all flex flex-col
+                  ${plan.popular ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.1)] ring-1 ring-blue-500/50' : 'bg-white/[0.02] border-white/10 hover:border-white/20'}
+                `}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-500 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-lg">
+                    {t.popular_badge || "Most Popular"}
+                  </div>
+                )}
+                
+                <h3 className={`text-xl font-bold mb-1 tracking-tight ${plan.color === 'blue' ? 'text-blue-400' : plan.color === 'yellow' ? 'text-yellow-400' : 'text-zinc-400'}`}>
+                  {plan.name}
+                </h3>
+                <div className="text-5xl font-bold mb-8 tracking-tighter" dir="ltr">{plan.price}</div>
+                
+                <div className="space-y-4 mb-12 flex-1">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <CheckCircle className={`w-5 h-5 mt-0.5 shrink-0 ${plan.color === 'blue' ? 'text-blue-400' : plan.color === 'yellow' ? 'text-yellow-400' : 'text-zinc-400'}`} />
+                      <span className="text-sm font-medium opacity-80">{feature}</span>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="font-bold text-xl mb-2">{feature.title}</h3>
-                <p className="text-slate-500">{feature.desc}</p>
-              </motion.div>
+
+                {/* تحديث أزرار الباقات لتقوم بتسجيل الدخول الفوري وبدء الخدمة */}
+                <button 
+                  onClick={handleGoogleSignIn}
+                  className={`
+                    w-full py-5 rounded-[1.5rem] font-bold transition-all active:scale-95
+                    ${plan.color === 'blue' 
+                        ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-xl shadow-blue-500/20' 
+                        : plan.color === 'yellow'
+                          ? 'bg-yellow-500 text-black hover:bg-yellow-400 shadow-xl shadow-yellow-500/10'
+                          : 'bg-white text-black hover:bg-zinc-200 shadow-xl shadow-white/5'
+                    }
+                  `}
+                >
+                  {t.landing_cta || "Get Started"}
+                </button>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Interactive Section Preview */}
-      <section className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="text-right">
-              <h2 className="text-4xl font-bold mb-6">{t.interactiveTitle}</h2>
-              <p className="text-slate-500 text-lg mb-8 leading-relaxed">
-                {t.trustText}
-              </p>
-              <ul className="space-y-4">
-                {t.whyList.map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 justify-end">
-                    <span className="font-medium text-slate-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <footer className="py-20 px-6 border-t border-white/10 text-center space-y-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex items-center justify-center gap-2">
+             <Logo className="w-6 h-6 text-zinc-500" />
+             <span className="font-bold text-zinc-500 tracking-tight">SmartyAi Order</span>
+          </div>
+          
+          <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-zinc-800">
+            {[
+              { code: 'ar', label: 'العربية' },
+              { code: 'fr', label: 'Français' },
+              { code: 'en', label: 'English' }
+            ].map((l) => (
+              <button 
+                key={l.code} 
+                onClick={() => setLang(l.code as any)} 
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${lang === l.code ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <p className="text-[10px] uppercase tracking-widest text-zinc-600">SmartyAi Order • {t.landing_footer_payments} &copy; 2026</p>
+      </footer>
 
-            <div className={`p-1 rounded-3xl border shadow-2xl relative ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-               <div className={`p-6 rounded-[1.4rem] ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                <div className="space-y-6">
-                  <div className="flex gap-4 items-start">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex-shrink-0" />
-                    <div className={`flex-1 p-4 rounded-2xl rounded-tl-none text-sm font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
-                      {t.interactivePrompt}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-4 items-start flex-row-reverse">
-                    <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center bg-orange-100/50">
-                      <Sparkles size={20} className="text-orange-500" />
-                    </div>
-                    <div className={`flex-1 p-6 rounded-2xl rounded-tr-none border border-orange-100 bg-orange-50/30`}>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {t.interactiveResponse.map((item, idx) => (
-                          <div key={idx} className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${
-                            isDarkMode ? 'bg-slate-800 border-slate-700 text-orange-400' : 'bg-white border-orange-100 text-orange-600'
-                          }`}>
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+      {/* PWA Installation Instructions Modal */}
+      <AnimatePresence>
+        {showGuide && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-6 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowGuide(false)} 
+                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-white`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-600/10 flex items-center justify-center text-blue-400 border border-blue-500/20 shrink-0">
+                  <Download className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-white">{t.pwa_install_guide}</h3>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">SmartyAi Order Premium App</p>
                 </div>
               </div>
-            </div>
+
+              <div className="space-y-4">
+                {/* Method 1: Safari / iOS */}
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3 text-right">
+                  <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-blue-600/20 text-blue-400 rounded border border-blue-500/10">iOS</span>
+                    <h4 className="text-sm font-bold text-zinc-200">Apple Safari</h4>
+                  </div>
+                  <ol className="list-decimal list-inside text-xs text-zinc-450 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                    <li>
+                      {isRtl 
+                        ? "اضغط على زر المشاركة في متصفح سفاري (أيقونة المربع مع السهم للأعلى)." 
+                        : "Tap the Share button in the Safari browser (the square icon with an arrow pointing up)."}
+                    </li>
+                    <li>
+                      {isRtl 
+                        ? "قم بالتمرير للأسفل واختر (إضافة إلى الصفحة الرئيسية)." 
+                        : "Scroll down and select 'Add to Home Screen'."}
+                    </li>
+                    <li>
+                      {isRtl 
+                        ? "اضغط (إضافة) لتثبيت التطبيق على جهازك." 
+                        : "Tap 'Add' to install the app on your device."}
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Method 2: Android / Chrome / Edge */}
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3 text-right">
+                  <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded border border-yellow-500/10">Android / PC</span>
+                    <h4 className="text-sm font-bold text-zinc-200">Google Chrome & Edge</h4>
+                  </div>
+                  <ol className="list-decimal list-inside text-xs text-zinc-450 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                    <li>
+                      {isRtl 
+                        ? "اضغط على زر الخيارات (النقاط الثلاث) في أعلى أو أسفل المتصفح." 
+                        : "Tap the three dots menu button at the top/bottom of your browser."}
+                    </li>
+                    <li>
+                      {isRtl 
+                        ? "اختر (تثبيت التطبيق) أو (إضافة إلى الشاشة الرئيسية)." 
+                        : "Select 'Install App' or 'Add to Home Screen' from the menu list."}
+                    </li>
+                    <li>
+                      {isRtl 
+                        ? "إذا كنت تستخدم الكمبيوتر، يمكنك الضغط على أيقونة التنزيل التي تظهر مباشرة في شريط العناوين بالمتصفح."
+                        : "On desktop, click on the install/download icon directly in your browser's address bar."}
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-between items-center text-xs text-zinc-500" dir={isRtl ? "rtl" : "ltr"}>
+                <div className="flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-zinc-650 shrink-0" />
+                  <span className="text-[11px] text-zinc-500">{isRtl ? "تثبيت خفيف وسريع ولا يحتاج تحديث" : "Very lightweight, fast, no updates required"}</span>
+                </div>
+                <button 
+                  onClick={() => setShowGuide(false)}
+                  className="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-850 hover:text-white hover:border-zinc-700 transition-all text-zinc-300 font-bold cursor-pointer"
+                >
+                  {isRtl ? "موافق" : "Got it"}
+                </button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20">
-        <Pricing lang={lang} isDarkMode={isDarkMode} onSelectPlan={onLogin} isLoggingIn={isLoggingIn} />
-      </section>
-
-      {/* Final CTA Section */}
-      <section className="py-20 px-4">
-        <div className={`max-w-5xl mx-auto p-12 md:p-20 rounded-3xl border relative overflow-hidden text-center ${
-          isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-950 border-slate-900 text-white shadow-2xl'
-        }`}>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500" />
-          
-          <div className="relative z-10">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">{t.finalCtaTitle}</h2>
-            <p className="opacity-70 text-lg md:text-xl max-w-2xl mx-auto mb-10">
-              {t.finalCtaSubtitle}
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button 
-                onClick={onLogin} 
-                disabled={isLoggingIn}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-orange-500 text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-orange-600 transition-all shadow-xl active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isLoggingIn && <Loader2 size={24} className="animate-spin" />}
-                <span className="select-none">{t.finalCtaButtons[0]}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className={`py-12 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className={`font-bold mb-4 ${isDarkMode ? 'text-slate-200' : 'text-slate-900'}`}>{t.footerNote}</p>
-          <p className="text-slate-500 text-sm">
-            {t.footer}
-          </p>
-        </div>
-      </footer>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
