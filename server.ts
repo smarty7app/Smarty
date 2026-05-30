@@ -1153,35 +1153,10 @@ async function processMessageWithAI(unifiedMessage: { text: string; senderId: st
     };
   }
 
-  const unifiedId = `${unifiedMessage.merchantId}_${unifiedMessage.channel}_${unifiedMessage.senderId}`;
-  let chatHistory: any[] = [];
-
-  if (db) {
-    try {
-      const convDoc = await db.collection("conversations").doc(unifiedId).get();
-      if (convDoc.exists) {
-        chatHistory = convDoc.data()?.messages || [];
-      }
-    } catch (err) {
-      console.warn("Failed to retrieve chat history from Firestore:", err);
-    }
-  }
-
-  // Build formatted text representation of past dialogue turns (up to 20 messages)
-  let formattedHistory = "";
-  if (chatHistory.length > 0) {
-    formattedHistory = "Recent conversational interaction context for this client:\n";
-    chatHistory.slice(-20).forEach((msg: any) => {
-      const roleLabel = msg.role === "user" ? "Customer Msg" : "AI Extraction Recap";
-      formattedHistory += `[${roleLabel}]: ${msg.text}\n`;
-    });
-    formattedHistory += "\n";
-  }
-
   try {
     const parts = [
       {
-        text: `${formattedHistory}Incoming message: "${textContent}"\n\nPlease extract and output order details as JSON.`
+        text: `Here is the conversation message from social channel ${unifiedMessage.channel}:\n${textContent}`
       }
     ];
 
@@ -1191,9 +1166,7 @@ async function processMessageWithAI(unifiedMessage: { text: string; senderId: st
       config: {
         responseMimeType: "application/json",
         responseSchema: orderExtractionSchema,
-        systemInstruction: "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text. Inside the JSON response output, you must extract full name, phone number (normalized), Wilaya (state), commune, items (array of product, quantity, size, color), location_url and the field possible_fake_order correctly based on provided specifications.\n\n" +
-          "IMPORTANT CONTEXT HANDLING:\n" +
-          "You are analyzing a live conversational flow. The user may send multiple messages, clarifying details step by step. If past details (like name, destination state, or phone) are already listed in the recent history context and are NOT contradicted by the latest message, carry them forward into your final JSON extraction. Do not drop previously established data from the JSON output unless the client explicitly corrected/changed it in the current message."
+        systemInstruction: "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text. Inside the JSON response output, you must extract full name, phone number (normalized), Wilaya (state), commune, items (array of product, quantity, size, color), location_url and the field possible_fake_order correctly based on provided specifications."
       },
     });
 
@@ -1201,46 +1174,9 @@ async function processMessageWithAI(unifiedMessage: { text: string; senderId: st
     if (result.wilaya) {
       result.wilaya = normalizeAlgerianWilaya(result.wilaya);
     }
-
-    // Save user message and AI summary context to Firestore to preserve conversational intelligence
-    const userMessageLog = {
-      role: "user",
-      text: textContent,
-      timestamp: new Date().toISOString()
-    };
-
-    const itemSummary = (result.items || []).map((i: any) => `${i.product || 'منتج'} (x${i.quantity || 1})`).join(", ");
-    const recapText = `Extracted fields: Name: "${result.name || ''}", Phone: "${result.phone || ''}", Wilaya: "${result.wilaya || ''}", Commune: "${result.commune || ''}", Items: [${itemSummary}]. Note: ${result.note || ''}`;
-
-    const modelMessageLog = {
-      role: "model",
-      text: recapText,
-      timestamp: new Date().toISOString()
-    };
-
-    let updatedMessages = [...chatHistory, userMessageLog, modelMessageLog];
-    if (updatedMessages.length > 20) {
-      updatedMessages = updatedMessages.slice(updatedMessages.length - 20);
-    }
-
-    if (db) {
-      try {
-        await db.collection("conversations").doc(unifiedId).set({
-          merchantId: unifiedMessage.merchantId,
-          channel: unifiedMessage.channel,
-          senderId: unifiedMessage.senderId,
-          messages: updatedMessages,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        console.log(`[Conversations Engine] Persisted stateful loop conversation history for: ${unifiedId}`);
-      } catch (dbErr) {
-        console.warn("[Conversations Engine] Error writing conversation log:", dbErr);
-      }
-    }
-
     return result;
   } catch (error) {
-    console.error("AI Webhook Extraction Error with Conversation context:", error);
+    console.error("AI Webhook Extraction Error:", error);
     return {
       name: "",
       phone: "",
