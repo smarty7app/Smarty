@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { 
   Menu,
@@ -30,24 +30,15 @@ import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
 import { Logo } from "./components/CommonUI";
 import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
+import Dashboard from "./components/Dashboard";
+import OrderInput from "./components/OrderInput";
+import OrderReview from "./components/OrderReview";
+import Settings from "./components/Settings";
+import Subscription from "./components/Subscription";
+import AdminDashboard from "./components/AdminDashboard";
+import WilayasList from "./components/WilayasList";
+import PublicCheckoutForm from "./components/PublicCheckoutForm";
 
-// --- تحميل المكونات الكبيرة ديناميكياً لتحسين حجم الـ Build (Lazy Loading) ---
-const Dashboard = lazy(() => import("./components/Dashboard"));
-const OrderInput = lazy(() => import("./components/OrderInput"));
-const OrderReview = lazy(() => import("./components/OrderReview"));
-const Settings = lazy(() => import("./components/Settings"));
-const Subscription = lazy(() => import("./components/Subscription"));
-const AdminDashboard = lazy(() => import("./components/AdminDashboard"));
-const WilayasList = lazy(() => import("./components/WilayasList"));
-
-// --- مكوّن مؤشر التحميل البسيط أثناء الانتقال بين الشاشات الكسولة ---
-function LoadingFallback() {
-  return (
-    <div className="w-full py-20 flex items-center justify-center">
-      <RefreshCw className="animate-spin text-zinc-500 w-6 h-6" />
-    </div>
-  );
-}
 
 // --- Constants ---
 const initialOrder: OrderData = {
@@ -66,17 +57,34 @@ const initialOrder: OrderData = {
   totalPrice: 0,
 };
 
-const PLAN_LIMITS = { free: 30, pro: 350, unlimited: 1000000 };
+const PLAN_LIMITS: Record<string, number> = { 
+  free: 50, 
+  basic: 50, 
+  pro: 500, 
+  professional: 500, 
+  unlimited: 2000, 
+  business: 2000, 
+  enterprise: 999999999 
+};
 
 // --- Main App Component ---
 function AppContent() {
   const { user, loading: authLoading, signIn, logout } = useUser();
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem("smarty_lang") as Language) || "fr");
-  const [screen, setScreen] = useState<"dashboard" | "input" | "review" | "subscription" | "settings" | "admin" | "wilayas">("dashboard");
+  const [screen, setScreen] = useState<"dashboard" | "input" | "review" | "subscription" | "settings" | "admin">("dashboard");
 
   useEffect(() => {
     localStorage.setItem("smarty_lang", lang);
   }, [lang]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const screenParam = params.get("screen");
+    const checkoutId = params.get("checkout_id");
+    if (screenParam === "verification" || checkoutId) {
+      setScreen("subscription");
+    }
+  }, []);
 
   const [conversation, setConversation] = useState("");
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -291,9 +299,9 @@ function AppContent() {
        };
 
        if (order.id) {
-         await updateDoc(doc(db, "orders", order.id), payload);
+         await updateDoc(doc(db, "orders", order.id), { ...payload, createdAt: order.createdAt || new Date() });
        } else {
-         await addDoc(collection(db, "orders"), { ...payload, createdAt: serverTimestamp() });
+         await addDoc(collection(db, "orders"), { ...payload, createdAt: order.createdAt || serverTimestamp() });
          // Increment consumption
          await updateDoc(doc(db, "users", user.uid), { 
            orderCounter: (userData.orderCounter || 0) + 1 
@@ -304,7 +312,7 @@ function AppContent() {
        setOrder(initialOrder);
     } catch (err: any) { 
       console.error(err); 
-      alert(err.message || t.save_error);
+      alert(t.save_error);
     } finally { 
       setLoading(false); 
     }
@@ -378,9 +386,9 @@ function AppContent() {
 
       let finalOrderId = order.id;
       if (order.id) {
-        await updateDoc(doc(db, "orders", order.id), firestorePayload);
+        await updateDoc(doc(db, "orders", order.id), { ...firestorePayload, createdAt: order.createdAt || new Date() });
       } else {
-        const docRef = await addDoc(collection(db, "orders"), { ...firestorePayload, createdAt: serverTimestamp() });
+        const docRef = await addDoc(collection(db, "orders"), { ...firestorePayload, createdAt: order.createdAt || serverTimestamp() });
         finalOrderId = docRef.id;
         // Increment consumption
         await updateDoc(doc(db, "users", user.uid), { 
@@ -398,8 +406,8 @@ function AppContent() {
       
       alert(t.shipped_success + "! " + firestorePayload.trackingNumber);
     } catch (err: any) { 
-      setError(err.message || t.shipping_failed); 
-      alert(err.message || t.shipping_failed);
+      setError(t.shipping_failed); 
+      alert(t.shipping_failed);
     } finally { 
       setLoading(false); 
     }
@@ -485,7 +493,7 @@ function AppContent() {
       setScreen("dashboard");
     } catch (err: any) { 
       console.error("Failed to save merchant keys", err);
-      alert((t.error_saving_keys || "Error saving API keys: ") + (err.message || err)); 
+      alert(t.error_saving_keys || "Error saving API keys."); 
     } finally { 
       setLoading(false); 
     }
@@ -549,27 +557,40 @@ function AppContent() {
       setScreen("dashboard");
     } catch (err: any) {
       console.error("Failed to clear config database", err);
-      alert((t.cleared_db_error || "Error cleaning database: ") + (err.message || err));
+      alert(t.cleared_db_error || "Error cleaning database.");
     } finally {
-      }
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     try { 
       await deleteDoc(doc(db, "orders", id)); 
       setOrderToDelete(null); 
+      // Note: We do NOT decrease orderCounter here as requested by user.
     } catch (e) { 
       handleFirestoreError(e, OperationType.DELETE, `orders/${id}`); 
     }
   };
 
+  // Render search-based public route before requiring user authentication
+  const urlParams = new URLSearchParams(window.location.search);
+  const publicMerchantId = urlParams.get("merchantId") || urlParams.get("merchant_id") || urlParams.get("m");
+  if (publicMerchantId) {
+    return <PublicCheckoutForm merchantId={publicMerchantId} />;
+  }
+
   if (authLoading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RefreshCw className="animate-spin text-zinc-500 w-8 h-8" /></div>;
   if (!user) return <LandingPage lang={lang} setLang={setLang} signIn={signIn} t={t} isRtl={isRtl} />;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 font-sans mb-20 select-none" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-200" dir={isRtl ? "rtl" : "ltr"}>
       {screen === "dashboard" && (
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 w-full max-w-md flex items-center justify-between">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="mb-8 w-full max-w-md md:max-w-4xl lg:max-w-5xl xl:max-w-6xl flex items-center justify-between transition-all duration-300"
+        >
           <div className="flex items-center gap-3">
             <button onClick={() => setShowSidebar(true)} className="p-2 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors"><Menu className="w-5 h-5 text-zinc-400" /></button>
             <h2 className="text-lg font-bold tracking-tight text-white/90">
@@ -579,82 +600,77 @@ function AppContent() {
         </motion.div>
       )}
 
-      <main className="w-full max-w-md relative">
+      <main className={`w-full relative transition-all duration-300 ${
+        screen === "dashboard" || screen === "admin" || screen === "wilayas" || screen === "subscription"
+          ? "max-w-md md:max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-10"
+          : screen === "review" || screen === "settings"
+          ? "max-w-md md:max-w-4xl lg:max-w-5xl pb-10"
+          : "max-w-md md:max-w-3xl pb-10"
+      }`}>
         <AnimatePresence mode="wait">
-          <Suspense fallback={<LoadingFallback />}>
-            {screen === "dashboard" && (
-              <Dashboard 
-                userData={userData} 
-                ordersHistory={ordersHistory} 
-                planLimits={PLAN_LIMITS} 
-                topWilayas={topWilayas} 
-                t={t} 
-                setScreen={setScreen} 
-                handleViewOrder={(o: any) => { setOrder(o); setScreen("review"); }} 
-                setOrderToDelete={setOrderToDelete} 
-              />
-            )}
-            {screen === "input" && (
-              <OrderInput 
-                conversation={conversation} 
-                setConversation={setConversation} 
-                loading={loading} 
-                error={error} 
-                handleExtract={handleExtract} 
-                setScreen={setScreen} 
-                t={t} 
-                isRtl={isRtl}
-                fileUrl={fileUrl}
-                setFileUrl={setFileUrl}
-                fileMimeType={fileMimeType}
-                setFileMimeType={setFileMimeType}
-                fileName={fileName}
-                setFileName={setFileName}
-                fileBase64={fileBase64}
-                setFileBase64={setFileBase64}
-                userId={user?.uid}
-              />
-            )}
-            {screen === "review" && (
-              <OrderReview 
-                order={order} 
-                setOrder={setOrder} 
-                loading={loading} 
-                handleSave={handleSave} 
-                handleShipOrder={handleShipOrder} 
-                addItem={() => setOrder({...order, items: [...order.items, { product: "", quantity: 1, size: "", color: "", pricePerUnit: 0 }]})} 
-                removeItem={(idx: number) => { const items = [...order.items]; items.splice(idx, 1); setOrder({...order, items}); }} 
-                updateItem={(idx: number, f: any, v: any) => { const items = [...order.items]; (items[idx] as any)[f] = v; setOrder({...order, items}); }}
-                setScreen={setScreen} 
-                t={t} 
-                isRtl={isRtl} 
-                initialOrder={initialOrder} 
-              />
-            )}
-            {screen === "subscription" && <Subscription user={user} userData={userData} setScreen={setScreen} t={t} isRtl={isRtl} planLimits={PLAN_LIMITS} />}
-            {screen === "admin" && <AdminDashboard t={t} isRtl={isRtl} setScreen={setScreen} />}
-            {screen === "wilayas" && <WilayasList setScreen={setScreen} t={t} isRtl={isRtl} ordersHistory={ordersHistory} />}
-            {screen === "settings" && (
-              <Settings 
-                t={t} 
-                setScreen={setScreen} 
-                isRtl={isRtl} 
-                loading={loading} 
-                handleSaveKeys={handleSaveKeys} 
-                handleClearKeys={handleClearKeys}
-                lang={lang} 
-                setLang={setLang}
-                yalidineId={yalidineId} setYalidineId={setYalidineId}
-                yalidineToken={yalidineToken} setYalidineToken={setYalidineToken}
-                zrKey={zrKey} setZrKey={setZrKey}
-                maystroId={maystroId} setMaystroId={setMaystroId}
-                maystroKey={maystroKey} setMaystroKey={setMaystroKey}
-                ecotrackToken={ecotrackToken} setEcotrackToken={setEcotrackToken}
-                andersonUser={andersonUser} setAndersonUser={setAndersonUser}
-                andersonPass={andersonPass} setAndersonPass={setAndersonPass}
-              />
-            )}
-          </Suspense>
+          {screen === "dashboard" && <Dashboard userData={userData} ordersHistory={ordersHistory} planLimits={PLAN_LIMITS} topWilayas={topWilayas} t={t} setScreen={setScreen} handleViewOrder={(o: any) => { setOrder(o); setScreen("review"); }} setOrderToDelete={setOrderToDelete} />}
+          {screen === "input" && (
+            <OrderInput 
+              conversation={conversation} 
+              setConversation={setConversation} 
+              loading={loading} 
+              error={error} 
+              handleExtract={handleExtract} 
+              setScreen={setScreen} 
+              t={t} 
+              isRtl={isRtl}
+              fileUrl={fileUrl}
+              setFileUrl={setFileUrl}
+              fileMimeType={fileMimeType}
+              setFileMimeType={setFileMimeType}
+              fileName={fileName}
+              setFileName={setFileName}
+              fileBase64={fileBase64}
+              setFileBase64={setFileBase64}
+              userId={user?.uid}
+            />
+          )}
+          {screen === "review" && (
+            <OrderReview 
+              userData={userData}
+              order={order} 
+              setOrder={setOrder} 
+              loading={loading} 
+              handleSave={handleSave} 
+              handleShipOrder={handleShipOrder} 
+              addItem={() => setOrder({...order, items: [...order.items, { product: "", quantity: 1, size: "", color: "", pricePerUnit: 0 }]})} 
+              removeItem={(idx: number) => { const items = [...order.items]; items.splice(idx, 1); setOrder({...order, items}); }} 
+              updateItem={(idx: number, f: any, v: any) => { const items = [...order.items]; (items[idx] as any)[f] = v; setOrder({...order, items}); }}
+              setScreen={setScreen} 
+              t={t} 
+              isRtl={isRtl} 
+              initialOrder={initialOrder} 
+            />
+          )}
+          {screen === "subscription" && <Subscription user={user} userData={userData} setScreen={setScreen} t={t} isRtl={isRtl} planLimits={PLAN_LIMITS} />}
+          {screen === "admin" && <AdminDashboard t={t} isRtl={isRtl} setScreen={setScreen} />}
+          {screen === "wilayas" && <WilayasList setScreen={setScreen} t={t} isRtl={isRtl} ordersHistory={ordersHistory} />}
+          {screen === "settings" && (
+            <Settings 
+              userData={userData}
+              t={t} 
+              setScreen={setScreen} 
+              isRtl={isRtl} 
+              loading={loading} 
+              handleSaveKeys={handleSaveKeys} 
+              handleClearKeys={handleClearKeys}
+              lang={lang} 
+              setLang={setLang}
+              yalidineId={yalidineId} setYalidineId={setYalidineId}
+              yalidineToken={yalidineToken} setYalidineToken={setYalidineToken}
+              zrKey={zrKey} setZrKey={setZrKey}
+              maystroId={maystroId} setMaystroId={setMaystroId}
+              maystroKey={maystroKey} setMaystroKey={setMaystroKey}
+              ecotrackToken={ecotrackToken} setEcotrackToken={setEcotrackToken}
+              andersonUser={andersonUser} setAndersonUser={setAndersonUser}
+              andersonPass={andersonPass} setAndersonPass={setAndersonPass}
+            />
+          )}
         </AnimatePresence>
       </main>
 
@@ -680,7 +696,7 @@ function AppContent() {
             <div onClick={() => setOrderToDelete(null)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-xs text-center space-y-6">
               <Trash2 className="text-red-500 w-12 h-12 mx-auto" /><h3 className="text-lg font-bold">{t.delete_confirm}</h3>
-              <div className="flex flex-col gap-2"><button onClick={() => handleDelete(orderToDelete)} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold">{t.delete_button}</button><button onClick={() => setOrderToDelete(null)} className="w-full py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold">{t.cancel}</button></div>
+              <div className="flex flex-col gap-2"><button onClick={() => handleDelete(orderToDelete)} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold">{t.delete_button}</button><button onClick={() => setOrderToDelete(null)} className="w-full py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold">{t.btn_cancel}</button></div>
             </motion.div>
           </div>
         )}
@@ -689,7 +705,7 @@ function AppContent() {
             <div onClick={() => setShowLogoutConfirm(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="relative bg-zinc-900 border border-zinc-800 rounded-3xl p-6 w-full max-w-xs text-center space-y-6">
               <LogOut className="text-red-500 w-12 h-12 mx-auto" /><h3 className="text-lg font-bold">{t.logout_confirm}</h3>
-              <div className="flex flex-col gap-2"><button onClick={() => { logout(); setShowLogoutConfirm(false); }} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold">{t.logout_button}</button><button onClick={() => setShowLogoutConfirm(false)} className="w-full py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold">{t.cancel}</button></div>
+              <div className="flex flex-col gap-2"><button onClick={() => { logout(); setShowLogoutConfirm(false); }} className="w-full py-3 bg-red-500 text-white rounded-xl font-bold">{t.logout_button}</button><button onClick={() => setShowLogoutConfirm(false)} className="w-full py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold">{t.btn_cancel}</button></div>
             </motion.div>
           </div>
         )}
@@ -705,3 +721,4 @@ export default function App() {
     </FirebaseProvider>
   );
 }
+

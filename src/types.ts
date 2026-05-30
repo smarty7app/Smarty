@@ -38,7 +38,7 @@ export interface InventoryItem {
 }
 
 export interface UserData {
-  planType: "free" | "pro" | "unlimited";
+  planType: "free" | "pro" | "unlimited" | "basic" | "professional" | "business" | "enterprise";
   orderCounter: number;
   expiresAt?: string;
   subscriptionStatus: "active" | "pending_verification" | "expired";
