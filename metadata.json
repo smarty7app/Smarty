@@ -1,0 +1,8 @@
+{
+  "name": "SmartyAi Order",
+  "description": "تطبيق ذكي لاستخراج بيانات الطلبات من محادثات التواصل بسرعة وسهولة - SmartyAi Order.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
