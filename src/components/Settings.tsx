@@ -285,15 +285,11 @@ export default function Settings({
           <div className="flex items-center gap-2 text-blue-400">
             <Globe className="w-5 h-5" />
             <h3 className="text-sm font-bold uppercase tracking-wider">
-              {isAr ? "دليل ربط وتفعيل القنوات الاجتماعية" : isFr ? "Guide de connexion des canaux sociaux" : "Social Channels Integration Guide"}
+              {t.settings_social_guide_title || "Social Channels Integration Guide"}
             </h3>
           </div>
           <p className="text-xs text-zinc-400">
-            {isAr 
-              ? "دليل التنفيذ العملي لربط وتفعيل استقبال المحادثات تلقائياً عبر واجهات برمجة التطبيقات (APIs)" 
-              : isFr 
-                ? "Détails opérationnels et intégration par API pour la réception automatique des messages" 
-                : "Operational details and API integration steps for automated message reception"}
+            {t.settings_social_guide_desc || "Operational details and API integration steps for automated message reception"}
           </p>
         </div>
 
@@ -302,71 +298,55 @@ export default function Settings({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-zinc-800 px-4 py-3 bg-zinc-900/40 text-zinc-400 font-medium">
-                <th className="p-4 text-right">{isAr ? "القناة" : isFr ? "Canal" : "Channel"}</th>
-                <th className="p-4">{isAr ? "واجهة برمجة التطبيقات (API) الرئيسية" : isFr ? "API Principale" : "Main API"}</th>
-                <th className="p-4">{isAr ? "طريقة الربط الأساسية" : isFr ? "Méthode de liaison" : "Connection Method"}</th>
-                <th className="p-4">{isAr ? "الأدوات والموارد" : isFr ? "Outils et Ressources" : "Tools and Resources"}</th>
+                <th className="p-4 text-right">{t.settings_social_col_channel || "Channel"}</th>
+                <th className="p-4">{t.settings_social_col_api || "Main API"}</th>
+                <th className="p-4">{t.settings_social_col_method || "Connection Method"}</th>
+                <th className="p-4">{t.settings_social_col_tools || "Tools and Resources"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40 text-zinc-300">
               <tr>
                 <td className="p-4 font-bold text-right flex items-center gap-2 justify-end">
                   <span className="px-2 py-0.5 text-[10px] rounded bg-blue-500/10 text-blue-400 border border-blue-500/10">Facebook</span>
-                  <span>{isAr ? "فيسبوك ماسنجر" : "Facebook Messenger"}</span>
+                  <span>{isAr ? "فيسبوك ماسنجر" : isFr ? "Facebook Messenger" : "Facebook Messenger"}</span>
                 </td>
                 <td className="p-4 font-mono text-xs">Messenger Platform API</td>
                 <td className="p-4 font-semibold text-blue-400/90">Webhooks</td>
                 <td className="p-4 text-zinc-400">
-                  {isAr 
-                    ? "توثيق فيسبوك الرسمي، مكتبة @msgly/messenger لـ Node.js" 
-                    : isFr 
-                      ? "Documentation FB officielle, bibliothèque Node.js @msgly/messenger" 
-                      : "Official FB documentation, @msgly/messenger Node.js library"}
+                  {t.settings_social_fb_docs || "Official FB documentation, @msgly/messenger Node.js library"}
                 </td>
               </tr>
               <tr>
                 <td className="p-4 font-bold text-right flex items-center gap-2 justify-end">
                   <span className="px-2 py-0.5 text-[10px] rounded bg-pink-500/10 text-pink-400 border border-pink-500/10">Instagram</span>
-                  <span>{isAr ? "إنستغرام" : "Instagram"}</span>
+                  <span>{isAr ? "إنستغرام" : isFr ? "Instagram" : "Instagram"}</span>
                 </td>
                 <td className="p-4 font-mono text-xs">Instagram Graph API</td>
                 <td className="p-4 font-semibold text-pink-400/90">{isAr ? "Webhooks عبر تطبيق فيسبوك" : isFr ? "Webhooks via FB App" : "Webhooks via FB App"}</td>
                 <td className="p-4 text-zinc-400">
-                  {isAr 
-                    ? "توثيق Instagram Messaging API، نفس إعدادات فيسبوك ماسنجر مع إضافة صلاحيات Instagram" 
-                    : isFr 
-                      ? "Doc Instagram Messaging API, même configuration que Messenger avec permissions Instagram" 
-                      : "Instagram Messaging API Docs, same setup as Messenger with Instagram permissions"}
+                  {t.settings_social_ig_docs || "Instagram Messaging API Docs, same setup as Messenger with Instagram permissions"}
                 </td>
               </tr>
               <tr>
                 <td className="p-4 font-bold text-right flex items-center gap-2 justify-end">
                   <span className="px-2 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/10">WhatsApp</span>
-                  <span>{isAr ? "واتساب" : "WhatsApp"}</span>
+                  <span>{isAr ? "واتساب" : isFr ? "WhatsApp" : "WhatsApp"}</span>
                 </td>
                 <td className="p-4 font-mono text-xs">WhatsApp Business API</td>
                 <td className="p-4 font-semibold text-emerald-400/90">{isAr ? "Webhooks أو مزود Twilio" : isFr ? "Webhooks ou Twilio" : "Webhooks or Twilio"}</td>
                 <td className="p-4 text-zinc-400">
-                  {isAr 
-                    ? "وثائق Meta Developer، Twilio API كحل بديل لتبسيط الإعداد" 
-                    : isFr 
-                      ? "Doc Meta Developer, Twilio API comme alternative pour simplifier l'installation" 
-                      : "Meta Developer Docs, Twilio API as a simpler alternative setup"}
+                  {t.settings_social_wa_docs || "Meta Developer Docs, Twilio API as a simpler alternative setup"}
                 </td>
               </tr>
               <tr>
                 <td className="p-4 font-bold text-right flex items-center gap-2 justify-end">
                   <span className="px-2 py-0.5 text-[10px] rounded bg-sky-500/10 text-sky-400 border border-sky-500/10">Telegram</span>
-                  <span>{isAr ? "تيليغرام" : "Telegram"}</span>
+                  <span>{isAr ? "تيليغرام" : isFr ? "Telegram" : "Telegram"}</span>
                 </td>
                 <td className="p-4 font-mono text-xs">Telegram Bot API</td>
                 <td className="p-4 font-semibold text-sky-450">Webhooks</td>
                 <td className="p-4 text-zinc-400">
-                  {isAr 
-                    ? "توثيق Telegram Bot API، مكتبات مثل node-telegram-bot-api" 
-                    : isFr 
-                      ? "Documentation Telegram Bot API, package node-telegram-bot-api" 
-                      : "Telegram Bot API Docs, node-telegram-bot-api package"}
+                  {t.settings_social_tg_docs || "Telegram Bot API Docs, node-telegram-bot-api package"}
                 </td>
               </tr>
             </tbody>
@@ -378,12 +358,10 @@ export default function Settings({
           <div className="space-y-1">
             <h4 className="font-bold text-zinc-200 text-xs flex items-center gap-1.5 justify-start">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-              {isAr ? "🔗 مصفوفة ربط القنوات بالـ Webhooks الفعالة" : "🔗 Active Channels Webhooks Matrix"}
+              {t.settings_social_matrix_title || "🔗 Active Channels Webhooks Matrix"}
             </h4>
             <p className="text-[11px] text-zinc-400">
-              {isAr 
-                ? "انسخ روابط الـ Webhooks المباشرة الخاصة بك واربطها بلوحة تحكم المطورين لتلقي وتفكيك طلبات عملائك فورياً:" 
-                : "Copy your direct webhooks to link inside developer app portals to process buyer inquiries in real-time:"}
+              {t.settings_social_matrix_desc || "Copy your direct webhooks to link inside developer app portals to process buyer inquiries in real-time:"}
             </p>
           </div>
 
@@ -391,9 +369,9 @@ export default function Settings({
             <table className="w-full text-left border-collapse text-[11px]">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/40 text-zinc-400 font-medium text-xs">
-                  <th className="p-3 text-right">{isAr ? "القناة" : "Channel"}</th>
-                  <th className="p-3 text-left">{isAr ? "نقاط النهاية الموصى بها (Endpoints)" : "Recommended Endpoints"}</th>
-                  <th className="p-3 text-right">{isAr ? "خطوات الربط السريعة" : "Quick Connection Steps"}</th>
+                  <th className="p-3 text-right">{t.settings_social_col_channel || "Channel"}</th>
+                  <th className="p-3 text-left">{t.settings_social_col_endpoints || "Recommended Endpoints"}</th>
+                  <th className="p-3 text-right">{t.settings_social_col_steps || "Quick Connection Steps"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/40 text-zinc-300">
@@ -402,7 +380,7 @@ export default function Settings({
                   <td className="p-3 font-bold text-right">
                     <div className="flex items-center gap-1.5 justify-end">
                       <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      <span>{isAr ? "فيسبوك ماسنجر" : "Facebook Messenger"}</span>
+                      <span>{isAr ? "فيسبوك ماسنجر" : isFr ? "Facebook Messenger" : "Facebook Messenger"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-left">
@@ -419,9 +397,7 @@ export default function Settings({
                     </div>
                   </td>
                   <td className="p-3 text-zinc-400 text-right leading-relaxed text-[11px]">
-                    {isAr 
-                      ? "استخدم التوثيق الرسمي من فيسبوك. اتبع دليل How to Integrate Facebook Messenger with a CRM للحصول على خطوات تفصيلية." 
-                      : "Use FB official documentation. Follow 'How to Integrate Facebook Messenger with a CRM' guide for extreme details."}
+                    {t.settings_social_fb_steps || "Use FB official documentation. Follow 'How to Integrate Facebook Messenger with a CRM' guide for extreme details."}
                   </td>
                 </tr>
 
@@ -430,7 +406,7 @@ export default function Settings({
                   <td className="p-3 font-bold text-right">
                     <div className="flex items-center gap-1.5 justify-end">
                       <span className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                      <span>{isAr ? "إنستغرام" : "Instagram"}</span>
+                      <span>{isAr ? "إنستغرام" : isFr ? "Instagram" : "Instagram"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-left">
@@ -447,9 +423,7 @@ export default function Settings({
                     </div>
                   </td>
                   <td className="p-3 text-zinc-400 text-right leading-relaxed text-[11px]">
-                    {isAr 
-                      ? "يتم عبر نفس تطبيق فيسبوك. تأكد من اشتراك (Subscribe) الـ webhook الخاص بك على أحداث Instagram." 
-                      : "Done via target same Facebook App. Ensure subscribing your webhook endpoint triggers on Instagram events."}
+                    {t.settings_social_ig_steps || "Done via target same Facebook App. Ensure subscribing your webhook endpoint triggers on Instagram events."}
                   </td>
                 </tr>
 
@@ -458,12 +432,12 @@ export default function Settings({
                   <td className="p-3 font-bold text-right">
                     <div className="flex items-center gap-1.5 justify-end">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>{isAr ? "واتساب" : "WhatsApp"}</span>
+                      <span>{isAr ? "واتساب" : isFr ? "WhatsApp" : "WhatsApp"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-left">
                     <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-300 bg-zinc-900/60 px-3 py-1.5 rounded-xl border border-zinc-800 max-w-xs md:max-w-md overflow-hidden">
-                      <span className="shrink-0 font-bold px-1 bg-emerald-550/10 text-[9px] rounded text-emerald-400">POST</span>
+                      <span className="shrink-0 font-bold px-1 bg-emerald-555/10 text-[9px] rounded text-emerald-400">POST</span>
                       <span className="truncate select-all">{`${typeof window !== "undefined" ? window.location.origin : ""}/webhook/whatsapp?merchantId=${userData?.uid || "demo_merchant_id"}`}</span>
                       <button
                         onClick={() => copyToClipboard(`${typeof window !== "undefined" ? window.location.origin : ""}/webhook/whatsapp?merchantId=${userData?.uid || "demo_merchant_id"}`, "whatsapp")}
@@ -475,9 +449,7 @@ export default function Settings({
                     </div>
                   </td>
                   <td className="p-3 text-zinc-400 text-right leading-relaxed text-[11px]">
-                    {isAr 
-                      ? "إذا اخترت طريق Twilio، استخدم دليل الإعداد في Twilio Docs." 
-                      : "If you choose the Twilio route integration, configure your endpoints within Twilio Docs setup guidelines."}
+                    {t.settings_social_wa_steps || "If you choose the Twilio route integration, configure your endpoints within Twilio Docs setup guidelines."}
                   </td>
                 </tr>
 
@@ -486,12 +458,12 @@ export default function Settings({
                   <td className="p-3 font-bold text-right">
                     <div className="flex items-center gap-1.5 justify-end">
                       <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                      <span>{isAr ? "تيليغرام" : "Telegram"}</span>
+                      <span>{isAr ? "تيليغرام" : isFr ? "Telegram" : "Telegram"}</span>
                     </div>
                   </td>
                   <td className="p-3 text-left">
                     <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-300 bg-zinc-900/60 px-3 py-1.5 rounded-xl border border-zinc-800 max-w-xs md:max-w-md overflow-hidden">
-                      <span className="shrink-0 font-bold px-1 bg-sky-550/10 text-[9px] rounded text-sky-400">POST</span>
+                      <span className="shrink-0 font-bold px-1 bg-sky-555/10 text-[9px] rounded text-sky-400">POST</span>
                       <span className="truncate select-all">{`${typeof window !== "undefined" ? window.location.origin : ""}/webhook/telegram?merchantId=${userData?.uid || "demo_merchant_id"}`}</span>
                       <button
                         onClick={() => copyToClipboard(`${typeof window !== "undefined" ? window.location.origin : ""}/webhook/telegram?merchantId=${userData?.uid || "demo_merchant_id"}`, "telegram")}
@@ -503,9 +475,7 @@ export default function Settings({
                     </div>
                   </td>
                   <td className="p-3 text-zinc-400 text-right leading-relaxed text-[11px]">
-                    {isAr 
-                      ? "اتبع خطوات إعداد الـ Webhook في Bots: An introduction for developers." 
-                      : "Follow Webhook setups listed in Bots: An introduction for developers guide website."}
+                    {t.settings_social_tg_steps || "Follow Webhook setups listed in Bots: An introduction for developers guide website."}
                   </td>
                 </tr>
               </tbody>
@@ -516,26 +486,32 @@ export default function Settings({
         {/* Activation pipeline steps */}
         <div className="p-5 rounded-2xl bg-[#0B0F19]/60 border border-zinc-800/80 space-y-4 text-xs">
           <h4 className="font-bold text-zinc-200">
-            {isAr ? "⚡ كيف تعمل دورة الاستقبال والتحليل الذكي؟" : "⚡ How does the smart reception & analysis pipeline work?"}
+            {isAr ? "⚡ كيف تعمل دورة الاستقبال والتحليل الذكي؟" : isFr ? "⚡ Comment fonctionne le cycle de réception et d'analyse intelligente ?" : "⚡ How does the smart reception & analysis pipeline work?"}
           </h4>
-          <ol className="list-decimal list-inside space-y-3 text-zinc-400 leading-relaxed">
+          <ol className="list-decimal list-inside space-y-3 text-zinc-450 leading-relaxed">
             <li>
-              <strong>{isAr ? "تفعيل Webhooks وتطبيق المطورين:" : "Activate Developer App & Webhooks:"}</strong>{" "}
+              <strong>{isAr ? "تفعيل Webhooks وتطبيق المطورين:" : isFr ? "Activer les Webhooks et l'application développeur :" : "Activate Developer App & Webhooks:"}</strong>{" "}
               {isAr 
                 ? "قم بإنشاء حساب مطور على منصة Meta وقفل إرسال الرسائل لعنوان Webhook التابع لخادمك لاستقبال محتوى الدردشات فورياً بتنسيق JSON." 
-                : "Register a developer account, create an App, and configure Webhook subscriptions to receive incoming chat messages in JSON format."}
+                : isFr 
+                  ? "Créez un compte développeur sur la plateforme Meta et configurez les requêtes Webhook vers votre serveur pour recevoir les messages instantanément au format JSON."
+                  : "Register a developer account, create an App, and configure Webhook subscriptions to receive incoming chat messages in JSON format."}
             </li>
             <li>
-              <strong>{isAr ? "التوجيه لذكاء المنصة (AI Mapping):" : "Routing to Platform AI (AI Mapping):"}</strong>{" "}
+              <strong>{isAr ? "التوجيه لذكاء المنصة (AI Mapping):" : isFr ? "Routage vers l'IA de la plateforme (AI Mapping) :" : "Routing to Platform AI (AI Mapping):"}</strong>{" "}
               {isAr 
                 ? "بشكل آلي، يتم تمرير نص الرسالة المُستقبلة إلى وحدة التحليل الذكي (Gemini API) على السيرفر لتحديد الاسم والمدينة ورقم هاتف العميل فوراً." 
-                : "Once received, messages are automatically routed server-side to our AI engine (Gemini API) to perform extraction of name, city, and phone."}
+                : isFr
+                  ? "Le message reçu est automatiquement transmis à notre moteur d'IA (API Gemini) sur le serveur pour extraire le nom, la ville et le téléphone du client."
+                  : "Once received, messages are automatically routed server-side to our AI engine (Gemini API) to perform extraction of name, city, and phone."}
             </li>
             <li>
-              <strong>{isAr ? "تأكيد واستخراج الشحنة:" : "Confirm and Manifest Shipment:"}</strong>{" "}
+              <strong>{isAr ? "تأكيد واستخراج الشحنة:" : isFr ? "Confirmation et expédition du colis :" : "Confirm and Manifest Shipment:"}</strong>{" "}
               {isAr 
                 ? "بمجرد الفرز، تظهر البيانات مباشرة بقائمة الانتظار لتأكيدها وتجهيز كود الشحن مع Yalidine أو ZR Express أو شركات الشحن الأخرى المدعومة بلمسة واحدة." 
-                : "Extracted data appears directly in your pending queue for review and single-click shipping manifest generation via your preferred courier."}
+                : isFr
+                  ? "Une fois triées, les données apparaissent dans la file d'attente pour confirmation et préparation de l'étiquette d'expédition avec Yalidine, ZR Express ou d'autres transporteurs en un seul clic."
+                  : "Extracted data appears directly in your pending queue for review and single-click shipping manifest generation via your preferred courier."}
             </li>
           </ol>
         </div>
