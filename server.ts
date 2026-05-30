@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import crypto from "crypto";
 import fs from "fs";
 import cors from "cors";
+import helmet from "helmet";
 import { fileURLToPath } from "url";
 import firebaseConfig from "./firebase-applet-config.json";
 
@@ -43,7 +44,17 @@ initializeFirebase();
 
 // Encryption Configuration
 const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = Buffer.from((process.env.ENCRYPTION_KEY || "fallback_merchant_keys_encryption_default_key_32bytes").padEnd(32).slice(0, 32));
+
+if (!process.env.ENCRYPTION_KEY) {
+  console.error("=================================================================================");
+  console.error("🚨 CRITICAL SECURITY ERROR: process.env.ENCRYPTION_KEY is missing!");
+  console.error("This environment variable is mandatory for secure crypto encryption and decryption.");
+  console.error("Please configure it in your Secrets / Environment settings immediately.");
+  console.error("=================================================================================");
+  process.exit(1);
+}
+
+const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY.padEnd(32).slice(0, 32));
 
 function encrypt(text: string): string {
   const iv = crypto.randomBytes(16);
@@ -56,16 +67,35 @@ function encrypt(text: string): string {
 function decrypt(text: string): string {
   try {
     const textParts = text.split(':');
-    if (textParts.length < 2) return "";
-    const iv = Buffer.from(textParts.shift()!, 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
-    let decrypted = decipher.update(encryptedText as any, undefined, 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    if (textParts.length < 2) return text;
+    
+    const ivStr = textParts[0];
+    // A standard hex representation of 16-bytes random iv is exactly 32 hex characters
+    const isHexIv = /^[0-9a-fA-F]{32}$/.test(ivStr);
+    if (!isHexIv) {
+      return text; // Not a valid ciphertext structure, treat as plain text safely
+    }
+
+    const iv = Buffer.from(ivStr, 'hex');
+    const encryptedText = Buffer.from(textParts.slice(1).join(':'), 'hex');
+
+    // Attempt 1: Encrypted using secure environment key
+    try {
+      const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+      let decrypted = decipher.update(encryptedText as any, undefined, 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch {
+      // Attempt 2: Encrypted using legacy fallback key for seamless migration
+      const legacyKey = Buffer.from("fallback_merchant_keys_encryption_default_key_32bytes".padEnd(32).slice(0, 32));
+      const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, legacyKey, iv);
+      let decrypted = decipher.update(encryptedText as any, undefined, 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    }
   } catch (err) {
-    console.error("Decryption failed:", err);
-    return "";
+    // Gracefully fallback to plain text if all attempts fail
+    return text;
   }
 }
 
@@ -77,60 +107,12 @@ function getDecryptedOrPlain(val: string | undefined): string {
   return val;
 }
 
-function decodeAndVerifyFirebaseToken(idToken: string, projectId: string): any {
-  try {
-    const parts = idToken.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    // Base64URL decode
-    const base64Url = parts[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-    const payload = JSON.parse(jsonPayload);
-
-    // Validate expiration
-    const nowInSecs = Math.floor(Date.now() / 1000);
-    if (!payload.exp || payload.exp < nowInSecs) {
-      console.warn("Manual Token Verification: Token expired");
-      return null;
-    }
-
-    // Validate issuer
-    const expectedIss = `https://securetoken.google.com/${projectId}`;
-    if (payload.iss !== expectedIss) {
-      console.warn("Manual Token Verification: Issuer mismatch (expected " + expectedIss + ", got " + payload.iss + ")");
-      return null;
-    }
-
-    // Validate audience
-    if (payload.aud !== projectId) {
-      console.warn("Manual Token Verification: Audience mismatch (expected " + projectId + ", got " + payload.aud + ")");
-      return null;
-    }
-
-    return payload;
-  } catch (error) {
-    console.error("Error decoding Firebase token manually:", error);
-    return null;
-  }
-}
-
 async function getUserId(req: express.Request): Promise<string | null> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
   const idToken = authHeader.split('Bearer ')[1];
   if (!idToken || idToken === 'undefined' || idToken === 'null') return null;
   try {
-    // 1. Attempt manual JWT verification to resolve cross-project audience claim checks
-    const projectId = "gen-lang-client-0000489085";
-    const manualPayload = decodeAndVerifyFirebaseToken(idToken, projectId);
-    if (manualPayload) {
-      return manualPayload.uid || manualPayload.sub;
-    }
-
-    // 2. Fallback to standard Firebase Admin verification
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     return decodedToken.uid;
   } catch (error) {
@@ -143,65 +125,27 @@ const app = express();
 const PORT = 3000;
 
 // Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled to ensure seamless preview/iFrame rendering & Vite communication
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(cors());
 app.set('trust proxy', 1);
 
-// Add health check with diagnostics
+// Add health check with diagnostics (Secured: No raw internal files, process directories, or credentials leakage)
 app.get("/api/health", (req, res) => {
-  let adminAppOptions = null;
+  let adminConnected = false;
   try {
-    if (admin.apps.length > 0) {
-      adminAppOptions = admin.app().options;
-    }
-  } catch (e: any) {
-    adminAppOptions = { error: e.message };
-  }
-
-  // Check which search path exists
-  let resolvedDirname = "";
-  try {
-    // @ts-ignore
-    resolvedDirname = path.dirname(fileURLToPath(import.meta.url));
+    adminConnected = admin.apps.length > 0;
   } catch (e) {
-    resolvedDirname = typeof __dirname !== 'undefined' ? __dirname : "";
-  }
-
-  const searchPaths = [
-    path.join(process.cwd(), "firebase-applet-config.json"),
-    "/firebase-applet-config.json"
-  ];
-
-  if (resolvedDirname) {
-    searchPaths.push(path.join(resolvedDirname, "firebase-applet-config.json"));
-    searchPaths.push(path.join(resolvedDirname, "..", "firebase-applet-config.json"));
-  }
-
-  const pathsStatus: any = {};
-  for (const p of searchPaths) {
-    pathsStatus[p] = {
-      exists: fs.existsSync(p),
-      readable: false,
-      error: null
-    };
-    if (pathsStatus[p].exists) {
-      try {
-        fs.accessSync(p, fs.constants.R_OK);
-        pathsStatus[p].readable = true;
-      } catch (err: any) {
-        pathsStatus[p].error = err.message;
-      }
-    }
+    adminConnected = false;
   }
 
   res.json({
     status: "ok",
-    processCwd: process.cwd(),
-    resolvedDirname,
-    envGoogleCloudProject: process.env.GOOGLE_CLOUD_PROJECT,
-    firebaseConfigEnv: process.env.FIREBASE_CONFIG ? "present" : "absent",
-    adminAppOptions,
-    pathsStatus,
-    adminAppsCount: admin.apps.length
+    environment: process.env.NODE_ENV || "development",
+    adminConnected,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -356,6 +300,380 @@ async function authenticate(req: express.Request, res: express.Response, next: e
 }
 
 // API routes - attach to apiRouter
+apiRouter.post("/bulk-confirm-orders", authenticate, async (req, res) => {
+  const uid = (req as any).uid;
+  const idToken = (req as any).idToken;
+  const { orderIds, carrier } = req.body;
+
+  const selectedCarrier = carrier || "Yalidine Express";
+
+  if (!orderIds || !Array.isArray(orderIds)) {
+    return res.status(400).json({ error: "Invalid orderIds array received." });
+  }
+
+  if (!db) {
+    return res.status(500).json({ error: "Database not initialized" });
+  }
+
+  console.log(`⚡ [Bulk Confirmation Dispatcher] Sending ${orderIds.length} orders via carrier: ${selectedCarrier}.`);
+
+  try {
+    // 1. Fetch merchant configurations safely on the server
+    let config: any = null;
+    if (idToken) {
+      try {
+        config = await readConfigRest(uid, idToken);
+      } catch (restErr) {
+        console.warn("REST load config inside bulk dispatcher failed:", restErr);
+      }
+    }
+
+    if (!config) {
+      try {
+        const configDoc = await db.collection("merchant_configs").doc(uid).get();
+        if (configDoc.exists) {
+          config = configDoc.data();
+        }
+      } catch (err) {
+        console.warn("Server Firestore inaccessible inside bulk dispatcher:", err);
+      }
+    }
+
+    // Helper to resolve and decrypt stored config values
+    const resolveKey = (val: string | undefined): string | null => {
+      if (val) {
+        if (typeof val === 'string' && val.includes(':')) {
+          try {
+            return decrypt(val);
+          } catch (e) {
+            return val;
+          }
+        }
+        return val;
+      }
+      return null;
+    };
+
+    const yalidineApiKey = resolveKey(config?.yalidineApiKey);
+    const yalidineApiToken = resolveKey(config?.yalidineApiToken);
+    const zrApiKey = resolveKey(config?.zrApiKey);
+    const maystroId = resolveKey(config?.maystroId);
+    const maystroApiKey = resolveKey(config?.maystroApiKey);
+    const ecotrackToken = resolveKey(config?.ecotrackToken);
+    const andersonUser = resolveKey(config?.andersonUser);
+    const andersonPass = resolveKey(config?.andersonPass);
+
+    // Dynamic clean helper for location names (mapping)
+    const mapLocation = (nameStr: string, mode: 'wilaya' | 'commune', targetCarrier: string): string => {
+      if (!nameStr) return "";
+      let clean = nameStr.trim();
+      // Remove any numeric prefixes like "16 - Alger" or "16 - الجزائر"
+      clean = clean.replace(/^\d+\s*-\s*/, '').trim();
+
+      // Implement carrier-specific mapping conventions (e.g. UPPERCASE for EcoTrack, clean for Yalidine, etc.)
+      switch (targetCarrier) {
+        case 'ECOTRACK':
+          return clean.toUpperCase();
+        case 'Yalidine Express':
+          return clean;
+        case 'ZR Express':
+          return clean;
+        default:
+          return clean;
+      }
+    };
+
+    // 2. Load all target orders
+    const orderDocs = await Promise.all(
+      orderIds.map(id => db!.collection("orders").doc(id).get())
+    );
+
+    const activeOrders = orderDocs
+      .filter(doc => doc.exists)
+      .map(doc => ({ id: doc.id, ...doc.data() as any }));
+
+    const results: any[] = [];
+
+    // Loop through each order to process dispatch
+    for (const order of activeOrders) {
+      let trackingNumber = "";
+      let labelUrl = "";
+      let isDemo = false;
+      let dispatchError = "";
+
+      // Define standard mock helper inside loop for fallback safety
+      const runMockDispatch = () => {
+        const mock = generateMockTrackingAndLabel(selectedCarrier, order);
+        trackingNumber = mock.trackingNumber;
+        labelUrl = mock.labelUrl;
+        isDemo = true;
+      };
+
+      try {
+        // Perform dynamic dispatch using switch(carrier)
+        switch (selectedCarrier) {
+          case 'Yalidine Express': {
+            const apiKey = yalidineApiKey ? String(yalidineApiKey).trim() : "";
+            const apiToken = yalidineApiToken ? String(yalidineApiToken).trim() : "";
+            const isNumeric = /^\d+$/.test(apiKey);
+            const hasCredentials = apiKey && apiToken && isNumeric && apiKey.length <= 20;
+
+            if (!hasCredentials) {
+              runMockDispatch();
+            } else {
+              const cleanedWilaya = mapLocation(order.wilaya || order.wilaya_name || "", 'wilaya', 'Yalidine Express');
+              const cleanedCommune = mapLocation(order.commune || order.commune_name || "", 'commune', 'Yalidine Express');
+
+              const response = await fetch('https://api.yalidine.com/v1/parcels', {
+                method: 'POST',
+                headers: {
+                  'X-API-ID': apiKey,
+                  'X-API-TOKEN': apiToken,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify([{
+                  order_id: order.id || `ORD-${Date.now()}`,
+                  firstname: order.customerName || order.name || "زبون متجر",
+                  familyname: "",
+                  contact_phone: order.phoneNumber || order.phone || "",
+                  address: `${cleanedWilaya}, ${cleanedCommune}`,
+                  to_wilaya_name: cleanedWilaya,
+                  to_commune_name: cleanedCommune,
+                  is_stopdesk: order.deliveryType === 'desk' || order.delivery_type === 'desk' ? 1 : 0,
+                  has_exchange: 0,
+                  product_list: (order.items || []).map((i: any) => `${i.product} (x${i.quantity || 1})`).join(", ") || "طلب متجر",
+                  price: order.totalPrice || 0,
+                  freeshipping: 0
+                }])
+              });
+
+              if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                const errDetail = data.error || data.message || JSON.stringify(data);
+                throw new Error(errDetail || `Yalidine API returned status ${response.status}`);
+              }
+
+              const data: any = await response.json();
+              const parcelInfo = data[0];
+              if (parcelInfo && parcelInfo.tracking) {
+                trackingNumber = parcelInfo.tracking;
+                labelUrl = `https://api.yalidine.com/v1/labels/${trackingNumber}`;
+              } else {
+                throw new Error("Missing tracking info from Yalidine response");
+              }
+            }
+            break;
+          }
+
+          case 'ZR Express': {
+            const zrKey = zrApiKey ? String(zrApiKey).trim() : "";
+            const hasCredentials = !!zrKey;
+            if (!hasCredentials) {
+              runMockDispatch();
+            } else {
+              const cleanedWilaya = mapLocation(order.wilaya || order.wilaya_name || "", 'wilaya', 'ZR Express');
+              const cleanedCommune = mapLocation(order.commune || order.commune_name || "", 'commune', 'ZR Express');
+
+              const response = await fetch('https://api.zrexpress.dz/api/v1/order/create', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${zrKey}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  customer_name: order.customerName || order.name || "زبون متجر",
+                  customer_phone: order.phoneNumber || order.phone || "",
+                  wilaya: cleanedWilaya,
+                  commune: cleanedCommune,
+                  delivery_type: order.deliveryType === 'desk' || order.delivery_type === 'desk' ? 'desk' : 'home',
+                  product: (order.items || []).map((i: any) => i.product).join(", ") || "طلب متجر",
+                  note: order.note || ""
+                })
+              });
+
+              if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || `ZR Express API returned ${response.status}`);
+              }
+
+              const data: any = await response.json();
+              trackingNumber = data.tracking_number || data.tracking || `ZR-${Date.now()}`;
+              labelUrl = data.label_url || "";
+            }
+            break;
+          }
+
+          case 'Maystro Delivery': {
+            const mId = maystroId ? String(maystroId).trim() : "";
+            const mKey = maystroApiKey ? String(maystroApiKey).trim() : "";
+            const hasCredentials = mId && mKey;
+            if (!hasCredentials) {
+              runMockDispatch();
+            } else {
+              const cleanedWilaya = mapLocation(order.wilaya || order.wilaya_name || "", 'wilaya', 'Maystro Delivery');
+              const cleanedCommune = mapLocation(order.commune || order.commune_name || "", 'commune', 'Maystro Delivery');
+
+              const response = await fetch('https://maystro-delivery.com/api/v1/order', {
+                method: 'POST',
+                headers: {
+                  'Merchant-ID': mId,
+                  'API-Key': mKey,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  customer_name: order.customerName || order.name || "زبون متجر",
+                  customer_phone: order.phoneNumber || order.phone || "",
+                  wilaya: cleanedWilaya,
+                  commune: cleanedCommune,
+                  is_desk: order.deliveryType === 'desk' || order.delivery_type === 'desk',
+                  items: (order.items || []).map((i: any) => ({ name: i.product, quantity: i.quantity || 1 }))
+                })
+              });
+
+              if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || `Maystro API returned ${response.status}`);
+              }
+
+              const data: any = await response.json();
+              trackingNumber = data.tracking_number || `MAY-${Date.now()}`;
+              labelUrl = data.label_url || "";
+            }
+            break;
+          }
+
+          case 'ECOTRACK': {
+            const token = ecotrackToken ? String(ecotrackToken).trim() : "";
+            const hasCredentials = !!token;
+            if (!hasCredentials) {
+              runMockDispatch();
+            } else {
+              const cleanedWilaya = mapLocation(order.wilaya || order.wilaya_name || "", 'wilaya', 'ECOTRACK');
+              const cleanedCommune = mapLocation(order.commune || order.commune_name || "", 'commune', 'ECOTRACK');
+
+              const response = await fetch('https://api.ecotrack.dz/api/v1/parcel/create', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  client: order.customerName || order.name || "زبون متجر",
+                  phone: order.phoneNumber || order.phone || "",
+                  wilaya: cleanedWilaya,
+                  commune: cleanedCommune,
+                  is_stop_desk: order.deliveryType === 'desk' || order.delivery_type === 'desk',
+                  products: (order.items || []).map((i: any) => i.product).join(", ") || "طلب متجر"
+                })
+              });
+
+              if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || `ECOTRACK API returned ${response.status}`);
+              }
+
+              const data: any = await response.json();
+              trackingNumber = data.tracking || `ECO-${Date.now()}`;
+              labelUrl = data.label || "";
+            }
+            break;
+          }
+
+          case 'Anderson': {
+            const user = andersonUser ? String(andersonUser).trim() : "";
+            const pass = andersonPass ? String(andersonPass).trim() : "";
+            const hasCredentials = user && pass;
+            if (!hasCredentials) {
+              runMockDispatch();
+            } else {
+              const cleanedWilaya = mapLocation(order.wilaya || order.wilaya_name || "", 'wilaya', 'Anderson');
+              const cleanedCommune = mapLocation(order.commune || order.commune_name || "", 'commune', 'Anderson');
+
+              const response = await fetch('https://anderson-delivery.com/api/v1/shipments', {
+                method: 'POST',
+                headers: {
+                  'Authorization': 'Basic ' + Buffer.from(user + ':' + pass).toString('base64'),
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  recipient_name: order.customerName || order.name,
+                  recipient_phone: order.phoneNumber || order.phone,
+                  delivery_wilaya: cleanedWilaya,
+                  delivery_commune: cleanedCommune,
+                  address_details: `${cleanedWilaya}, ${cleanedCommune}`,
+                  is_office: order.delivery_type === 'desk' || order.deliveryType === 'desk'
+                })
+              });
+
+              if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || data.error || `Anderson API returned ${response.status}`);
+              }
+
+              const data: any = await response.json();
+              trackingNumber = data.tracking_num || `AND-${Date.now()}`;
+              labelUrl = data.pdf_label || "";
+            }
+            break;
+          }
+
+          default:
+            runMockDispatch();
+            break;
+        }
+
+        // Successfully dispatched
+        await db.collection("orders").doc(order.id).update({
+          status: "confirmed",
+          trackingNumber: trackingNumber,
+          labelUrl: labelUrl,
+          shippingCompany: selectedCarrier,
+          dispatchedAt: new Date().toISOString(),
+          dispatchError: null // Explicitly clear any previous errors
+        });
+
+        results.push({
+          orderId: order.id,
+          trackingNumber,
+          labelUrl,
+          demo: isDemo,
+          success: true
+        });
+
+      } catch (err: any) {
+        console.error(`[Bulk Dispatcher] Failed to dispatch order: ${order.id}. Error:`, err);
+        dispatchError = err.message || "Failed to dispatch order with shipping provider API.";
+
+        // Order fails: status remains "pending" so merchant can correct details and retry. Record dispatchError
+        await db.collection("orders").doc(order.id).update({
+          status: "pending",
+          dispatchError: dispatchError,
+          shippingCompany: selectedCarrier,
+          lastDispatchAttemptAt: new Date().toISOString()
+        });
+
+        results.push({
+          orderId: order.id,
+          success: false,
+          error: dispatchError
+        });
+      }
+    }
+
+    return res.json({
+      status: "success",
+      message: `Bulk confirmation completed via ${selectedCarrier}.`,
+      confirmedCount: results.filter(r => r.success).length,
+      failedCount: results.filter(r => !r.success).length,
+      dispatchedOrders: results
+    });
+
+  } catch (error: any) {
+    console.error("Bulk confirmation error:", error);
+    return res.status(500).json({ error: "Failed to process bulk orders confirmation." });
+  }
+});
+
 apiRouter.post("/merchant-config", authenticate, async (req, res) => {
   const uid = (req as any).uid;
   const idToken = (req as any).idToken;
@@ -424,9 +742,13 @@ apiRouter.get("/merchant-config", authenticate, async (req, res) => {
     }
 
     if (!data && db) {
-      const doc = await db.collection("merchant_configs").doc(uid).get();
-      if (doc.exists) {
-        data = doc.data();
+      try {
+        const doc = await db.collection("merchant_configs").doc(uid).get();
+        if (doc.exists) {
+          data = doc.data();
+        }
+      } catch (dbErr: any) {
+        console.info("Info: Server SDK fallback config fetch not available (REST preferred):", dbErr instanceof Error ? dbErr.message : String(dbErr));
       }
     }
 
@@ -447,8 +769,8 @@ apiRouter.get("/merchant-config", authenticate, async (req, res) => {
     if (data?.andersonPass) config.andersonPass = getDecryptedOrPlain(data.andersonPass);
 
     res.json(config);
-  } catch (error) {
-    console.warn("Get Config Error (Server Firestore fallback warning):", error);
+  } catch (error: any) {
+    console.info("Info: Get merchant config finished safely with error fallback:", error instanceof Error ? error.message : String(error));
     res.json({});
   }
 });
@@ -719,6 +1041,296 @@ apiRouter.post("/extract-order", extractOrderLimiter, authenticate, async (req, 
   }
 });
 
+// --- HELPER FUNCTIONS FOR SOCIAL CHANNELS MULTI-CHANNEL WEBHOOK ---
+
+function identifyChannel(body: any): string {
+  if (!body) return "messenger";
+  
+  // Look for signature structures or text identifiers
+  const bodyString = JSON.stringify(body).toLowerCase();
+  
+  if (body.object === "instagram" || bodyString.includes("instagram_channel") || bodyString.includes("instagram_user_id")) {
+    return "instagram";
+  }
+  if (body.object === "whatsapp_business_account" || body.messages || body.wa_id || bodyString.includes("whatsapp")) {
+    return "whatsapp";
+  }
+  if (body.message || body.edited_message || body.callback_query || body.chat) {
+    return "telegram";
+  }
+  if (body.object === "page" || (body.entry && body.entry[0]?.messaging)) {
+    return "messenger";
+  }
+  
+  return "messenger";
+}
+
+function normalizePayload(body: any, channel: string, merchantId: string): { text: string; senderId: string; channel: string; merchantId: string } {
+  let text = "";
+  let senderId = "unknown";
+
+  if (channel === "messenger") {
+    if (body?.entry?.[0]?.messaging?.[0]) {
+      const msgObj = body.entry[0].messaging[0];
+      senderId = msgObj.sender?.id || "unknown";
+      text = msgObj.message?.text || "";
+    }
+  } else if (channel === "instagram") {
+    if (body?.entry?.[0]?.messaging?.[0]) {
+      const msgObj = body.entry[0].messaging[0];
+      senderId = msgObj.sender?.id || "unknown";
+      text = msgObj.message?.text || "";
+    } else if (body?.entry?.[0]?.changes?.[0]?.value) {
+      const val = body.entry[0].changes[0].value;
+      senderId = val.from?.id || "unknown";
+      text = val.text || val.message || "";
+    }
+  } else if (channel === "whatsapp") {
+    if (body?.messages?.[0]) {
+      text = body.messages[0].text?.body || "";
+      senderId = body.messages[0].from || "unknown";
+    } else if (body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]) {
+      const msg = body.entry[0].changes[0].value.messages[0];
+      text = msg.text?.body || "";
+      senderId = msg.from || "unknown";
+    }
+  } else if (channel === "telegram") {
+    const msg = body?.message || body?.edited_message;
+    if (msg) {
+      text = msg.text || msg.caption || "";
+      senderId = String(msg.from?.id || msg.chat?.id || "unknown");
+    }
+  }
+
+  // Generic fallback if channel-specific parsing couldn't find text
+  if (!text && body) {
+    text = body.text || body.message || body.content || "";
+    senderId = senderId === "unknown" ? (body.senderId || body.from || body.userId || "unknown") : senderId;
+  }
+
+  return {
+    text: text || "",
+    senderId: String(senderId),
+    channel,
+    merchantId
+  };
+}
+
+async function checkMerchantChannel(merchantId: string, channel: string): Promise<{ plan: string } | null> {
+  const defaultMerchant = { plan: "pro" }; // Fast helper default for ease of developer local validation
+  if (!db) {
+    return defaultMerchant;
+  }
+  try {
+    const userDoc = await db.collection("users").doc(merchantId).get();
+    if (!userDoc.exists) {
+      const configDoc = await db.collection("merchant_configs").doc(merchantId).get();
+      if (!configDoc.exists) {
+        return defaultMerchant;
+      }
+      return { plan: configDoc.data()?.planType || "pro" };
+    }
+    const userData = userDoc.data();
+    return { plan: userData?.planType || "pro" };
+  } catch (err) {
+    console.warn("checkMerchantChannel database fallback used:", err);
+    return defaultMerchant;
+  }
+}
+
+async function processMessageWithAI(unifiedMessage: { text: string; senderId: string; channel: string; merchantId: string }) {
+  const textContent = unifiedMessage.text || "";
+  if (!textContent.trim()) {
+    return {
+      name: "",
+      phone: "",
+      wilaya: "",
+      commune: "",
+      items: [],
+      location_url: "",
+      note: `استقبال رسالة فارغة أو وسائط غير نصية من القناة: ${unifiedMessage.channel}`,
+      possible_fake_order: true
+    };
+  }
+
+  try {
+    const parts = [
+      {
+        text: `Here is the conversation message from social channel ${unifiedMessage.channel}:\n${textContent}`
+      }
+    ];
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: parts,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: orderExtractionSchema,
+        systemInstruction: "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text. Inside the JSON response output, you must extract full name, phone number (normalized), Wilaya (state), commune, items (array of product, quantity, size, color), location_url and the field possible_fake_order correctly based on provided specifications."
+      },
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    if (result.wilaya) {
+      result.wilaya = normalizeAlgerianWilaya(result.wilaya);
+    }
+    return result;
+  } catch (error) {
+    console.error("AI Webhook Extraction Error:", error);
+    return {
+      name: "",
+      phone: "",
+      wilaya: "",
+      commune: "",
+      items: [],
+      location_url: "",
+      note: `فشل التحليل الذكي للرسالة: ${textContent.slice(0, 50)}...`,
+      possible_fake_order: true
+    };
+  }
+}
+
+async function sendReply(aiResponse: any, channel: string, senderId: string) {
+  console.log(`[Webhook Master Response Simulator] Sending message confirmation back to sender ${senderId} on channel: ${channel}`);
+  // Mock sending structured feedback back to user terminal or webhook platform
+  return { success: true };
+}
+
+// Master multi-channel webhook endpoint - accessible at both roots for full compliance
+const handleMasterWebhook = async (req: express.Request, res: express.Response) => {
+  try {
+    // 1. Identify the merchant ID from query string, headers, or body context
+    const merchantId = req.query.merchantId as string || req.body.merchantId || req.body.merchant_id || "demo_merchant_id";
+
+    // 2. Identify the social channel source
+    const channel = (req.headers["x-channel"] as string) || identifyChannel(req.body);
+
+    // 3. Normalize the payload to unified properties
+    const unifiedMessage = normalizePayload(req.body, channel, merchantId);
+
+    // 4. Verify merchant exists and has active credentials/plan for that specific channel
+    const merchant = await checkMerchantChannel(unifiedMessage.merchantId, unifiedMessage.channel);
+    
+    const allowedChannels: { [key: string]: string[] } = {
+      "basic": ["messenger", "instagram"],
+      "pro": ["messenger", "instagram", "whatsapp"],
+      "professional": ["messenger", "instagram", "whatsapp"],
+      "business": ["messenger", "instagram", "whatsapp"],
+      "enterprise": ["messenger", "instagram", "whatsapp", "telegram"]
+    };
+    
+    const plan = merchant?.plan || "basic";
+    const allowed = allowedChannels[plan] || ["messenger", "instagram"];
+    
+    if (!allowed.includes(unifiedMessage.channel)) {
+      console.warn(`Blocked Webhook message: channel ${unifiedMessage.channel} is forbidden on plan ${plan} for merchant ${merchantId}`);
+      return res.status(403).json({ 
+        error: `هذه القناة (${unifiedMessage.channel}) غير مدعومة في خطتك الحالية (${plan}). يتطلب الاشتراك في باقة أعلى.` 
+      });
+    }
+
+    // 5. Process the message with Google Gemini AI to auto-extract orders
+    const aiResponse = await processMessageWithAI(unifiedMessage);
+
+    // 6. Save the newly formulated order into firestore (Pending queue)
+    let savedOrderId = null;
+    if (db && unifiedMessage.text && unifiedMessage.text.trim()) {
+      try {
+        const orderDocRef = await db.collection("orders").add({
+          status: "pending",
+          trackingNumber: "",
+          labelUrl: "",
+          shippingCompany: "",
+          customerName: aiResponse.name || "",
+          phoneNumber: aiResponse.phone || "",
+          wilaya: aiResponse.wilaya || "",
+          commune: aiResponse.commune || "",
+          deliveryType: "home",
+          possibleFake: !!aiResponse.possible_fake_order,
+          note: `طلب تلقائي مستورد من قناة: ${unifiedMessage.channel}. ` + (aiResponse.note || ""),
+          userId: unifiedMessage.merchantId,
+          items: (aiResponse.items || []).map((item: any) => ({
+            product: item.product || "",
+            quantity: Number(item.quantity) || 1,
+            size: item.size || "",
+            color: item.color || "",
+            pricePerUnit: Number(item.pricePerUnit) || 0
+          })),
+          locationUrl: aiResponse.location_url || "",
+          shippingFee: 0,
+          totalPrice: 0,
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        savedOrderId = orderDocRef.id;
+        console.log(`[Master Webhook] Auto-saved order ID ${savedOrderId} extracted from ${unifiedMessage.channel}`);
+
+        // Safely update the order increment counter inside user profile
+        try {
+          const userRef = db.collection("users").doc(unifiedMessage.merchantId);
+          const userSnap = await userRef.get();
+          if (userSnap.exists) {
+            const currentCounter = userSnap.data()?.orderCounter || 0;
+            await userRef.update({ orderCounter: currentCounter + 1 });
+          }
+        } catch (counterErr) {
+          console.warn("Could not increment orderCounter:", counterErr);
+        }
+      } catch (dbErr) {
+        console.error("[Master Webhook] Failed to auto-save webhook order to Firestore:", dbErr);
+      }
+    }
+
+    // 7. Fire mock confirmation reply to user chat channel in background
+    await sendReply(aiResponse, unifiedMessage.channel, unifiedMessage.senderId);
+
+    // 8. Return success response with processed order metadata
+    res.json({
+      success: true,
+      channel: unifiedMessage.channel,
+      senderId: unifiedMessage.senderId,
+      merchantId: unifiedMessage.merchantId,
+      extractedOrder: aiResponse,
+      savedOrderId
+    });
+
+  } catch (error: any) {
+    console.error("Master Webhook Processing Failure:", error);
+    res.status(500).json({ error: "Internal webhook dispatching failure." });
+  }
+};
+
+// Mount multi-channel Master Webhooks
+const handleFacebookWebhook = async (req: express.Request, res: express.Response) => {
+  req.headers["x-channel"] = "messenger";
+  return handleMasterWebhook(req, res);
+};
+const handleInstagramWebhook = async (req: express.Request, res: express.Response) => {
+  req.headers["x-channel"] = "instagram";
+  return handleMasterWebhook(req, res);
+};
+const handleWhatsappWebhook = async (req: express.Request, res: express.Response) => {
+  req.headers["x-channel"] = "whatsapp";
+  return handleMasterWebhook(req, res);
+};
+const handleTelegramWebhook = async (req: express.Request, res: express.Response) => {
+  req.headers["x-channel"] = "telegram";
+  return handleMasterWebhook(req, res);
+};
+
+app.post("/webhook/master", express.json(), handleMasterWebhook);
+apiRouter.post("/webhooks/master", handleMasterWebhook);
+
+app.post("/webhook/facebook", express.json(), handleFacebookWebhook);
+app.post("/webhook/instagram", express.json(), handleInstagramWebhook);
+app.post("/webhook/whatsapp", express.json(), handleWhatsappWebhook);
+app.post("/webhook/telegram", express.json(), handleTelegramWebhook);
+
+apiRouter.post("/webhooks/facebook", handleFacebookWebhook);
+apiRouter.post("/webhooks/instagram", handleInstagramWebhook);
+apiRouter.post("/webhooks/whatsapp", handleWhatsappWebhook);
+apiRouter.post("/webhooks/telegram", handleTelegramWebhook);
+
+
 function generateMockTrackingAndLabel(courier: string, order: any): { trackingNumber: string, labelUrl: string } {
   // Use a neat code prefix based on the courier
   const prefix = courier.slice(0, 3).toUpperCase().replace(/\s/g, "X");
@@ -772,12 +1384,8 @@ apiRouter.post("/ship-order", sensitiveLimiter, authenticate, async (req, res) =
       }
     }
 
-    // 2. Extract keys passed in the request body (client-cached keys)
-    const clientKeys = req.body.keys || {};
-
-    // Helper to prioritize clientKeys, with fallback to decrypted server config
-    const getDecryptedOrPlain = (val: string | undefined, bodyVal: string | undefined) => {
-      if (bodyVal) return bodyVal;
+    // Helper to resolve and decrypt stored config values
+    const resolveKey = (val: string | undefined): string | null => {
       if (val) {
         // If it starts with an IV format (contains a colon), decrypt it
         if (typeof val === 'string' && val.includes(':')) {
@@ -788,15 +1396,15 @@ apiRouter.post("/ship-order", sensitiveLimiter, authenticate, async (req, res) =
       return null;
     };
 
-    // Synthesize the keys
-    const yalidineApiKey = getDecryptedOrPlain(config?.yalidineApiKey, clientKeys.yalidineApiKey);
-    const yalidineApiToken = getDecryptedOrPlain(config?.yalidineApiToken, clientKeys.yalidineApiToken);
-    const zrApiKey = getDecryptedOrPlain(config?.zrApiKey, clientKeys.zrApiKey);
-    const maystroId = getDecryptedOrPlain(config?.maystroId, clientKeys.maystroId);
-    const maystroApiKey = getDecryptedOrPlain(config?.maystroApiKey, clientKeys.maystroApiKey);
-    const ecotrackToken = getDecryptedOrPlain(config?.ecotrackToken, clientKeys.ecotrackToken);
-    const andersonUser = getDecryptedOrPlain(config?.andersonUser, clientKeys.andersonUser);
-    const andersonPass = getDecryptedOrPlain(config?.andersonPass, clientKeys.andersonPass);
+    // Synthesize the keys exclusively from secure server-stored configuration
+    const yalidineApiKey = resolveKey(config?.yalidineApiKey);
+    const yalidineApiToken = resolveKey(config?.yalidineApiToken);
+    const zrApiKey = resolveKey(config?.zrApiKey);
+    const maystroId = resolveKey(config?.maystroId);
+    const maystroApiKey = resolveKey(config?.maystroApiKey);
+    const ecotrackToken = resolveKey(config?.ecotrackToken);
+    const andersonUser = resolveKey(config?.andersonUser);
+    const andersonPass = resolveKey(config?.andersonPass);
 
     // If NO API keys are set at all, we gracefully fall back to Sandbox mode so the "Confirm and Ship" button always works flawlessly!
     const hasAnyKeys = !!(yalidineApiKey || yalidineApiToken || zrApiKey || maystroId || maystroApiKey || ecotrackToken || andersonUser || andersonPass);
@@ -1245,6 +1853,269 @@ apiRouter.get("/mock-label/:tracking", (req, res) => {
   `);
 });
 
+// --- Chargily CIB & BaridiMob Payment Integration ---
+apiRouter.post("/payments/create-checkout", authenticate, async (req, res) => {
+  const { planType } = req.body;
+  const uid = (req as any).uid;
+
+  if (planType !== "pro" && planType !== "unlimited") {
+    return res.status(400).json({ error: "Invalid plan type" });
+  }
+
+  const amount = planType === "pro" ? 700 : 2000;
+  const key = process.env.CHARGILY_SECRET_KEY;
+
+  try {
+    if (!key) {
+      // Create a simulated checkout session
+      const mockCheckoutId = "mock_ch_" + crypto.randomBytes(8).toString("hex");
+      if (db) {
+        await db.collection("chargily_checkouts").doc(mockCheckoutId).set({
+          id: mockCheckoutId,
+          userId: uid,
+          planType,
+          amount,
+          status: "pending",
+          createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+      return res.json({
+        checkoutUrl: `/?screen=verification&checkout_id=${mockCheckoutId}&plan=${planType}&is_sandbox=true`,
+        isSandbox: true,
+        message: "Simulation mode active. Add CHARGILY_SECRET_KEY as an env variable to accept real payments."
+      });
+    }
+
+    const isTestMode = key.startsWith("test_");
+    const chargilyUrl = isTestMode 
+      ? "https://pay.chargily.net/test/api/v2/checkouts" 
+      : "https://pay.chargily.net/api/v2/checkouts";
+
+    let appUrl = process.env.APP_URL || "";
+    // Ignore placeholder values or non-domain strings from env configuration
+    if (!appUrl || appUrl === "MY_APP_URL" || appUrl.includes("your-") || !appUrl.includes(".")) {
+      // Prioritize incoming request's Host headers to ensure we point back exactly to 
+      // the running instance (escaping any sandboxed iframe referrer or 'null' origin headers)
+      const xForwardedHost = req.headers["x-forwarded-host"];
+      const hostHeader = req.headers.host || req.get("host") || "";
+      const host = (typeof xForwardedHost === "string" ? xForwardedHost : "") || (typeof hostHeader === "string" ? hostHeader : "") || "localhost:3000";
+      
+      const xForwardedProto = req.headers["x-forwarded-proto"];
+      let protocol = "https"; // Default to secure https for production/deployment containers
+      if (host.includes("localhost") || host.includes("127.0.0.1") || host.includes("3000")) {
+        protocol = "http";
+      } else if (typeof xForwardedProto === "string") {
+        protocol = xForwardedProto.split(",")[0].trim();
+      }
+      
+      appUrl = `${protocol}://${host}`;
+    }
+    // Sanitize trailing slash
+    appUrl = appUrl.replace(/\/+$/, "");
+    if (!appUrl.startsWith("http://") && !appUrl.startsWith("https://")) {
+      appUrl = `https://${appUrl}`;
+    }
+    // Pass the checkout_id parameter to our return URL
+    const successUrl = `${appUrl}/?screen=verification&checkout_id={checkout_id}`;
+    const backUrl = `${appUrl}/?screen=verification&payment=cancel`;
+
+    const headers = {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json"
+    };
+
+    const bodyObj = {
+      amount,
+      currency: "dzd",
+      success_url: successUrl,
+      back_url: backUrl,
+      metadata: {
+        userId: uid,
+        planType: planType
+      }
+    };
+
+    const response = await fetch(chargilyUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(bodyObj)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Chargily API error:", errText);
+      return res.status(500).json({ error: "Checkout creation failed. Please try again later." });
+    }
+
+    const resJson = await response.json();
+    const id = resJson.id;
+    const checkoutUrl = resJson.url || resJson.checkout_url;
+
+    // Save checkout request inside Firebase
+    if (db) {
+      await db.collection("chargily_checkouts").doc(id).set({
+        id,
+        userId: uid,
+        planType,
+        amount,
+        status: "pending",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        checkoutUrl
+      });
+    }
+
+    return res.json({ checkoutUrl, isSandbox: false });
+  } catch (error: any) {
+    console.error("Payment create error:", error);
+    return res.status(500).json({ error: "Failed to create payment checkout" });
+  }
+});
+
+apiRouter.post("/payments/verify-checkout", authenticate, async (req, res) => {
+  const { checkout_id } = req.body;
+  const uid = (req as any).uid;
+
+  if (!checkout_id) {
+    return res.status(400).json({ error: "Checkout ID is required" });
+  }
+
+  try {
+    // 1. Check if it's a simulated payment (mock_ch_)
+    if (checkout_id.startsWith("mock_ch_")) {
+      if (!db) return res.status(500).json({ error: "Database not available" });
+      const ref = db.collection("chargily_checkouts").doc(checkout_id);
+      const snap = await ref.get();
+      if (!snap.exists) {
+        return res.status(404).json({ error: "Simulated payment not found" });
+      }
+      const data = snap.data()!;
+      if (data.userId !== uid) {
+        return res.status(403).json({ error: "Forbidden: ownership mismatch" });
+      }
+
+      return res.json({ 
+        success: true, 
+        status: data.status, 
+        planType: data.planType, 
+        isSandbox: true 
+      });
+    }
+
+    // 2. Real Chargily payment verification
+    const key = process.env.CHARGILY_SECRET_KEY;
+    if (!key) {
+      return res.status(400).json({ error: "Missing required payment configuration." });
+    }
+
+    const isTestMode = key.startsWith("test_");
+    const chargilyUrl = isTestMode 
+      ? `https://pay.chargily.net/test/api/v2/checkouts/${checkout_id}` 
+      : `https://pay.chargily.net/api/v2/checkouts/${checkout_id}`;
+
+    const response = await fetch(chargilyUrl, {
+      headers: {
+        "Authorization": `Bearer ${key}`
+      }
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Chargily verify API error:", errText);
+      return res.status(500).json({ error: "Payment verification failed. Please check with your bank." });
+    }
+
+    const resJson = await response.json();
+    const status = resJson.status; // can be "paid", "failed", "pending", etc.
+    const metadata = resJson.metadata || {};
+    const planType = metadata.planType || "pro";
+
+    if (status === "paid" || status === "completed") {
+      if (db) {
+        // Update checkout record in DB
+        await db.collection("chargily_checkouts").doc(checkout_id).set({
+          status: "paid",
+          paidAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        // Upgrade user's plan in Firestore
+        await db.collection("users").doc(uid).set({
+          planType: planType,
+          subscriptionStatus: "active"
+        }, { merge: true });
+
+        // Record approved subscription request so it is logged
+        const userSnap = await db.collection("users").doc(uid).get();
+        const userEmail = userSnap.exists ? (userSnap.data()?.email || "") : "";
+        
+        await db.collection("subscription_requests").add({
+          userId: uid,
+          userEmail: userEmail,
+          requestedPlan: planType,
+          status: "approved",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          paymentMethod: "CIB/BaridiMob (Automated)",
+          chargilyId: checkout_id
+        });
+      }
+      return res.json({ success: true, status: "paid", planType });
+    }
+
+    return res.json({ success: false, status, planType });
+  } catch (error: any) {
+    console.error("Payment verify error:", error);
+    return res.status(500).json({ error: "Verification server error" });
+  }
+});
+
+apiRouter.post("/payments/sandbox-pay", authenticate, async (req, res) => {
+  const { checkout_id } = req.body;
+  const uid = (req as any).uid;
+
+  if (!checkout_id) {
+    return res.status(400).json({ error: "Checkout ID is required" });
+  }
+
+  try {
+    if (!db) return res.status(500).json({ error: "Database not available" });
+    const ref = db.collection("chargily_checkouts").doc(checkout_id);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ error: "Simulated payment not found" });
+    }
+    const data = snap.data()!;
+    if (data.userId !== uid) {
+      return res.status(403).json({ error: "Forbidden: ownership mismatch" });
+    }
+
+    // Mark as paid
+    await ref.update({ status: "paid", paidAt: admin.firestore.FieldValue.serverTimestamp() });
+
+    // Upgrade user
+    await db.collection("users").doc(uid).set({
+      planType: data.planType,
+      subscriptionStatus: "active"
+    }, { merge: true });
+
+    // Record approved subscription request
+    const userSnap = await db.collection("users").doc(uid).get();
+    const userEmail = userSnap.exists ? (userSnap.data()?.email || "") : "";
+
+    await db.collection("subscription_requests").add({
+      userId: uid,
+      userEmail: userEmail,
+      requestedPlan: data.planType,
+      status: "approved",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      paymentMethod: "CIB/BaridiMob (Sandbox)"
+    });
+
+    return res.json({ success: true, message: "Simulated payment successfully approved!" });
+  } catch (err: any) {
+    console.error("Sandbox pay error:", err);
+    return res.status(500).json({ error: "Failed to process sandbox payment" });
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -1272,38 +2143,3 @@ async function startServer() {
 }
 
 startServer();
-
-// دالة إرسال البيانات إلى n8n بعد نجاح حفظ الطلبية في Firebase
-async function sendOrderToN8N(orderId: string, orderData: any) {
-  const N8N_WEBHOOK_URL = "http://localhost:5678/webhook-test/smarty-new-order";
-
-  try {
-    const response = await fetch(N8N_WEBHOOK_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        source: "smartyai_platform",
-        orderId: orderId, // نمرر الـ ID المستلم من الـ Document الخاص بـ Firestore مباشرة
-        name: orderData.name || "N/A", // واجهة المستخدم ترسل الحقل باسم name مباشرة
-        phone: orderData.phone || "N/A", // واجهة المستخدم ترسل الحقل باسم phone مباشرة
-        wilaya: orderData.wilaya || "N/A",
-        commune: orderData.commune || "N/A",
-        items: orderData.items || [], // واجهة المستخدم تعتمد اسم items كلياً بناءً على كود المكون الخاص بك
-        shipping_company: orderData.shipping_company || "Yalidine Express", // لإرسال شركة الشحن المحددة
-        delivery_type: orderData.delivery_type || "home", // نوع التوصيل (منزل/مكتب)
-        totalPrice: orderData.totalPrice || 0, // المجموع المالي الكلي للطلبية
-        timestamp: new Date().toISOString()
-      }),
-    });
-
-    if (response.ok) {
-      console.log("⚡ [SmartyAi] Data forwarded to n8n successfully!");
-    } else {
-      console.error("❌ [SmartyAi] n8n responded with error:", response.statusText);
-    }
-  } catch (error) {
-    console.error("❌ [SmartyAi] Failed to send data to n8n:", error);
-  }
-}

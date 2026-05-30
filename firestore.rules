@@ -20,7 +20,8 @@ service cloud.firestore {
         ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "12benabdallah@gmail.com") || 
         ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "17benabdallah@gmail.com") ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == "admin")
+         "role" in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
       );
     }
 
@@ -37,28 +38,37 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isSignedIn() && (existing().get('userId', '') == request.auth.uid || isAdmin());
+      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
       allow list: if isSignedIn() && (
-                    (existing().get('userId', '') == request.auth.uid && (request.query.limit == null || request.query.limit <= 100)) ||
+                    (existing().userId == request.auth.uid && (request.query.limit == null || request.query.limit <= 100)) ||
                     isAdmin()
                   );
       
-      allow create: if isSignedIn() && 
-                    (incoming().get('customerName', '') is string) &&
-                    (incoming().get('phoneNumber', '') is string) &&
-                    incoming().get('userId', '') == request.auth.uid &&
-                    incoming().get('createdAt', request.time) == request.time;
+      allow create: if (
+                      isSignedIn() && 
+                      ("customerName" in incoming() && incoming().customerName is string) &&
+                      ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
+                      incoming().userId == request.auth.uid &&
+                      (!("createdAt" in incoming()) || incoming().createdAt == request.time)
+                    ) || (
+                      // Secure guest checkout order creation
+                      ("customerName" in incoming() && incoming().customerName is string) &&
+                      ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
+                      ("userId" in incoming() && incoming().userId is string) &&
+                      incoming().status == "pending" &&
+                      (!("createdAt" in incoming()) || incoming().createdAt == request.time)
+                    );
       
       allow update: if isSignedIn() && 
-                    (existing().get('userId', '') == request.auth.uid || isAdmin()) &&
-                    (incoming().get('customerName', '') is string) &&
-                    (incoming().get('phoneNumber', '') is string) &&
-                    incoming().get('userId', '') == existing().get('userId', '') &&
-                    incoming().get('createdAt', request.time) == existing().get('createdAt', request.time) && (
+                    (existing().userId == request.auth.uid || isAdmin()) &&
+                    ("customerName" in incoming() && incoming().customerName is string) &&
+                    ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
+                    incoming().userId == existing().userId &&
+                    (!("createdAt" in incoming()) || incoming().createdAt == existing().createdAt) && (
                       incoming().diff(existing()).affectedKeys().hasAny(['status', 'deliveryType', 'commune', 'customerName', 'phoneNumber', 'wilaya', 'possibleFake', 'note', 'shippingCompany', 'trackingNumber', 'labelUrl', 'locationUrl', 'items', 'shippingFee', 'totalPrice'])
                     );
       
-      allow delete: if isSignedIn() && (existing().get('userId', '') == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
     }
 
     // --- OrderItem Validation ---
@@ -113,7 +123,7 @@ service cloud.firestore {
       allow update: if (isOwner(userId) || isAdmin()) && 
                     isValidUser(incoming()) &&
                     (isAdmin() || (
-                      incoming().get('email', '') == existing().get('email', '') &&
+                      (!("email" in incoming()) || !("email" in existing()) || incoming().email == existing().email) &&
                       incoming().diff(existing()).affectedKeys().hasAny(['orderCounter', 'displayName', 'subscriptionStatus'])
                     ));
       allow list: if isAdmin();
