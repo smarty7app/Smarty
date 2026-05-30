@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer } from "lucide-react";
+import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer, Clock } from "lucide-react";
 import { InputField } from "./CommonUI";
 
-export default function OrderReview({ order, setOrder, loading, handleSave, handleShipOrder, addItem, removeItem, updateItem, setScreen, t, isRtl, initialOrder }: any) {
+export default function OrderReview({ userData, order, setOrder, loading, handleSave, handleShipOrder, addItem, removeItem, updateItem, setScreen, t, isRtl, initialOrder }: any) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const toLocalISOString = (date: any) => {
+    if (!date) return "";
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return "";
+    const tzoffset = d.getTimezoneOffset() * 60000;
+    return (new Date(d.getTime() - tzoffset)).toISOString().slice(0, 16);
+  };
 
   useEffect(() => {
     if (!showPreviewModal) return;
@@ -90,7 +98,10 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
         </motion.div>
       )}
       
-      {/* Customer Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Customer & Items */}
+        <div className="space-y-6">
+          {/* Customer Info */}
       <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-6 space-y-4">
         <InputField label={t.customer_name} value={order.name} onChange={(v) => setOrder({...order, name: v})} icon={<User className="w-4 h-4 text-zinc-600" />} />
         <InputField label={t.phone_number} value={order.phone} onChange={(v) => setOrder({...order, phone: v})} icon={<Phone className="w-4 h-4 text-zinc-600" />} />
@@ -98,6 +109,17 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
           <InputField label={t.wilaya} value={order.wilaya} onChange={(v) => setOrder({...order, wilaya: v})} icon={<MapPin className="w-4 h-4 text-zinc-600" />} />
           <InputField label={t.commune} value={order.commune} onChange={(v) => setOrder({...order, commune: v})} />
         </div>
+        <InputField 
+          label={t.order_time} 
+          type="datetime-local" 
+          value={toLocalISOString(order.createdAt)} 
+          onChange={(v) => {
+            if (v) {
+              setOrder({ ...order, createdAt: new Date(v) });
+            }
+          }} 
+          icon={<Clock className="w-4 h-4 text-zinc-600" />} 
+        />
         <div className="space-y-1">
           <label className="text-[10px] text-zinc-500 uppercase px-1 tracking-wider">
             {t.notes}
@@ -179,8 +201,11 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
           ))}
         </div>
       </div>
+        </div>
 
-      {/* Delivery Info */}
+        {/* Right Column: Delivery, Pricing & Actions */}
+        <div className="space-y-6">
+          {/* Delivery Info */}
       <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-6 space-y-4">
          <label className="text-[10px] text-zinc-500 uppercase tracking-widest">{t.delivery_type}</label>
          <div className="flex gap-2">
@@ -197,11 +222,39 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
               className="w-full bg-black/40 border border-zinc-800 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
             >
               <option value="Yalidine Express">Yalidine Express</option>
-              <option value="ZR Express">ZR Express</option>
-              <option value="Maystro Delivery">Maystro Delivery</option>
-              <option value="ECOTRACK">ECOTRACK</option>
-              <option value="Anderson">Anderson</option>
+              {(() => {
+                const planType = userData?.planType || "free";
+                const isProOrAbove = planType === "pro" || planType === "professional" || planType === "unlimited" || planType === "business" || planType === "enterprise";
+                const isBusinessOrAbove = planType === "unlimited" || planType === "business" || planType === "enterprise";
+                return (
+                  <>
+                    <option value="ZR Express" disabled={!isProOrAbove}>
+                      ZR Express {!isProOrAbove ? `(${isRtl ? "يتطلب باقة Pro" : "Requires Pro plan"})` : ""}
+                    </option>
+                    <option value="Maystro Delivery" disabled={!isProOrAbove}>
+                      Maystro Delivery {!isProOrAbove ? `(${isRtl ? "يتطلب باقة Pro" : "Requires Pro plan"})` : ""}
+                    </option>
+                    <option value="ECOTRACK" disabled={!isBusinessOrAbove}>
+                      ECOTRACK {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Anderson" disabled={!isBusinessOrAbove}>
+                      Anderson {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                  </>
+                );
+              })()}
             </select>
+            {(() => {
+              const planType = userData?.planType || "free";
+              const isBasic = planType === "free" || planType === "basic";
+              if (isBasic) {
+                return <p className="text-[9px] text-blue-400 mt-1 px-1 font-medium leading-relaxed">{isRtl ? "⚡ باقتك الحالية تدعم شركة شحن واحدة فقط (Yalidine)." : "⚡ Your current plan supports 1 shipping provider (Yalidine)."}</p>;
+              }
+              if (planType === "professional") {
+                return <p className="text-[9px] text-purple-400 mt-1 px-1 font-medium leading-relaxed">{isRtl ? "⚡ باقتك الحالية تدعم لغاية 3 شركات شحن." : "⚡ Your current plan supports up to 3 shipping providers."}</p>;
+              }
+              return null;
+            })()}
          </div>
 
          <div className="pt-2">
@@ -269,6 +322,8 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
         <div className="flex gap-3">
           <button onClick={handleSave} disabled={loading} className="flex-1 py-4 bg-white text-black rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer"><Save className="w-5 h-5" /> {order.id ? t.update_order : t.save_order}</button>
           <button onClick={() => { setOrder(initialOrder); setScreen(order.id ? "dashboard" : "input"); }} className={`w-16 h-14 border border-zinc-800 rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer ${isRtl ? 'rotate-180' : ''}`}><ArrowRight /></button>
+        </div>
+      </div>
         </div>
       </div>
 
@@ -421,7 +476,7 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
                             {(order.wilaya || "----")} {(order.commune ? `• ${order.commune}` : "")}
                           </span>
                         </div>
-                        <div className="grid grid-cols-12 gap-1 pb-1">
+                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5">
                           <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "طريقة التسليم" : "MODE"}</span>
                           <span className="col-span-8 font-bold text-zinc-900">
                             {order.delivery_type === 'home' 
@@ -429,6 +484,37 @@ export default function OrderReview({ order, setOrder, loading, handleSave, hand
                               : (isRtl ? "مكتب شركة الشحن (Stop Desk)" : "Courier Office Stop Desk")}
                           </span>
                         </div>
+                        {/* Order Contents (Items & Products) */}
+                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5 pt-0.5">
+                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "محتوى الطرد" : "CONTENTS"}</span>
+                          <div className="col-span-8 space-y-1">
+                            {order.items && order.items.length > 0 ? (
+                              order.items.map((item: any, i: number) => {
+                                const details = [];
+                                if (item.size) details.push(item.size);
+                                if (item.color) details.push(item.color);
+                                const extraStr = details.length > 0 ? ` (${details.join('/')})` : '';
+                                return (
+                                  <div key={i} className="flex justify-between items-center text-xs text-zinc-905 font-bold leading-tight">
+                                    <span className="truncate">{item.product || "---"}<span className="text-[10px] text-zinc-500 font-medium">{extraStr}</span></span>
+                                    <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.2 rounded-md text-zinc-800 shrink-0 ml-1">x{item.quantity}</span>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <span className="text-zinc-400">---</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Notes */}
+                        {order.note && (
+                          <div className="grid grid-cols-12 gap-1 pb-1 pt-0.5">
+                            <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "ملاحظات" : "NOTE"}</span>
+                            <span className="col-span-8 text-[11px] font-medium text-zinc-850 leading-tight">
+                              {order.note}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Total Net price block */}

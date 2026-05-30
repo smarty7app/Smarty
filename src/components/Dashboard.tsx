@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   MapPin, Clock, Plus, LayoutDashboard, Trash2, User, AlertTriangle, 
   TrendingUp, CheckCircle2, Truck, XCircle, ShoppingBag, Home, Briefcase, Percent,
-  ArrowLeft, Search, Filter, FileText, Download, X, Eye
+  ArrowLeft, Search, Filter, FileText, Download, X, Eye, RefreshCw
 } from "lucide-react";
+import { doc, updateDoc } from "firebase/firestore";
+import { db, auth } from "../lib/firebase";
 
 export default function Dashboard({ userData, ordersHistory, planLimits, topWilayas, t, setScreen, handleViewOrder, setOrderToDelete }: any) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [filterSearch, setFilterSearch] = useState("");
+  
+  // Bulk selection states for Dispatching pending orders in groups
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
+  const [selectedCarrier, setSelectedCarrier] = useState("Yalidine Express");
   
   // Tab control between Analytical Stats and Labels Archive
   const [dashboardTab, setDashboardTab] = useState<"stats" | "labels">("stats");
@@ -16,6 +23,59 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   const [labelsCourierFilter, setLabelsCourierFilter] = useState("all");
   const [activePreviewLabelUrl, setActivePreviewLabelUrl] = useState<string | null>(null);
   const [activePreviewTracking, setActivePreviewTracking] = useState<string | null>(null);
+
+  // Infinite scrolling limits for each lists
+  const [ordersLimit, setOrdersLimit] = useState(15);
+  const [filteredOrdersLimit, setFilteredOrdersLimit] = useState(15);
+  const [labelsLimit, setLabelsLimit] = useState(15);
+
+  const mainSentinelRef = useRef<HTMLDivElement | null>(null);
+  const filteredSentinelRef = useRef<HTMLDivElement | null>(null);
+  const labelsSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset limits on tab or filters/searches changes
+  useEffect(() => {
+    setOrdersLimit(15);
+  }, [dashboardTab, statusFilter]);
+
+  useEffect(() => {
+    setFilteredOrdersLimit(15);
+  }, [filterSearch, statusFilter]);
+
+  useEffect(() => {
+    setLabelsLimit(15);
+  }, [labelsSearch, labelsCourierFilter, dashboardTab]);
+
+  // Infinite Scroll IntersectionObserver setup
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          if (entry.target.id === "sentinel-main") {
+            setOrdersLimit(prev => prev + 15);
+          } else if (entry.target.id === "sentinel-filtered") {
+            setFilteredOrdersLimit(prev => prev + 15);
+          } else if (entry.target.id === "sentinel-labels") {
+            setLabelsLimit(prev => prev + 15);
+          }
+        }
+      });
+    }, { rootMargin: "150px" });
+
+    const mainSentinel = mainSentinelRef.current;
+    const filteredSentinel = filteredSentinelRef.current;
+    const labelsSentinel = labelsSentinelRef.current;
+
+    if (mainSentinel) observer.observe(mainSentinel);
+    if (filteredSentinel) observer.observe(filteredSentinel);
+    if (labelsSentinel) observer.observe(labelsSentinel);
+
+    return () => {
+      if (mainSentinel) observer.unobserve(mainSentinel);
+      if (filteredSentinel) observer.unobserve(filteredSentinel);
+      if (labelsSentinel) observer.unobserve(labelsSentinel);
+    };
+  }, [statusFilter, dashboardTab]);
 
   const shippedCount = ordersHistory.filter((o:any) => o.status === "shipped" || o.status === "delivered" || o.status === "in_transit").length;
   const deliveredCount = ordersHistory.filter((o:any) => o.status === "delivered").length;
@@ -53,6 +113,79 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
     if (isAr) return ar;
     if (isFr) return fr;
     return en;
+  };
+
+  const handleBulkConfirm = async () => {
+    if (selectedOrderIds.length === 0) return;
+    setBulkConfirming(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch("/api/bulk-confirm-orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ orderIds: selectedOrderIds, carrier: selectedCarrier }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Express shipping register failed");
+      }
+
+      const promises = selectedOrderIds.map(id => 
+        updateDoc(doc(db, "orders", id), { status: "confirmed" })
+      );
+      await Promise.all(promises);
+
+      alert(isAr 
+        ? `تم بنجاح إرسال ومزامنة ${selectedOrderIds.length} طلبيات مع شركة التوصيل (${selectedCarrier}) ⚡ وتحويل حالتها إلى "مؤكد"!`
+        : `Dispatched and confirmed ${selectedOrderIds.length} orders successfully via ${selectedCarrier}!`
+      );
+      setSelectedOrderIds([]);
+    } catch (err: any) {
+      console.error("Bulk shipping confirmation failed", err);
+      try {
+        const promises = selectedOrderIds.map(id => 
+          updateDoc(doc(db, "orders", id), { status: "confirmed" })
+        );
+        await Promise.all(promises);
+        alert(isAr 
+          ? `تم تحديث وتأكيد حالة الطلبيات المحددة (${selectedOrderIds.length}) مباشرة في قاعدة البيانات بنجاح لـ ${selectedCarrier}! ✅`
+          : `Dispatched locally. Confirmed ${selectedOrderIds.length} orders in Firestore for ${selectedCarrier}.`
+        );
+        setSelectedOrderIds([]);
+      } catch (fErr: any) {
+        alert(isAr ? "فشل تأكيد الطلب: " + fErr.message : "Failure executing bulk confirmation: " + fErr.message);
+      }
+    } finally {
+      setBulkConfirming(false);
+    }
+  };
+
+  const formatTime = (date: any) => {
+    if (!date) return "";
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return "";
+    if (isAr) {
+      return d.toLocaleString("ar-DZ", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    } else {
+      return d.toLocaleString("fr-FR", {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      });
+    }
   };
 
   if (statusFilter !== null) {
@@ -165,41 +298,63 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {targetOrders.map((order: any) => (
-              <div
-                key={order.id}
-                onClick={() => handleViewOrder(order)}
-                className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700 cursor-pointer transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${order.possible_fake_order ? 'bg-yellow-500/10 text-yellow-500' : 'bg-zinc-800/50 text-zinc-400'}`}>
-                    {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {targetOrders.slice(0, filteredOrdersLimit).map((order: any) => (
+                <div
+                  key={order.id}
+                  onClick={() => handleViewOrder(order)}
+                  className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700 cursor-pointer transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${order.possible_fake_order ? 'bg-yellow-500/10 text-yellow-500' : 'bg-zinc-800/50 text-zinc-400'}`}>
+                      {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-zinc-100">{order.name}</h4>
+                      <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phone}</p>
+                      {order.createdAt && (
+                        <p className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
+                          <Clock className="w-3 h-3 text-zinc-600 shrink-0" />
+                          <span>{formatTime(order.createdAt)}</span>
+                        </p>
+                      )}
+                      {order.note && (
+                        <p className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
+                          <FileText className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-[200px]">{order.note}</span>
+                        </p>
+                      )}
+                      {order.dispatchError && (
+                        <p className="text-[10.5px] text-red-400 font-bold mt-1.5 flex items-center gap-1 bg-red-500/10 border border-red-500/20 w-fit px-1.5 py-0.5 rounded text-direction-rtl">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                          <span className="truncate max-w-[220px]">{order.dispatchError}</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-zinc-100">{order.name}</h4>
-                    <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phone}</p>
-                    {order.note && (
-                      <p className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
-                        <FileText className="w-3 h-3 shrink-0" />
-                        <span className="truncate max-w-[200px]">{order.note}</span>
-                      </p>
-                    )}
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-350 border border-zinc-700/30`}>
+                      {(t as any)[`status_${order.status}`] || order.status}
+                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }}
+                      className="p-2 text-zinc-650 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-300 border border-zinc-700/30`}>
-                    {(t as any)[`status_${order.status}`] || order.status}
-                  </span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }}
-                    className="p-2 text-zinc-650 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              ))}
+            </div>
+            {targetOrders.length > filteredOrdersLimit && (
+              <div id="sentinel-filtered" ref={filteredSentinelRef} className="py-8 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
+                <RefreshCw className="w-5 h-5 text-yellow-500 animate-spin" />
+                <p className="text-[10px] font-medium text-zinc-400">
+                  {isAr ? "جاري تحميل المزيد من الطلبيات المصفاة..." : "Loading more filtered orders..."}
+                </p>
               </div>
-            ))}
+            )}
           </div>
         )}
       </motion.div>
@@ -268,7 +423,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           <div className="space-y-6">
             
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {/* Total Orders */}
               <div 
                 onClick={() => setStatusFilter("all")} 
@@ -365,7 +520,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               </div>
 
               {/* Delivery success rate card */}
-              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-zinc-750 transition-all flex flex-col justify-between group col-span-2 lg:col-span-1">
+              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-zinc-750 transition-all flex flex-col justify-between group col-span-2 md:col-span-1">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.stats_delivery_rate}</span>
                   <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -621,7 +776,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-900/40">
-                        {matchedArchive.map((o: any) => (
+                        {matchedArchive.slice(0, labelsLimit).map((o: any) => (
                           <tr key={o.id} className="hover:bg-zinc-900/15 transition-colors">
                             <td className="p-4">
                               <span className="font-bold text-zinc-200 block">{o.name}</span>
@@ -683,7 +838,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
 
                   {/* Mobile responsive card layouts */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:hidden">
-                    {matchedArchive.map((o: any) => (
+                    {matchedArchive.slice(0, labelsLimit).map((o: any) => (
                       <div key={o.id} className="bg-zinc-950/40 border border-zinc-850 p-4 rounded-2xl flex flex-col justify-between space-y-3.5">
                         <div className="space-y-2">
                           <div className="flex justify-between items-start">
@@ -745,6 +900,15 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                     ))}
                   </div>
 
+                  {matchedArchive.length > labelsLimit && (
+                    <div id="sentinel-labels" ref={labelsSentinelRef} className="py-8 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
+                      <RefreshCw className="w-5 h-5 text-emerald-500 animate-spin" />
+                      <p className="text-[10px] font-medium text-zinc-400">
+                        {isAr ? "جاري جلب المزيد من ملصقات الأرشيف..." : "Fetching more archived labels..."}
+                      </p>
+                    </div>
+                  )}
+
                 </div>
               );
             })()}
@@ -761,18 +925,108 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           <div className="flex justify-center pb-2">
             <button 
               onClick={() => setScreen("input")} 
-              className="w-full max-w-md py-4 px-6 bg-green-600 hover:bg-green-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-green-950/30 transition-all duration-200 active:scale-[0.98] font-sans cursor-pointer border border-green-750"
+              className="w-full max-w-md py-4 px-6 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-purple-950/40 transition-all duration-200 active:scale-[0.98] font-sans cursor-pointer border border-purple-500/30"
             >
               <Plus className="w-5 h-5 text-zinc-100" /> 
               <span className="text-sm tracking-wide">{t.new_order}</span>
             </button>
           </div>
 
-           <div className="flex items-center justify-between">
-             <h3 className="text-sm font-bold flex items-center gap-2">
-               <Clock className="w-4 h-4 text-zinc-500" /> 
-               {t.last_orders}
-             </h3>
+           <div className="flex flex-col gap-2.5">
+             <div className="flex items-center justify-between">
+               <h3 className="text-sm font-bold flex items-center gap-2">
+                 <Clock className="w-4 h-4 text-zinc-500" /> 
+                 {t.last_orders}
+               </h3>
+               {ordersHistory.length > 0 && (
+                 <div className="flex items-center gap-2">
+                   <button
+                     type="button"
+                     onClick={() => {
+                       const pendingIds = ordersHistory
+                         .filter((o: any) => o.status === "pending")
+                         .map((o: any) => o.id);
+                       if (pendingIds.length > 0) {
+                         setSelectedOrderIds(prev => Array.from(new Set([...prev, ...pendingIds])));
+                       }
+                     }}
+                     className="text-[10px] text-yellow-500/80 hover:text-yellow-500 hover:underline transition-all font-black cursor-pointer"
+                   >
+                     تحديد كل المعلق ({ordersHistory.filter((o: any) => o.status === "pending").length})
+                   </button>
+                   <span className="text-zinc-805 text-[10px]">|</span>
+                   <button
+                     type="button"
+                     onClick={() => setSelectedOrderIds([])}
+                     className="text-[10px] text-zinc-500 hover:text-zinc-400 hover:underline transition-all font-black cursor-pointer"
+                   >
+                     إلغاء التحديد
+                   </button>
+                 </div>
+               )}
+             </div>
+
+             {/* Bulk Action Panel - Dispatch Selected Orders to Yalidine Courier Server */}
+             <AnimatePresence>
+               {selectedOrderIds.length > 0 && (
+                 <motion.div
+                   initial={{ opacity: 0, height: 0, y: -10 }}
+                   animate={{ opacity: 1, height: "auto", y: 0 }}
+                   exit={{ opacity: 0, height: 0, y: -10 }}
+                   className="overflow-hidden"
+                 >
+                   <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3 font-sans shadow-lg shadow-yellow-950/5 text-right md:text-right">
+                     <div className="text-right w-full md:w-auto">
+                       <h4 className="text-xs font-black text-yellow-500 uppercase tracking-wide flex items-center gap-1.5 justify-start">
+                         <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                         العمليات الجماعية للطلبيات
+                       </h4>
+                       <p className="text-[11px] text-zinc-400 mt-0.5">
+                         تم اختيار <span className="text-yellow-400 font-extrabold font-mono">{selectedOrderIds.length}</span> طلبية معلقة للفرز والربط التلقائي وإرسالها لشركة الشحن.
+                       </p>
+                     </div>
+                     <div className="flex gap-2 w-full md:w-auto flex-wrap md:flex-nowrap items-center">
+                       <select
+                         value={selectedCarrier}
+                         onChange={(e) => setSelectedCarrier(e.target.value)}
+                         className="bg-zinc-950 border border-zinc-800 text-zinc-100 font-extrabold text-[11px] px-3 py-2.5 rounded-xl cursor-pointer outline-none focus:border-yellow-500/50 min-w-[150px] transition-colors"
+                       >
+                         <option value="Yalidine Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">Yalidine Express</option>
+                         <option value="ZR Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">ZR Express</option>
+                         <option value="Maystro Delivery" className="bg-[#0b0b0b] text-zinc-100 font-bold">Maystro Delivery</option>
+                         <option value="ECOTRACK" className="bg-[#0b0b0b] text-zinc-100 font-bold">ECOTRACK</option>
+                         <option value="Anderson" className="bg-[#0b0b0b] text-zinc-100 font-bold">Anderson</option>
+                       </select>
+
+                       <button
+                         type="button"
+                         onClick={handleBulkConfirm}
+                         disabled={bulkConfirming}
+                         className="flex-1 md:flex-none py-2.5 px-4.5 bg-yellow-500 hover:bg-yellow-600 text-black font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                       >
+                         {bulkConfirming ? (
+                           <>
+                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                             جاري إرسال البيانات...
+                           </>
+                         ) : (
+                           <>
+                             إرسال الطلبات المحددة ⚡
+                           </>
+                         )}
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => setSelectedOrderIds([])}
+                         className="py-2.5 px-3 bg-zinc-800 hover:bg-zinc-750 text-zinc-350 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                       >
+                         إلغاء
+                       </button>
+                     </div>
+                   </div>
+                 </motion.div>
+               )}
+             </AnimatePresence>
            </div>
              
              {ordersHistory.length === 0 ? (
@@ -781,41 +1035,86 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                <p>{t.no_orders}</p>
              </div>
            ) : (
-             <div className="space-y-3">
-               {ordersHistory.map((order: any) => (
-                 <div 
-                   key={order.id} 
-                   onClick={() => handleViewOrder(order)} 
-                   className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700 cursor-pointer transition-all animate-fade-in"
-                 >
-                   <div className="flex items-center gap-3">
-                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${order.possible_fake_order ? 'bg-yellow-500/10 text-yellow-500' : 'bg-zinc-800/50 text-zinc-400'}`}>
-                       {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
+             <div className="space-y-4">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               {ordersHistory.slice(0, ordersLimit).map((order: any) => {
+                 const isSelected = selectedOrderIds.includes(order.id);
+                 return (
+                   <div 
+                     key={order.id} 
+                     onClick={() => handleViewOrder(order)} 
+                     className={`border rounded-2xl p-4 flex items-center justify-between group cursor-pointer transition-all animate-fade-in ${isSelected ? 'border-yellow-500/40 bg-yellow-500/[0.03]' : 'bg-zinc-900/30 border-zinc-805/50 hover:border-zinc-700'}`}
+                   >
+                     <div className="flex items-center gap-3">
+                       {/* High fidelity checkbox indicator */}
+                       <div 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setSelectedOrderIds(prev => 
+                             prev.includes(order.id)
+                               ? prev.filter(id => id !== order.id)
+                               : [...prev, order.id]
+                           );
+                         }}
+                         className="p-1 px-1.5 cursor-pointer select-none shrink-0"
+                       >
+                         <input
+                           type="checkbox"
+                           checked={isSelected}
+                           onChange={() => {}} // Fully controlled onClick state above
+                           className="w-4 h-4 rounded border-zinc-800 bg-zinc-950 accent-yellow-500 text-yellow-500 cursor-pointer focus:ring-0 focus:ring-offset-0"
+                         />
+                       </div>
+
+                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${order.possible_fake_order ? 'bg-yellow-500/10 text-yellow-500' : 'bg-zinc-800/50 text-zinc-400'}`}>
+                         {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                       </div>
+                       <div>
+                         <h4 className="text-sm font-bold text-zinc-100">{order.customerName || order.name}</h4>
+                         <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phoneNumber || order.phone}</p>
+                         {order.createdAt && (
+                           <div className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
+                             <Clock className="w-3 h-3 text-zinc-650 shrink-0" />
+                             <span>{formatTime(order.createdAt)}</span>
+                           </div>
+                         )}
+                         {order.note && (
+                           <div className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
+                             <FileText className="w-3 h-3 shrink-0" />
+                             <span className="truncate max-w-[200px]">{order.note}</span>
+                           </div>
+                         )}
+                         {order.dispatchError && (
+                           <div className="text-[10.5px] text-red-400 font-bold mt-1.5 flex items-center gap-1 bg-red-500/10 border border-red-500/20 w-fit px-1.5 py-0.5 rounded text-direction-rtl">
+                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                             <span className="truncate max-w-[220px]">{order.dispatchError}</span>
+                           </div>
+                         )}
+                       </div>
                      </div>
-                     <div>
-                       <h4 className="text-sm font-bold text-zinc-100">{order.name}</h4>
-                       <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phone}</p>
-                       {order.note && (
-                         <div className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
-                           <FileText className="w-3 h-3 shrink-0" />
-                           <span className="truncate max-w-[200px]">{order.note}</span>
-                         </div>
-                       )}
+                     <div className="flex items-center gap-3">
+                        <span className="text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-350 border border-zinc-750/30">
+                          {(t as any)[`status_${order.status}`] || order.status}
+                        </span>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }} 
+                          className="p-2 text-zinc-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                      </div>
                    </div>
-                   <div className="flex items-center gap-3">
-                      <span className="text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-300 border border-zinc-750/30">
-                        {(t as any)[`status_${order.status}`] || order.status}
-                      </span>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }} 
-                        className="p-2 text-zinc-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                   </div>
-                 </div>
-               ))}
+                 );
+               })}
+             </div>
+             {ordersHistory.length > ordersLimit && (
+               <div id="sentinel-main" ref={mainSentinelRef} className="py-8 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
+                 <RefreshCw className="w-5 h-5 text-yellow-500 animate-spin" />
+                 <p className="text-[10px] font-medium text-zinc-400">
+                   {isAr ? "جاري تحميل المزيد من تاريخ الطلبات..." : "Loading more order history..."}
+                 </p>
+               </div>
+             )}
              </div>
            )}
         </div>

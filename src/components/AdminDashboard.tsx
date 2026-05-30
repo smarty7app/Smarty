@@ -216,7 +216,7 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
                    </div>
 
                    <div className="flex gap-2">
-                     {['free', 'pro', 'unlimited'].map(p => (
+                     {['free', 'basic', 'professional', 'business', 'enterprise'].map(p => (
                        <button 
                          key={p}
                          onClick={() => handleChangePlan(user.id, p)}

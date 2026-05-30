@@ -410,7 +410,7 @@ export default function WilayasList({ setScreen, t, isRtl, ordersHistory = [] }:
           <p className="text-sm">{getLabel("لم يتم العثور على أي نتائج", "Aucune wilaya trouvée", "No wilayas found")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
           {filteredWilayas.map((wilaya) => {
             const stats = statsByCode[wilaya.code] || { total: 0, delivered: 0, returned: 0, pending: 0, confirmed: 0 };
             const count = stats.total;

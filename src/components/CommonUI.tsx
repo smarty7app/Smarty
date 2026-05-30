@@ -2,14 +2,12 @@ import { ReactNode } from "react";
 import { CheckCircle2, CheckCircle } from "lucide-react";
 
 export const Logo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path d="M21 8L12 13L3 8V16L12 21L21 16V8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M12 13V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M21 8L12 3L3 8L12 13L21 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M10 14.5C10 13.5 11 13 12 13C13 13 14 13.5 14 14.5C14 15.5 13 16 12 16C11 16 10 16.5 10 17.5C10 18.5 11 19 12 19C13 19 14 18.5 14 17.5" 
-      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" 
-    />
-  </svg>
+  <img 
+    src="/apple-touch-icon.png" 
+    alt="SmartyAi Order Logo" 
+    className={`w-full h-full object-cover scale-[1.1] select-none ${className || ""}`} 
+    referrerPolicy="no-referrer" 
+  />
 );
 
 export function InputField({ label, value, onChange, icon, highlight, manualLabel, type = "text", readOnly = false }: { 
