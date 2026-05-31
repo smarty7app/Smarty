@@ -653,7 +653,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
             />
             <FeatureCard 
               icon={<Smartphone className="w-6 h-6 text-blue-400" />} 
-              title={isRtl ? "مُهَيفأ بالكامل للـ PWA والعمل دون اتصال" : "Optimized Offline & Mobile PWA App"} 
+              title={isRtl ? "مُهَيأ بالكامل للـ PWA والعمل دون اتصال" : "Optimized Offline & Mobile PWA App"} 
               desc={isRtl 
                 ? "قم بتثبيت التطبيق على هاتفك أو شاشتك بخفة متناهية لمباشرة معالجة الطلبات في المعارض وغرف التخزين دون قيود." 
                 : "Install as a lightweight app on phone, tablet or desktop built to enable massive comfort and accessibility on-the-go."}
