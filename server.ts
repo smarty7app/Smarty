@@ -42,69 +42,19 @@ function initializeFirebase() {
 
 initializeFirebase();
 
-// Encryption Configuration
-const ENCRYPTION_ALGORITHM = 'aes-256-cbc';
-
-if (!process.env.ENCRYPTION_KEY) {
-  console.error("=================================================================================");
-  console.error("🚨 CRITICAL SECURITY ERROR: process.env.ENCRYPTION_KEY is missing!");
-  console.error("This environment variable is mandatory for secure crypto encryption and decryption.");
-  console.error("Please configure it in your Secrets / Environment settings immediately.");
-  console.error("=================================================================================");
-  process.exit(1);
-}
-
-const ENCRYPTION_KEY = Buffer.from(process.env.ENCRYPTION_KEY.padEnd(32).slice(0, 32));
-
-function encrypt(text: string): string {
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return iv.toString('hex') + ':' + encrypted;
-}
-
-function decrypt(text: string): string {
-  try {
-    const textParts = text.split(':');
-    if (textParts.length < 2) return text;
-    
-    const ivStr = textParts[0];
-    // A standard hex representation of 16-bytes random iv is exactly 32 hex characters
-    const isHexIv = /^[0-9a-fA-F]{32}$/.test(ivStr);
-    if (!isHexIv) {
-      return text; // Not a valid ciphertext structure, treat as plain text safely
-    }
-
-    const iv = Buffer.from(ivStr, 'hex');
-    const encryptedText = Buffer.from(textParts.slice(1).join(':'), 'hex');
-
-    // Attempt 1: Encrypted using secure environment key
-    try {
-      const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
-      let decrypted = decipher.update(encryptedText as any, undefined, 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
-    } catch {
-      // Attempt 2: Encrypted using legacy fallback key for seamless migration
-      const legacyKey = Buffer.from("fallback_merchant_keys_encryption_default_key_32bytes".padEnd(32).slice(0, 32));
-      const decipher = crypto.createDecipheriv(ENCRYPTION_ALGORITHM, legacyKey, iv);
-      let decrypted = decipher.update(encryptedText as any, undefined, 'utf8');
-      decrypted += decipher.final('utf8');
-      return decrypted;
-    }
-  } catch (err) {
-    // Gracefully fallback to plain text if all attempts fail
-    return text;
+// Courier plan allowance helper
+function getAllowedCouriers(planType: string): string[] {
+  const plan = (planType || "free").toLowerCase();
+  if (plan === "free" || plan === "basic") {
+    return ["Yalidine Express"];
   }
-}
-
-function getDecryptedOrPlain(val: string | undefined): string {
-  if (!val) return "";
-  if (typeof val === 'string' && val.includes(':')) {
-    return decrypt(val);
+  if (plan === "pro" || plan === "professional") {
+    return ["Yalidine Express", "ZR Express", "Maystro Delivery"];
   }
-  return val;
+  if (plan === "business" || plan === "unlimited" || plan === "enterprise") {
+    return ["Yalidine Express", "ZR Express", "Maystro Delivery", "ECOTRACK", "Anderson"];
+  }
+  return ["Yalidine Express"];
 }
 
 async function getUserId(req: express.Request): Promise<string | null> {
@@ -223,63 +173,7 @@ function firestoreFieldsToJs(fields: any): any {
   return obj;
 }
 
-async function readConfigRest(uid: string, idToken: string): Promise<any | null> {
-  const projectId = firebaseConfig.projectId;
-  const dbId = firebaseConfig.firestoreDatabaseId || "(default)";
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/merchant_configs/${uid}`;
 
-  try {
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${idToken}`
-      }
-    });
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      const respText = await response.text();
-      console.warn("Firestore REST GET failed:", respText);
-      return null;
-    }
-
-    const docJson = await response.json();
-    return firestoreFieldsToJs(docJson.fields);
-  } catch (err) {
-    console.error("Firestore REST GET call failed:", err);
-    return null;
-  }
-}
-
-async function writeConfigRest(uid: string, idToken: string, config: any): Promise<boolean> {
-  const projectId = firebaseConfig.projectId;
-  const dbId = firebaseConfig.firestoreDatabaseId || "(default)";
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/${dbId}/documents/merchant_configs/${uid}`;
-
-  try {
-    const fields = jsToFirestoreFields(config);
-    const response = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${idToken}`
-      },
-      body: JSON.stringify({ fields })
-    });
-
-    if (!response.ok) {
-      const respText = await response.text();
-      console.warn("Firestore REST PATCH failed:", respText);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("Firestore REST PATCH call failed:", err);
-    return false;
-  }
-}
 
 // Authentication Middleware
 async function authenticate(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -318,50 +212,31 @@ apiRouter.post("/bulk-confirm-orders", authenticate, async (req, res) => {
   console.log(`⚡ [Bulk Confirmation Dispatcher] Sending ${orderIds.length} orders via carrier: ${selectedCarrier}.`);
 
   try {
-    // 1. Fetch merchant configurations safely on the server
-    let config: any = null;
-    if (idToken) {
-      try {
-        config = await readConfigRest(uid, idToken);
-      } catch (restErr) {
-        console.warn("REST load config inside bulk dispatcher failed:", restErr);
+    // 1. Fetch user's plan dynamic checks
+    let planType = "free";
+    try {
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        planType = userDoc.data()?.planType || "free";
       }
+    } catch (err) {
+      console.error("Error fetching user doc in bulk-confirm:", err);
     }
 
-    if (!config) {
-      try {
-        const configDoc = await db.collection("merchant_configs").doc(uid).get();
-        if (configDoc.exists) {
-          config = configDoc.data();
-        }
-      } catch (err) {
-        console.warn("Server Firestore inaccessible inside bulk dispatcher:", err);
-      }
+    const allowed = getAllowedCouriers(planType);
+    if (!allowed.includes(selectedCarrier)) {
+      return res.status(403).json({ error: "خطتك لا تدعم شركة التوصيل هذه" });
     }
 
-    // Helper to resolve and decrypt stored config values
-    const resolveKey = (val: string | undefined): string | null => {
-      if (val) {
-        if (typeof val === 'string' && val.includes(':')) {
-          try {
-            return decrypt(val);
-          } catch (e) {
-            return val;
-          }
-        }
-        return val;
-      }
-      return null;
-    };
-
-    const yalidineApiKey = resolveKey(config?.yalidineApiKey);
-    const yalidineApiToken = resolveKey(config?.yalidineApiToken);
-    const zrApiKey = resolveKey(config?.zrApiKey);
-    const maystroId = resolveKey(config?.maystroId);
-    const maystroApiKey = resolveKey(config?.maystroApiKey);
-    const ecotrackToken = resolveKey(config?.ecotrackToken);
-    const andersonUser = resolveKey(config?.andersonUser);
-    const andersonPass = resolveKey(config?.andersonPass);
+    // Centered keys from process.env only
+    const yalidineApiKey = process.env.YALIDINE_API_ID;
+    const yalidineApiToken = process.env.YALIDINE_API_TOKEN;
+    const zrApiKey = process.env.ZR_API_KEY;
+    const maystroId = process.env.MAYSTRO_ID;
+    const maystroApiKey = process.env.MAYSTRO_API_KEY;
+    const ecotrackToken = process.env.ECOTRACK_TOKEN;
+    const andersonUser = process.env.ANDERSON_USER;
+    const andersonPass = process.env.ANDERSON_PASS;
 
     // Dynamic clean helper for location names (mapping)
     const mapLocation = (nameStr: string, mode: 'wilaya' | 'commune', targetCarrier: string): string => {
@@ -389,7 +264,7 @@ apiRouter.post("/bulk-confirm-orders", authenticate, async (req, res) => {
     );
 
     const activeOrders = orderDocs
-      .filter(doc => doc.exists)
+      .filter(doc => doc.exists && doc.data()?.userId === uid)
       .map(doc => ({ id: doc.id, ...doc.data() as any }));
 
     const results: any[] = [];
@@ -674,106 +549,7 @@ apiRouter.post("/bulk-confirm-orders", authenticate, async (req, res) => {
   }
 });
 
-apiRouter.post("/merchant-config", authenticate, async (req, res) => {
-  const uid = (req as any).uid;
-  const idToken = (req as any).idToken;
 
-  const { 
-    yalidineApiKey, yalidineApiToken, zrApiKey,
-    maystroId, maystroApiKey, ecotrackToken,
-    andersonUser, andersonPass
-  } = req.body;
-
-  try {
-    const config: any = {
-      userId: uid,
-      updatedAt: new Date().toISOString()
-    };
-
-    if (yalidineApiKey !== undefined) config.yalidineApiKey = encrypt(yalidineApiKey);
-    if (yalidineApiToken !== undefined) config.yalidineApiToken = encrypt(yalidineApiToken);
-    if (zrApiKey !== undefined) config.zrApiKey = encrypt(zrApiKey);
-    if (maystroId !== undefined) config.maystroId = encrypt(maystroId);
-    if (maystroApiKey !== undefined) config.maystroApiKey = encrypt(maystroApiKey);
-    if (ecotrackToken !== undefined) config.ecotrackToken = encrypt(ecotrackToken);
-    if (andersonUser !== undefined) config.andersonUser = encrypt(andersonUser);
-    if (andersonPass !== undefined) config.andersonPass = encrypt(andersonPass);
-
-    // Attempt REST write using the user's ID token (zero-trust, bypasses server admin credentials)
-    let restSuccess = false;
-    if (idToken) {
-      try {
-        const existingConfig = await readConfigRest(uid, idToken);
-        const mergedConfig = existingConfig ? { ...existingConfig, ...config } : config;
-        restSuccess = await writeConfigRest(uid, idToken, mergedConfig);
-      } catch (restErr) {
-        console.warn("REST Save config failed, reverting to Admin SDK / warning fallback:", restErr);
-      }
-    }
-
-    if (!restSuccess) {
-      if (!db) {
-        console.warn("Database not initialized during config save - using client-only storage fallback");
-        return res.json({ success: true, message: "Configuration cached on client" });
-      }
-      await db.collection("merchant_configs").doc(uid).set(config, { merge: true });
-    }
-
-    res.json({ success: true, message: "Configuration saved securely" });
-  } catch (error) {
-    console.warn("Save Config Error (Server Firestore fallback warning):", error);
-    res.json({ success: true, message: "Configuration saved client-side" });
-  }
-});
-
-apiRouter.get("/merchant-config", authenticate, async (req, res) => {
-  const uid = (req as any).uid;
-  const idToken = (req as any).idToken;
-
-  try {
-    let data: any = null;
-
-    if (idToken) {
-      try {
-        data = await readConfigRest(uid, idToken);
-      } catch (restErr) {
-        console.warn("REST load config failed, reverting to Admin SDK:", restErr);
-      }
-    }
-
-    if (!data && db) {
-      try {
-        const doc = await db.collection("merchant_configs").doc(uid).get();
-        if (doc.exists) {
-          data = doc.data();
-        }
-      } catch (dbErr: any) {
-        console.info("Info: Server SDK fallback config fetch not available (REST preferred):", dbErr instanceof Error ? dbErr.message : String(dbErr));
-      }
-    }
-
-    if (!data) {
-      return res.json({});
-    }
-
-    const config: any = {};
-    
-    // Decrypt all sensitive fields if they exist with safety fallback
-    if (data?.yalidineApiKey) config.yalidineApiKey = getDecryptedOrPlain(data.yalidineApiKey);
-    if (data?.yalidineApiToken) config.yalidineApiToken = getDecryptedOrPlain(data.yalidineApiToken);
-    if (data?.zrApiKey) config.zrApiKey = getDecryptedOrPlain(data.zrApiKey);
-    if (data?.maystroId) config.maystroId = getDecryptedOrPlain(data.maystroId);
-    if (data?.maystroApiKey) config.maystroApiKey = getDecryptedOrPlain(data.maystroApiKey);
-    if (data?.ecotrackToken) config.ecotrackToken = getDecryptedOrPlain(data.ecotrackToken);
-    if (data?.andersonUser) config.andersonUser = getDecryptedOrPlain(data.andersonUser);
-    if (data?.andersonPass) config.andersonPass = getDecryptedOrPlain(data.andersonPass);
-
-    res.json(config);
-  } catch (error: any) {
-    console.info("Info: Get merchant config finished safely with error fallback:", error instanceof Error ? error.message : String(error));
-    res.json({});
-  }
-});
 
 apiRouter.post("/webhooks/shipping", async (req, res) => {
   const { tracking_number, status } = req.body;
@@ -819,6 +595,27 @@ const ai = new GoogleGenAI({
     }
   }
 });
+
+// Customizable Gemini Configuration Variables
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+
+export const GENERAL_EXTRACTION_PROMPT = 
+  "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text recap, screenshots/receipts (Image), invoice files (PDF), or customer spoken vocal notes (Audio) speaking Algerian Darja (الدارجة الجزائرية) dialect or mixed slang.\n\n" +
+  "GUIDELINES:\n" +
+  "1. If an Image or PDF is provided, perform intelligent visual reading/OCR to extract customer full name, phone, destination address details, items list, and other metadata.\n" +
+  "2. If an Audio file is provided, perform detailed Speech-to-Text transcription and comprehension. Listen closely to the spoken Algerian Darja (الدارجة الجزائرية) dialect vocal recording to extract the name, phone number, specific Algerian wilaya/commune, and ordered item details.\n" +
+  "3. Extract and structure the customer details (Name, Phone, Wilaya, Commune) and a list of ordered items (Product, Quantity, Size, Color). Ensure that when extracting the 'wilaya', you normalize and match it specifically to its official latin representation (e.g., 'Djelfa', 'Alger', 'Oran', 'Constantine', 'Blida', 'Tiaret', etc.). Convert digits or names correctly.\n" +
+  "4. For the 'location_url', look for Google Maps URLs (containing 'maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps', etc.) in any read/transcribed text. Extract the exact full URL. Set to null if none.\n" +
+  "5. If a piece of information is missing, leave the field empty.\n" +
+  "6. Set 'possible_fake_order' to true if the phone number is missing, incomplete (less than 10 digits for Algeria), or if the customer's request/tone suggests they are insincere.\n" +
+  "7. Match and understand Algerian slang/Darja vocabulary (e.g. 'شحال' or 'chhal' for pricing/specifiers, 'حاب' or 'hab' for want/request, 'ابعث' or 'ab3at' for delivery, or 'بزاف' or 'bzaf' for quantity expressions).";
+
+export const CONVERSATION_DECONSTRUCTION_PROMPT = 
+  "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text, analyzing mixed Algerian Arabic Darja, French, and English slang terms.\n\n" +
+  "IMPORTANT CONTEXT HANDLING & CONVERSATION DECONSTRUCTION:\n" +
+  "1. You are analyzing a live conversational flow. The user may send multiple messages, clarifying details step by step.\n" +
+  "2. If past details (like name, destination state, or phone) are already listed in the recent history context and are NOT contradicted by the latest message, carry them forward into your final JSON extraction. Do not drop previously established data from the JSON output unless the client explicitly corrected/changed it in the current message.\n" +
+  "3. Be extremely intelligent with Algerian slang/Darja (e.g. 'شحال'/'chhal' meaning query price, 'حاب'/'hab' or 'bghi' meaning want, 'ابعث'/'ab3at' or 'صيفت'/'sift' meaning send to, 'بزاف'/'bzaf' meaning many, size keywords like 'Double X' or 'Taille', etc.) to accurately parse customer intent and item attributes.";
 
 // Prompt for Gemini to extract order data
 const orderExtractionSchema = {
@@ -1014,19 +811,12 @@ apiRouter.post("/extract-order", extractOrderLimiter, authenticate, async (req, 
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: GEMINI_MODEL,
       contents: parts,
       config: {
         responseMimeType: "application/json",
         responseSchema: orderExtractionSchema,
-        systemInstruction: "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text recap, screenshots/receipts (Image), invoice files (PDF), or customer spoken vocal notes (Audio) speaking Algerian Darja (الدارجة الجزائرية) dialect.\n\n" +
-          "Guidelines:\n" +
-          "1. If an Image or PDF is provided, perform intelligent visual reading/OCR to extract customer full name, phone, destination address details, items list, and other metadata.\n" +
-          "2. If an Audio file is provided, perform detailed Speech-to-Text transcription and comprehension. Listen closely to the spoken Algerian Darja (الدارجة الجزائرية) dialect vocal recording to extract the name, phone number, specific Algerian wilaya/commune, and ordered item details.\n" +
-          "3. Extract and structure the customer details (Name, Phone, Wilaya, Commune) and a list of ordered items (Product, Quantity, Size, Color). Ensure that when extracting the 'wilaya', you normalize and match it specifically to its official latin representation (e.g., 'Djelfa', 'Alger', 'Oran', 'Constantine', 'Blida', 'Tiaret', etc.). Convert digits or names correctly.\n" +
-          "4. For the 'location_url', look for Google Maps URLs (containing 'maps.google.com', 'maps.app.goo.gl', 'goo.gl/maps', etc.) in any read/transcribed text. Extract the exact full URL. Set to null if none.\n" +
-          "5. If a piece of information is missing, leave the field empty.\n" +
-          "6. Set 'possible_fake_order' to true if the phone number is missing, incomplete (less than 10 digits for Algeria), or if the customer's request/tone suggests they are insincere."
+        systemInstruction: GENERAL_EXTRACTION_PROMPT
       },
     });
 
@@ -1186,14 +976,12 @@ async function processMessageWithAI(unifiedMessage: { text: string; senderId: st
     ];
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: GEMINI_MODEL,
       contents: parts,
       config: {
         responseMimeType: "application/json",
         responseSchema: orderExtractionSchema,
-        systemInstruction: "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text. Inside the JSON response output, you must extract full name, phone number (normalized), Wilaya (state), commune, items (array of product, quantity, size, color), location_url and the field possible_fake_order correctly based on provided specifications.\n\n" +
-          "IMPORTANT CONTEXT HANDLING:\n" +
-          "You are analyzing a live conversational flow. The user may send multiple messages, clarifying details step by step. If past details (like name, destination state, or phone) are already listed in the recent history context and are NOT contradicted by the latest message, carry them forward into your final JSON extraction. Do not drop previously established data from the JSON output unless the client explicitly corrected/changed it in the current message."
+        systemInstruction: CONVERSATION_DECONSTRUCTION_PROMPT
       },
     });
 
@@ -1427,48 +1215,47 @@ apiRouter.post("/ship-order", sensitiveLimiter, authenticate, async (req, res) =
   };
 
   try {
-    // 1. Fetch config from firestore using secure user-authenticated REST call, or fallback to Admin SDK
-    let config: any = null;
-    if (idToken) {
-      try {
-        config = await readConfigRest(uid, idToken);
-      } catch (restErr) {
-        console.warn("REST load config inside ship-order failed:", restErr);
-      }
+    if (!db) {
+      return res.status(500).json({ error: "Database not initialized" });
     }
 
-    if (!config && db) {
+    // 1. Strict Multi-Merchant Data Isolation Check
+    if (order.id) {
       try {
-        const configDoc = await db.collection("merchant_configs").doc(uid).get();
-        if (configDoc.exists) {
-          config = configDoc.data();
+        const orderDoc = await db.collection("orders").doc(order.id).get();
+        if (orderDoc.exists && orderDoc.data()?.userId !== uid) {
+          return res.status(403).json({ error: "Unauthorized order access" });
         }
       } catch (err) {
-        console.warn("Server Firestore inaccessible inside ship-order endpoint:", err);
+        console.warn("Multi-tenant isolation check warning:", err);
       }
     }
 
-    // Helper to resolve and decrypt stored config values
-    const resolveKey = (val: string | undefined): string | null => {
-      if (val) {
-        // If it starts with an IV format (contains a colon), decrypt it
-        if (typeof val === 'string' && val.includes(':')) {
-          return decrypt(val);
-        }
-        return val;
+    // 2. Fetch plan type and enforce allowed couriers limits
+    let planType = "free";
+    try {
+      const userDoc = await db.collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        planType = userDoc.data()?.planType || "free";
       }
-      return null;
-    };
+    } catch (err) {
+      console.error("Error fetching user doc in ship-order:", err);
+    }
 
-    // Synthesize the keys exclusively from secure server-stored configuration
-    const yalidineApiKey = resolveKey(config?.yalidineApiKey);
-    const yalidineApiToken = resolveKey(config?.yalidineApiToken);
-    const zrApiKey = resolveKey(config?.zrApiKey);
-    const maystroId = resolveKey(config?.maystroId);
-    const maystroApiKey = resolveKey(config?.maystroApiKey);
-    const ecotrackToken = resolveKey(config?.ecotrackToken);
-    const andersonUser = resolveKey(config?.andersonUser);
-    const andersonPass = resolveKey(config?.andersonPass);
+    const allowed = getAllowedCouriers(planType);
+    if (!allowed.includes(courier)) {
+      return res.status(403).json({ error: "خطتك لا تدعم شركة التوصيل هذه" });
+    }
+
+    // 3. Centralized API keys from environment only
+    const yalidineApiKey = process.env.YALIDINE_API_ID;
+    const yalidineApiToken = process.env.YALIDINE_API_TOKEN;
+    const zrApiKey = process.env.ZR_API_KEY;
+    const maystroId = process.env.MAYSTRO_ID;
+    const maystroApiKey = process.env.MAYSTRO_API_KEY;
+    const ecotrackToken = process.env.ECOTRACK_TOKEN;
+    const andersonUser = process.env.ANDERSON_USER;
+    const andersonPass = process.env.ANDERSON_PASS;
 
     // If NO API keys are set at all, we gracefully fall back to Sandbox mode so the "Confirm and Ship" button always works flawlessly!
     const hasAnyKeys = !!(yalidineApiKey || yalidineApiToken || zrApiKey || maystroId || maystroApiKey || ecotrackToken || andersonUser || andersonPass);
