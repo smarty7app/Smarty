@@ -33,11 +33,12 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import OrderInput from "./components/OrderInput";
 import OrderReview from "./components/OrderReview";
-import Settings from "./components/Settings";
 import Subscription from "./components/Subscription";
 import AdminDashboard from "./components/AdminDashboard";
 import WilayasList from "./components/WilayasList";
 import PublicCheckoutForm from "./components/PublicCheckoutForm";
+import TermsConditions from "./components/TermsConditions";
+import PrivacyPolicy from "./components/PrivacyPolicy";
 
 
 // --- Constants ---
@@ -71,7 +72,7 @@ const PLAN_LIMITS: Record<string, number> = {
 function AppContent() {
   const { user, loading: authLoading, signIn, logout } = useUser();
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem("smarty_lang") as Language) || "fr");
-  const [screen, setScreen] = useState<"dashboard" | "input" | "review" | "subscription" | "settings" | "admin">("dashboard");
+  const [screen, setScreen] = useState<"dashboard" | "input" | "review" | "subscription" | "admin" | "terms" | "privacy">("dashboard");
 
   useEffect(() => {
     localStorage.setItem("smarty_lang", lang);
@@ -99,14 +100,6 @@ function AppContent() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-  const [yalidineId, setYalidineId] = useState("");
-  const [yalidineToken, setYalidineToken] = useState("");
-  const [zrKey, setZrKey] = useState("");
-  const [maystroId, setMaystroId] = useState("");
-  const [maystroKey, setMaystroKey] = useState("");
-  const [ecotrackToken, setEcotrackToken] = useState("");
-  const [andersonUser, setAndersonUser] = useState("");
-  const [andersonPass, setAndersonPass] = useState("");
 
   const t = translations[lang];
   const isRtl = lang === 'ar';
@@ -176,57 +169,6 @@ function AppContent() {
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, "orders");
     });
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      const fetchConfig = async () => {
-        try {
-          // 1. First try to load the decrypted keys from the secure API
-          const token = await auth.currentUser?.getIdToken();
-          const response = await fetch("/api/merchant-config", {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            // If the backend API returned actual config fields, apply them
-            if (data && Object.keys(data).length > 0) {
-              if (data.yalidineApiKey !== undefined) setYalidineId(data.yalidineApiKey);
-              if (data.yalidineApiToken !== undefined) setYalidineToken(data.yalidineApiToken);
-              if (data.zrApiKey !== undefined) setZrKey(data.zrApiKey);
-              if (data.maystroId !== undefined) setMaystroId(data.maystroId);
-              if (data.maystroApiKey !== undefined) setMaystroKey(data.maystroApiKey);
-              if (data.ecotrackToken !== undefined) setEcotrackToken(data.ecotrackToken);
-              if (data.andersonUser !== undefined) setAndersonUser(data.andersonUser);
-              if (data.andersonPass !== undefined) setAndersonPass(data.andersonPass);
-              return; // Successfully loaded and decrypted
-            }
-          }
-        } catch (err) {
-          console.warn("Secure config load via REST failed, falling back to direct Firestore:", err);
-        }
-
-        // 2. Direct Firestore fallback (could return encrypted keys depending on stored state)
-        try {
-          const configRef = doc(db, "merchant_configs", user.uid);
-          const docSnap = await getDoc(configRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.yalidineApiKey) setYalidineId(data.yalidineApiKey);
-            if (data.yalidineApiToken) setYalidineToken(data.yalidineApiToken);
-            if (data.zrApiKey) setZrKey(data.zrApiKey);
-            if (data.maystroId) setMaystroId(data.maystroId);
-            if (data.maystroApiKey) setMaystroKey(data.maystroApiKey);
-            if (data.ecotrackToken) setEcotrackToken(data.ecotrackToken);
-            if (data.andersonUser) setAndersonUser(data.andersonUser);
-            if (data.andersonPass) setAndersonPass(data.andersonPass);
-          }
-        } catch (err) {
-          console.error("Failed to fetch merchant config client-side", err);
-        }
-      };
-      fetchConfig();
-    }
   }, [user]);
 
   const handleExtract = async () => {
@@ -338,17 +280,7 @@ function AppContent() {
         },
         body: JSON.stringify({ 
           order, 
-          courier: order.shipping_company,
-          keys: {
-            yalidineApiKey: yalidineId,
-            yalidineApiToken: yalidineToken,
-            zrApiKey: zrKey,
-            maystroId,
-            maystroApiKey: maystroKey,
-            ecotrackToken,
-            andersonUser,
-            andersonPass
-          }
+          courier: order.shipping_company
         }),
       });
       
@@ -413,155 +345,7 @@ function AppContent() {
     }
   };
 
-  const handleSaveKeys = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const trimmedYalidineId = (yalidineId || "").trim();
-      const trimmedYalidineToken = (yalidineToken || "").trim();
-      const trimmedZrKey = (zrKey || "").trim();
-      const trimmedMaystroId = (maystroId || "").trim();
-      const trimmedMaystroKey = (maystroKey || "").trim();
-      const trimmedEcotrackToken = (ecotrackToken || "").trim();
-      const trimmedAndersonUser = (andersonUser || "").trim();
-      const trimmedAndersonPass = (andersonPass || "").trim();
 
-      // Validate Yalidine API ID
-      if (trimmedYalidineId) {
-        const isNumeric = /^\d+$/.test(trimmedYalidineId);
-        if (!isNumeric || trimmedYalidineId.length > 20) {
-          const arMsg = "معرّف Yalidine API ID غير صالح. يجب أن يحتوي على أرقام فقط ولا يزيد عن 20 خانة.";
-          const enMsg = "Invalid Yalidine API ID format. It must be numeric and up to 20 characters.";
-          const frMsg = "ID API Yalidine invalide. Il doit être numérique et contenir au maximum 20 caractères.";
-          
-          const isAr = t.total_orders === "إجمالي الطلبات";
-          const isFr = t.total_orders === "Total Commandes";
-          
-          alert(isAr ? arMsg : (isFr ? frMsg : enMsg));
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Update state with trimmed values to keep it clean in UI too
-      setYalidineId(trimmedYalidineId);
-      setYalidineToken(trimmedYalidineToken);
-      setZrKey(trimmedZrKey);
-      setMaystroId(trimmedMaystroId);
-      setMaystroKey(trimmedMaystroKey);
-      setEcotrackToken(trimmedEcotrackToken);
-      setAndersonUser(trimmedAndersonUser);
-      setAndersonPass(trimmedAndersonPass);
-
-      // 1. Direct secure client-side Firestore save
-      const configRef = doc(db, "merchant_configs", user.uid);
-      await setDoc(configRef, { 
-        yalidineApiKey: trimmedYalidineId, 
-        yalidineApiToken: trimmedYalidineToken,
-        zrApiKey: trimmedZrKey,
-        maystroId: trimmedMaystroId,
-        maystroApiKey: trimmedMaystroKey,
-        ecotrackToken: trimmedEcotrackToken,
-        andersonUser: trimmedAndersonUser,
-        andersonPass: trimmedAndersonPass,
-        userId: user.uid,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-
-      // 2. Trigger non-blocking server mirror if required
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        await fetch("/api/merchant-config", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ 
-            yalidineApiKey: trimmedYalidineId, 
-            yalidineApiToken: trimmedYalidineToken,
-            zrApiKey: trimmedZrKey,
-            maystroId: trimmedMaystroId,
-            maystroApiKey: trimmedMaystroKey,
-            ecotrackToken: trimmedEcotrackToken,
-            andersonUser: trimmedAndersonUser,
-            andersonPass: trimmedAndersonPass
-          }),
-        });
-      } catch (err) {
-        console.warn("Backend configuration mirror failed (non-blocking fallback active):", err);
-      }
-
-      alert(t.settings_keys_saved);
-      setScreen("dashboard");
-    } catch (err: any) { 
-      console.error("Failed to save merchant keys", err);
-      alert(t.error_saving_keys || "Error saving API keys."); 
-    } finally { 
-      setLoading(false); 
-    }
-  };
-
-  const handleClearKeys = async () => {
-    if (!user) return;
-    const confirmMsg = t.clear_keys_confirm;
-    
-    if (!window.confirm(confirmMsg)) return;
-
-    setLoading(true);
-    try {
-      // 1. Clear state variables
-      setYalidineId("");
-      setYalidineToken("");
-      setZrKey("");
-      setMaystroId("");
-      setMaystroKey("");
-      setEcotrackToken("");
-      setAndersonUser("");
-      setAndersonPass("");
-
-      // 2. Clear client-side Firestore document fields
-      const configRef = doc(db, "merchant_configs", user.uid);
-      await setDoc(configRef, { 
-        yalidineApiKey: "", 
-        yalidineApiToken: "",
-        zrApiKey: "",
-        maystroId: "",
-        maystroApiKey: "",
-        ecotrackToken: "",
-        andersonUser: "",
-        andersonPass: "",
-        userId: user.uid,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-
-      // 3. Clear server mirror via POST request passing empty strings
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        await fetch("/api/merchant-config", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ 
-            yalidineApiKey: "", 
-            yalidineApiToken: "",
-            zrApiKey: "",
-            maystroId: "",
-            maystroApiKey: "",
-            ecotrackToken: "",
-            andersonUser: "",
-            andersonPass: ""
-          }),
-        });
-      } catch (err) {
-        console.warn("Server mirror clear failed, client-side empty config takes priority:", err);
-      }
-
-      alert(t.cleared_db_success);
-      setScreen("dashboard");
-    } catch (err: any) {
-      console.error("Failed to clear config database", err);
-      alert(t.cleared_db_error || "Error cleaning database.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async (id: string) => {
     try { 
@@ -581,7 +365,15 @@ function AppContent() {
   }
 
   if (authLoading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RefreshCw className="animate-spin text-zinc-500 w-8 h-8" /></div>;
-  if (!user) return <LandingPage lang={lang} setLang={setLang} signIn={signIn} t={t} isRtl={isRtl} />;
+  if (!user) {
+    if (screen === "terms") {
+      return <TermsConditions setScreen={setScreen} t={t} isRtl={isRtl} />;
+    }
+    if (screen === "privacy") {
+      return <PrivacyPolicy setScreen={setScreen} t={t} isRtl={isRtl} />;
+    }
+    return <LandingPage lang={lang} setLang={setLang} signIn={signIn} t={t} isRtl={isRtl} setScreen={setScreen} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-200" dir={isRtl ? "rtl" : "ltr"}>
@@ -601,9 +393,9 @@ function AppContent() {
       )}
 
       <main className={`w-full relative transition-all duration-300 ${
-        screen === "dashboard" || screen === "admin" || screen === "wilayas" || screen === "subscription"
+        screen === "dashboard" || screen === "admin" || screen === "wilayas" || screen === "subscription" || screen === "terms" || screen === "privacy"
           ? "max-w-md md:max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-10"
-          : screen === "review" || screen === "settings"
+          : screen === "review"
           ? "max-w-md md:max-w-4xl lg:max-w-5xl pb-10"
           : "max-w-md md:max-w-3xl pb-10"
       }`}>
@@ -650,31 +442,29 @@ function AppContent() {
           {screen === "subscription" && <Subscription user={user} userData={userData} setScreen={setScreen} t={t} isRtl={isRtl} planLimits={PLAN_LIMITS} />}
           {screen === "admin" && <AdminDashboard t={t} isRtl={isRtl} setScreen={setScreen} />}
           {screen === "wilayas" && <WilayasList setScreen={setScreen} t={t} isRtl={isRtl} ordersHistory={ordersHistory} />}
-          {screen === "settings" && (
-            <Settings 
-              userData={userData}
-              t={t} 
-              setScreen={setScreen} 
-              isRtl={isRtl} 
-              loading={loading} 
-              handleSaveKeys={handleSaveKeys} 
-              handleClearKeys={handleClearKeys}
-              lang={lang} 
-              setLang={setLang}
-              yalidineId={yalidineId} setYalidineId={setYalidineId}
-              yalidineToken={yalidineToken} setYalidineToken={setYalidineToken}
-              zrKey={zrKey} setZrKey={setZrKey}
-              maystroId={maystroId} setMaystroId={setMaystroId}
-              maystroKey={maystroKey} setMaystroKey={setMaystroKey}
-              ecotrackToken={ecotrackToken} setEcotrackToken={setEcotrackToken}
-              andersonUser={andersonUser} setAndersonUser={setAndersonUser}
-              andersonPass={andersonPass} setAndersonPass={setAndersonPass}
-            />
-          )}
+          {screen === "terms" && <TermsConditions setScreen={setScreen} t={t} isRtl={isRtl} />}
+          {screen === "privacy" && <PrivacyPolicy setScreen={setScreen} t={t} isRtl={isRtl} />}
         </AnimatePresence>
       </main>
 
-      <footer className="mt-auto py-8 text-zinc-700 text-[10px] uppercase tracking-widest text-center">{t.footer} &copy; 2026</footer>
+      <footer className="mt-auto py-8 flex flex-col items-center gap-2 text-zinc-700 text-[10px] uppercase tracking-widest text-center">
+        <div>{t.footer} &copy; 2026</div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setScreen("terms")} 
+            className="hover:text-zinc-500 underline transition-colors cursor-pointer"
+          >
+            {isRtl ? "الشروط والأحكام" : "Terms & Conditions"}
+          </button>
+          <span className="text-zinc-800">|</span>
+          <button 
+            onClick={() => setScreen("privacy")} 
+            className="hover:text-zinc-500 underline transition-colors cursor-pointer"
+          >
+            {isRtl ? "سياسة الخصوصية" : "Privacy Policy"}
+          </button>
+        </div>
+      </footer>
 
       <Sidebar 
         showSidebar={showSidebar} 
