@@ -8,10 +8,22 @@ import {
 import { Logo, FeatureCard } from "./CommonUI";
 import { Language } from "../lib/translations";
 
-export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean }) {
+export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean, setScreen?: (s: any) => void }) {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [installed, setInstalled] = useState(false);
+  
+  // Additional Modals
+  const [showAboutModal, setShowAboutModal] = useState(false);
+  const [showComplianceModal, setShowComplianceModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   
   // Interactive Demo state
   const [selectedDemoPreset, setSelectedDemoPreset] = useState<number>(0);
@@ -335,7 +347,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-40 pb-16 px-6 overflow-hidden">
+      <section id="hero" className="relative pt-40 pb-16 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-purple-500/10 blur-[130px] rounded-full -z-10" />
         <div className="max-w-7xl mx-auto text-center space-y-8">
           
@@ -384,7 +396,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
           </div>
           
           {/* Logistics logos */}
-          <div className="pt-20">
+          <div id="logistics" className="pt-20">
             <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-8">
               {isRtl ? "مدعوم ومربوط تقنياً مع كبرى شركات اللوجستيك الجزائرية" : "Natively Integrated with Algerian Logistics Leaders"}
             </p>
@@ -406,7 +418,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </section>
 
       {/* Interactive AI Live Demo Section */}
-      <section className="py-20 px-6 bg-gradient-to-b from-black/40 to-[#0A0D17] relative">
+      <section id="capabilities" className="py-20 px-6 bg-gradient-to-b from-black/40 to-[#0A0D17] relative">
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
@@ -613,7 +625,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </section>
 
       {/* Core App Features Bento-grid */}
-      <section className="py-24 px-6 bg-[#0B0F19]">
+      <section id="features" className="py-24 px-6 bg-[#0B0F19]">
         <div className="max-w-7xl mx-auto space-y-16">
           
           <div className="text-center space-y-4">
@@ -653,7 +665,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
             />
             <FeatureCard 
               icon={<Smartphone className="w-6 h-6 text-blue-400" />} 
-              title={isRtl ? "مُهَيأ بالكامل للـ PWA والعمل دون اتصال" : "Optimized Offline & Mobile PWA App"} 
+              title={isRtl ? "مُهَيفأ بالكامل للـ PWA والعمل دون اتصال" : "Optimized Offline & Mobile PWA App"} 
               desc={isRtl 
                 ? "قم بتثبيت التطبيق على هاتفك أو شاشتك بخفة متناهية لمباشرة معالجة الطلبات في المعارض وغرف التخزين دون قيود." 
                 : "Install as a lightweight app on phone, tablet or desktop built to enable massive comfort and accessibility on-the-go."}
@@ -663,7 +675,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </section>
 
       {/* Interactive FAQ Section Accordion-style layout */}
-      <section className="py-20 px-6 bg-[#080B13]/40 border-t border-white/[0.05]">
+      <section id="faq" className="py-20 px-6 bg-[#080B13]/40 border-t border-white/[0.05]">
         <div className="max-w-4xl mx-auto space-y-12">
           
           <div className="text-center space-y-3">
@@ -694,7 +706,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </section>
 
       {/* Pricing Section Grid & Simulated Switcher */}
-      <section className="py-24 px-6 relative">
+      <section id="pricing" className="py-24 px-6 relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
         
         <div className="max-w-7xl mx-auto space-y-16">
@@ -775,37 +787,157 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
       </section>
 
       {/* Styled Footer and Language Switcher */}
-      <footer className="py-20 px-6 border-t border-white/10 text-center space-y-8 bg-[#070A11]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-6 h-6 rounded-full overflow-hidden bg-zinc-800/40 border border-zinc-700/50 flex items-center justify-center p-0 shrink-0">
-              <Logo className="w-full h-full rounded-full" />
+      <footer className="py-20 px-6 border-t border-white/10 bg-[#070A11] relative">
+        <div className="max-w-7xl mx-auto space-y-16">
+          
+          {/* Main Footer Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 text-zinc-400">
+            
+            {/* Branding Column */}
+            <div className="lg:col-span-2 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800/40 border border-zinc-700/50 flex items-center justify-center p-0 shrink-0">
+                  <Logo className="w-full h-full rounded-full" />
+                </div>
+                <span className="font-bold text-white text-lg tracking-tight">SmartyAi Order</span>
+              </div>
+              <p className="text-xs text-zinc-550 text-zinc-500 leading-relaxed max-w-sm">
+                {isRtl 
+                  ? "المؤسسة الجزائرية الأذكى لأتمتة التجارة الإلكترونية، تفكيك محادثات السحب التلقائي، والربط اللوجستي الفوري بكبسة زر."
+                  : "The smartest Algerian platform for e-commerce automation, unstructured chat extraction, and immediate local logistics synchronization."}
+              </p>
+              
+              <div className="pt-2">
+                <span className="text-[9px] uppercase tracking-wider text-zinc-650 text-zinc-600 block mb-2">{isRtl ? "تغيير لغة المنصة" : "Select Platform Language"}</span>
+                <div className="inline-flex bg-zinc-900/50 p-1 rounded-2xl border border-zinc-850">
+                  {[
+                    { code: 'ar', label: 'العربية' },
+                    { code: 'fr', label: 'Français' },
+                    { code: 'en', label: 'English' }
+                  ].map((l) => (
+                    <button 
+                      key={l.code} 
+                      onClick={() => setLang(l.code as any)} 
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${lang === l.code ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-zinc-500 hover:text-zinc-350'}`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-             <span className="font-bold text-zinc-500 tracking-tight">SmartyAi Order</span>
+
+            {/* Links Columns */}
+            <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8">
+              {[
+                {
+                  title: t.footer_platform_services,
+                  links: [
+                    { 
+                      label: t.footer_platform, 
+                      action: () => scrollToSection("hero") 
+                    },
+                    { 
+                      label: t.footer_capabilities, 
+                      action: () => scrollToSection("capabilities") 
+                    },
+                    { 
+                      label: t.footer_logistics, 
+                      action: () => scrollToSection("logistics") 
+                    },
+                  ]
+                },
+                {
+                  title: t.footer_investment_plans,
+                  links: [
+                    { 
+                      label: t.footer_investment_plans, 
+                      action: () => scrollToSection("pricing") 
+                    },
+                    { 
+                      label: t.footer_sign_in, 
+                      action: signIn 
+                    },
+                    { 
+                      label: t.footer_sign_up, 
+                      action: signIn 
+                    },
+                  ]
+                },
+                {
+                  title: t.footer_company_about,
+                  links: [
+                    { 
+                      label: t.footer_company_about, 
+                      action: () => setShowAboutModal(true) 
+                    },
+                    { 
+                      label: t.footer_faq, 
+                      action: () => scrollToSection("faq") 
+                    },
+                    { 
+                      label: t.footer_tech_support, 
+                      action: () => setShowSupportModal(true) 
+                    },
+                  ]
+                },
+                {
+                  title: t.footer_compliance_support,
+                  links: [
+                    { 
+                      label: t.footer_compliance_support, 
+                      action: () => setShowComplianceModal(true) 
+                    },
+                    { 
+                      label: t.footer_terms_use, 
+                      action: () => setScreen?.("terms") 
+                    },
+                    { 
+                      label: t.footer_privacy_policy, 
+                      action: () => setScreen?.("privacy") 
+                    },
+                  ]
+                }
+              ].map((section, idx) => (
+                <div key={idx} className="space-y-4 text-start" dir={isRtl ? "rtl" : "ltr"}>
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-zinc-300 border-b border-white/[0.05] pb-2 text-start">
+                    {section.title}
+                  </h4>
+                  <ul className="space-y-2">
+                    {section.links.map((link, lIdx) => (
+                      <li key={lIdx}>
+                        <button
+                          onClick={link.action}
+                          className="text-zinc-400 hover:text-white transition-colors text-xs cursor-pointer text-start flex items-start justify-start w-full gap-1 p-0.5"
+                        >
+                          <span className="whitespace-normal break-words text-start leading-relaxed">{link.label}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
           </div>
           
-          <div className="flex bg-zinc-900/50 p-1 rounded-2xl border border-zinc-850">
-            {[
-              { code: 'ar', label: 'العربية' },
-              { code: 'fr', label: 'Français' },
-              { code: 'en', label: 'English' }
-            ].map((l) => (
-              <button 
-                key={l.code} 
-                onClick={() => setLang(l.code as any)} 
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${lang === l.code ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-zinc-500 hover:text-zinc-350'}`}
-              >
-                {l.label}
-              </button>
-            ))}
+          {/* Copyright Bar */}
+          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] uppercase tracking-widest text-[#52525b] text-center md:text-right" dir={isRtl ? "rtl" : "ltr"}>
+            <div>SmartyAi Order &copy; 2026 • Made for Algerian E-Commerce Excellence</div>
+            <div className="flex bg-zinc-950/20 px-3 py-1 rounded-full border border-zinc-900 text-[9px] text-[#52525b]/80 gap-1.5 justify-center items-center">
+              <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+              <span>{isRtl ? "آمن ومحمي بالكامل" : "Fully Secure & Shielded"}</span>
+              <span>•</span>
+              <span>v4.1.0-ALGERIA</span>
+            </div>
           </div>
+
         </div>
-        
-        <p className="text-[10px] uppercase tracking-widest text-zinc-650 text-zinc-600">SmartyAi Order &copy; 2026 • Made for Algerian E-Commerce Excellence</p>
       </footer>
 
-      {/* PWA Installation Instructions Modal */}
+      {/* Modals & Guides */}
       <AnimatePresence>
+        {/* PWA Installation Instructions Modal */}
         {showGuide && (
           <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div 
@@ -896,6 +1028,189 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl }: { lang:
                 >
                   {isRtl ? "موافق" : "Got it"}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 1. About Modal */}
+        {showAboutModal && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <button 
+                onClick={() => setShowAboutModal(false)} 
+                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-white`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white border border-purple-500/20 shrink-0 shadow-lg shadow-purple-500/20">
+                  <Logo className="w-full h-full rounded-full" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-white">{isRtl ? "عن المؤسسة" : "About the Company"}</h3>
+                  <p className="text-[10px] text-zinc-500 font-mono mt-0.5">SmartyAi Algerian Tech</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-zinc-300">
+                <p>
+                  {isRtl 
+                    ? "SmartyAi هي مؤسسة جزائرية رائدة متخصصة في تطوير حلول الذكاء الاصطناعي المبتكرة لقطاع التجارة الإلكترونية والخدمات اللوجستية في الجزائر. تهدف المؤسسة إلى تمكين التجار الجزائريين من أتمتة عملياتهم، خفض التكاليف التشغيلية، ومزامنة بيانات الشحنات بكفاءة تامة تتماشى مع معايير السوق المحلية."
+                    : "SmartyAi is a pioneering Algerian technological institution specializing in developing innovative AI-driven tools dedicated to the e-commerce and logistics sector in Algeria. We aim to empower local merchants to automate order processing, decrease operational expenses, and streamline real-time shipping operations."}
+                </p>
+                <p className="text-zinc-500">
+                  {isRtl 
+                    ? "تأسست لحل مشاكل تجميع العناوين يدوياً وتوحيد الفهرسة الجغرافية لمختلف دوائر وبلديات الجزائر الـ 68."
+                    : "Founded to completely address manual address normalization constraints and consolidate logistics directories across all 68 Algerian wilayas."}
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button 
+                  onClick={() => setShowAboutModal(false)}
+                  className="px-6 py-2.5 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-zinc-300 font-bold cursor-pointer"
+                >
+                  {isRtl ? "موافق" : "Got it"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 2. Compliance Modal */}
+        {showComplianceModal && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <button 
+                onClick={() => setShowComplianceModal(false)} 
+                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-white`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-805 flex items-center justify-center text-red-400 shrink-0">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-white">{isRtl ? "الامتثال والدعم" : "Compliance & Standards"}</h3>
+                  <p className="text-[10px] text-zinc-550 text-zinc-500 font-mono mt-0.5">Secure National Integration</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-zinc-300 font-medium">
+                <p>
+                  {isRtl 
+                    ? "نلتزم في SmartyAi بالامتثال الكامل للتشريعات والقوانين الوطنية للتجارة الإلكترونية وحماية المعطيات ذات الطابع الشخصي في الجمهورية الجزائرية الديمقراطية الشعبية. نضمن تأمين وحفظ بيانات عملائكم، وتقديم بروتوكولات آمنة بالكامل للربط مع المنصات الشريكة وشركات التوصيل المعتمدة."
+                    : "SmartyAi completely complies with Algerian national framework legislations on E-Commerce operations (Law 18-05) and personal data protection. We ensure maximum database security with modern encrypted API protocols interfacing with national courier gateways and payment structures like Chargily."}
+                </p>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button 
+                  onClick={() => setShowComplianceModal(false)}
+                  className="px-6 py-2.5 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-zinc-300 font-bold cursor-pointer"
+                >
+                  {isRtl ? "إغلاق" : "Close"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 3. Technical Support Modal */}
+        {showSupportModal && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              <button 
+                onClick={() => {
+                  setShowSupportModal(false);
+                }} 
+                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-400 hover:text-white`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shrink-0">
+                  <Cpu className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-white">{isRtl ? "الدعم التقني" : "Technical Support"}</h3>
+                  <p className="text-[10px] text-zinc-550 text-zinc-500 font-mono mt-0.5">24/7 Developer Helpdesk Bureau</p>
+                </div>
+              </div>
+
+              <div className="space-y-4 text-xs leading-relaxed text-zinc-300">
+                <p>
+                  {isRtl 
+                    ? "فريق الدعم المخصص في خدمتكم للإجابة على جميع الاستفسارات وحل المشاكل التقنية."
+                    : "Our professional technical support staff is available around the clock to answer your queries."}
+                </p>
+
+                {/* Simulated Contact Form */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setShowSupportModal(false);
+                    alert(isRtl ? "تم إرسال تذكرة الدعم بنجاح! سيتصل بك فريقنا الفني قريباً." : "Your support ticket has been sent! Our team will contact you shortly.");
+                  }}
+                  className="space-y-3 pt-2"
+                >
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1 font-bold">{isRtl ? "الاسم الكامل" : "Full Name"}</label>
+                    <input 
+                      required 
+                      type="text" 
+                      placeholder={isRtl ? "كمال أحمد" : "John Doe"} 
+                      className="w-full bg-black/40 border border-zinc-850 p-3 rounded-xl text-xs outline-none focus:border-blue-500 text-zinc-350"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1 font-bold">{isRtl ? "البريد الإلكتروني" : "Email Address"}</label>
+                    <input 
+                      required 
+                      type="email" 
+                      placeholder="support@smartyai.com" 
+                      className="w-full bg-black/40 border border-zinc-850 p-3 rounded-xl text-xs outline-none focus:border-blue-500 text-zinc-350"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-zinc-500 block mb-1 font-bold">{isRtl ? "الرسالة" : "Your Message"}</label>
+                    <textarea 
+                      required 
+                      rows={3}
+                      placeholder={isRtl ? "اكتب تفاصيل استفسارك الفني هنا..." : "Write your query here..."} 
+                      className="w-full bg-black/40 border border-zinc-850 p-3 rounded-xl text-xs outline-none focus:border-blue-500 text-zinc-350 resize-none"
+                    />
+                  </div>
+                  <button 
+                    type="submit"
+                    className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-505 hover:to-indigo-505 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
+                  >
+                    {isRtl ? "إرسال تذكرة الدعم" : "Submit Ticket"}
+                  </button>
+                </form>
               </div>
             </motion.div>
           </div>

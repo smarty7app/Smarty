@@ -117,6 +117,29 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
 
   const handleBulkConfirm = async () => {
     if (selectedOrderIds.length === 0) return;
+
+    // Check if the selected carrier is allowed for their plan
+    const planType = userData?.planType || "free";
+    const isProOrAbove = planType === "pro" || planType === "professional" || planType === "unlimited" || planType === "business" || planType === "enterprise";
+    const isBusinessOrAbove = planType === "unlimited" || planType === "business" || planType === "enterprise";
+
+    let isAllowed = false;
+    if (selectedCarrier === "Yalidine Express") {
+      isAllowed = true;
+    } else if (selectedCarrier === "ZR Express" || selectedCarrier === "Maystro Delivery") {
+      isAllowed = isProOrAbove;
+    } else if (selectedCarrier === "ECOTRACK" || selectedCarrier === "Anderson") {
+      isAllowed = isBusinessOrAbove;
+    }
+
+    if (!isAllowed) {
+      alert(isAr 
+        ? `عذراً! خطتك الحالية لا تدعم ربط وإرسال الطلبيات لـ ${selectedCarrier}. يرجى ترقيه اشتراكك.` 
+        : `Your current plan doesn't support integration/shipping with ${selectedCarrier}. Please upgrade layout permission in subscription center.`
+      );
+      return;
+    }
+
     setBulkConfirming(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
@@ -991,11 +1014,28 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                          onChange={(e) => setSelectedCarrier(e.target.value)}
                          className="bg-zinc-950 border border-zinc-800 text-zinc-100 font-extrabold text-[11px] px-3 py-2.5 rounded-xl cursor-pointer outline-none focus:border-yellow-500/50 min-w-[150px] transition-colors"
                        >
-                         <option value="Yalidine Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">Yalidine Express</option>
-                         <option value="ZR Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">ZR Express</option>
-                         <option value="Maystro Delivery" className="bg-[#0b0b0b] text-zinc-100 font-bold">Maystro Delivery</option>
-                         <option value="ECOTRACK" className="bg-[#0b0b0b] text-zinc-100 font-bold">ECOTRACK</option>
-                         <option value="Anderson" className="bg-[#0b0b0b] text-zinc-100 font-bold">Anderson</option>
+                         {(() => {
+                           const planType = userData?.planType || "free";
+                           const isProOrAbove = planType === "pro" || planType === "professional" || planType === "unlimited" || planType === "business" || planType === "enterprise";
+                           const isBusinessOrAbove = planType === "unlimited" || planType === "business" || planType === "enterprise";
+                           return (
+                             <>
+                               <option value="Yalidine Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">Yalidine Express</option>
+                               <option value="ZR Express" disabled={!isProOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                                 ZR Express {!isProOrAbove ? `(${isAr ? "طلب ترقية Pro" : "Pro required"})` : ""}
+                               </option>
+                               <option value="Maystro Delivery" disabled={!isProOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                                 Maystro Delivery {!isProOrAbove ? `(${isAr ? "طلب ترقية Pro" : "Pro required"})` : ""}
+                               </option>
+                               <option value="ECOTRACK" disabled={!isBusinessOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                                 ECOTRACK {!isBusinessOrAbove ? `(${isAr ? "طلب ترقية Business" : "Business required"})` : ""}
+                               </option>
+                               <option value="Anderson" disabled={!isBusinessOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                                 Anderson {!isBusinessOrAbove ? `(${isAr ? "طلب ترقية Business" : "Business required"})` : ""}
+                               </option>
+                             </>
+                           );
+                         })()}
                        </select>
 
                        <button

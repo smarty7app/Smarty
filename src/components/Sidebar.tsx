@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { LayoutDashboard, CreditCard, Settings as SettingsIcon, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { LayoutDashboard, CreditCard, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import { Logo } from "./CommonUI";
 
 export default function Sidebar({ 
@@ -107,7 +107,6 @@ export default function Sidebar({
             <div className="flex-1 space-y-2">
               <button onClick={() => { setScreen("dashboard"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'dashboard' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}><LayoutDashboard className="w-5 h-5" /> <span className="font-medium text-sm">{t.nav_dashboard}</span></button>
               <button onClick={() => { setScreen("subscription"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'subscription' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}><CreditCard className="w-5 h-5" /> <span className="font-medium text-sm">{t.sub_upgrade}</span></button>
-              <button onClick={() => { setScreen("settings"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'settings' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}><SettingsIcon className="w-5 h-5" /> <span className="font-medium text-sm">{t.settings_courier_config}</span></button>
               {user?.email === "12benabdallah@gmail.com" && (
                 <button onClick={() => { setScreen("admin"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'admin' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}>
                   <ShieldCheck className="w-5 h-5" /> 

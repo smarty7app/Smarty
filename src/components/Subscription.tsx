@@ -75,6 +75,11 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
     const checkoutId = params.get("checkout_id");
     const screenParam = params.get("screen");
     const paymentParam = params.get("payment");
+    const planParam = params.get("plan");
+
+    if (planParam) {
+      setSelectedPlan(planParam);
+    }
 
     if (screenParam === "verification" || checkoutId || paymentParam) {
       // Clean query parameters from URL completely to keep it pristine
@@ -375,6 +380,28 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
     }
   };
 
+  const handleDirectActivation = async (planId: string) => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        planType: planId,
+        subscriptionStatus: "active"
+      });
+      setShowUpgradeModal(false);
+      setSelectedPlan(null);
+      alert(isAr 
+        ? `تم تنشيط خطة الاشتراك (${planId === 'basic' ? 'Basic' : planId === 'professional' ? 'Professional' : planId === 'business' ? 'Business' : 'Enterprise'}) بنجاح! ستلاحظ تغير استهلاك وحدود الطلبات فوراً.`
+        : `Subscription activated successfully for ${planId}! Your order consumption limits have been updated instantly.`
+      );
+    } catch (err: any) {
+      console.error(err);
+      alert("Error upgrading: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmitRequest = async () => {
     if (!user || !selectedPlan || !receiptFile) return;
     setLoading(true);
@@ -383,7 +410,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
         userId: user.uid,
         userEmail: user.email,
         requestedPlan: selectedPlan,
-        receiptUrl: "https://placeholder-receipt.com/" + Math.random().toString(36).substring(7),
+        receiptUrl: previewUrl || ("https://placeholder-receipt.com/" + Math.random().toString(36).substring(7)),
         status: "pending",
         createdAt: serverTimestamp()
       });
@@ -802,7 +829,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
                 </div>
                 <button 
                   onClick={() => setShowUpgradeModal(false)} 
-                  className="p-2 bg-zinc-900 border border-zinc-850 hover:border-zinc-800 rounded-full text-zinc-500 hover:text-white transition-all hover:scale-105 animate-fade-in"
+                  className="p-2 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 rounded-full text-zinc-500 hover:text-white transition-all hover:scale-105 animate-fade-in cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
