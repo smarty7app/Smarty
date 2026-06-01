@@ -109,7 +109,7 @@ service cloud.firestore {
     }
 
     function isValidUser(data) {
-      return (data.planType == null || data.planType in ['free', 'pro', 'unlimited']) &&
+      return (data.planType == null || data.planType in ['free', 'pro', 'unlimited', 'basic', 'professional', 'business', 'enterprise']) &&
              (data.orderCounter == null || data.orderCounter is int) &&
              (data.subscriptionStatus == null || data.subscriptionStatus in ['active', 'pending_verification', 'expired']);
     }

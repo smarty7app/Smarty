@@ -601,6 +601,10 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 
 export const GENERAL_EXTRACTION_PROMPT = 
   "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text recap, screenshots/receipts (Image), invoice files (PDF), or customer spoken vocal notes (Audio) speaking Algerian Darja (الدارجة الجزائرية) dialect or mixed slang.\n\n" +
+  "CRITICAL LANGUAGE INSTRUCTION: You MUST ALWAYS output and translate all extracted user and order information in French. Even if the customer speaks or writes in Arabic, Darja, or English, you must convert it as follows:\n" +
+  "- Translate/transliterate the customer full name ('name') to standard French/Latin characters (e.g. 'Mohamed' instead of 'محمد').\n" +
+  "- Translate all product names ('product'), colors ('color'), sizes ('size'), and notes/instructions ('note') into French (e.g. 'Robe blanche' instead of 'فستان أبيض', 'Bleu' instead of 'أزرق', 'Moyenne' instead of 'متوسطة', 'Livraison urgente' instead of 'توصيل مستعجل', etc.).\n" +
+  "- Ensure all text-based fields in the JSON output use the French language only (no Arabic script whatsoever).\n\n" +
   "GUIDELINES:\n" +
   "1. If an Image or PDF is provided, perform intelligent visual reading/OCR to extract customer full name, phone, destination address details, items list, and other metadata.\n" +
   "2. If an Audio file is provided, perform detailed Speech-to-Text transcription and comprehension. Listen closely to the spoken Algerian Darja (الدارجة الجزائرية) dialect vocal recording to extract the name, phone number, specific Algerian wilaya/commune, and ordered item details.\n" +
@@ -612,6 +616,10 @@ export const GENERAL_EXTRACTION_PROMPT =
 
 export const CONVERSATION_DECONSTRUCTION_PROMPT = 
   "You are an expert order processing assistant for Algerian e-commerce. Your goal is to extract order details with perfect accuracy from the provided conversation text, analyzing mixed Algerian Arabic Darja, French, and English slang terms.\n\n" +
+  "CRITICAL LANGUAGE INSTRUCTION: You MUST ALWAYS output and translate all extracted user and order information in French. Even if the customer speaks or writes in Arabic, Darja, or English, you must convert it as follows:\n" +
+  "- Translate/transliterate the customer full name ('name') to standard French/Latin characters (e.g. 'Mohamed' instead of 'محمد').\n" +
+  "- Translate all product names ('product'), colors ('color'), sizes ('size'), and notes/instructions ('note') into French (e.g. 'Robe blanche' instead of 'فستان أبيض', 'Bleu' instead of 'أزرق', 'Moyenne' instead of 'متوسطة', 'Livraison urgente' instead of 'توصيل مستعجل', etc.).\n" +
+  "- Ensure all text-based fields in the JSON output use the French language only (no Arabic script whatsoever).\n\n" +
   "IMPORTANT CONTEXT HANDLING & CONVERSATION DECONSTRUCTION:\n" +
   "1. You are analyzing a live conversational flow. The user may send multiple messages, clarifying details step by step.\n" +
   "2. If past details (like name, destination state, or phone) are already listed in the recent history context and are NOT contradicted by the latest message, carry them forward into your final JSON extraction. Do not drop previously established data from the JSON output unless the client explicitly corrected/changed it in the current message.\n" +
@@ -1709,11 +1717,22 @@ apiRouter.post("/payments/create-checkout", authenticate, async (req, res) => {
   const { planType } = req.body;
   const uid = (req as any).uid;
 
-  if (planType !== "pro" && planType !== "unlimited") {
-    return res.status(400).json({ error: "Invalid plan type" });
+  const validPlans = ["free", "basic", "pro", "professional", "unlimited", "business", "enterprise"];
+  if (!validPlans.includes(planType)) {
+    return res.status(400).json({ error: "Invalid plan type. Must be basic, professional, business, or enterprise." });
   }
 
-  const amount = planType === "pro" ? 700 : 2000;
+  let amount = 0;
+  if (planType === "basic" || planType === "free") {
+    amount = 0;
+  } else if (planType === "pro" || planType === "professional") {
+    amount = 990;
+  } else if (planType === "unlimited" || planType === "business") {
+    amount = 1990;
+  } else if (planType === "enterprise") {
+    amount = 4990;
+  }
+
   const key = process.env.CHARGILY_SECRET_KEY;
 
   try {
