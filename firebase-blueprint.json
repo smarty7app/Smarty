@@ -35,17 +35,23 @@
       },
       "required": ["orderId", "productName", "quantity"]
     },
-    "InventoryItem": {
-      "title": "InventoryItem",
-      "description": "Stock items for the seller",
+    "Product": {
+      "title": "Product",
+      "description": "Stock items and products for the seller",
       "type": "object",
       "properties": {
-        "productName": { "type": "string", "description": "Name of the product" },
-        "stockQuantity": { "type": "integer", "description": "Current stock count" },
-        "price": { "type": "number", "description": "Unit price" },
-        "userId": { "type": "string", "description": "Owner of the inventory item" }
+        "productName": { "type": "string", "description": "Name of the product (required)" },
+        "description": { "type": "string", "description": "Short description of the product" },
+        "price": { "type": "number", "description": "Price in DZD (required)" },
+        "stockQuantity": { "type": "integer", "description": "Available stock quantity (required)" },
+        "category": { "type": "string", "description": "Product category" },
+        "sku": { "type": "string", "description": "Unique SKU identifier" },
+        "imageUrl": { "type": "string", "description": "Image URL from Storage or Base64 URI" },
+        "userId": { "type": "string", "description": "The UID of the seller who owns the product" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when added" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of last modification" }
       },
-      "required": ["productName", "stockQuantity", "userId"]
+      "required": ["productName", "price", "stockQuantity", "userId"]
     },
     "User": {
       "title": "User",
@@ -91,6 +97,19 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "updatedAt"]
+    },
+    "SupportMessage": {
+      "title": "SupportMessage",
+      "description": "Technical support and contact inquiries from merchants and visitors",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the contact person" },
+        "email": { "type": "string", "description": "Email address of the contact person" },
+        "message": { "type": "string", "description": "Text of the support message" },
+        "attachment": { "type": "string", "description": "Optional attached image Base64 data URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when submitted" }
+      },
+      "required": ["name", "email", "message"]
     }
   },
   "firestore": {
@@ -103,7 +122,7 @@
       "description": "Items for orders"
     },
     "/inventory/{itemId}": {
-      "schema": "InventoryItem",
+      "schema": "Product",
       "description": "Seller's inventory"
     },
     "/users/{userId}": {
@@ -117,6 +136,10 @@
     "/merchant_configs/{userId}": {
       "schema": "MerchantConfig",
       "description": "Encrypted API keys"
+    },
+    "/support_messages/{messageId}": {
+      "schema": "SupportMessage",
+      "description": "Technical support messages received"
     }
   }
 }

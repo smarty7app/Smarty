@@ -1,141 +1,128 @@
-# SmartyAi order AI ⚡
+# SmartyAi order AI ⚡ (نظام إدارة وتفكيك الطلبات الذكي)
 
-**SmartyAi order** هو مساعدك الذكي المتكامل لإدارة وتفكيك طلبات انستغرام وشبكات التواصل الاجتماعي باستخدام الذكاء الاصطناعي، مصمم خصيصاً للتجار والمنصات التجارية في الجزائر. يحل مشكلة نسخ ولصق التفاصيل المتعددة ويسرّع وتيرة العمل اليومي بفعالية احترافية.
-
----
-
-## 🚀 ما هو SmartyAi order؟
-يقوم التطبيق بتحويل رسائل الزبائن العشوائية (حتى المكتوبة بالدارجة الجزائرية) إلى بيانات منظمة ومفصلة وجاهزة للشحن في ثوانٍ معدودة. يساعدك على:
-- **توفير الوقت**: يقلل وقت معالجة الطلب الواحد من 3 دقائق من النسخ واللصق اليدوي للتفاصيل الخمسة (الاسم، الهاتف، الولاية، البلدية، والمنتج) إلى ثانيتين فحسب.
-- **التمرير السلس اللانهائي (Infinite Scrolling)**: تصفح سلس وسريع لتاريخ الطلبيات الطويل، والطلبات المصفاة، وقائمة أرشيف الملصقات الحية بفضل نظام التمرير اللانهائي المعتمد على تقنية `IntersectionObserver` الحديثة، مما يتيح تصفح آلاف السجلات بكفاءة وسرعة فائقة دون تجميد الواجهة.
-- **التحذير الاستباقي المتكامل**: نظام ذكي يحذرك مسبقاً من الأرقام الخاطئة، والولايات الخاطئة، والبلديات غير المتطابقة، وحتى معلومات الطلبية الناقصة أو المفقودة، مما يقلل نسبة الأخطاء البشرية بالولايات بنسبة تقارب 99%.
-- **التحقق الصارم من رقم الهاتف (Strict Phone Validation)**: نظام حماية ذكي في استمارة الزبون العامة يمنع إرسال النموذج إذا كان رقم الهاتف لا يتكون من 10 أرقام تماماً أو لا يبدأ بـ (05 أو 06 أو 07)، مع إظهار رسالة خطأ ديناميكية تفاعلية لمنع الطلبيات الوهمية أو المدخلة بشكل خاطئ.
-- **تخصيص وتتبع لحظي لوقت الطلب (Chrono-Order Tracking)**: إطار زمني دقيق لكل طلبية بالدقيقة والثانية مع إمكانية تعديله بدقة لتسهيل تخطيط وجدولة تواصل الشحن والطلبات. تظهر الساعة والتاريخ منسقة تلقائياً حسب تفضيل لغة واجهتك.
-- **تحسين وتوافق كامل مع شاشات الحاسوب واللوحيات (Desktop-Optimized Fluid UI)**: واجهة مستخدم تفاعلية متطورة للغاية على الشاشات الكبيرة مقسمة بنظام البطاقات المنبثقة Bento-style وأعمدة الشحن الثنائية جنبًا إلى جنب، لتصفح مريح وأكثر فاعلية للمهام اليومية المتكررة.
-- **الفرز الجغرافي الذكي (68 ولاية)**: نظام مدمج وقوي يقوم بالتعرف وتصحيح أسماء الولايات بمختلف أشكال كتابتها (مثل *Oran, وهران, ohran, Djelfa, جلفة, jalfa*) وربطها تلقائياً بالترميز الإداري الرسمي والبلديات لمتابعة إحصائيات المبيعات، نسب التسليم والجاهزية الجغرافية بدقة مع تحويل العناوين بشكل ديناميكي لتتوافق مع معايير الـ API الخاصة بشركات التوصيل.
-- **الفلترة والتصفية التفاعلية**: واجهة تفاعلية تمكنك بمجرد النقر على أي بطاقة إحصائية في لوحة التحكم (المعلقة، المستلمة، المرتجعة، إلخ) من استعراض كافة الطلبات المرتبطة بها فوراً والبحث المباشر داخلها.
-- **مرونة ومزامنة الشركات المتعددة (Multi-Carrier Bulk Dispatcher)**: لوحة شحن جماعية مدمجة ومتقدمة تمكّن التاجر من تحديد حزمة طلبيات معلقة واختيار شركة التوصيل المستهدفة (مثل Yalidine, ZR Express, Maystro, EcoTrack, Anderson) عبر قائمة منسدلة ديناميكية، ليتم إرسالها وإقرانها بضغطة زر واحدة.
-- **جلب ديناميكي آمن لمفاتيح الـ Live API**: يقوم نظام الخادم في الخلفية تلقائياً بقراءة ومطابقة مفاتيح الـ API المشفرة والمؤمنة الخاصة بالشركة المحددة لكل تاجر من وثيقة الإعدادات الخاصة به في Firestore عند معالجة الشحن، مِمَّا يضمن خصوصية مطلقة وأماناً متناهياً.
-- **معالجة الحزم المقاومة للفشل (Fail-Safe Batching)**: يتعامل الخادم مع كل طلبية في دفعة الشحن بشكل فردي ومستقل تماماً؛ حيث يتم تأكيد الطلبيات الناجحة وتزويدها بتتبع حقيقي فوري، بينما تبقى الطلبيات الفاشلة معلّقة (Pending) مع توضيح وعرض تفصيلي لسبب الفشل (Dispatch Error) مباشرة بجانب الطلبية في واجهة التاجر لتمكينه من تعديل التنسيقات وإعادة المحاولة بيسر.
+**SmartyAi order** هو الحل البرمجي المتكامل والفاخر المصمم بمستوى احترافي عالٍ لمساعدة تجار التجارة الإلكترونية ومنصات البيع بالتجزئة في الجزائر على أتمتة وتفكيك المحادثات الواردة من شبكات التواصل الاجتماعي (Instagram, Facebook Messenger, WhatsApp, Telegram). يعتمد النظام على تقنيات الذكاء الاصطناعي الحديثة لتحويل الرسائل العشوائية والدارجة الجزائرية إلى طلبيات منظمة وجاهزة للشحن خلال ثوانٍ معدودة.
 
 ---
 
-## 🛠️ التقنيات المستخدمة (Tech Stack)
+## 🚀 المزايا الأساسية والوحدات الوظيفية (Core Modules)
 
-### الواجهة الأمامية (Frontend)
-- **React 19**: لبناء واجهة المستخدم كـ Single Page Application عالية الأداء.
-- **Tailwind CSS 4**: للتصميم العصري المتجاوب ذي التفاصيل الدقيقة وحسابات الحشو السلسة.
-- **Motion/React**: للتحركات والأنيميشن التفاعلية الصديقة للمستخدم.
-- **Lucide React**: لمجموعة الأيقونات الرشيقة والمتسقة بصرياً.
-- **Firebase Auth & Firestore**: للمزامنة الفورية وإدارة شؤون الدخول والأمان والمجموعات.
+### 1. نظام تفكيك الطلبات بالذكاء الاصطناعي (AI Extraction Engine)
+* **دعم الدارجة واللغات المتعددة**: يقوم بفهم واستخلاص طلبات الزبائن وتفاصيلهم بدقة عالية حتى وإن كانت مكتوبة بمزيج من الدارجة الجزائرية، العربية والفرنسية.
+* **الاعتماد على SDK الرسمي لـ Gemini**: تم تحديث النظام بالكامل ليعتمد على مكتبة `@google/genai` الرسمية الحديثة من Google بدلاً من طلبات الـ HTTP التقليدية، مما يضمن ثباتاً مطلقاً وأداءً فائق السرعة ومعالجة كاملة للأخطاء (Failures) بالتزامن مع التحقق من الهيكلية (Structured JSON Schema).
 
-### الخلفية (Backend)
-- **Node.js & Express**: خادم خفيف لبناء واجهات الـ APIs والتحكم بطلبات الشحن الجماعي.
-- **Google Gemini API (@google/genai)**: العقل المدبر ومحرك تفكيك المحادثات لفهم الدارجة الجزائرية واستخلاص معلومات الزبائن الجغرافية وتصحيحها بدقة متناهية.
-- **Firebase Admin SDK**: للتكامل مع قاعدة بيانات السحاب وصيانة الهياكل والتراخيص.
-- **Esbuild**: معالج تجميع الخادم وبنائه في حزمة CJS أحادية متكاملة لزيادة الكفاءة والسرعة.
+### 2. التوزيع الجغرافي الذكي وتصحيح العناوين (68 ولاية وجداول البلديات)
+* **معالجة تباين الكتابة**: ترميز جغرافي متطور يتعامل مع الاختلافات الكتابية والسمعية للولايات الجزائرية الـ 68 والبلديات المقترنة بها (مثل: Oran, ohran, وهران، Jalfa, جلفة).
+* **التدقيق الجغرافي الاستباقي**: يقوم النظام بمطابقة ترميز الولايات الإداري وتخمين البلدية المناسبة من قواعد البيانات لمنع توجيه الطرود إلى وجهات خاطئة، مما يقلل نسبة الأخطاء اللوجستية بمعدل 99%.
 
----
+### 3. بوابة الشحن الجماعي (Multi-Carrier Bulk Dispatcher)
+* **توافق متعدد الشركات**: واجهة واحدة تتيح إرسال طلبيات متعددة مجمعة في وقت واحد لشركات شحن متعددة في الجزائر:
+  - **Yalidine Express**
+  - **ZR Express**
+  - **Maystro Delivery**
+  - **ECOTRACK (نظام تتبع موحد)**
+  - **Anderson Logistics**
+* **سرية مفاتيح الربط (Server-Side Proxying)**: يتم تخزين مفاتيح الـ API السرية الخاصة بالتاجر في مستندات مشفرة داخل قاعدة بيانات Firestore الآمنة، وتتم معالجة كافة اتصالات طلب الشحن مع الشركات من جانب السيرفر بالكامل بـ (Zero-Trust Configuration)، لحمايتها التامة من العبث أو التسريب لمتصفح الزبون.
+* **معالجة الدفعات المقاومة للفشل (Fail-Safe Batching)**: تعالج الطلبات ضمن الدفعة بشكل منفصل؛ يتم توفير أرقام التتبع للطلبيات الناجحة ووسمها بـ (Shipped) فوراً، بينما يتم إبقاء الطلبيات الفاشلة بوضعية (Pending) مع تظهير تفاصيل وسبب خطأ الشحن فصيلياً بجانب البطاقة لتسهيل التعديل والمحاولة.
 
-## 📖 طريقة الاستخدام
+### 4. واجهة المستخدم Bento-style وخصائص التفاعل الديناميكي
+* **أجهزة الحاسوب والمكتب (Desktop Fluid UI)**: تصميم فخم يعتمد عارضة Bento Grid مقسمة إلى أوراق عمل مريحة للعين، وأعمدة شحن موازية مخصصة للشاشات الكبيرة لتفادي التمرير والضغط اليدوي المكرر.
+* **البحث والتصفية الديناميكية الفورية**: بمجرد النقر على أي مؤشر أو بطاقة إحصائية من لوحة التحكم (المعلقة، الملغاة، المرتجعة...) يتم جلب وتخصيص البيانات المعنية فورياً بالمزامنة السلسة مع شريط البحث.
+* **التصفح اللانهائي فائق السرعة (Infinite Scrolling)**: يعتمد التمرير اللانهائي على تقنية الـ `IntersectionObserver` الحديثة لمراجعة السجلات والملصقات القديمة بسلاسة تامة دون التأثير على أداء الواجهة، مِمَّا يتيح تصفح آلاف البيانات والطلبات بأريحية استثنائية.
+* **التحقق الصارم من بيانات الزبائن (Strict Validation)**: نظام أمان قاسي يمنع إرسال الاستمارات العامة إذا كان حقل المشتري فارغاً، أو إذا كان رقم الهاتف لا يساوي 10 أرقام تماماً أو لا يبدأ بمشغلي الهاتف المعتمدين في الجزائر (`05`, `06`, `07`).
 
-1. **تسجيل الدخول**: استخدم حساب Google الخاص بك للولوج الآمن واللحظي.
-2. **لصق الرسالة العشوائية**: انسخ نصوص ورسائل الزبائن مباشرة من Messenger أو Instagram أو WhatsApp والصقها في خانة "طلب جديد".
-3. **التفكيك والتحليل الذكي**: بضغط زر واحدة "تفكيك الطلب بالذكاء الاصطناعي ⚡"، يقوم المساعد بفصل الاسم بذكاء، والهاتف، والولاية، والبلدية، والمنتج.
-4. **المراجعة والتحقق الجغرافي**: يعالج النظام أسماء الولايات ويقترح البلديات المتطابقة فونيتيكياً لمنع وقوع الشحنات في الوجهات الخاطئة.
-5. **لوحة التحكم والتمرير السلس**: تتبع نمو تجارتك في لوحة متكاملة تدعم الفلترة وحملات الشحن مع ميزة **التمرير اللانهائي** التي تغنيك عن التصفح التقليدي البطيء.
-6. **الشحن الجماعي بضغطة زر**: اختر الطلبات المرغوبة، اختر شركة التوصيل المحددة، ثم اشحنها في حزمة واحدة وتتبع المستجدات مباشرة.
+### 5. المتجر العام والمبيعات المباشرة للتاجر (Merchant Storefront)
+* **واجهات متجر مستقلة**: يعطي التطبيق القدرة لكل تاجر مسجل لمشاركة رابط متجر عام خاص به لعرض المنتجات للجمهور عبر المسارات الديناميكية `/store/:merchantId/info` و `/store/:merchantId/products`.
+* **لوحة إدارة المخزون (Inventory Management)**: تتيح إدارة كاملة للمنتجات (إضافة، تعديل، حذف، تحديد الأسعار، تحويل حالات التوفر) مع نظام رفع وتحميل فوري لصور وخلفيات المنتجات.
+* **شحن وتثبيت آلي**: يتصل المتجر مباشرة بنظام حساب الطلبيات، ويقوم بإرسال تفاصيل زبائن وطلبات المتجر مباشرة إلى حساب السيرفر وقاعدة البيانات المعنية تلقائياً لتهيئة الشحن السريع.
 
----
+### 6. نظام الفوترة والاشتراكات عبر Chargily Pay V2
+* **بوابة الدفع الوطنية**: دمج كامل لخدمات الدفع المعتمدة محلياً (CIB, Edahabia, BaridiMob) باستخدام واجهة الدفع Chargily Pay V2.
+* **اشتراكات دورية مرنة**: باقات متعددة تخصص حسابات ومنسوب طلبية شهري للتاجر، مع تحسين إمكانيات الشحن ومستوى الدعم حسب الباقة النشطة، بالإضافة إلى نظام التحقق الآلي من حالة الفواتير في بيئة Sandbox والتحويل اللحظي للمشترك عبر الـ Webhook المقرون بالخادم.
 
-## ⚙️ طريقة التشغيل (للمطورين)
-
-### المتطلبات
-- Node.js (إصدار 18 أو أحدث)
-- حساب Firebase مهيأ ومفاتيح API لـ Google Gemini.
-
-### خطوات الإعداد والتشغيل
-1. **تثبيت الملحقات والاعتمادات**:
-   ```bash
-   npm install
-   ```
-2. **إعداد المتغيرات البيئية**: قم بإنشاء ملف `.env` وقم بضبط القيم المطلوبة (متغيرات Firebase الـ Client والـ Admin، ومفتاح Gemini API للذكاء الاصطناعي). انظر `.env.example`.
-3. **التشغيل في بيئة التطوير المحلية**:
-   ```bash
-   npm run dev
-   ```
-4. **البناء والتجميع للإنتاج**:
-   ```bash
-   npm run build
-   ```
-5. **بدء تشغيل السيرفر المجمع**:
-   ```bash
-   npm start
-   ```
+### 7. نظام الدعم الفني الذكي ومكتب المساعدة (24/7 Helpdesk & Image Attachment)
+* **تذاكر الدعم المباشرة**: نافذة متطورة تمكن المستخدمين والتجار من التواصل مع الدعم التقني وتقديم الاستفسارات والتبليغ عن المشاكل.
+* **إرفاق الصور واللقطات الفنية**: ميزة إرفاق لقطات الشاشة (Screenshots) أو الإيصالات بشكل اختياري لتوضيح المشاكل بدقة.
+* **الضغط الفوري والميكرو-معاينة (Client-Side Compression)**: تتم معالجة وضغط الصور تلقائياً في المتصفح باستخدام عنصر Canvas لتصغير حجمها وحمايتها قبل حفظها في Firestore كـ Base64، مع إمكانية إزالتها أو تعديلها بمرونة فائقة قبل الإرسال.
+* **استعراض وتفحص الصور للأدمن**: تظهر تذاكر الدعم والمرفقات مباشرة للأدمن في لوحة تحكم الإدارة مع محرك عرض متكامل (High-fidelity Image Lightbox Viewer) يتيح تكبير الصورة المرفقة، تحميلها، أو فتحها في نافذة جديدة.
 
 ---
 
-## 📊 الباقات والاشتراك
-- **الباقة المجانية**: 30 طلبية مجانية شهرياً لتجربة المزايا والبدء بالتبسيط.
-- **الباقة الاحترافية (Pro)**: 350 طلبية شهرياً مع شراكات وتوصيلات API متكاملة.
-- **الباقة غير المحدودة**: طلبات ومعالجات مفتوحة بدعم متواصل وبنية تحتية مخصصة.
+## 🛠️ البنية البرمجية والتقنيات (Tech Stack)
+
+### الواجهة الأمامية (Frontend SPA)
+* **React 19 / Vite 6**: بيئة تشغيل فائقة الخفة وبناء وتحديث واجهات ديناميكية آمنة.
+* **Tailwind CSS 4**: التنسيق المتكامل ذي الاتساق اللوني المريح وهندسة المسافات والتفاصيل.
+* **Motion / React**: لتجارب دخول وتفاعل متحركة رشيقة تعطي إحساساً بالنظام الفاخر.
+* **Firebase (Firestore & Client SDK)**: معمارية ثنائية التكوين في `src/lib/firebase.ts`؛ تدعم تهيئة التطبيق عبر `firebase-applet-config.json` الأساسي المدمج، كما تمتاز بالمرونة والقدرة على قراءة متغيرات البيئة المحلية (`VITE_FIREBASE_API_KEY`, إلخ) لدعم مشاريع المطورين والاختبارات الفردية بشكل آلي.
+
+### الواجهة الخلفية والخادم (Backend Server)
+* **Node.js, Express & TypeScript (tsx)**: نظام تقديم خفيف يتعامل مع الخدمات المتزامنة، الجدولة الآمنة للـ Cron Jobs، وشهادات المرور.
+* **@google/genai**: استدعاء نماذج Gemini (مثل `gemini-3.5-flash`) بسلاسة وذكاء لمعالجة الطلبات والصور وحفظ هياكل المدخلات.
+* **Firebase Admin SDK**: الاتصال السريع المباشر ببيانات العملاء وحفظ التعديلات وعمليات الشحن والمخزون في الوقت الحقيقي.
+* **Esbuild Compilation**: معالجة وبناء ملفات السيرفر في حزمة CJS أحادية مغلقة `dist/server.cjs` لضمان الإنتاجية العالية والسرعة الفائقة لخدمات الكلاود رن وتنزيل العمليات بأقل جهد معالجة ممكن.
 
 ---
 
-## 🔒 الأمان وتأمين مفاتيح التوصيل
-لحماية خصوصيتك ومنع تسرب بيانات حساباتك، يتم حفظ ومطابقت جميع مفاتيح الـ API الخاصة بشركات الشحن (Yalidine و ZR Express وغيرهما) مشفرة ومحفوظة ضمن قاعدة بيانات Firestore السحابية المؤمنة وتتم معالجتها بالكامل في بيئة الخادم (Server-Side Execution)، مما يمنع تمريرها أو كشفها لمتصفح العميل نهائياً.
+## ⚙️ التثبيت والتشغيل المحلي للمطورين
+
+### 1. تثبيت الاعتمادات
+قم بتنزيل الحزم البرمجية المطلوبة للمشروع محلياً:
+```bash
+npm install
+```
+
+### 2. إعداد المتغيرات البيئية (`.env`)
+قم بإنشاء ملف باسم `.env` في الجذر المقابل للمشروع مستعيناً بمستند المرجع المتاح `.env.example`. يحتوي الملف على:
+
+* **مفتاح Gemini الذكي**:
+  ```env
+  GEMINI_API_KEY="أدخل_مفتاح_gemini_الخاص_بك_هنا"
+  GEMINI_MODEL="gemini-3.5-flash"
+  ```
+* **تكوين الـ Firebase Client للتشغيل المحلي السلس**:
+  ```env
+  VITE_FIREBASE_API_KEY="AIzaSy..."
+  VITE_FIREBASE_AUTH_DOMAIN="your-app-id.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID="your-app-id"
+  VITE_FIREBASE_STORAGE_BUCKET="your-app-id.firebasestorage.app"
+  VITE_FIREBASE_MESSAGING_SENDER_ID="..."
+  VITE_FIREBASE_APP_ID="..."
+  VITE_FIREBASE_MEASUREMENT_ID="G-..."
+  VITE_FIREBASE_DATABASE_ID="(default)"
+  ```
+* **مفاتيح دفع Chargily وبوابات التوصيل الإضافية**:
+  أدخل بيانات المفاتيح الخاصة بـ Chargily Pay والشركات الأخرى المتوفرة في ملف `.env.example` عند الحاجة لاختبار تدفقات الشراء المتقدمة محلياً.
+
+### 3. البدء في بيئة التطوير (Hot-Reload)
+يقوم هذا الأمر بتهيئة شعارات النظام وتشغيل الواجهة والسيرفر بالاتساق والتعديل الفوري محلياً:
+```bash
+npm run dev
+```
+
+### 4. البناء للإنتاج والتجميع الفاخر (Production Build)
+تقوم البنية البرمجية بتصدير الواجهة كـ SPA والـ Express Server كملف موحد مجمع بسرعة عالية:
+```bash
+npm run build
+```
+
+### 5. بدء الخادم الفعلي للإنتاج
+تشغيل التطبيق المنبثق من المكونات المجمعة بنجاح:
+```bash
+npm start
+```
 
 ---
 
-# SmartyAi order AI ⚡ (English Version)
+## 📂 خريطة وتكوين أهم الهياكل البرمجية للمشروع
 
-**SmartyAi order** is your all-in-one suite for managing and extracting Instagram and social media customer inquiries with the speed of AI. Intentionally structured and optimized for Algerian merchant operations, it streamlines messy order chats into ready-to-ship records in milliseconds.
-
----
-
-## 🚀 Key Features
-
-- **AI-Driven Data Extraction**: Instantly parses freeform chats (including Algerian slang/Darija) into clean structured entries (Name, Phone, Wilaya, Commune, Product) in less than 2 seconds.
-- **Infinite Scrolling (Seamless Data Exploration)**: Say goodbye to lagging pagination and high load times. Enjoy smooth, uninterrupted browsing of extensive order histories, active filtered tables, and labels archive via a native performance-centric `IntersectionObserver`-based layout.
-- **Integrative Error Warning Engine**: Proactively flags incorrect/misspelled entries, invalid phones, and misaligned address values on setup, cutting manual routing mistakes by over 99%.
-- **Strict Phone Validation**: Checks and locks user checkout models to ensure client contact fields consist of exactly 10-digit formats with recognized Algerian carriers (`05`, `06`, or `07`) with real-time reactive field alerts.
-- **Chrono-Order Time Tracking**: Customize and offset record times precisely on-screen. Displays beautiful date and time indicators conforming directly to your system's language guidelines (Arabic or French).
-- **Desktop-Optimized Layout**: A stunning multi-column Dashboard containing a gorgeous, interactive, bento-inspired stats directory that feels expansive and ergonomic on standard desktop and tablet monitors.
-- **Intelligent 68 Wilayas Mapping**: Automatically maps various phonetic expressions and alternate spellings (e.g., *Oran, ohran, Djelfa, jalfa*) to standard administrative state registries for perfect logistics compliance.
-- **Interactive Statistical Drill-Downs**: Effortlessly click any statistical counter button (Pending, Delivered, Refunded, Recieved) on the main board to immediately list, search, and manage matching records inside the active frame.
-- **Carrier Agnostic Bulk Dispatching**: Batch check several orders to ship, click the carrier dropdown (supporting Yalidine Express, ZR Express, Maystro Delivery, ECOTRACK, and Anderson), and dispatch them simultaneously.
-- **Secure Server-Proxied Live Credentials**: Fetches and applies API credentials in the backend directly from Firestore (`merchant_configs`) at run-time, maintaining strict separation of keys from client browsers.
-- **Fail-Safe Batch Processing**: Dispatches are fired isolatedly per record inside batches. Successfully processed shipments acquire automated tracking, while failing records stay under `Pending` status highlighting the exact API error details adjacent to the list row for easy corrections.
+* `server.ts` - خادم المشروع المتكامل؛ يضم بوابات التوصيل (Yalidine, ZR Express, إلخ)، آليات الـ Webhooks لتلقي الإشعارات وتحديث الحالات، تكنولوجيا Google Gemini وتفكيك لغات التواصل، وآليات معالجة الدفع ومخزون المتاجر الرقمية.
+* `src/lib/firebase.ts` - معالج الاتصال وتأمين بيئة السحاب ثنائية الدعم لـ Firebase Client.
+* `src/components/FirebaseProvider.tsx` - المسؤول عن سياق التحقق من مستخدمي النظام ومحركات المزامنة والدخول بـ Google.
+* `src/components/LandingPage.tsx` - محطة العرض والتعريف الفخمة لبرنامج SmartyAi.
+* `src/components/OrderInput.tsx` - لوحة التفكيك الذكي للرسائل عبر الذكاء الاصطناعي ومعالجة النصوص.
+* `src/components/AdminDashboard.tsx` - غرفة إدارة التاجر الشاملة، وبنو جرد الإيرادات وعمليات الشحن وإدارة المخازن والطلبات.
+* `src/components/Storefront.tsx` & `src/components/StorefrontCart.tsx` - معالم المتجر وبوابات الطلب المفتوحة للجمهور.
 
 ---
 
-## 🛠️ Tech Stack
-
-- **Frontend**: React 19, Tailwind CSS 4, Motion/React, Firebase Authentication & Firestore.
-- **Backend/Compilation**: Node.js, Express, @google/genai (Gemini Core), Firebase Admin SDK, bundled cleanly using Esbuild.
-
----
-
-## ⚙️ Project Setup (Development)
-
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Configure Environment Variables**: Set up a custom `.env` complying with `.env.example` (ensuring your Gemini API key and Firebase specifications are included).
-3. **Start Local Hot-Reload Host**:
-   ```bash
-   npm run dev
-   ```
-4. **Bundle for Standalone Production**:
-   ```bash
-   npm run build
-   ```
-5. **Boot Server Instance**:
-   ```bash
-   npm start
-   ```
-
----
-
-*SmartyAi order AI • THE LUXURY SUITE FOR ALGERIAN MERCHANTS*
+*SmartyAi order • THE LUXURY SUITE FOR ALGERIAN MERCHANTS*

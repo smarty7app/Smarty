@@ -124,7 +124,7 @@ service cloud.firestore {
                     isValidUser(incoming()) &&
                     (isAdmin() || (
                       (!("email" in incoming()) || !("email" in existing()) || incoming().email == existing().email) &&
-                      incoming().diff(existing()).affectedKeys().hasAny(['orderCounter', 'displayName', 'subscriptionStatus'])
+                      incoming().diff(existing()).affectedKeys().hasAny(['orderCounter', 'displayName', 'subscriptionStatus', 'planType', 'storeSettings'])
                     ));
       allow list: if isAdmin();
     }
@@ -138,6 +138,16 @@ service cloud.firestore {
 
     match /merchant_configs/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /support_messages/{messageId} {
+      allow create: if ("name" in incoming() && incoming().name is string && incoming().name.size() <= 150) &&
+                    ("email" in incoming() && incoming().email is string && incoming().email.size() <= 150) &&
+                    ("message" in incoming() && incoming().message is string && incoming().message.size() <= 3000) &&
+                    (!("attachment" in incoming()) || (incoming().attachment is string && incoming().attachment.size() <= 1600000)) &&
+                    (!("createdAt" in incoming()) || incoming().createdAt == request.time);
+      allow read, list, delete: if isAdmin();
+      allow update: if false;
     }
   }
 }
