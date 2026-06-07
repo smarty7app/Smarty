@@ -37,6 +37,20 @@ export interface InventoryItem {
   userId: string;
 }
 
+export interface Product {
+  id?: string;
+  productName: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  category?: string;
+  sku?: string;
+  imageUrl?: string;
+  userId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface UserData {
   planType: "free" | "pro" | "unlimited" | "basic" | "professional" | "business" | "enterprise";
   orderCounter: number;

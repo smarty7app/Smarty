@@ -21,6 +21,7 @@ import {
   limit,
   setDoc,
   getDoc,
+  getDocs,
 } from "firebase/firestore";
 import { db, auth } from "./lib/firebase";
 import { translations, Language } from "./lib/translations";
@@ -39,6 +40,7 @@ import WilayasList from "./components/WilayasList";
 import PublicCheckoutForm from "./components/PublicCheckoutForm";
 import TermsConditions from "./components/TermsConditions";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import MerchantProducts from "./components/MerchantProducts";
 
 
 // --- Constants ---
@@ -72,7 +74,7 @@ const PLAN_LIMITS: Record<string, number> = {
 function AppContent() {
   const { user, loading: authLoading, signIn, logout } = useUser();
   const [lang, setLang] = useState<Language>(() => (localStorage.getItem("smarty_lang") as Language) || "fr");
-  const [screen, setScreen] = useState<"dashboard" | "input" | "review" | "subscription" | "admin" | "terms" | "privacy">("dashboard");
+  const [screen, setScreen] = useState<"dashboard" | "products" | "input" | "review" | "subscription" | "admin" | "terms" | "privacy">("dashboard");
 
   useEffect(() => {
     localStorage.setItem("smarty_lang", lang);
@@ -100,10 +102,118 @@ function AppContent() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [showRedirectWarning, setShowRedirectWarning] = useState(false);
+  const [authStallDetected, setAuthStallDetected] = useState(false);
+
+  // Startup watchdog for auth loading
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (authLoading) {
+        setAuthStallDetected(true);
+        console.error("⚠️ [Redirection Watchdog] CRITICAL: Firebase Auth continues to load after 8 seconds. This might indicate that the Firebase App configuration is incorrect, the server is unreachable, or the browser is blocking connection in a sandboxed iframe. If the application is unable to direct you from the landing page, please open the app in a new browser tab.");
+      }
+    }, 8000);
+    return () => clearTimeout(timeoutId);
+  }, [authLoading]);
+
+  // Watchdog for Landing page to Dashboard redirection
+  useEffect(() => {
+    if (!user) {
+      setShowRedirectWarning(false);
+      return;
+    }
+
+    // Default screen to 'dashboard' if logged in and currently on landing or unknown screen
+    if (screen === "terms" || screen === "privacy") {
+      // Keep on terms/privacy if already selected
+    } else if (screen !== "dashboard" && screen !== "subscription" && screen !== "products" && screen !== "admin" && screen !== "input" && screen !== "review" && screen !== "wilayas") {
+      console.warn("⚠️ [Routing Control] Active state check: Screen was set to an unknown value. Resetting to dashboard.");
+      setScreen("dashboard");
+    }
+
+    // Setup watcher for user profile retrieval
+    const timeoutId = setTimeout(() => {
+      if (!userData) {
+        setShowRedirectWarning(true);
+        console.error("⚠️ [Redirection Watchdog] WARNING: The user is logged in, but user profile data (userData) from Firestore did not load within 15 seconds. This might be due to a poor connection, incorrect Firebase security rules, or database permission restrictions.");
+      }
+    }, 15000);
+
+    if (userData) {
+      setShowRedirectWarning(false);
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [user, userData, screen]);
 
   const t = translations[lang];
   const isRtl = lang === 'ar';
   const isAdmin = user?.email === "12benabdallah@gmail.com";
+
+  const validateStockAvailability = async (items: any[]): Promise<boolean> => {
+    if (!items || items.length === 0) return true;
+    const uid = user?.uid;
+    if (!uid) return false;
+    
+    try {
+      const q = query(collection(db, "inventory"), where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const inventoryItems = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
+      
+      for (const item of items) {
+        if (!item.product) continue;
+        const matched = inventoryItems.find(p => p.productName === item.product);
+        if (matched) {
+          const reqQty = Number(item.quantity) || 1;
+          const currentStock = Number(matched.stockQuantity) || 0;
+          if (currentStock < reqQty) {
+            alert(isRtl 
+              ? `عذراً، المخزون غير كافي للمنتج 「${item.product}」. المتوفر في المستودع: ${currentStock} قطع، الكمية المطلوبة: ${reqQty}`
+              : `Sorry, insufficient stock for product "${item.product}". In stock: ${currentStock}, requested quantity: ${reqQty}`
+            );
+            return false;
+          }
+        }
+      }
+      return true;
+    } catch (err) {
+      console.error("Error validating stock:", err);
+      return false;
+    }
+  };
+
+  const decrementStock = async (items: any[]) => {
+    if (!items || items.length === 0) return;
+    const uid = user?.uid;
+    if (!uid) return;
+    
+    try {
+      const q = query(collection(db, "inventory"), where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      const inventoryItems = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as any[];
+      
+      for (const item of items) {
+        if (!item.product) continue;
+        const matched = inventoryItems.find(p => p.productName === item.product);
+        if (matched) {
+          const reqQty = Number(item.quantity) || 1;
+          const currentStock = Number(matched.stockQuantity) || 0;
+          const newQty = Math.max(0, currentStock - reqQty);
+          await updateDoc(doc(db, "inventory", matched.id), {
+            stockQuantity: newQty
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error decrementing stock:", err);
+    }
+  };
 
   const wilayaStatsMap = ordersHistory.reduce((acc: any, order) => {
     if (order.wilaya) acc[order.wilaya] = (acc[order.wilaya] || 0) + 1;
@@ -136,10 +246,18 @@ function AppContent() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "orders"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(100));
+    const q = query(collection(db, "orders"), where("userId", "==", user.uid), limit(100));
     return onSnapshot(q, (snapshot) => {
-      setOrdersHistory(snapshot.docs.map(doc => {
+      const orders = snapshot.docs.map(doc => {
         const o = doc.data();
+        let solvedDate = new Date();
+        if (o.createdAt) {
+          if (typeof o.createdAt.toDate === "function") {
+            solvedDate = o.createdAt.toDate();
+          } else {
+            solvedDate = new Date(o.createdAt);
+          }
+        }
         return {
           id: doc.id,
           name: o.customerName,
@@ -163,9 +281,12 @@ function AppContent() {
           location_url: o.locationUrl || "",
           shippingFee: Number(o.shippingFee) || 0,
           totalPrice: Number(o.totalPrice) || 0,
-          createdAt: o.createdAt?.toDate?.() || new Date()
+          createdAt: solvedDate
         };
-      }));
+      });
+      // Sort in descending order of createdAt key
+      orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      setOrdersHistory(orders);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, "orders");
     });
@@ -215,6 +336,14 @@ function AppContent() {
 
     setLoading(true);
     try {
+       if (!order.id) {
+         const isStockAvailable = await validateStockAvailability(order.items);
+         if (!isStockAvailable) {
+           setLoading(false);
+           return;
+         }
+       }
+
        const payload = { 
          customerName: order.name || "", 
          phoneNumber: order.phone || "", 
@@ -244,6 +373,7 @@ function AppContent() {
          await updateDoc(doc(db, "orders", order.id), { ...payload, createdAt: order.createdAt || new Date() });
        } else {
          await addDoc(collection(db, "orders"), { ...payload, createdAt: order.createdAt || serverTimestamp() });
+          await decrementStock(order.items);
          // Increment consumption
          await updateDoc(doc(db, "users", user.uid), { 
            orderCounter: (userData.orderCounter || 0) + 1 
@@ -271,6 +401,14 @@ function AppContent() {
 
     setLoading(true);
     try {
+      if (!order.id) {
+        const isStockAvailable = await validateStockAvailability(order.items);
+        if (!isStockAvailable) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const token = await auth.currentUser?.getIdToken();
       const response = await fetch("/api/ship-order", {
         method: "POST",
@@ -322,6 +460,8 @@ function AppContent() {
       } else {
         const docRef = await addDoc(collection(db, "orders"), { ...firestorePayload, createdAt: order.createdAt || serverTimestamp() });
         finalOrderId = docRef.id;
+        // Decrement product inventory stock levels
+        await decrementStock(order.items);
         // Increment consumption
         await updateDoc(doc(db, "users", user.uid), { 
           orderCounter: (userData.orderCounter || 0) + 1 
@@ -358,13 +498,39 @@ function AppContent() {
   };
 
   // Render search-based public route before requiring user authentication
+  const pathname = window.location.pathname;
+  const storeMatch = pathname.match(/\/(?:store|s|shop)\/([^/]+)/);
   const urlParams = new URLSearchParams(window.location.search);
-  const publicMerchantId = urlParams.get("merchantId") || urlParams.get("merchant_id") || urlParams.get("m");
+  const publicMerchantId = (storeMatch ? storeMatch[1] : null) || urlParams.get("merchantId") || urlParams.get("merchant_id") || urlParams.get("m");
   if (publicMerchantId) {
     return <PublicCheckoutForm merchantId={publicMerchantId} />;
   }
 
-  if (authLoading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center"><RefreshCw className="animate-spin text-zinc-500 w-8 h-8" /></div>;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col gap-4 items-center justify-center p-6 text-center select-none">
+        <RefreshCw className="animate-spin text-zinc-500 w-8 h-8" />
+        {authStallDetected && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md p-4 bg-amber-500/5 text-amber-400 border border-amber-500/10 rounded-2xl text-xs space-y-2 mt-4"
+          >
+            <p className="font-bold">
+              {isRtl 
+                ? "⚠️ تنبيه: يبدو أن تحميل الحساب يستغرق وقتاً أطول من المعتاد." 
+                : "⚠️ Notice: Authentication is taking longer than usual to load."}
+            </p>
+            <p className="text-zinc-400 opacity-90 leading-relaxed text-[11px]">
+              {isRtl 
+                ? "إذا كنت تشاهد التطبيق من خلال نافذة المعاينة المؤطرة، فقد يتم حظر الاتصال في متصفحك. يرجى محاولة فتح التطبيق في نافذة مستقلة جديدة باستخدام زر 'فتح في علامة تبويب جديدة'." 
+                : "If you are viewing inside a preview iframe, your browser might block cross-origin components. Please try opening the application in a new browser tab."}
+            </p>
+          </motion.div>
+        )}
+      </div>
+    );
+  }
   if (!user) {
     if (screen === "terms") {
       return <TermsConditions setScreen={setScreen} t={t} isRtl={isRtl} />;
@@ -377,7 +543,32 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-200" dir={isRtl ? "rtl" : "ltr"}>
-      {screen === "dashboard" && (
+      {/* Redirect/Sync Warning Notice Bar */}
+      {showRedirectWarning && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="mb-6 w-full max-w-md md:max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-amber-500/5 text-amber-400 border border-amber-500/15 p-4 rounded-2xl flex flex-col gap-2 relative shadow-lg"
+        >
+          <div className="flex items-start gap-2.5">
+            <span className="text-base shrink-0">⚠️</span>
+            <div className="space-y-1">
+              <p className="font-bold text-xs text-amber-400">
+                {isRtl 
+                  ? "تنبيه التوجيه الذاتي: فشل أو تأخر تحميل بيانات الملف الشخصي لـ Firestore" 
+                  : "Redirect Watchdog: Failed or delayed load of Firestore profile"}
+              </p>
+              <p className="text-[11px] text-zinc-400 leading-normal">
+                {isRtl 
+                  ? "قد يكون التطبيق عاجزاً عن توجيهك بالكامل إلى لوحة التحكم حالياً لأن قاعدة البيانات لا تستجيب بالشكل المطلوب. يُرجى فحص إعدادات الاتصال أو قواعد الحماية (Firestore Rules) في الكونسول." 
+                  : "We are currently unable to seamlessly direct you to the dashboard because Firestore is not responding. Please inspect your connection status, rules configurations, or console logs."}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {(screen === "dashboard" || screen === "products") && (
         <motion.div 
           initial={{ opacity: 0, y: -20 }} 
           animate={{ opacity: 1, y: 0 }} 
@@ -386,14 +577,14 @@ function AppContent() {
           <div className="flex items-center gap-3">
             <button onClick={() => setShowSidebar(true)} className="p-2 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors"><Menu className="w-5 h-5 text-zinc-400" /></button>
             <h2 className="text-lg font-bold tracking-tight text-white/90">
-               {t.nav_dashboard}
+               {screen === "dashboard" ? t.nav_dashboard : t.nav_inventory}
             </h2>
           </div>
         </motion.div>
       )}
 
       <main className={`w-full relative transition-all duration-300 ${
-        screen === "dashboard" || screen === "admin" || screen === "wilayas" || screen === "subscription" || screen === "terms" || screen === "privacy"
+        screen === "dashboard" || screen === "products" || screen === "admin" || screen === "wilayas" || screen === "subscription" || screen === "terms" || screen === "privacy"
           ? "max-w-md md:max-w-4xl lg:max-w-5xl xl:max-w-6xl pb-10"
           : screen === "review"
           ? "max-w-md md:max-w-4xl lg:max-w-5xl pb-10"
@@ -401,6 +592,7 @@ function AppContent() {
       }`}>
         <AnimatePresence mode="wait">
           {screen === "dashboard" && <Dashboard userData={userData} ordersHistory={ordersHistory} planLimits={PLAN_LIMITS} topWilayas={topWilayas} t={t} setScreen={setScreen} handleViewOrder={(o: any) => { setOrder(o); setScreen("review"); }} setOrderToDelete={setOrderToDelete} />}
+          {screen === "products" && <MerchantProducts user={user} userData={userData} t={t} isRtl={isRtl} />}
           {screen === "input" && (
             <OrderInput 
               conversation={conversation} 
