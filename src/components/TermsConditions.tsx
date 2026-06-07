@@ -117,8 +117,8 @@ export default function TermsConditions({ setScreen, t, isRtl }: any) {
               </h3>
               <p className="text-zinc-300 leading-relaxed mt-2">
                 {isRtl
-                  ? "لأي استفسار بخصوص هذه الشروط، يرجى التواصل معنا عبر البريد الإلكتروني: support@smartyai.com"
-                  : "For any questions regarding these terms, please contact us at: support@smartyai.com"}
+                  ? "لأي استفسار بخصوص هذه الشروط، يرجى التواصل معنا عبر البريد الإلكتروني: smarty@smartyai.net"
+                  : "For any questions regarding these terms, please contact us at: smarty@smartyai.net"}
               </p>
             </div>
           </div>

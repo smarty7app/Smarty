@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  ShoppingBag, MapPin, Phone, User, FileText, CheckCircle2, 
-  HelpCircle, RefreshCw, Smartphone, Package, Shield, Truck, ChevronDown
+  ShoppingBag, Shield, CheckCircle2, ShoppingCart, RefreshCw, X, Plus, Minus, ChevronDown, User, Phone, MapPin, Smartphone, Truck 
 } from "lucide-react";
-import { doc, getDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../lib/firebase";
 import { ALGERIA_68_WILAYAS } from "./WilayasList";
+import Storefront from "./Storefront";
+import StorefrontCart from "./StorefrontCart";
 
-// Map of major realistic communes for each of the 68 Algerian wilayas for Yalidine/shipping alignment
 export const WILAYA_COMMUNES: Record<string, string[]> = {
   "01": ["Adrar", "Reggane", "Timimoun", "Aoulef", "Fenoughil", "Tsabit", "Zaouiet Kounta"],
   "02": ["Chlef", "Oued Fodda", "Boukadir", "Ténès", "Ouled Fares", "Chettia", "El Karimia"],
@@ -56,7 +54,7 @@ export const WILAYA_COMMUNES: Record<string, string[]> = {
   "44": ["Aïn Defla", "Khemis Miliana", "Miliana", "El Attaf", "Djelida", "Rouina"],
   "45": ["Naâma", "Aïn Séfra", "Mécheria", "Moghrar", "Tiout"],
   "46": ["Aïn Témouchent", "Beni Saf", "Hammam Bou Hadjar", "El Amria", "Aïn Kihal"],
-  "47": ["Ghardaïa", "Metlili", "El Guerrara", "Bounoura", "Zelfana"],
+  "47": ["Ghardaïا", "Metlili", "El Guerrara", "Bounoura", "Zelfana"],
   "48": ["Relizane", "Oued Rhiou", "Mazouna", "Ammi Moussa", "Yellel"],
   "49": ["El M'Ghair", "Djamaa", "Oum Touyour", "Sidi Amrane"],
   "50": ["El Meniaa", "Hassi Gara", "Hassi El Gara"],
@@ -84,438 +82,375 @@ interface PublicCheckoutFormProps {
   merchantId: string;
 }
 
-export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormProps) {
-  const [merchantName, setMerchantName] = useState<string>("");
-  const [loadingMerchant, setLoadingMerchant] = useState<boolean>(true);
-  
-  // Form State
-  const [customerName, setCustomerName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedWilaya, setSelectedWilaya] = useState("");
-  const [selectedCommune, setSelectedCommune] = useState("");
-  const [deliveryType, setDeliveryType] = useState<"home" | "desk">("home");
-  const [note, setNote] = useState("");
-  
-  // Simple order contents state
-  const [productName, setProductName] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const [productSize, setProductSize] = useState("");
-  const [productColor, setProductColor] = useState("");
-  
-  const [submitting, setSubmitting] = useState(false);
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+interface CartItem {
+  cartItemId: string;
+  id: string;
+  productName: string;
+  price: number;
+  imageUrl?: string;
+  quantity: number;
+  size: string;
+  color: string;
+}
 
-  // Fetch Merchant user configuration from Firestore to dynamically load store info
+export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormProps) {
+  // Merchant details loaded from unified secure endpoint GET /api/store/:merchantId/info
+  const [storeInfo, setStoreInfo] = useState({
+    storeName: "متجر SmartyAi",
+    storeLogo: "",
+    storeDescription: "أهلاً بك في متجرنا الإلكتروني المتميز. تسوق أفضل المنتجات بأفضل الأسعار مع توصيل سريع لجميع الولايات."
+  });
+  const [loadingMerchant, setLoadingMerchant] = useState<boolean>(true);
+
+  // Products state fetched from GET /api/store/:merchantId/products
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
+
+  // Filter & Search store state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+
+  // Cart & Screen transition
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`smarty_cart_${merchantId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [activeTab, setActiveTab] = useState<"store" | "checkout">("store");
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+
+  // Customization choices
+  const [tempQty, setTempQty] = useState<number>(1);
+  const [tempSize, setTempSize] = useState<string>("");
+  const [tempColor, setTempColor] = useState<string>("");
+
+  // Toast indicator
+  const [showAddedToast, setShowAddedToast] = useState<boolean>(false);
+
+  // Persist cart items uniquely for merchant
   useEffect(() => {
-    async function loadMerchantInfo() {
+    localStorage.setItem(`smarty_cart_${merchantId}`, JSON.stringify(cart));
+  }, [cart, merchantId]);
+
+  // 1. Fetch Store metadata
+  useEffect(() => {
+    async function fetchStoreMetadata() {
       try {
-        const docRef = doc(db, "users", merchantId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setMerchantName(data.displayName || `التاجر #${merchantId.slice(0, 6)}`);
-        } else {
-          setMerchantName("متجر SmartyAi");
+        setLoadingMerchant(true);
+        const res = await fetch(`/api/store/${merchantId}/info`);
+        const data = await res.json();
+        if (data.success) {
+          setStoreInfo({
+            storeName: data.storeName,
+            storeLogo: data.storeLogo,
+            storeDescription: data.storeDescription
+          });
         }
       } catch (err) {
-        console.error("Error loading merchant details", err);
-        setMerchantName("متجر SmartyAi");
+        console.error("Failed to load storefront metrics:", err);
       } finally {
         setLoadingMerchant(false);
       }
     }
-    loadMerchantInfo();
+    fetchStoreMetadata();
   }, [merchantId]);
 
-  // Handle auto-reset commune when wilaya changes
-  const handleWilayaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setSelectedWilaya(val);
-    setSelectedCommune("");
-  };
+  // 2. Fetch Store catalog (reacts to category choice, keyword searches and page transitions)
+  useEffect(() => {
+    async function loadStoreCatalog() {
+      try {
+        setLoadingProducts(true);
+        const selectedCatParam = selectedCategory !== "all" ? encodeURIComponent(selectedCategory) : "";
+        const searchParam = searchQuery ? encodeURIComponent(searchQuery) : "";
 
-  // Find wilaya code from name or selection to pull communes
-  const activeWilayaObj = ALGERIA_68_WILAYAS.find(w => `${w.code} - ${w.nameAr}` === selectedWilaya || w.code === selectedWilaya);
-  const activeWilayaCode = activeWilayaObj?.code || "";
-  const communesList = activeWilayaCode ? WILAYA_COMMUNES[activeWilayaCode] || [] : [];
+        const res = await fetch(
+          `/api/store/${merchantId}/products?category=${selectedCatParam}&search=${searchParam}&page=${currentPage}&limit=20`
+        );
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName.trim() || !phoneNumber.trim()) {
-      setErrorMsg("يرجى ملء الاسم الكامل ورقم الهاتف بشكل صحيح.");
-      return;
-    }
-
-    const cleanPhone = phoneNumber.trim().replace(/\s+/g, "");
-    const phoneRegex = /^(05|06|07)\d{8}$/;
-    if (!phoneRegex.test(cleanPhone)) {
-      setErrorMsg("الرجاء إدخال رقم هاتف جزائري صحيح ومفعّل يتكون من 10 أرقام ويبدأ بـ (05 أو 06 أو 07).");
-      return;
-    }
-    if (!selectedWilaya) {
-      setErrorMsg("يرجى اختيار ولاية التوصيل.");
-      return;
-    }
-    if (!selectedCommune) {
-      setErrorMsg("يرجى اختيار بلدية التوصيل.");
-      return;
-    }
-    if (!productName.trim()) {
-      setErrorMsg("يرجى إدخال اسم المنتج أو الطلبية المطلوبة.");
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMsg(null);
-
-    try {
-      // Structure the exact payload compatible with Firestore orders collection template
-      const payload = {
-        customerName: customerName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        wilaya: activeWilayaObj ? `${activeWilayaObj.code} - ${activeWilayaObj.nameAr}` : selectedWilaya,
-        commune: selectedCommune,
-        deliveryType: deliveryType,
-        status: "pending",               // Must be pending as requested
-        possibleFake: false,
-        note: note.trim(),
-        userId: merchantId,              // Linked directly to the merchant ID
-        items: [
-          {
-            product: productName.trim(),
-            quantity: Number(quantity) || 1,
-            size: productSize.trim() || "",
-            color: productColor.trim() || "",
-            pricePerUnit: 0 // Optional / free pricing for customer placement
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setProducts(data.products || []);
+            setCategories(data.categories || []);
+            setTotalPages(data.pagination?.totalPages || 1);
           }
-        ],
-        shippingCompany: "Yalidine Express", // Fallback Default
-        trackingNumber: "",
-        labelUrl: "",
-        locationUrl: "",
-        shippingFee: 0,
-        totalPrice: 0,
-        createdAt: serverTimestamp()     // Saved with timestamp
-      };
-
-      const docRef = await addDoc(collection(db, "orders"), payload);
-      setSubmittedId(docRef.id);
-    } catch (err: any) {
-      console.error("Failed to submit client order", err);
-      setErrorMsg(err?.message || "حدث خطأ غير متوقع أثناء إرسال طلبك. يرجى المحاولة لاحقاً.");
-    } finally {
-      setSubmitting(false);
+        }
+      } catch (e) {
+        console.error("Error setting products:", e);
+      } finally {
+        setLoadingProducts(false);
+      }
     }
+
+    loadStoreCatalog();
+  }, [merchantId, selectedCategory, searchQuery, currentPage]);
+
+  const handleOpenProduct = (prod: any) => {
+    setSelectedProduct(prod);
+    setTempQty(1);
+    setTempSize("");
+    setTempColor("");
   };
 
-  // If successfully submitted, render an elegant localized confirmation screen
-  if (submittedId) {
-    return (
-      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-4 select-none" dir="rtl">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-zinc-900/40 border border-zinc-805/60 p-8 rounded-3xl text-center shadow-2xl"
-        >
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-          
-          <h2 className="text-xl font-bold text-zinc-100 mb-2">تم استلام طلبك بنجاح!</h2>
-          <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-            شكراً لتسوقك معنا، تم تسجيل الطلب لدى <span className="text-yellow-500 font-bold">{merchantName}</span> بنجاح. سيتواصل معك فريق الدعم قريباً لتأكيد الشحن والتوصيل.
-          </p>
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
 
-          <div className="bg-zinc-950/40 border border-zinc-900 rounded-2xl p-4 text-right space-y-2.5 mb-6 text-xs">
-            <div className="flex justify-between border-b border-zinc-900/40 pb-2">
-              <span className="text-zinc-500">منفذ الطلب:</span>
-              <span className="text-zinc-200 font-bold">{customerName}</span>
-            </div>
-            <div className="flex justify-between border-b border-zinc-900/40 pb-2">
-              <span className="text-zinc-500">رقم الهاتف:</span>
-              <span className="text-zinc-200 font-mono font-bold">{phoneNumber}</span>
-            </div>
-            <div className="flex justify-between border-b border-zinc-900/40 pb-2">
-              <span className="text-zinc-500">الولاية والبلدية:</span>
-              <span className="text-zinc-200 font-bold">
-                {activeWilayaObj?.nameAr || selectedWilaya} • {selectedCommune}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-500">رقم تتبع الطلب:</span>
-              <span className="text-yellow-500/90 font-mono font-bold">Pending-{submittedId.slice(0, 8).toUpperCase()}</span>
-            </div>
-          </div>
+    const cartItemId = `${selectedProduct.id}-${tempSize}-${tempColor}`;
+    setCart(prev => {
+      const idx = prev.findIndex(item => item.cartItemId === cartItemId);
+      if (idx > -1) {
+        const updated = [...prev];
+        updated[idx].quantity += tempQty;
+        return updated;
+      } else {
+        return [...prev, {
+          cartItemId,
+          id: selectedProduct.id,
+          productName: selectedProduct.productName,
+          price: Number(selectedProduct.price) || 0,
+          imageUrl: selectedProduct.imageUrl || "",
+          quantity: tempQty,
+          size: tempSize,
+          color: tempColor
+        }];
+      }
+    });
 
-          <button 
-            onClick={() => {
-              setSubmittedId(null);
-              setCustomerName("");
-              setPhoneNumber("");
-              setSelectedWilaya("");
-              setSelectedCommune("");
-              setProductName("");
-              setNote("");
-            }}
-            className="w-full py-3 bg-zinc-800 hover:bg-zinc-750 font-bold rounded-xl text-zinc-200 text-xs transition-colors cursor-pointer"
-          >
-            تقديم طلب جديد
-          </button>
-        </motion.div>
+    setSelectedProduct(null);
+    setShowAddedToast(true);
+    setTimeout(() => {
+      setShowAddedToast(false);
+    }, 2500);
+  };
 
-        <p className="text-[10px] text-zinc-600 mt-8 tracking-widest uppercase font-mono">
-          Powered by SmartyAi • Secure Checkout
-        </p>
-      </div>
-    );
-  }
+  const handleUpdateQty = (cartItemId: string, amount: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.cartItemId === cartItemId) {
+        const next = item.quantity + amount;
+        return next > 0 ? { ...item, quantity: next } : null;
+      }
+      return item;
+    }).filter(Boolean) as CartItem[]);
+  };
+
+  const handleRemoveItem = (cartItemId: string) => {
+    setCart(prev => prev.filter(i => i.cartItemId !== cartItemId));
+  };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-8 md:pt-16 select-none font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center select-none font-sans" dir="rtl">
       
-      {/* Dynamic Merchant/Store Banner */}
-      <motion.div 
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md text-center mb-6"
-      >
-        <div className="w-12 h-12 bg-zinc-90 w-fit mx-auto rounded-2xl flex items-center justify-center border border-zinc-800/40 shadow-inner mb-3">
-          <ShoppingBag className="w-6 h-6 text-yellow-500" />
-        </div>
-        <h1 className="text-base font-black text-zinc-100 flex items-center justify-center gap-1.5 leading-none">
-          {loadingMerchant ? (
-            <RefreshCw className="w-4 h-4 animate-spin text-zinc-500" />
-          ) : (
-            merchantName
-          )}
-        </h1>
-        <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-bold">إستمارة تأكيد وتأمين طلبيتك</p>
-      </motion.div>
-
-      {/* Main Form Container - Highly mobile optimized */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="w-full max-w-md bg-zinc-900/20 border border-zinc-850/50 p-5 md:p-6 rounded-3xl shadow-xl space-y-5"
-      >
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          
-          {/* Diagnostic messages */}
-          {errorMsg && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-bold">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Section: Client Details */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-              <User className="w-3.5 h-3.5 text-yellow-500" />
-              1. معلومات الزبون
-            </h3>
-
-            <div>
-              <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">الاسم الكامل للزبون *</label>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="الاسم واللقب"
-                  required
-                  className="w-full pl-3 pr-10 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors"
-                />
-                <User className="absolute right-3.5 top-3 w-4 h-4 text-zinc-500" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">رقم الهاتف *</label>
-              <div className="relative">
-                <input 
-                  type="tel" 
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="06XXXXXXXX أو 07XXXXXXXX"
-                  required
-                  className="w-full pl-3 pr-10 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs font-mono text-left focus:border-yellow-500/50 focus:outline-none transition-colors"
-                  dir="ltr"
-                />
-                <Phone className="absolute right-3.5 top-3 w-4 h-4 text-zinc-500" />
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-zinc-900" />
-
-          {/* Section: Product Info */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-              <Package className="w-3.5 h-3.5 text-yellow-500" />
-              2. تفاصيل الطلبية
-            </h3>
-
-            <div>
-              <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">المنتج المطلوب *</label>
-              <input 
-                type="text" 
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="اسم المنتج أو الطرد المطلوب"
-                required
-                className="w-full px-3.5 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-1">
-                <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">الكمية</label>
-                <input 
-                  type="number" 
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                  required
-                  className="w-full px-3 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs text-center font-mono focus:border-yellow-500/50 focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">المقاس</label>
-                <input 
-                  type="text" 
-                  value={productSize}
-                  onChange={(e) => setProductSize(e.target.value)}
-                  placeholder="مثال: XL"
-                  className="w-full px-3 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs text-center focus:border-yellow-500/50 focus:outline-none transition-colors"
-                />
-              </div>
-              <div className="col-span-1">
-                <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">اللون</label>
-                <input 
-                  type="text" 
-                  value={productColor}
-                  onChange={(e) => setProductColor(e.target.value)}
-                  placeholder="مثال: أسود"
-                  className="w-full px-3 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs text-center focus:border-yellow-500/50 focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-zinc-900" />
-
-          {/* Section: Geographical dropdown block aligned with Yalidine */}
-          <div className="space-y-3">
-            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5 text-yellow-500" />
-              3. عنوان الشحن والولاية
-            </h3>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">الولاية *</label>
-                <div className="relative">
-                  <select 
-                    value={selectedWilaya}
-                    onChange={handleWilayaChange}
-                    required
-                    className="w-full pl-8 pr-3 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-200 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold"
-                  >
-                    <option value="" disabled className="text-zinc-650">اختر الولاية</option>
-                    {ALGERIA_68_WILAYAS.map(w => (
-                      <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-[#050505] text-zinc-100 text-semibold">
-                        {w.code} - {w.nameAr}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute left-2.5 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">البلدية *</label>
-                <div className="relative">
-                  <select 
-                    value={selectedCommune}
-                    onChange={(e) => setSelectedCommune(e.target.value)}
-                    required
-                    disabled={!selectedWilaya}
-                    className="w-full pl-8 pr-3 py-3 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-200 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <option value="" disabled className="text-zinc-650">اختر البلدية</option>
-                    {communesList.map((comm, idx) => (
-                      <option key={idx} value={comm} className="bg-[#050505] text-zinc-100">
-                        {comm}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute left-2.5 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Route Options */}
-            <div>
-              <label className="block text-[10px] text-zinc-500 font-bold mb-1.5 px-1">طريقة التوصلي المفضلّلة *</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDeliveryType("home")}
-                  className={`py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryType === "home" ? "bg-white text-black border-white shadow-md font-extrabold" : "bg-zinc-950/50 border-zinc-850 text-zinc-400 hover:text-zinc-200"}`}
-                >
-                  <Smartphone className="w-4 h-4" />
-                  شحن للمنزل
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeliveryType("desk")}
-                  className={`py-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryType === "desk" ? "bg-white text-black border-white shadow-md font-extrabold" : "bg-zinc-950/50 border-zinc-850 text-zinc-400 hover:text-zinc-200"}`}
-                >
-                  <Truck className="w-4 h-4" />
-                  مكتب الشحن Desk
-                </button>
-              </div>
-            </div>
-
-            {/* Note */}
-            <div>
-              <label className="block text-[10px] text-zinc-500 font-bold mb-1 px-1">ملاحظات إضافية للتاجر (اختياري)</label>
-              <textarea 
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="أخبرنا بأي متطلبات خاصة بالطلبية أو التوصيل..."
-                rows={2}
-                className="w-full px-3 py-2.5 bg-zinc-950/50 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors resize-none"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full py-4 mt-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-extrabold text-xs tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-yellow-500/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+      {/* Toast Alert */}
+      <AnimatePresence>
+        {showAddedToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-6 right-4 left-4 md:left-auto md:right-8 z-50 bg-emerald-500 text-black font-black text-xs px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2"
           >
-            {submitting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin text-black" />
-                جاري تسجيل طلبك...
-              </>
-            ) : (
-              <>
-                تأكيد وإرسال الطلبية الآن ⚡
-              </>
-            )}
-          </button>
-        </form>
-      </motion.div>
+            <ShoppingCart className="w-4 h-4 shrink-0 animate-bounce" />
+            <span>تم إضافة المنتج إلى سلة الشراء بنجاح! 🛒</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Safety and Assurance Footer elements */}
-      <div className="mt-6 flex items-center gap-2 text-[10px] text-zinc-500 max-w-md bg-zinc-950/30 px-4 py-2 rounded-full border border-zinc-950">
-        <Shield className="w-3.5 h-3.5 text-yellow-600 shrink-0" />
-        <span>تأمين فوري وخاص لطلبيتك من خلال بروتوكول مشفر وحماية من عمليات الاحتيال.</span>
+      {/* Main Container Core */}
+      <div className="w-full max-w-5xl px-4 py-6 md:py-10 flex-grow pb-32">
+        {activeTab === "store" ? (
+          <Storefront
+            merchantId={merchantId}
+            storeName={storeInfo.storeName}
+            storeLogo={storeInfo.storeLogo}
+            storeDescription={storeInfo.storeDescription}
+            products={products}
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={(cat) => {
+              setSelectedCategory(cat);
+              setCurrentPage(1);
+            }}
+            searchQuery={searchQuery}
+            setSearchQuery={(q) => {
+              setSearchQuery(q);
+              setCurrentPage(1);
+            }}
+            cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)}
+            onOpenProduct={handleOpenProduct}
+            onGoToCart={() => setActiveTab("checkout")}
+            loadingProducts={loadingProducts}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        ) : (
+          <StorefrontCart
+            merchantId={merchantId}
+            merchantName={storeInfo.storeName}
+            cart={cart}
+            onUpdateQty={handleUpdateQty}
+            onRemoveItem={handleRemoveItem}
+            onBackToStore={() => setActiveTab("store")}
+            onClearCart={() => setCart([])}
+          />
+        )}
       </div>
+
+      {/* Product Details Customization Popup */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-sm">
+            <motion.div
+              initial={{ y: "100%", opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0.5 }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="w-full max-w-lg bg-zinc-950 border-t md:border border-zinc-850 rounded-t-3xl md:rounded-3xl overflow-hidden shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <div className="p-5 md:p-6 space-y-4 text-right" dir="rtl">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
+                  <button 
+                    onClick={() => setSelectedProduct(null)}
+                    className="p-1.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-lg transition-all cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <h3 className="text-sm font-black text-zinc-100">تخصيص وإضافة المنتج</h3>
+                </div>
+
+                {/* Product Detail Banner */}
+                <div className="flex gap-4 items-start bg-zinc-900/10 p-3 rounded-2xl border border-zinc-900">
+                  <div className="w-20 h-20 rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900">
+                    {selectedProduct.imageUrl ? (
+                      <img src={selectedProduct.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-800">
+                        <ShoppingBag className="w-8 h-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[9.5px] uppercase font-mono tracking-widest bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-md font-bold">
+                      {selectedProduct.category || "المنتجات والمخزون"}
+                    </span>
+                    <h4 className="text-xs font-black text-zinc-100">{selectedProduct.productName}</h4>
+                    <p className="text-xs font-black text-yellow-500 font-mono">{(Number(selectedProduct.price) || 0).toLocaleString()} DA</p>
+                    <p className="text-[10px] text-zinc-500 line-clamp-2 leading-relaxed">{selectedProduct.description || "لا يوجد وصف إضافي متاح."}</p>
+                  </div>
+                </div>
+
+                {/* Custom Options config */}
+                <div className="space-y-4 py-1.5">
+                  {/* Option: Size Selection */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] text-zinc-400 font-bold mb-1">حدد المقاس المطلوب (أو اتركه فارغاً)</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["S", "M", "L", "XL", "XXL", "38", "39", "40", "41", "42", "43"].map(sz => (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setTempSize(sz)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors border cursor-pointer ${
+                            tempSize === sz 
+                              ? "bg-white text-black border-white" 
+                              : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white"
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      ))}
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="أو اكتب مقاس مخصص هنا..."
+                      value={tempSize}
+                      onChange={(e) => setTempSize(e.target.value)}
+                      className="w-full mt-2 bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-700 transition-colors"
+                    />
+                  </div>
+
+                  {/* Option: Color Selection */}
+                  <div className="space-y-1.5 pt-1">
+                    <label className="block text-[11px] text-zinc-400 font-bold mb-1">حدد اللون المطلوب (اختياري)</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["أسود", "أبيض", "أحمر", "أزرق", "رمادي", "بني", "ذهبي"].map(col => (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => setTempColor(col)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border cursor-pointer ${
+                            tempColor === col 
+                              ? "bg-white text-black border-white" 
+                              : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white"
+                          }`}
+                        >
+                          {col}
+                        </button>
+                      ))}
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="أو اكتب لون مخصص هنا..."
+                      value={tempColor}
+                      onChange={(e) => setTempColor(e.target.value)}
+                      className="w-full mt-2 bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-700 transition-colors"
+                    />
+                  </div>
+
+                  {/* Option: Quantity Selectors */}
+                  <div className="flex items-center justify-between pt-3 border-t border-zinc-900 select-none">
+                    <span className="text-xs font-bold text-zinc-400">الكمية المطلوبة:</span>
+                    <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-850 p-1 divide-zinc-800 gap-1 leading-none">
+                      <button 
+                        type="button"
+                        onClick={() => setTempQty(prev => Math.max(1, prev - 1))}
+                        className="w-8 h-8 rounded-lg hover:bg-zinc-850 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs font-mono font-bold w-10 text-center text-zinc-200">{tempQty}</span>
+                      <button 
+                        type="button"
+                        onClick={() => setTempQty(prev => prev + 1)}
+                        className="w-8 h-8 rounded-lg hover:bg-zinc-850 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Confirm control */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="w-full py-3.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-extrabold text-xs tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-yellow-500/15"
+                >
+                  <ShoppingCart className="w-4 h-4 shrink-0" />
+                  <span>تأكيد الإضافة ومتابعة الشراء 🛒</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Security Footer */}
+      <div className="w-full bg-zinc-950/20 py-8 border-t border-zinc-905 flex flex-col items-center justify-center gap-2.5 mt-20 px-4 md:px-8">
+        <div className="flex items-center gap-2 text-[10px] text-zinc-500 max-w-sm bg-zinc-950/40 px-4 py-2 rounded-full border border-zinc-900 text-center">
+          <Shield className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span>حماية وتأمين طلبك من خلال تشفير البيانات وضمان تسليم Yalidine Express موثق.</span>
+        </div>
+        <p className="text-[9px] text-zinc-600 tracking-wider">SMARTYAI SECURE CLIENT STOREFRONT ENGINE • VERSION 2.0</p>
+      </div>
+
     </div>
   );
 }

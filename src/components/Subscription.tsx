@@ -367,16 +367,79 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
     }
   };
 
+  const compressImageFile = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(compressedBase64);
+        };
+        img.onerror = () => {
+          resolve(event.target?.result as string);
+        };
+      };
+      reader.onerror = () => {
+        resolve("");
+      };
+    });
+  };
+
   // Upload CCP file logic (Manual backup)
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setReceiptFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.type.startsWith("image/")) {
+        try {
+          const compressed = await compressImageFile(file);
+          setPreviewUrl(compressed);
+        } catch (e) {
+          console.error("Receipt compression failed, falling back", e);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPreviewUrl(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -395,8 +458,11 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
         : `Subscription activated successfully for ${planId}! Your order consumption limits have been updated instantly.`
       );
     } catch (err: any) {
-      console.error(err);
-      alert("Error upgrading: " + err.message);
+      console.error("Error upgrading plan:", err);
+      alert(isAr 
+        ? "حدث خطأ أثناء ترقية الاشتراك. تم تدوين التفاصيل في وحدة التحكم." 
+        : "An error occurred while upgrading the subscription. Details have been logged to the console."
+      );
     } finally {
       setLoading(false);
     }

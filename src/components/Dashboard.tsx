@@ -5,7 +5,7 @@ import {
   TrendingUp, CheckCircle2, Truck, XCircle, ShoppingBag, Home, Briefcase, Percent,
   ArrowLeft, Search, Filter, FileText, Download, X, Eye, RefreshCw
 } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
 
 export default function Dashboard({ userData, ordersHistory, planLimits, topWilayas, t, setScreen, handleViewOrder, setOrderToDelete }: any) {
@@ -19,10 +19,37 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   
   // Tab control between Analytical Stats and Labels Archive
   const [dashboardTab, setDashboardTab] = useState<"stats" | "labels">("stats");
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    const q = query(
+      collection(db, "inventory"),
+      where("userId", "==", currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setProducts(items);
+    }, (error) => {
+      console.error("Error loading inventory for dashboard stats:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const totalStockValue = products.reduce((sum, p) => sum + ((Number(p.price) || 0) * (Number(p.stockQuantity) || 0)), 0);
+  const totalStockQuantity = products.reduce((sum, p) => sum + (Number(p.stockQuantity) || 0), 0);
   const [labelsSearch, setLabelsSearch] = useState("");
   const [labelsCourierFilter, setLabelsCourierFilter] = useState("all");
   const [activePreviewLabelUrl, setActivePreviewLabelUrl] = useState<string | null>(null);
   const [activePreviewTracking, setActivePreviewTracking] = useState<string | null>(null);
+  const [showSuspiciousModal, setShowSuspiciousModal] = useState(false);
 
   // Infinite scrolling limits for each lists
   const [ordersLimit, setOrdersLimit] = useState(15);
@@ -102,8 +129,61 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   const homeCount = ordersHistory.filter((o: any) => o.delivery_type === "home" || o.deliveryType === "home").length;
   const deskCount = ordersHistory.filter((o: any) => o.delivery_type === "desk" || o.deliveryType === "desk" || o.delivery_type === "office" || o.delivery_type === "desk_office").length;
 
-  // Suspicious orders (flagged by AI)
-  const suspiciousCount = ordersHistory.filter((o: any) => o.possible_fake_order).length;
+  // Suspicious orders (flagged by AI or dynamic structural filters)
+  const suspiciousOrders = ordersHistory.filter((o: any) => {
+    if (o.possible_fake_order) return true;
+    const name = (o.name || "").trim();
+    const phone = (o.phone || "").trim();
+    const wilaya = (o.wilaya || "").trim();
+    const commune = (o.commune || "").trim();
+    
+    if (!name || name.length < 3) return true;
+    if (!phone) return true;
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 9) return true;
+    if (!/^(05|06|07|02|03|04|09|5|6|7)/.test(phone.replace(/\s+/g, "").replace(/^\+213/, "0"))) return true;
+    if (!wilaya || wilaya === "" || wilaya.toLowerCase() === "unknown") return true;
+    if (!commune || commune === "" || commune.toLowerCase() === "unknown") return true;
+    
+    return false;
+  });
+  const suspiciousCount = suspiciousOrders.length;
+
+  // Storefront orders count
+  const storefrontOrdersCount = ordersHistory.filter((o: any) => o.storeOrder === true || o.source === "storefront").length;
+
+  // Calculate bestselling products across store sales
+  const bestsellingProducts = (() => {
+    const counts: { [key: string]: { id: string; name: string; quantity: number; revenue: number; image?: string } } = {};
+    
+    ordersHistory.forEach((order: any) => {
+      if (order.status === "returned" || order.status === "cancelled") return;
+      
+      const items = order.items || [];
+      items.forEach((item: any) => {
+        const pId = item.productId || item.id || "unknown";
+        const qty = Number(item.quantity) || 1;
+        const price = Number(item.price) || 0;
+        
+        if (counts[pId]) {
+          counts[pId].quantity += qty;
+          counts[pId].revenue += qty * price;
+        } else {
+          counts[pId] = {
+            id: pId,
+            name: item.productName || item.name || (t.total_orders === "إجمالي الطلبات" ? "منتج غير معروف" : "Unknown Product"),
+            quantity: qty,
+            revenue: qty * price,
+            image: item.imageUrl || item.image
+          };
+        }
+      });
+    });
+
+    return Object.values(counts)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+  })();
 
   // Bilingual detection & labeling helper
   const isAr = t.total_orders === "إجمالي الطلبات";
@@ -113,6 +193,48 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
     if (isAr) return ar;
     if (isFr) return fr;
     return en;
+  };
+
+  const getSuspicionReasons = (order: any) => {
+    const reasons: string[] = [];
+    const name = (order.name || "").trim();
+    const phone = (order.phone || "").trim();
+    const wilaya = (order.wilaya || "").trim();
+    const commune = (order.commune || "").trim();
+
+    if (!name) {
+      reasons.push(isAr ? "الاسم مجهول أو مفقود بالكامل" : isFr ? "Le nom est manquant" : "Customer name is missing");
+    } else if (name.length < 3) {
+      reasons.push(isAr ? "الاسم قصير جداً (يرجى التأكد من الجدية)" : isFr ? "Le nom est trop court" : "Name is too short");
+    }
+
+    if (!phone) {
+      reasons.push(isAr ? "رقم الهاتف غير موجود" : isFr ? "Numéro de téléphone manquant" : "Phone number is missing");
+    } else {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length < 9 || digits.length > 13) {
+        reasons.push(isAr ? `رقم الهاتف غير صحيح (${digits.length} أرقام غير كافية لشبكات الجزائر)` : isFr ? `Numéro de téléphone invalide (${digits.length} chiffres)` : `Invalid phone number layout (${digits.length} digits)`);
+      } else {
+        const cleanPhone = phone.replace(/\s+/g, "").replace(/^\+213/, "0");
+        if (!/^(05|06|07|02|03|04|09|5|6|7)/.test(cleanPhone)) {
+          reasons.push(isAr ? "رقم الهاتف لا يبدأ ببادئة اتصالات جزائرية معتمدة (05, 06, 07)" : isFr ? "Préfixe de l'opérateur non reconnu en Algérie (05, 06, 07)" : "Unrecognized carrier prefix for Algeria (05, 06, 07)");
+        }
+      }
+    }
+
+    if (!wilaya || wilaya === "" || wilaya.toLowerCase() === "unknown") {
+      reasons.push(isAr ? "اسم الولاية مفقود أو غير محدد بدقة" : isFr ? "La Wilaya est manquante ou indéterminée" : "Wilaya is missing or invalid");
+    }
+
+    if (!commune || commune === "" || commune.toLowerCase() === "unknown") {
+      reasons.push(isAr ? "اسم البلدية مفقود أو لم يتم التعرف عليه" : isFr ? "La Commune est manquante" : "Commune is missing");
+    }
+
+    if (order.possible_fake_order) {
+      reasons.push(isAr ? "النظام الذكي اشتبه في جدية الطلب أو نص الرسالة" : isFr ? "L'IA a détecté une possible commande douteuse" : "AI system flagged this text as highly suspicious");
+    }
+
+    return reasons;
   };
 
   const handleBulkConfirm = async () => {
@@ -179,7 +301,11 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         );
         setSelectedOrderIds([]);
       } catch (fErr: any) {
-        alert(isAr ? "فشل تأكيد الطلب: " + fErr.message : "Failure executing bulk confirmation: " + fErr.message);
+        console.error("Dashboard bulk confirmation failure:", fErr);
+        alert(isAr 
+          ? "فشلت عملية التأكيد والتحميل المزدوج لجميع الطلبات. تم تدوين التفاصيل في وحدة التحكم." 
+          : "Failure executing bulk confirmation. Details have been logged to the console."
+        );
       }
     } finally {
       setBulkConfirming(false);
@@ -224,6 +350,8 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           return ordersHistory.filter((o: any) => o.status === "delivered");
         case "returned":
           return ordersHistory.filter((o: any) => o.status === "returned");
+        case "storefront":
+          return ordersHistory.filter((o: any) => o.storeOrder === true || o.source === "storefront");
         default:
           return ordersHistory;
       }
@@ -241,6 +369,8 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           return getLabel("الطلبيات المستلمة", "Livraisons Réussies", "Delivered & Received");
         case "returned":
           return getLabel("الطلبيات المرتجعة", "Retours & Rejets", "Returned & Cancelled");
+        case "storefront":
+          return getLabel("طلبات المتجر الإلكتروني 🛒", "Commandes de la Boutique 🛒", "Storefront Orders 🛒");
         default:
           return getLabel("الطلبات المفروزة", "Commandes Filtrées", "Filtered Orders");
       }
@@ -323,52 +453,83 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {targetOrders.slice(0, filteredOrdersLimit).map((order: any) => (
-                <div
-                  key={order.id}
-                  onClick={() => handleViewOrder(order)}
-                  className="bg-zinc-900/30 border border-zinc-800/50 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700 cursor-pointer transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${order.possible_fake_order ? 'bg-yellow-500/10 text-yellow-500' : 'bg-zinc-800/50 text-zinc-400'}`}>
-                      {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
+              {targetOrders.slice(0, filteredOrdersLimit).map((order: any) => {
+                const statusColorsMap: any = {
+                  pending: "bg-amber-400/5 text-amber-500 border-amber-500/20 hover:bg-amber-400/10",
+                  confirmed: "bg-emerald-400/5 text-emerald-400 border-emerald-500/20 hover:bg-emerald-400/10",
+                  shipped: "bg-sky-400/5 text-sky-400 border-sky-500/20 hover:bg-sky-400/10",
+                  in_transit: "bg-sky-400/5 text-sky-450 border-sky-500/20 hover:bg-sky-400/10",
+                  delivered: "bg-emerald-400/10 text-emerald-350 border-emerald-500/30 hover:bg-emerald-400/15",
+                  returned: "bg-rose-450/5 text-rose-450 border-rose-500/20 hover:bg-rose-450/10",
+                };
+                const badgeStyle = statusColorsMap[order.status] || "bg-zinc-850 text-zinc-300 border-zinc-750 hover:bg-zinc-800";
+
+                return (
+                  <div
+                    key={order.id}
+                    onClick={() => handleViewOrder(order)}
+                    className="bg-gradient-to-br from-[#121215] via-[#0f0f12] to-[#0a0a0c] border border-zinc-800/70 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700/80 hover:from-[#151519] hover:to-[#0c0c0f] hover:shadow-[0_10px_25px_rgba(0,0,0,0.65)] hover:scale-[1.015] cursor-pointer transition-all duration-300 select-none"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        order.possible_fake_order 
+                          ? 'bg-yellow-500/10 text-yellow-500' 
+                          : (order.storeOrder || order.source === "storefront")
+                            ? 'bg-purple-500/10 text-purple-400'
+                            : 'bg-zinc-800/50 text-zinc-400'
+                      }`}>
+                        {order.possible_fake_order ? (
+                          <AlertTriangle className="w-5 h-5" />
+                        ) : (order.storeOrder || order.source === "storefront") ? (
+                          <ShoppingBag className="w-5 h-5" />
+                        ) : (
+                          <User className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 flex-wrap">
+                          <span>{order.name}</span>
+                          {(order.storeOrder || order.source === "storefront") && (
+                            <span className="text-[9px] bg-purple-500/15 text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded font-bold font-sans">
+                              {isAr ? "طلب المتجر 🛒" : "Storefront 🛒"}
+                            </span>
+                          )}
+                        </h4>
+                        <p className="text-[10px] text-zinc-400 mt-0.5">{order.wilaya} • {order.phone}</p>
+                        {order.createdAt && (
+                          <p className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
+                            <Clock className="w-3 h-3 text-zinc-655 shrink-0" />
+                            <span>{formatTime(order.createdAt)}</span>
+                          </p>
+                        )}
+                        {order.note && (
+                          <p className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
+                            <FileText className="w-3 h-3 shrink-0" />
+                            <span className="truncate max-w-[200px]">{order.note}</span>
+                          </p>
+                        )}
+                        {order.dispatchError && (
+                          <p className="text-[10.5px] text-red-400 font-bold mt-1.5 flex items-center gap-1 bg-red-500/10 border border-red-500/20 w-fit px-1.5 py-0.5 rounded text-direction-rtl">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="truncate max-w-[220px]">{order.dispatchError}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-zinc-100">{order.name}</h4>
-                      <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phone}</p>
-                      {order.createdAt && (
-                        <p className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
-                          <Clock className="w-3 h-3 text-zinc-600 shrink-0" />
-                          <span>{formatTime(order.createdAt)}</span>
-                        </p>
-                      )}
-                      {order.note && (
-                        <p className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
-                          <FileText className="w-3 h-3 shrink-0" />
-                          <span className="truncate max-w-[200px]">{order.note}</span>
-                        </p>
-                      )}
-                      {order.dispatchError && (
-                        <p className="text-[10.5px] text-red-400 font-bold mt-1.5 flex items-center gap-1 bg-red-500/10 border border-red-500/20 w-fit px-1.5 py-0.5 rounded text-direction-rtl">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-                          <span className="truncate max-w-[220px]">{order.dispatchError}</span>
-                        </p>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-extrabold border transition-all duration-200 ${badgeStyle}`}>
+                        {(t as any)[`status_${order.status}`] || order.status}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }}
+                        className="p-2 text-zinc-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-350 border border-zinc-700/30`}>
-                      {(t as any)[`status_${order.status}`] || order.status}
-                    </span>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }}
-                      className="p-2 text-zinc-650 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {targetOrders.length > filteredOrdersLimit && (
               <div id="sentinel-filtered" ref={filteredSentinelRef} className="py-8 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
@@ -406,12 +567,16 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
             </p>
           </div>
           {suspiciousCount > 0 && (
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-1 flex items-center gap-2 self-start md:self-auto animate-pulse">
-              <AlertTriangle className="w-4 h-4 text-yellow-500" />
-              <span className="text-[10px] font-bold text-yellow-400 font-mono">
-                {suspiciousCount} {getLabel("طلبيات وهمية مشبوهة", "commandes suspectes", "suspicious orders")}
+            <button 
+              type="button"
+              onClick={() => setShowSuspiciousModal(true)}
+              className="bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-3 py-1.5 flex items-center gap-2 self-start md:self-auto animate-pulse select-none transition-all cursor-pointer active:scale-95"
+            >
+              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
+              <span className="text-[10px] font-extrabold text-yellow-400 font-sans tracking-wide">
+                {suspiciousCount} {getLabel("طلبيات مشبوهة متبقية", "commandes suspectes", "suspicious orders")}
               </span>
-            </div>
+            </button>
           )}
         </div>
 
@@ -446,7 +611,30 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           <div className="space-y-6">
             
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              {/* Total Stock Value Card */}
+              <div 
+                onClick={() => setScreen("products")}
+                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-emerald-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+                    {getLabel("قيمة المخزون", "Valeur Stock", "Stock Value")}
+                  </span>
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-550 transition-colors">
+                    <ShoppingBag className="w-4 h-4" />
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-base font-bold font-mono text-emerald-400 tracking-tight leading-none mb-1">
+                    {totalStockValue.toLocaleString()} DA
+                  </span>
+                  <span className="text-[9px] text-zinc-500 truncate leading-none block">
+                    {totalStockQuantity} {getLabel("قطعة متوفرة", "pièces dispos", "items available")}
+                  </span>
+                </div>
+              </div>
+
               {/* Total Orders */}
               <div 
                 onClick={() => setStatusFilter("all")} 
@@ -543,7 +731,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               </div>
 
               {/* Delivery success rate card */}
-              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-zinc-750 transition-all flex flex-col justify-between group col-span-2 md:col-span-1">
+              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-zinc-750 transition-all flex flex-col justify-between group col-span-1">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.stats_delivery_rate}</span>
                   <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -554,6 +742,27 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                   <span className="block text-2xl font-black text-emerald-400 tracking-tight">{deliveryRate}%</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("نسبة نجاح التوصيل الفعلي", "Taux de livraison réussi", "Successful delivery rate")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Storefront Orders Card */}
+              <div 
+                onClick={() => setStatusFilter("storefront")}
+                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-yellow-500/25 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
+                    {getLabel("طلبات المتجر", "Boutique", "Storefront")}
+                  </span>
+                  <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-500">
+                    <ShoppingBag className="w-4 h-4 animate-pulse" />
+                  </div>
+                </div>
+                <div>
+                  <span className="block text-2xl font-black text-yellow-500 tracking-tight">{storefrontOrdersCount}</span>
+                  <span className="text-[9px] text-zinc-500 truncate leading-none block">
+                    {getLabel("طلبات قادمة عبر السلة", "Commandes de la boutique", "Orders via store cart")}
                   </span>
                 </div>
               </div>
@@ -681,6 +890,66 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                 </div>
               </div>
 
+            </div>
+
+            {/* 3. Bestselling Products Card */}
+            <div className="bg-gradient-to-br from-[#0a0a0a] to-[#0c0c0c] border border-zinc-900 rounded-2xl p-5 text-right space-y-4 shadow-xl">
+              <div>
+                <h3 className="text-sm font-bold text-white flex items-center justify-start gap-2">
+                  <span className="text-yellow-500 text-lg">🏆</span>
+                  {getLabel("المنتجات الأكثر مبيعاً في المتجر", "Produits les Plus Vendus", "Bestselling Storefront Products")}
+                </h3>
+                <p className="text-[10px] text-zinc-500 mt-1 font-sans">
+                  {getLabel(
+                    "أفضل 5 منتجات مبيعاً بناءً على كميات الطلبات وتفاصيل المبيعات الفعلية.",
+                    "Top 5 des produits les plus vendus selon les quantités commandées.",
+                    "Top 5 bestselling items based on actual order quantities and sales."
+                  )}
+                </p>
+              </div>
+
+              {bestsellingProducts.length === 0 ? (
+                <div className="py-8 text-center text-zinc-650 border border-dashed border-zinc-904 rounded-xl">
+                  <p className="text-xs">{getLabel("لا توجد مبيعات مسجلة للمنتجات بعد.", "Aucune vente enregistrée pour le moment.", "No product sales recorded yet.")}</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right text-xs">
+                    <thead>
+                      <tr className="border-b border-zinc-900 text-zinc-400 font-bold">
+                        <th className="pb-2.5 font-bold">{getLabel("المنتج", "Produit", "Product")}</th>
+                        <th className="pb-2.5 text-center font-bold">{getLabel("الكمية المباعة", "Quantité", "Qty Sold")}</th>
+                        <th className="pb-2.5 text-left font-bold">{getLabel("إجمالي الإيرادات", "Revenu Total", "Total Revenue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/60 font-sans">
+                      {bestsellingProducts.map((p, idx) => (
+                        <tr key={p.id} className="hover:bg-zinc-950/40 transition-colors">
+                          <td className="py-3 flex items-center gap-2.5">
+                            <span className="text-xs font-mono font-bold text-zinc-650 w-4">#{idx + 1}</span>
+                            <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-855 flex items-center justify-center overflow-hidden shrink-0">
+                              {p.image ? (
+                                <img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs text-zinc-655 font-bold font-mono">DA</span>
+                              )}
+                            </div>
+                            <span className="font-semibold text-zinc-200 line-clamp-1">{p.name}</span>
+                          </td>
+                          <td className="py-3 text-center">
+                            <span className="inline-block bg-yellow-500/10 text-yellow-500 font-black px-2 py-0.5 rounded-lg text-[11px] font-mono">
+                              {p.quantity} pcs
+                            </span>
+                          </td>
+                          <td className="py-3 text-left font-mono text-emerald-400 font-bold">
+                            {p.revenue.toLocaleString()} DA
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
           </div>
@@ -1078,12 +1347,21 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
              <div className="space-y-4">
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                {ordersHistory.slice(0, ordersLimit).map((order: any) => {
+                  const statusColorsMap: any = {
+                    pending: "bg-amber-400/5 text-amber-500 border-amber-500/20 hover:bg-amber-400/10",
+                    confirmed: "bg-emerald-400/5 text-emerald-400 border-emerald-500/20 hover:bg-emerald-400/10",
+                    shipped: "bg-sky-400/5 text-sky-400 border-sky-500/20 hover:bg-sky-450/10",
+                    in_transit: "bg-sky-400/5 text-sky-455 border-sky-500/20 hover:bg-sky-455/10",
+                    delivered: "bg-emerald-400/10 text-emerald-350 border-emerald-500/30 hover:bg-emerald-400/15",
+                    returned: "bg-rose-455/5 text-rose-455 border-rose-500/20 hover:bg-rose-455/10",
+                  };
+                  const badgeStyle = statusColorsMap[order.status] || "bg-zinc-850 text-zinc-300 border-zinc-755 hover:bg-zinc-800";
                  const isSelected = selectedOrderIds.includes(order.id);
                  return (
                    <div 
                      key={order.id} 
                      onClick={() => handleViewOrder(order)} 
-                     className={`border rounded-2xl p-4 flex items-center justify-between group cursor-pointer transition-all animate-fade-in ${isSelected ? 'border-yellow-500/40 bg-yellow-500/[0.03]' : 'bg-zinc-900/30 border-zinc-805/50 hover:border-zinc-700'}`}
+                     className={`border rounded-2xl p-4 flex items-center justify-between group cursor-pointer transition-all duration-300 animate-fade-in hover:scale-[1.015] hover:shadow-[0_10px_25px_rgba(0,0,0,0.65)] select-none ${isSelected ? 'border-yellow-500/40 bg-gradient-to-br from-[#16161a] via-[#eab308]/[0.02] to-[#0a0a0d] shadow-[0_0_20px_rgba(234,179,8,0.05)]' : 'bg-gradient-to-br from-[#121215] via-[#0f0f12] to-[#0a0a0c] border-zinc-800/70 hover:border-zinc-750'}`}
                    >
                      <div className="flex items-center gap-3">
                        {/* High fidelity checkbox indicator */}
@@ -1110,7 +1388,14 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                          {order.possible_fake_order ? <AlertTriangle className="w-5 h-5" /> : <User className="w-5 h-5" />}
                        </div>
                        <div>
-                         <h4 className="text-sm font-bold text-zinc-100">{order.customerName || order.name}</h4>
+                         <h4 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 flex-wrap">
+                            <span>{order.customerName || order.name}</span>
+                            {(order.storeOrder || order.source === "storefront") && (
+                              <span className="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded font-bold font-sans">
+                                {isAr ? "طلب المتجر 🛒" : "Storefront 🛒"}
+                              </span>
+                            )}
+                          </h4>
                          <p className="text-[10px] text-zinc-500">{order.wilaya} • {order.phoneNumber || order.phone}</p>
                          {order.createdAt && (
                            <div className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
@@ -1133,7 +1418,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                        </div>
                      </div>
                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] px-2.5 py-1 rounded-full uppercase font-bold bg-zinc-800 text-zinc-350 border border-zinc-750/30">
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-extrabold border transition-all duration-200 ${badgeStyle}`}>
                           {(t as any)[`status_${order.status}`] || order.status}
                         </span>
                         <button 
@@ -1219,6 +1504,118 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                   <Download className="w-4 h-4" />
                   {isAr ? "تحميل المستند" : "Download PDF"}
                 </a>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showSuspiciousModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-black/90 backdrop-blur-md select-none">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh] shadow-[0_24px_50px_rgba(0,0,0,0.95)]"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-zinc-900 bg-zinc-950">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                    <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                  </div>
+                  <div className="text-right">
+                    <h3 className="text-base font-bold text-zinc-100 font-sans">
+                      {isAr ? "تشخيص وتحليل الطلبيات المشبوهة" : "Diagnostic des commandes suspectes"}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5" dir="ltr">
+                      {suspiciousOrders.length} {isAr ? "طلبيات تحتاج للتحقق والتصحيح قبل الربط البريدي" : "orders need action before courier dispatch"}
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowSuspiciousModal(false)}
+                  className="p-1.5 hover:bg-zinc-900 rounded-xl text-zinc-450 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 flex-1 overflow-y-auto space-y-3.5 bg-zinc-900/10 min-h-[300px]">
+                {suspiciousOrders.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-500 space-y-3">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500" />
+                    <p className="font-bold text-sm text-zinc-300 font-sans">
+                      {isAr ? "تهانينا! جميع طلبياتك سليمة ومكتملة البيانات" : "All orders are fully valid!"}
+                    </p>
+                    <p className="text-xs text-zinc-500 max-w-md">
+                      {isAr ? "لا توجد أي أخطاء في أرقام الهاتف أو أسماء الولايات والبلديات في القائمة النشطة حالياً." : "No missing field inputs or invalid carrier format were detected."}
+                    </p>
+                  </div>
+                ) : (
+                  suspiciousOrders.map((order: any, idx: number) => {
+                    const reasons = getSuspicionReasons(order);
+                    return (
+                      <div 
+                        key={order.id || idx} 
+                        className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-zinc-700/50 transition-all select-none"
+                      >
+                        <div className="flex-1 space-y-2.5">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="text-xs font-bold text-zinc-200">
+                              {order.name || (isAr ? "زبون مجهول الاسم" : "Anonymous customer")}
+                            </span>
+                            {order.id && (
+                              <span className="px-2 py-0.5 rounded-md bg-zinc-800/80 text-[9px] text-zinc-400 font-mono">
+                                ID: {order.id.substring(0, 8)}
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 rounded-md bg-zinc-800 text-[10px] text-zinc-400 font-sans font-medium">
+                              {order.wilaya || (isAr ? "الولاية غير معروفة" : "Unknown Wilaya")} - {order.commune || (isAr ? "البلدية غير معروفة" : "Unknown Commune")}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-[11px] text-zinc-400 font-mono">
+                            <span dir="ltr" className="flex items-center gap-1.5 select-none font-bold text-zinc-350">
+                              <span className="text-zinc-500 text-xs text-left">📞</span> {order.phone || (isAr ? "[لا يوجد رقم هاتفي]" : "[No phone]")}
+                            </span>
+                          </div>
+
+                          {/* Detail reasons for suspicion */}
+                          <div className="flex flex-col gap-1.5 pt-1.5 border-t border-zinc-900/50">
+                            {reasons.map((reason, rIdx) => (
+                              <div key={rIdx} className="flex items-start gap-1.5 text-xs text-yellow-400">
+                                <span className="text-red-500 font-bold shrink-0 mt-0.5">⚠️</span>
+                                <span className="font-medium text-left">{reason}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end md:self-auto shrink-0 select-none">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowSuspiciousModal(false);
+                              handleViewOrder(order);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold rounded-xl text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer leading-none"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            {isAr ? "معاينة وتصحيح" : "Fix & Edit"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="p-5 border-t border-zinc-900 flex justify-end gap-3 bg-zinc-950">
+                <button 
+                  onClick={() => setShowSuspiciousModal(false)}
+                  className="px-5 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"
+                >
+                  {isAr ? "حسناً، فهمت" : "Close"}
+                </button>
               </div>
             </motion.div>
           </div>

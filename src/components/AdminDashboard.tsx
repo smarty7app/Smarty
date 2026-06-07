@@ -19,17 +19,20 @@ import {
   onSnapshot, 
   doc, 
   updateDoc, 
-  where 
+  where,
+  deleteDoc
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function AdminDashboard({ t, isRtl, setScreen }: any) {
-  const [activeTab, setActiveTab] = useState<"users" | "requests">("requests");
+  const [activeTab, setActiveTab] = useState<"users" | "requests" | "support">("requests");
   const [users, setUsers] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [supportMessages, setSupportMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null);
+  const [selectedAttachmentUrl, setSelectedAttachmentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const qUsers = query(collection(db, "users"), orderBy("email", "asc"));
@@ -48,11 +51,30 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
       setLoading(false);
     });
 
+    const qSupport = query(collection(db, "support_messages"), orderBy("createdAt", "desc"));
+    const unsubSupport = onSnapshot(qSupport, (snap) => {
+      setSupportMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (error) => {
+      console.error("Support listener permission error:", error);
+    });
+
     return () => {
       unsubUsers();
       unsubReqs();
+      unsubSupport();
     };
   }, []);
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm(isRtl ? "هل أنت متأكد من حذف هذه الرسالة؟" : "Are you sure you want to delete this message?")) return;
+    try {
+      await deleteDoc(doc(db, "support_messages", messageId));
+      alert(isRtl ? "تم حذف الرسالة بنجاح" : "Message deleted successfully");
+    } catch (err) {
+      console.error("Error deleting message:", err);
+      alert(isRtl ? "خلل أثناء محاولة الحذف" : "Error deleting message");
+    }
+  };
 
   const handleApprove = async (request: any) => {
     try {
@@ -135,6 +157,12 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
         >
           <Users className="w-4 h-4" /> {t.admin_users} ({users.length})
         </button>
+        <button 
+          onClick={() => setActiveTab("support")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'support' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+        >
+          <Filter className="w-4 h-4" /> {isRtl ? "الدعم التقني" : "Tech Support"} ({supportMessages.length})
+        </button>
       </div>
 
       <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2rem] overflow-hidden min-h-[400px]">
@@ -214,7 +242,7 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
               ))
             )}
           </div>
-        ) : (
+        ) : activeTab === "users" ? (
           <div className="p-6 space-y-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -236,7 +264,7 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
                       </div>
                       <div>
                         <p className="font-bold text-sm text-zinc-200">{user.email}</p>
-                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{user.planType} • {user.orderCounter} orders</p>
+                        <p className="text-[10px] text-zinc-550 uppercase tracking-widest">{user.planType} • {user.orderCounter} orders</p>
                       </div>
                    </div>
 
@@ -254,6 +282,75 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
                 </div>
               ))}
             </div>
+          </div>
+        ) : (
+          <div className="p-6 divide-y divide-zinc-800/50">
+            {supportMessages.length === 0 ? (
+              <div className="p-12 text-center text-zinc-500 font-semibold text-sm">
+                {isRtl ? "لا توجد رسائل دعم فني حالياً" : "No support messages found"}
+              </div>
+            ) : (
+              supportMessages.map(msg => (
+                <div key={msg.id} className="py-6 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-start justify-between gap-6 hover:bg-white/[0.005] transition-colors rounded-2xl p-4">
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600/20 to-indigo-600/20 border border-white/5 flex items-center justify-center font-bold text-blue-400 capitalize shrink-0 leading-none">
+                         {msg.name?.[0] || 'S'}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-white text-sm leading-none">{msg.name}</p>
+                          <span className="text-[9px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-full font-bold uppercase tracking-widest">
+                            {isRtl ? "تذكرة نشطة" : "Active Ticket"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-zinc-500 select-all font-mono mt-1">{msg.email}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-950 border border-zinc-850 p-4 rounded-xl whitespace-pre-line text-xs sm:text-sm text-zinc-300 font-medium leading-relaxed font-sans select-text max-w-ful border-white/5">
+                      {msg.message}
+                    </div>
+
+                    {msg.attachment && (
+                      <div className="mt-2.5">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-1.5">{isRtl ? "الصورة المرفقة" : "Attached Image"}</p>
+                        <div 
+                          onClick={() => setSelectedAttachmentUrl(msg.attachment)}
+                          className="relative inline-block overflow-hidden rounded-xl border border-white/5 bg-black/40 hover:border-blue-500/50 cursor-pointer transition-all group max-w-xs"
+                        >
+                          <img 
+                            src={msg.attachment} 
+                            alt="Support Attachment" 
+                            className="max-h-36 object-contain rounded-xl hover:scale-105 transition-all duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                            <span className="text-xs text-white font-bold tracking-wide">{isRtl ? "اضغط للتكبير" : "Click to enlarge"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                       <span className="text-[10px] text-zinc-500 font-mono">
+                         {msg.createdAt?.toDate?.() ? msg.createdAt.toDate().toLocaleString() : new Date().toLocaleString()}
+                       </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end md:self-start">
+                    <button 
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      className="px-3.5 py-2 bg-red-500/10 text-red-500 border border-red-500/25 rounded-xl font-bold text-xs hover:bg-red-500 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      title={isRtl ? "حذف التذكرة" : "Delete Ticket"}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>{isRtl ? "حذف" : "Delete"}</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>
@@ -301,6 +398,51 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
               </a>
               <button 
                 onClick={() => setSelectedReceiptUrl(null)}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                {isRtl ? "إغلاق" : "Close"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Support Message Attachment Viewer */}
+      {selectedAttachmentUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in text-right" dir={isRtl ? "rtl" : "ltr"}>
+          <div className="relative max-w-2xl w-full bg-zinc-950 border border-zinc-850 rounded-[2.5rem] p-6 flex flex-col max-h-[90vh] shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-zinc-900">
+              <h3 className="font-bold text-lg text-white">
+                {isRtl ? "الصورة المرفقة مع تذكرة الدعم" : "Attached Support Screenshot"}
+              </h3>
+              <button 
+                onClick={() => setSelectedAttachmentUrl(null)}
+                className="p-2 bg-zinc-900 border border-zinc-850 hover:border-zinc-700 rounded-full text-zinc-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-black/20 rounded-2xl mt-4">
+              <img 
+                src={selectedAttachmentUrl} 
+                alt="Support Attachment Full" 
+                className="max-w-full max-h-[60vh] object-contain rounded-xl shadow-xl"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-zinc-900 mt-4">
+              <a 
+                href={selectedAttachmentUrl}
+                download="support_screenshot.png"
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-850 text-white rounded-xl font-bold text-xs transition-all border border-zinc-800 flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>{isRtl ? "فتح في نافذة جديدة" : "Open in New Tab"}</span>
+              </a>
+              <button 
+                onClick={() => setSelectedAttachmentUrl(null)}
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all cursor-pointer"
               >
                 {isRtl ? "إغلاق" : "Close"}

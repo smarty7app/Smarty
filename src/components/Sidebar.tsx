@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { LayoutDashboard, CreditCard, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { LayoutDashboard, CreditCard, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { Logo } from "./CommonUI";
 
 export default function Sidebar({ 
@@ -30,13 +30,16 @@ export default function Sidebar({
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSidebar(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
           <motion.div initial={{ x: isRtl ? 300 : -300 }} animate={{ x: 0 }} exit={{ x: isRtl ? 300 : -300 }} className={`relative w-72 bg-zinc-900 border-zinc-800 h-full p-6 flex flex-col ${isRtl ? 'ml-auto border-r' : 'mr-auto border-l'}`}>
             {/* Brand Logo & Name */}
-            <div className="mb-8 flex items-center gap-3 px-1">
-              <div className="w-10 h-10 bg-zinc-850 rounded-full flex items-center justify-center overflow-hidden border border-zinc-700 p-0 shrink-0">
-                <Logo className="w-full h-full object-cover rounded-full" />
+            <div className="mb-8 flex items-center gap-3 px-1 select-none" dir="ltr">
+              <div className="w-10 h-10 bg-zinc-850 rounded-full flex items-center justify-center overflow-hidden border border-zinc-700 p-0 shrink-0 select-none">
+                <Logo className="w-full h-full object-cover rounded-full select-none" />
               </div>
-              <div>
-                <h1 className="text-base font-bold tracking-tight glow-text leading-none">{t.title}</h1>
-                <p className="text-zinc-600 text-[8px] uppercase tracking-widest mt-1">Premium Dashboard</p>
+              <div className="text-left select-none">
+                <h1 className="font-bold tracking-tight glow-text leading-none flex flex-col select-none">
+                  <span className="text-base select-none">Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent select-none">Ai</span></span>
+                  <span className="text-[11px] text-zinc-400 font-medium tracking-wider uppercase mt-0.5 select-none font-mono">Order</span>
+                </h1>
+                <p className="text-zinc-600 text-[8px] uppercase tracking-widest mt-1 select-none">Premium Dashboard</p>
               </div>
             </div>
 
@@ -106,6 +109,7 @@ export default function Sidebar({
 
             <div className="flex-1 space-y-2">
               <button onClick={() => { setScreen("dashboard"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'dashboard' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}><LayoutDashboard className="w-5 h-5" /> <span className="font-medium text-sm">{t.nav_dashboard}</span></button>
+              <button onClick={() => { setScreen("products"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'products' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-805'}`}><Package className="w-5 h-5" /> <span className="font-medium text-sm">{t.nav_inventory}</span></button>
               <button onClick={() => { setScreen("subscription"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'subscription' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}><CreditCard className="w-5 h-5" /> <span className="font-medium text-sm">{t.sub_upgrade}</span></button>
               {user?.email === "12benabdallah@gmail.com" && (
                 <button onClick={() => { setScreen("admin"); setShowSidebar(false); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl ${screen === 'admin' ? 'bg-white text-black' : 'text-zinc-400 hover:bg-zinc-800'}`}>
@@ -117,7 +121,9 @@ export default function Sidebar({
             
             {/* Elegant empty footer design to balance layout spacing */}
             <div className="mt-auto pt-6 text-center">
-              <p className="text-[9px] text-zinc-650 uppercase tracking-widest">SmartyAi Order &copy; 2026</p>
+              <p className="text-[9px] text-zinc-650 uppercase tracking-widest">
+                SmartyAi Order &copy; 2026
+              </p>
             </div>
           </motion.div>
         </div>

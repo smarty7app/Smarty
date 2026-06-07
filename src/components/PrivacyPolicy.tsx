@@ -116,8 +116,8 @@ export default function PrivacyPolicy({ setScreen, t, isRtl }: any) {
               </h3>
               <p className="text-zinc-300 leading-relaxed mt-2">
                 {isRtl
-                  ? "إذا كانت لديك أي أسئلة حول سياسة الخصوصية هذه، يرجى الاتصال بنا على: support@smartyai.com"
-                  : "If you have any questions about this Privacy Policy, please contact us at: support@smartyai.com"}
+                  ? "إذا كانت لديك أي أسئلة حول سياسة الخصوصية هذه، يرجى الاتصال بنا على: smarty@smartyai.net"
+                  : "If you have any questions about this Privacy Policy, please contact us at: smarty@smartyai.net"}
               </p>
             </div>
           </div>

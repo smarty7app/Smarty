@@ -1,10 +1,86 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer, Clock } from "lucide-react";
+import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer, Clock, RefreshCw } from "lucide-react";
 import { InputField } from "./CommonUI";
+import { collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
+import { db, auth } from "../lib/firebase";
 
 export default function OrderReview({ userData, order, setOrder, loading, handleSave, handleShipOrder, addItem, removeItem, updateItem, setScreen, t, isRtl, initialOrder }: any) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [activeItemDropdown, setActiveItemDropdown] = useState<number | null>(null);
+  const [quickRegStatus, setQuickRegStatus] = useState<{
+    [itemIndex: number]: {
+      status: "idle" | "loading" | "success" | "error";
+      message?: string;
+    }
+  }>({});
+
+  const handleQuickRegisterProduct = async (idx: number, productName: string, pricePerUnit: number) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      setQuickRegStatus(prev => ({
+        ...prev,
+        [idx]: { status: "error", message: isRtl ? "⚠️ يجب تسجيل الدخول أولاً للقيام بهذا الإجراء." : "⚠️ You must be logged in to do this." }
+      }));
+      return;
+    }
+    setQuickRegStatus(prev => ({
+      ...prev,
+      [idx]: { status: "loading" }
+    }));
+    try {
+      await addDoc(collection(db, "inventory"), {
+        productName: productName.trim(),
+        price: pricePerUnit || 0,
+        stockQuantity: 100, // A healthy starter default
+        category: isRtl ? "مستخرج تلقائياً" : "Auto-extracted",
+        sku: "REG-" + Math.floor(1000 + Math.random() * 9000),
+        description: isRtl ? "تمت إضافة المنتج تلقائياً من مراجعة الطلب." : "Product automatically registered from order review form.",
+        imageUrl: "",
+        userId: uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+
+      setQuickRegStatus(prev => ({
+        ...prev,
+        [idx]: { 
+          status: "success", 
+          message: isRtl 
+            ? `🎉 تم تسجيل وإضافة المنتج 「${productName}」 بنجاح لمخزونك بـ 100 قطعة كبداية!` 
+            : `🎉 Successfully registered product "${productName}" to your inventory with 100 items!`
+        }
+      }));
+    } catch (err: any) {
+      console.error("[Quick Register Product] Error:", err);
+      setQuickRegStatus(prev => ({
+        ...prev,
+        [idx]: { status: "error", message: err.message || "Error adding product" }
+      }));
+    }
+  };
+
+  const hasInsufficientStock = (order.items || []).some((item: any) => {
+    if (!item.product) return false;
+    const matched = inventory.find((p: any) => p.productName === item.product);
+    if (!matched) return false;
+    return (Number(matched.stockQuantity) || 0) < (Number(item.quantity) || 1);
+  });
+
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !db) return;
+    const q = query(collection(db, "inventory"), where("userId", "==", uid));
+    return onSnapshot(q, (snapshot) => {
+      setInventory(snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })));
+    }, (err) => {
+      console.error("Error listening to inventory inside OrderReview:", err);
+    });
+  }, [userData]);
 
   const toLocalISOString = (date: any) => {
     if (!date) return "";
@@ -59,9 +135,22 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
     }
   }, [order.items, order.shippingFee, setOrder, order.totalPrice]);
 
+  const cleanPhoneStr = (order.phone || "").trim().replace(/\s+/g, "");
+  let normalizedPhone = cleanPhoneStr;
+  if (normalizedPhone.startsWith("+213")) {
+    normalizedPhone = "0" + normalizedPhone.slice(4);
+  } else if (normalizedPhone.startsWith("213")) {
+    normalizedPhone = "0" + normalizedPhone.slice(3);
+  } else if (normalizedPhone.startsWith("00213")) {
+    normalizedPhone = "0" + normalizedPhone.slice(5);
+  }
+
+  const isPhonePrefixInvalid = order.phone && !/^(05|06|07|5|6|7)/.test(normalizedPhone);
+
   const warnings = [
     !order.phone ? t.warning_no_phone : null,
     order.phone && order.phone.length < 10 ? t.warning_invalid_phone : null,
+    isPhonePrefixInvalid ? t.warning_phone_prefix_invalid : null,
     !order.wilaya ? t.warning_no_wilaya : null,
   ].filter(Boolean);
 
@@ -161,11 +250,146 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                 <Trash2 className="w-4 h-4" />
               </button>
               
-              <InputField 
-                label={t.product} 
-                value={item.product} 
-                onChange={(v) => updateItem(idx, 'product', v)} 
-              />
+              <div className="space-y-1 relative">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-widest block px-1">
+                  {t.product}
+                </label>
+                <div className="relative flex items-center bg-black/50 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden">
+                  <select
+                    value={item.product || ""}
+                    onChange={(e) => {
+                      const selectedVal = e.target.value;
+                      const matched = inventory.find(p => p.productName === selectedVal);
+                      updateItem(idx, 'product', selectedVal);
+                      if (matched) {
+                        updateItem(idx, 'pricePerUnit', matched.price);
+                        if (matched.sku) {
+                          updateItem(idx, 'size', matched.sku);
+                        }
+                      } else {
+                        updateItem(idx, 'pricePerUnit', 0);
+                      }
+                    }}
+                    className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
+                  >
+                    <option value="" className="bg-zinc-950 text-zinc-500">
+                      {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
+                    </option>
+                    {inventory.map(p => (
+                      <option key={p.id} value={p.productName} className="bg-zinc-950 text-zinc-300">
+                        {p.productName} ({p.price.toLocaleString()} DZD - {p.stockQuantity} pcs)
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 text-xs">
+                    ▼
+                  </div>
+                </div>
+
+                {/* Display Red Warning if quantity is greater than current stock or general stock count */}
+                {item.product && (() => {
+                  const matched = inventory.find(p => p.productName === item.product);
+                  if (matched) {
+                    const reqQty = Number(item.quantity) || 1;
+                    const stock = Number(matched.stockQuantity) || 0;
+                    const isInsufficient = stock < reqQty;
+
+                    if (isInsufficient) {
+                      return (
+                        <div className="flex items-center gap-1.5 mt-1 text-red-500 text-[10.5px] font-black animate-pulse bg-red-500/5 px-2.5 py-1 rounded-lg border border-red-500/10">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                          <span>
+                            {isRtl 
+                              ? `تنبيه: الكمية المطلوبة (${reqQty}) تفوق المتوفر في المستودع (${stock} قطع متبقية!)` 
+                              : `Warning: Requested quantity (${reqQty}) exceeds available stock (${stock} left!)`
+                            }
+                          </span>
+                        </div>
+                      );
+                    } else if (stock <= 5) {
+                      return (
+                        <div className="flex items-center gap-1.5 mt-1 text-yellow-500 text-[10px] bg-yellow-500/5 px-2.5 py-1 rounded-lg border border-yellow-500/10 font-bold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
+                          <span>
+                            {isRtl 
+                              ? `مخزون منخفض: متبقي فقط ${stock} قطع في المستودع` 
+                              : `Low stock: Only ${stock} items left in stock`
+                            }
+                          </span>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="flex items-center gap-1.5 mt-1 text-emerald-400 text-[10px] bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 font-bold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                          <span>
+                            {isRtl 
+                              ? `المخزون متوفر: يوجد ${stock} قطعة جاهزة للتسليم` 
+                              : `In stock: ${stock} items available and ready`
+                            }
+                          </span>
+                        </div>
+                      );
+                    }
+                  } else {
+                    const regState = quickRegStatus[idx];
+                    if (regState?.status === "success") {
+                      return (
+                        <div className="mt-2 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 space-y-1">
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            <span className="text-base">🎉</span>
+                            <span className="text-emerald-400 font-extrabold">{regState.message}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="mt-2 p-3.5 rounded-2xl bg-zinc-950 border border-yellow-500/20 text-yellow-500 space-y-2.5">
+                        <div className="flex items-center gap-1.5 font-bold text-xs">
+                          <AlertTriangle className="w-4 h-4 shrink-0 text-yellow-500 animate-pulse" />
+                          <span>
+                            {isRtl 
+                              ? `تنبيه: المنتج 「${item.product}」 غير مسجل في مستودع المنتجات الخاص بك.` 
+                              : `Notice: "${item.product}" is not currently in your inventory database.`
+                            }
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 leading-normal font-sans">
+                          {isRtl 
+                            ? "اضغط أدناه لحفظ وتخزين هذا المنتج فوراً في مخزنك ليتسنى لك إدارة كمياته وشحنه بصورة صحيحة." 
+                            : "Click below to quickly register this product to enable proper stock tracking and logistics deduction."
+                          }
+                        </p>
+
+                        {regState?.status === "error" && (
+                          <p className="text-[10.5px] font-extrabold text-red-500 bg-red-500/5 p-2 rounded-xl border border-red-500/10">
+                            ❌ {regState.message}
+                          </p>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={regState?.status === "loading"}
+                          onClick={() => handleQuickRegisterProduct(idx, item.product, Number(item.pricePerUnit) || 0)}
+                          className="w-full py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-[0.98] transition-all text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/10 cursor-pointer disabled:opacity-55"
+                        >
+                          {regState?.status === "loading" ? (
+                            <>
+                              <RefreshCw className="animate-spin w-3.5 h-3.5" />
+                              <span>{isRtl ? "جاري الإضافة السريعة للمخزن..." : "Registering to warehouse..."}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>➕ {isRtl ? "إضافة وحفظ المنتج إلى المخزون والمستودع" : "Register and Add item to Inventory"}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <InputField 
@@ -292,6 +516,15 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
 
       {/* Actions */}
       <div className="flex flex-col gap-3">
+        {hasInsufficientStock && (
+          <div className="text-red-400 font-extrabold text-xs text-center bg-red-500/10 border border-red-500/20 py-3.5 px-4 rounded-2xl animate-pulse">
+            {isRtl 
+              ? "⚠️ لا يمكن حفظ أو شحن الطلب لعدم توفر مخزون كافٍ لبعض العناصر!"
+              : "⚠️ Cannot save or ship order due to insufficient stock of some items!"
+            }
+          </div>
+        )}
+
         {order.status === 'shipped' && order.label_url ? (
           <button 
             onClick={() => setShowPreviewModal(true)} 
@@ -304,8 +537,8 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={handleShipOrder} 
-                disabled={loading} 
-                className="py-3.5 bg-gradient-to-r from-zinc-100 to-zinc-300 text-black rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-sm disabled:opacity-50 cursor-pointer"
+                disabled={loading || hasInsufficientStock} 
+                className="py-3.5 bg-gradient-to-r from-zinc-100 to-zinc-300 text-black rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 <Truck className="w-5 h-5" /> {t.confirm_ship}
               </button>
@@ -320,7 +553,13 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
           )
         )}
         <div className="flex gap-3">
-          <button onClick={handleSave} disabled={loading} className="flex-1 py-4 bg-white text-black rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer"><Save className="w-5 h-5" /> {order.id ? t.update_order : t.save_order}</button>
+          <button 
+            onClick={handleSave} 
+            disabled={loading || hasInsufficientStock} 
+            className="flex-1 py-4 bg-white text-black rounded-2xl font-bold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Save className="w-5 h-5" /> {order.id ? t.update_order : t.save_order}
+          </button>
           <button onClick={() => { setOrder(initialOrder); setScreen(order.id ? "dashboard" : "input"); }} className={`w-16 h-14 border border-zinc-800 rounded-2xl flex items-center justify-center text-zinc-500 cursor-pointer ${isRtl ? 'rotate-180' : ''}`}><ArrowRight /></button>
         </div>
       </div>

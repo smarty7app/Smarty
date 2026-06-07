@@ -10,7 +10,7 @@ export const Logo = ({ className }: { className?: string }) => (
   />
 );
 
-export function InputField({ label, value, onChange, icon, highlight, manualLabel, type = "text", readOnly = false }: { 
+export function InputField({ label, value, onChange, icon, highlight, manualLabel, type = "text", readOnly = false, onFocus, onBlur }: { 
   label: string, 
   value: string, 
   onChange: (v: string) => void,
@@ -18,7 +18,9 @@ export function InputField({ label, value, onChange, icon, highlight, manualLabe
   highlight?: boolean,
   manualLabel?: string,
   type?: string,
-  readOnly?: boolean
+  readOnly?: boolean,
+  onFocus?: () => void,
+  onBlur?: () => void
 }) {
   return (
     <div className="space-y-1">
@@ -42,6 +44,8 @@ export function InputField({ label, value, onChange, icon, highlight, manualLabe
             }
           }}
           readOnly={readOnly}
+          onFocus={onFocus}
+          onBlur={onBlur}
         />
         {value && !highlight && <CheckCircle2 className="w-4 h-4 text-green-500/50" />}
       </div>
@@ -55,7 +59,7 @@ export function FeatureCard({ icon, title, desc }: { icon: ReactNode, title: str
       <div className="mb-6 p-3 bg-white/5 rounded-2xl w-fit group-hover:scale-110 transition-transform">
         {icon}
       </div>
-      <h3 className="text-xl font-bold mb-3 tracking-tight">{title}</h3>
+      <h3 className="text-xl font-bold mb-3 tracking-tight select-none">{title}</h3>
       <p className="text-zinc-500 leading-relaxed text-sm">{desc}</p>
     </div>
   );
