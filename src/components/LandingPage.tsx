@@ -525,10 +525,10 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             </h2>
             <p className="text-zinc-400 text-sm leading-relaxed">
               {lang === "ar" 
-                ? "اختر أحد النماذج الفوضوية أدناه أو الصق رسالة زبون جزائرية حقيقية لترى كيف يستخرج الذكاء الاصطناعي البيانات المرتبة في لمحة بصر"
+                ? "اختر أحد النماذج الفوضوية أدناه لترى كيف يستخرج الذكاء الاصطناعي البيانات المرتبة في لمح بصر"
                 : lang === "fr"
-                ? "Choisissez l'un des exemples de messages clients ci-dessous, ou écrivez le vôtre, et regardez comment notre IA le structure instantanément !"
-                : "Choose one of the messy customer message examples below, or write your own, and watch how our AI engine structures it instantly!"}
+                ? "Choisissez l'un des exemples de messages clients ci-dessous, et regardez comment notre IA le structure instantanément !"
+                : "Choose one of the messy customer message examples below, and watch how our AI engine structures it instantly!"}
             </p>
           </div>
 
@@ -1171,7 +1171,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             <div>SmartyAi Order &copy; 2026 • Made for Algerian E-Commerce Excellence</div>
             <div className="flex bg-zinc-950/20 px-3 py-1 rounded-full border border-zinc-900 text-[9px] text-[#52525b]/80 gap-1.5 justify-center items-center">
               <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-              <span>v4.1.0-ALGERIA</span>
+              <span>v4.1.0</span>
             </div>
           </div>
 
