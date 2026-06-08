@@ -81,6 +81,12 @@ function AppContent() {
   }, [lang]);
 
   useEffect(() => {
+    document.documentElement.classList.add("dark");
+    document.documentElement.classList.remove("light");
+    localStorage.setItem("smarty_theme", "dark");
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const screenParam = params.get("screen");
     const checkoutId = params.get("checkout_id");
@@ -305,10 +311,25 @@ function AppContent() {
     setError(null);
     try {
       const token = await auth.currentUser?.getIdToken();
+      let clientInventory: any[] = [];
+      const uid = user?.uid;
+      if (uid) {
+        try {
+          const q = query(collection(db, "inventory"), where("userId", "==", uid));
+          const querySnapshot = await getDocs(q);
+          clientInventory = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+        } catch (invErr) {
+          console.error("Error loading inventory for payload:", invErr);
+        }
+      }
+
       const response = await fetch("/api/extract-order", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ conversation, fileUrl, fileMimeType, fileBase64 }),
+        body: JSON.stringify({ conversation, fileUrl, fileMimeType, fileBase64, inventoryList: clientInventory }),
       });
       if (!response.ok) throw new Error("Extract failed");
       const data = await response.json();
@@ -319,6 +340,14 @@ function AppContent() {
     } finally { 
       setLoading(false); 
     }
+  };
+
+  const handleManualInput = () => {
+    setOrder({
+      ...initialOrder,
+      items: [{ product: "", quantity: 1, size: "", color: "", pricePerUnit: 0 }]
+    });
+    setScreen("review");
   };
 
   const handleSave = async () => {
@@ -580,6 +609,8 @@ function AppContent() {
                {screen === "dashboard" ? t.nav_dashboard : t.nav_inventory}
             </h2>
           </div>
+
+
         </motion.div>
       )}
 
@@ -600,6 +631,7 @@ function AppContent() {
               loading={loading} 
               error={error} 
               handleExtract={handleExtract} 
+              handleManualInput={handleManualInput}
               setScreen={setScreen} 
               t={t} 
               isRtl={isRtl}

@@ -47,6 +47,7 @@ export interface Product {
   sku?: string;
   imageUrl?: string;
   userId: string;
+  isPublished?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
