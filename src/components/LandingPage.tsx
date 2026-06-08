@@ -217,8 +217,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
     {
       label: lang === "ar" ? "فويس وملاحظات واتساب مشوشة" : lang === "fr" ? "Notes WhatsApp confuses" : "Messy WhatsApp Text",
       text: lang === "ar"
-        ? "السلام عليكم خاوتي، عيِّشكم سجلوا عند الكوموند لبرج الكيفان في لالجيري. حاب 2 حبات من عطر رياض محرز RM7 الجديد وحبة عطر سولكينغ ديلاكس كادو للوالد. برك راني مخلط وداير زوج نيميروات لخاطر الريزو عيان بزاف 0662334455 والزاوج 0550998811. التوصيل ماذابيك خليه لنهار السبت نكون في الدار، خوكم رضا بلعيدي."
-        : "Slam khawti, l'ah yahfadkom sajlou 3ndkom commande l bordj el kiffan l'alger. Bghit 2 bouteilles parfum Riyad Mahrez RM7 jdid w 1 parfum Soolking Deluxe kado ll'walid. Rani dayer 2 numéros 3la jal réseau 3iyan 0662334455 w tany 0550998811. Livraison dirlna f-sabt rabi y3ichkom, khokom Reda Belaidi.",
+        ? "السلام عليكم خاوتي، عيِّشكم سجلوا عند الكوموند لبرج الكيفان في لالجيري. حاب 2 حبات من عطر ساواج ديور الأصلي Sauvage Dior وحبة عطر بلو دو شانيل Bleu de Chanel كادو للوالد. برك راني مخلط وداير زوج نيميروات لخاطر الريزو عيان بزاف 0662334455 والزاوج 0550998811. التوصيل ماذابيك خليه لنهار السبت نكون في الدار، خوكم رضا بلعيدي."
+        : "Slam khawti, l'ah yahfadkom sajlou 3ndkom commande l bordj el kiffan l'alger. Bghit 2 bouteilles parfum Sauvage Dior original w 1 parfum Bleu de Chanel kado ll'walid. Rani dayer 2 numéros 3la jal réseau 3iyan 0662334455 w tany 0550998811. Livraison dirlna f-sabt rabi y3ichkom, khokom Reda Belaidi.",
       result: {
         name: "رضا بلعيدي",
         customer_name: "Reda Belaidi / رضا بلعيدي",
@@ -229,13 +229,13 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         delivery_type: "home",
         delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
-          { product: "عطر رياض محرز (RM7 VIP Edition)", quantity: 2, size: "100ml", color: "ذهبي", pricePerUnit: 2900 },
-          { product: "عطر سولكينغ الأسود بوهيم (Black Soolking Deluxe)", quantity: 1, size: "100ml", color: "أسود", pricePerUnit: 3500 }
+          { product: "عطر ساواج ديور الأصلي (Sauvage Dior - EDP)", quantity: 2, size: "100ml", color: "أزرق داكن", pricePerUnit: 5900 },
+          { product: "عطر بلو دو شانيل الفاخر (Bleu de Chanel - Luxury)", quantity: 1, size: "150ml", color: "أسود كلاسيك", pricePerUnit: 6500 }
         ],
         note: lang === "ar" ? "الزبون قدم رقم هاتف احتياطي (0550998811) بسبب رداءة الشبكة. التوصيل مبرمج لنهار السبت بالتنسيق معه." : "Alternative active line provided (0550998811) due to weak signal coverage. Delivery scheduled for Saturday.",
         possible_fake_order: false,
         shippingFee: 400,
-        totalPrice: 9700,
+        totalPrice: 18700,
         status: "pending",
         reliability: "High (✅ Dual active lines provided)",
         processingTime: "1.0s"
