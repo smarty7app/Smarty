@@ -182,49 +182,52 @@ export default function StorefrontCart({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-xl bg-zinc-900/60 border border-zinc-850 p-6 md:p-8 rounded-3xl text-center space-y-6 shadow-2xl relative"
+          className="w-full max-w-xl bg-neutral-950 border border-zinc-850/80 p-6 md:p-10 rounded-[2rem] text-center space-y-6 shadow-2xl relative overflow-hidden"
         >
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-500/5">
-            <CheckCircle2 className="w-9 h-9" />
+          {/* Abstract background glows */}
+          <div className="absolute top-[-20%] left-[-20%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[90px] pointer-events-none" />
+          
+          <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/5">
+            <CheckCircle2 className="w-10 h-10" />
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-xl font-black text-zinc-100">تم تسجيل طلبيتك بنجاح! 🎉</h2>
-            <p className="text-xs text-zinc-400 leading-relaxed max-w-sm mx-auto">
-              أهلاً بك، تم إرسال الطلبية وحفظها بنجاح في متجر <span className="text-yellow-500 font-bold">{merchantName}</span>. سوف يتم الاتصال بك هاتفياً لتأكيد الشحن خلال ساعات.
+          <div className="space-y-2.5">
+            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">تم تسجيل طلبيتك بنجاح! 🎉</h2>
+            <p className="text-xs md:text-sm text-zinc-400 leading-relaxed max-w-md mx-auto font-medium">
+              أهلاً بك، تم إرسال الطلبية وحفظها بنجاح في متجر <span className="text-emerald-400 font-extrabold">{merchantName}</span>. سوف يتواصل معك فريق العمل هاتفياً لتأكيد الشحن لولايتك خلال بضعة ساعات.
             </p>
           </div>
 
-          <div className="bg-zinc-950/80 border border-zinc-900 rounded-2xl p-4.5 text-right space-y-3 shadow-inner text-xs">
-            <div className="flex justify-between border-b border-zinc-900/80 pb-2.5">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 text-right space-y-3.5 shadow-inner text-xs">
+            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
               <span className="text-zinc-500 font-bold">اسم المستلم:</span>
-              <span className="text-zinc-200 font-black">{customerName}</span>
+              <span className="text-white font-extrabold">{customerName}</span>
             </div>
-            <div className="flex justify-between border-b border-zinc-900/80 pb-2.5">
+            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
               <span className="text-zinc-500 font-bold">رقم الهاتف الفعال:</span>
-              <span className="text-zinc-200 font-bold font-mono">{phoneNumber}</span>
+              <span className="text-emerald-400 font-bold font-mono text-xs">{phoneNumber}</span>
             </div>
-            <div className="flex justify-between border-b border-zinc-900/80 pb-2.5">
-              <span className="text-zinc-500 font-bold">مكان الشحن:</span>
-              <span className="text-zinc-200 font-bold">
+            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
+              <span className="text-zinc-500 font-bold">مكان التوصيل والشحن:</span>
+              <span className="text-white font-extrabold">
                 {activeWilayaObj?.nameAr || selectedWilaya} • {selectedCommune}
               </span>
             </div>
             {deliveryAddress.trim() && (
-              <div className="flex justify-between border-b border-zinc-900/80 pb-2.5">
-                <span className="text-zinc-500 font-bold">العنوان التفصيلي:</span>
-                <span className="text-zinc-200">{deliveryAddress}</span>
+              <div className="flex justify-between border-b border-zinc-900/60 pb-3">
+                <span className="text-zinc-500 font-bold">العنوان الكلي التفصيلي:</span>
+                <span className="text-zinc-300">{deliveryAddress}</span>
               </div>
             )}
-            <div className="flex justify-between border-b border-zinc-900/80 pb-2.5">
-              <span className="text-zinc-500 font-bold">طريقة الاستلام:</span>
-              <span className="text-zinc-200 font-bold">
-                {deliveryType === "home" ? "توصيل للمنزل 🏠" : "استلام من مكتب الشحن 📦"}
+            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
+              <span className="text-zinc-500 font-bold">طريقة الاستلام المفضلة:</span>
+              <span className="text-white font-extrabold">
+                {deliveryType === "home" ? "توصيل آمن للمنزل 🏠" : "استلام من مكتب مكتب الشحن 📦"}
               </span>
             </div>
             <div className="flex justify-between pt-1">
-              <span className="text-zinc-400 font-extrabold">المبلغ المطلوب دفعاً عند الاستلام:</span>
-              <span className="text-yellow-500 font-mono font-black text-sm">{finalPrice.toLocaleString()} DA</span>
+              <span className="text-zinc-400 font-bold">المبلغ المطلوب للتسليم عند الاستلام:</span>
+              <span className="text-emerald-400 font-mono font-black text-sm">{finalPrice.toLocaleString()} DA</span>
             </div>
           </div>
 
@@ -239,7 +242,7 @@ export default function StorefrontCart({
               setNote("");
               onBackToStore();
             }}
-            className="w-full py-3.5 bg-zinc-800 hover:bg-zinc-750 font-black rounded-xl text-zinc-200 text-xs transition-colors cursor-pointer border border-zinc-700 hover:border-zinc-500"
+            className="w-full py-4 bg-zinc-900 hover:bg-zinc-850 hover:text-white font-black rounded-2xl text-zinc-300 text-xs transition-colors cursor-pointer border border-zinc-800 hover:border-zinc-700"
           >
             تصفح المتجر مجدداً وطلب منتجات أخرى
           </button>
@@ -249,62 +252,62 @@ export default function StorefrontCart({
   }
 
   return (
-    <div className="text-right" dir="rtl">
-      {/* Back button link */}
+    <div className="text-right font-sans" dir="rtl">
+      {/* Back button link with premium scale hover */}
       <button
         onClick={onBackToStore}
-        className="mb-6 py-2 px-4 bg-zinc-900 hover:bg-zinc-850 hover:text-white text-zinc-400 rounded-xl border border-zinc-850 hover:border-zinc-750 transition-colors inline-flex items-center gap-2 text-xs font-bold cursor-pointer"
+        className="mb-8 py-3 px-5 bg-zinc-900/60 hover:bg-zinc-900 hover:text-white text-zinc-400 rounded-2xl border border-zinc-850 hover:border-zinc-750 transition-all duration-300 inline-flex items-center gap-2 text-xs font-black cursor-pointer active:scale-95 shadow-lg"
       >
-        <ArrowRight className="w-4 h-4" />
-        <span>العودة لتصفح منتجات المتجر</span>
+        <ArrowRight className="w-4 h-4 text-emerald-400 shrink-0" />
+        <span>العودة لتصفح منتجات المتجر المتميزة</span>
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-10 items-start">
         
         {/* Left column: Cart goods list */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-zinc-950/40 border border-zinc-900 p-5 rounded-3xl space-y-4 shadow-xl">
-            <h3 className="text-xs font-black text-zinc-300 uppercase tracking-widest flex items-center gap-2 pb-3 border-b border-zinc-900">
-              <ShoppingCart className="w-4 h-4 text-yellow-500" />
+          <div className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-6 rounded-3xl space-y-4 shadow-2xl relative">
+            <h3 className="text-xs font-extrabold text-white uppercase tracking-widest flex items-center gap-2 pb-3.5 border-b border-zinc-900">
+              <ShoppingCart className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
               سلة التسوق الخاصة بك ({cart.length})
             </h3>
 
             {cart.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500 flex flex-col items-center gap-2">
-                <ShoppingBag className="w-10 h-10 text-zinc-800 animate-bounce" />
-                <p className="text-xs font-bold">لا يوجد أي عناصر في السلة</p>
+              <div className="text-center py-16 text-zinc-500 flex flex-col items-center gap-3">
+                <ShoppingBag className="w-12 h-12 text-zinc-800 animate-bounce" />
+                <p className="text-xs font-bold text-zinc-400">لا يوجد أي عناصر في السلة حالياً</p>
                 <button
                   onClick={onBackToStore}
-                  className="mt-2 text-xs text-yellow-500 hover:underline cursor-pointer"
+                  className="text-xs text-emerald-400 font-extrabold hover:underline cursor-pointer"
                 >
-                  انقر هنا لبدء تسوق المنتجات
+                  انقر هنا لتصفح المنتجات وبدء التسوق 🛒
                 </button>
               </div>
             ) : (
-              <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-3.5 max-h-[440px] overflow-y-auto pr-1">
                 {cart.map((item) => (
                   <div
                     key={item.cartItemId}
-                    className="flex gap-3 bg-black/40 border border-zinc-900/60 p-2.5 rounded-2xl items-center justify-between"
+                    className="flex gap-3 bg-zinc-900/30 border border-zinc-900 p-3 rounded-2xl items-center justify-between group hover:border-zinc-800 transition-colors"
                   >
                     <div className="flex gap-3 items-center">
                       {/* Frame preview */}
-                      <div className="w-11 h-11 rounded-lg bg-zinc-950 border border-zinc-900 shrink-0 overflow-hidden">
+                      <div className="w-12 h-12 rounded-xl bg-black border border-zinc-900 shrink-0 overflow-hidden relative">
                         {item.imageUrl ? (
                           <img src={item.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-zinc-800">
-                            <ShoppingBag className="w-5 h-5" />
+                          <div className="w-full h-full flex items-center justify-center text-zinc-800 bg-zinc-950">
+                            <ShoppingBag className="w-5 h-5 text-zinc-700" />
                           </div>
                         )}
                       </div>
 
-                      <div>
-                        <h4 className="text-[11px] font-bold text-zinc-200 line-clamp-1">{item.productName}</h4>
-                        <div className="flex items-center gap-2.5 mt-0.5">
-                          <p className="text-[10px] text-zinc-400 font-mono font-bold">{item.price.toLocaleString()} DA</p>
+                      <div className="space-y-0.5">
+                        <h4 className="text-[11px] md:text-xs font-extrabold text-white line-clamp-1 group-hover:text-emerald-400 transition-colors">{item.productName}</h4>
+                        <div className="flex items-center gap-2.5">
+                          <p className="text-[10px] text-emerald-400 font-mono font-bold">{item.price.toLocaleString()} DA</p>
                           {(item.size || item.color) && (
-                            <span className="text-[9px] text-zinc-600">
+                            <span className="text-[9px] text-zinc-500">
                               {[item.size, item.color].filter(Boolean).join(" • ")}
                             </span>
                           )}
@@ -314,19 +317,19 @@ export default function StorefrontCart({
 
                     <div className="flex items-center gap-3">
                       {/* Quantity switcher */}
-                      <div className="flex items-center bg-zinc-950 rounded-lg border border-zinc-900 p-0.5">
+                      <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-0.5">
                         <button
                           type="button"
                           onClick={() => onUpdateQty(item.cartItemId, -1)}
-                          className="w-5.5 h-5.5 rounded-md hover:bg-zinc-900 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                          className="w-6 h-6 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
                         >
                           <Minus className="w-2.5 h-2.5" />
                         </button>
-                        <span className="text-[10px] font-mono font-bold w-5 text-center text-zinc-300">{item.quantity}</span>
+                        <span className="text-[11px] font-mono font-black w-5.5 text-center text-white">{item.quantity}</span>
                         <button
                           type="button"
                           onClick={() => onUpdateQty(item.cartItemId, 1)}
-                          className="w-5.5 h-5.5 rounded-md hover:bg-zinc-900 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                          className="w-6 h-6 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
                         >
                           <Plus className="w-2.5 h-2.5" />
                         </button>
@@ -335,7 +338,7 @@ export default function StorefrontCart({
                       {/* Delete */}
                       <button
                         onClick={() => onRemoveItem(item.cartItemId)}
-                        className="text-zinc-700 hover:text-red-400 p-1 cursor-pointer"
+                        className="text-zinc-650 hover:text-red-400 p-1.5 hover:bg-zinc-900/50 rounded-lg transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -347,24 +350,26 @@ export default function StorefrontCart({
 
             {/* Display Invoice items list totals */}
             {cart.length > 0 && (
-              <div className="pt-3.5 border-t border-zinc-900 text-xs space-y-2.5">
-                <div className="flex justify-between text-zinc-500">
-                  <span>مجموع المنتجات:</span>
-                  <span className="font-mono">{itemsTotal.toLocaleString()} DA</span>
+              <div className="pt-4 border-t border-zinc-900 text-xs space-y-3">
+                <div className="flex justify-between text-zinc-400">
+                  <span>مجموع المنتجات بالسلة:</span>
+                  <span className="font-mono font-bold text-white">{itemsTotal.toLocaleString()} DA</span>
                 </div>
-                <div className="flex justify-between text-zinc-500 items-center">
-                  <span>تكلفة شحن وتوصيل الطرد:</span>
+                <div className="flex justify-between text-zinc-400 items-center">
+                  <span>تكلفة شحن و توصيل الطرد:</span>
                   {loadingShipping ? (
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-yellow-500" />
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                   ) : selectedWilaya ? (
-                    <span className="text-emerald-400 font-bold font-mono">{shippingFee > 0 ? `+ ${shippingFee} DA` : "مجاني"}</span>
+                    <span className="text-emerald-400 font-extrabold font-mono">{shippingFee > 0 ? `+ ${shippingFee} DA` : "توصيل مجاني 🤩"}</span>
                   ) : (
-                    <span className="text-zinc-600 text-[10px]">بانتظار تحديد الولاية</span>
+                    <span className="text-zinc-600 text-[10px] font-bold">بانتظار تحديد ولايتك</span>
                   )}
                 </div>
-                <div className="flex justify-between text-sm font-black pt-2 bg-gradient-to-t from-black/20 p-2.5 rounded-2xl border-t border-zinc-900/80">
-                  <span>المبلغ الإجمالي الكلي:</span>
-                  <span className="font-mono text-yellow-500">{finalPrice.toLocaleString()} DA</span>
+                <div className="flex justify-between text-xs md:text-sm font-extrabold pt-3 bg-zinc-900/20 p-3 rounded-2xl border-t border-zinc-900">
+                  <span className="text-white">المبلغ الجملي المراد دفعه عند الاستلام:</span>
+                  <span className="font-mono text-emerald-400 text-sm md:text-base">
+                    {finalPrice.toLocaleString()} <span className="text-[11px] text-emerald-400">DA</span>
+                  </span>
                 </div>
               </div>
             )}
@@ -376,24 +381,27 @@ export default function StorefrontCart({
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-zinc-900/20 border border-zinc-900 p-5 md:p-6 rounded-3xl shadow-xl"
+            className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-8 rounded-[2rem] shadow-2xl relative"
           >
-            <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+            {/* Ambient subtle decorative light leak */}
+            <div className="absolute bottom-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-[70px] pointer-events-none" />
+
+            <form onSubmit={handleCheckoutSubmit} className="space-y-5">
               {orderErr && (
-                <div className="p-3 bg-red-500/10 border border-red-500/15 rounded-xl text-xs text-red-400 font-bold">
-                  {orderErr}
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 font-bold leading-relaxed text-right">
+                  ⚠️ {orderErr}
                 </div>
               )}
 
               {/* Title Identity */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-yellow-500" />
-                  1. معلومات الاتصال وقبول التكليف
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900">
+                  <User className="w-4 h-4 text-emerald-400 shrink-0" />
+                  1. معلومات الاتصال والمستلم الفعال
                 </h3>
 
-                <div>
-                  <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">الاسم الكامل للمستلم *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">الاسم الكامل للمستلم والزبون *</label>
                   <div className="relative">
                     <input
                       type="text"
@@ -401,14 +409,14 @@ export default function StorefrontCart({
                       placeholder="مثال: يونس جلال"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full text-right pr-9 pl-3 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors font-medium"
+                      className="w-full text-right pr-10 pl-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all font-medium placeholder:text-zinc-700"
                     />
-                    <User className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <User className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-600 pointer-events-none" />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">رقم هاتف المستلم لتأكيد التوصيل *</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">رقم هاتف المستلم لتأكيد التوصيل هاتفياً *</label>
                   <div className="relative">
                     <input
                       type="tel"
@@ -416,127 +424,135 @@ export default function StorefrontCart({
                       placeholder="05XXXXXXXX / 06XXXXXXXX"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="w-full pl-3 pr-9 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-100 text-xs text-left font-mono focus:border-yellow-500/50 focus:outline-none transition-colors"
+                      className="w-full pl-4 pr-10 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs text-left font-mono focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700"
                       dir="ltr"
                     />
-                    <Phone className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <Phone className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-600 pointer-events-none" />
                   </div>
                 </div>
               </div>
 
-              <hr className="border-zinc-900" />
+              <hr className="border-zinc-900/60" />
 
               {/* Geographical mapping */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-yellow-500" />
-                  2. تفاصيل ومكان شحن الطرد
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900">
+                  <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                  2. تفاصيل وتأكيد مكان شحن الطرد
                 </h3>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">الولاية *</label>
-                    <div className="relative">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] text-zinc-500 font-black px-1">الولاية *</label>
+                    <div className="relative font-bold">
                       <select
                         required
                         value={selectedWilaya}
                         onChange={handleWilayaChange}
-                        className="w-full pl-8 pr-3 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-200 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold"
+                        className="w-full pl-9 pr-3 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold"
                       >
-                        <option value="" disabled className="text-zinc-650">اختر الولاية</option>
+                        <option value="" disabled className="text-zinc-700">اختر الولاية</option>
                         {ALGERIA_68_WILAYAS.map(w => (
-                          <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-[#050505] text-zinc-100">
+                          <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-black text-zinc-200 font-bold">
                             {w.code} - {w.nameAr}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-2.5 top-3 w-4 h-4 text-zinc-500 pointer-events-none" />
+                      <ChevronDown className="absolute left-3 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">البلدية *</label>
-                    <div className="relative">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] text-zinc-500 font-black px-1">البلدية *</label>
+                    <div className="relative font-bold">
                       <select
                         required
                         value={selectedCommune}
                         onChange={(e) => setSelectedCommune(e.target.value)}
                         disabled={!selectedWilaya}
-                        className="w-full pl-8 pr-3 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-250 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed font-bold"
+                        className="w-full pl-9 pr-3 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed font-bold"
                       >
-                        <option value="" disabled className="text-zinc-650">اختر البلدية</option>
+                        <option value="" disabled className="text-zinc-700">اختر البلدية</option>
                         {communesList.map((comm, idx) => (
-                          <option key={idx} value={comm} className="bg-[#050505] text-zinc-100">
+                          <option key={idx} value={comm} className="bg-black text-zinc-200">
                             {comm}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-2.5 top-3 w-4 h-4 text-zinc-500 pointer-events-none" />
+                      <ChevronDown className="absolute left-3 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">العنوان السكني التفصيلي</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">العنوان السكني التفصيلي لتسهيل التوصيل</label>
                   <input
                     type="text"
                     placeholder="مثال: حي السلام، عمارة رقم 3، الطابق 2"
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors font-medium"
+                    className="w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700 font-medium"
                   />
                 </div>
 
                 {/* Delivery Type switcher */}
-                <div>
-                  <label className="block text-[10px] text-zinc-400 font-bold mb-1.5 px-1">طريقة التوصيل المفضلة *</label>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">طريقة التوصيل المفضلة والمناسبة لك *</label>
+                  <div className="grid grid-cols-2 gap-3 font-bold">
                     <button
                       type="button"
                       onClick={() => setDeliveryType("home")}
-                      className={`py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryType === "home" ? "bg-white text-black border-white shadow-md font-black" : "bg-zinc-950/40 border-zinc-850 text-zinc-400 hover:text-white"}`}
+                      className={`py-3 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        deliveryType === "home" 
+                          ? "bg-white text-black border-white shadow-lg font-black" 
+                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                      }`}
                     >
-                      <Smartphone className="w-3.5 h-3.5" />
-                      🏠 توصيل للمنزل
+                      <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                      <span>🏠 توصيل للمنزل</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setDeliveryType("desk")}
-                      className={`py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${deliveryType === "desk" ? "bg-white text-black border-white shadow-md font-black" : "bg-zinc-950/40 border-zinc-850 text-zinc-400 hover:text-white"}`}
+                      className={`py-3 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                        deliveryType === "desk" 
+                          ? "bg-white text-black border-white shadow-lg font-black" 
+                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                      }`}
                     >
-                      <Truck className="w-3.5 h-3.5" />
-                      📦 استلام من المكتب Desktop
+                      <Truck className="w-3.5 h-3.5 shrink-0" />
+                      <span>📦 استلام من المكتب</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Note */}
-                <div>
-                  <label className="block text-[10px] text-zinc-400 font-bold mb-1 px-1">ملاحظات تود إضافتها للطلب</label>
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">ملاحظات تود إرفاقها بالففصل والتوجيه</label>
                   <textarea
                     rows={2}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="أضف أي تفاصيل خاصة بالمقاس أو طريقة ومدة الشحن المتاحة..."
-                    className="w-full px-3 py-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl text-zinc-100 text-xs focus:border-yellow-500/50 focus:outline-none transition-colors resize-none"
+                    placeholder="أضف أي تفاصيل تود إبلاغ الموزع بها..."
+                    className="w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all resize-none placeholder:text-zinc-700"
                   />
                 </div>
               </div>
 
-              {/* Submit Trigger */}
+              {/* Submit Trigger - Premium Glowing Button */}
               <button
                 type="submit"
                 disabled={submittingOrder || cart.length === 0}
-                className="w-full py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-extrabold text-xs rounded-xl tracking-wider uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-yellow-500/10 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-4.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs tracking-wider uppercase rounded-2xl flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer shadow-xl shadow-emerald-500/10 active:scale-[0.99] disabled:opacity-30 disabled:cursor-not-allowed select-none"
               >
                 {submittingOrder ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-black" />
-                    جاري إرسال الطلبية وتأكيد الحجز...
+                    <span>جاري إرسال وتوثيق طلبيتك الآن...</span>
                   </>
                 ) : (
                   <>
-                    تأكيد وإرسال الطلب الآن ⚡
+                    <span>تأكيد وإرسال الطلب الآن (الدفع عند الاستلام) ⚡</span>
                   </>
                 )}
               </button>

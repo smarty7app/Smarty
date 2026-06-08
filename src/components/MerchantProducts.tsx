@@ -85,6 +85,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
   const [imageUrl, setImageUrl] = useState("");
   const [imageFileBase64, setImageFileBase64] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
 
   // Store Settings States
   const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
@@ -385,6 +386,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         sku: generatedSku,
         imageUrl: finalImg || "",
         userId: user.uid,
+        isPublished: isPublished,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
@@ -438,6 +440,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         category: category ? String(category).trim() : "",
         sku: generatedSku,
         imageUrl: finalImg || "",
+        isPublished: isPublished,
         updatedAt: new Date().toISOString()
       });
 
@@ -514,6 +517,35 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     }
   };
 
+  // Toggle storefront publication
+  const handleTogglePublish = async (p: Product) => {
+    if (!p.id) return;
+    try {
+      const currentStatus = p.isPublished === true;
+      const productRef = doc(db, "inventory", p.id);
+      await updateDoc(productRef, {
+        isPublished: !currentStatus,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (err: any) {
+      console.error("Error toggling publication status:", err);
+    }
+  };
+
+  // Toggle publishing state of a product directly
+  const togglePublishProduct = async (product: Product) => {
+    try {
+      const productRef = doc(db, "inventory", product.id!);
+      const nextStatus = !product.isPublished;
+      await updateDoc(productRef, {
+        isPublished: nextStatus,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (err: any) {
+      console.error("Error toggling product publish status:", err);
+    }
+  };
+
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
     setProductName(p.productName);
@@ -524,6 +556,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     setSku(p.sku || "");
     setImageUrl(p.imageUrl || "");
     setImageFileBase64(null);
+    setIsPublished(!!p.isPublished);
   };
 
   const resetForm = () => {
@@ -535,6 +568,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     setSku("");
     setImageUrl("");
     setImageFileBase64(null);
+    setIsPublished(false);
   };
 
   // Categories lookup
@@ -1105,6 +1139,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                     isRtl={isRtl}
                     t={t}
                     enableLazyLoading={filteredProducts.length > 50}
+                    onTogglePublish={handleTogglePublish}
                   />
                 ))}
               </AnimatePresence>
@@ -1170,6 +1205,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                           <ArrowUpDown className="w-3 h-3 text-zinc-500" />
                         </div>
                       </th>
+                      <th className="py-3 px-4 text-center text-xs">{isRtl ? "معروض بالمتجر" : "On Store"}</th>
                       <th className="py-3 px-4 text-right w-24 pr-6">{isRtl ? "الإجراءات" : "Actions"}</th>
                     </tr>
                   </thead>
@@ -1243,6 +1279,21 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                           {/* Pricing */}
                           <td className="py-3 px-4 text-center font-bold text-emerald-400 text-sm">
                             {p.price.toLocaleString()} {isRtl ? "دج" : "DA"}
+                          </td>
+
+                          {/* Storefront visibility status toggle */}
+                          <td className="py-3 px-4 text-center">
+                            <button
+                              onClick={() => handleTogglePublish(p)}
+                              className={`inline-flex items-center gap-1.5 text-[10px] font-extrabold px-3 py-1 rounded-full transition-all cursor-pointer border ${
+                                p.isPublished === true
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/25"
+                                  : "bg-zinc-950 text-zinc-500 border-zinc-850 hover:text-zinc-300 hover:border-zinc-750"
+                              }`}
+                            >
+                              <Store className="w-3.5 h-3.5 shrink-0" />
+                              <span>{p.isPublished === true ? (isRtl ? "معروض" : "On Store") : (isRtl ? "في المستودع" : "Backstore")}</span>
+                            </button>
                           </td>
 
                           {/* Action triggers */}
@@ -1539,6 +1590,8 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
             handleDrop={handleDrop}
             handleImageChange={handleImageChange}
             apiLoading={apiLoading}
+            isPublished={isPublished}
+            setIsPublished={setIsPublished}
             isRtl={isRtl}
             t={t}
           />

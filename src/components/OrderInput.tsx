@@ -13,6 +13,7 @@ export default function OrderInput({
   loading, 
   error, 
   handleExtract, 
+  handleManualInput,
   setScreen, 
   t, 
   isRtl,
@@ -396,6 +397,16 @@ export default function OrderInput({
             <Sparkles className="w-5 h-5 text-black" />
           )} 
           {loading ? t.extracting : t.extract_button}
+        </button>
+
+        {/* Manual Input button */}
+        <button 
+          type="button"
+          onClick={handleManualInput} 
+          className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer font-sans mt-3"
+        >
+          <FileText className="w-5 h-5 text-zinc-400" />
+          {t.manual_entry || "ملأ البيانات يدوياً"}
         </button>
       </div>
     </motion.div>

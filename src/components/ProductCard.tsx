@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { ImageIcon, Check, AlertCircle, Edit3, Trash2 } from "lucide-react";
+import { ImageIcon, Check, AlertCircle, Edit3, Trash2, Store } from "lucide-react";
 import { Product } from "../types";
 
 interface ProductCardProps {
@@ -12,6 +12,7 @@ interface ProductCardProps {
   isRtl: boolean;
   t: any;
   enableLazyLoading?: boolean;
+  onTogglePublish?: (p: Product) => void;
 }
 
 export const ProductCard = React.memo(function ProductCard({
@@ -23,6 +24,7 @@ export const ProductCard = React.memo(function ProductCard({
   isRtl,
   t,
   enableLazyLoading = true,
+  onTogglePublish,
 }: ProductCardProps) {
   const [isVisible, setIsVisible] = useState(!enableLazyLoading);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -113,6 +115,16 @@ export const ProductCard = React.memo(function ProductCard({
             {product.category}
           </span>
         )}
+
+        {/* Publication Status Badge */}
+        <span className={`absolute bottom-3 left-3 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-lg border backdrop-blur-md flex items-center gap-1 z-[10] ${
+          product.isPublished === true
+            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+            : "bg-zinc-950/90 text-zinc-500 border-zinc-850"
+        }`}>
+          <Store className="w-2.5 h-2.5 shrink-0" />
+          <span>{product.isPublished === true ? (isRtl ? "مرفوع بالمتجر" : "In Store") : (isRtl ? "في المستودع" : "Backstore")}</span>
+        </span>
       </div>
 
       {/* Metadata Specs */}
@@ -133,6 +145,18 @@ export const ProductCard = React.memo(function ProductCard({
           <span className="text-emerald-400 font-black text-sm">{product.price.toLocaleString()} {isRtl ? "دج" : "DA"}</span>
           
           <div className="flex gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+            {/* Direct storefront publish toggle */}
+            <button 
+              onClick={() => onTogglePublish?.(product)} 
+              className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                product.isPublished === true
+                  ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25" 
+                  : "bg-zinc-950 border-zinc-850 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300"
+              }`}
+              title={product.isPublished === true ? (isRtl ? "حذف من المتجر الإلكتروني" : "Remove from Storefront") : (isRtl ? "رفع وعرض بالمتجر الإلكتروني" : "Publish to Storefront")}
+            >
+              <Store className="w-3.5 h-3.5" />
+            </button>
             <button 
               onClick={() => openEditModal(product)} 
               className="p-1.5 hover:bg-zinc-805 rounded-xl border border-zinc-850 hover:border-zinc-700 hover:text-white text-zinc-400 transition-all cursor-pointer bg-zinc-950"

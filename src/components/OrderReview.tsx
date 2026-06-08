@@ -154,6 +154,24 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
     !order.wilaya ? t.warning_no_wilaya : null,
   ].filter(Boolean);
 
+  const lowStockItems = (order.items || []).filter((item: any) => {
+    if (!item.product) return false;
+    const matched = inventory.find((p: any) => p.productName === item.product);
+    if (!matched) return false;
+    const stock = Number(matched.stockQuantity) || 0;
+    const reqQty = Number(item.quantity) || 1;
+    return stock >= reqQty && stock <= 5;
+  });
+
+  const outOfStockItems = (order.items || []).filter((item: any) => {
+    if (!item.product) return false;
+    const matched = inventory.find((p: any) => p.productName === item.product);
+    if (!matched) return false;
+    const stock = Number(matched.stockQuantity) || 0;
+    const reqQty = Number(item.quantity) || 1;
+    return stock < reqQty;
+  });
+
   return (
     <motion.div initial={{ opacity: 0, x: isRtl ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-20">
       <div className="flex items-center gap-3">
@@ -164,6 +182,51 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
           {order.id ? t.update_order : t.customer_info}
         </h2>
       </div>
+
+      {(lowStockItems.length > 0 || outOfStockItems.length > 0) && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-500/10 border border-amber-500/20 rounded-3xl p-5 mb-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-extrabold text-amber-500 text-sm">
+                {isRtl ? "⚠️ تنبيه حالة المخزون للمنتجات" : "⚠️ Stock Alert Details"}
+              </p>
+              <ul className="list-disc list-inside text-xs text-amber-500/80 space-y-1">
+                {outOfStockItems.map((item: any, i: number) => {
+                  const matched = inventory.find((p: any) => p.productName === item.product);
+                  const stock = matched ? matched.stockQuantity : 0;
+                  return (
+                    <li key={`out-${i}`} className="font-bold text-red-400">
+                      {isRtl 
+                        ? `الكمية المطلوبة من المنتج 「${item.product}」 تفوق المتوفر في المخزن (المطلوب: ${item.quantity}، المتوفر: ${stock})`
+                        : `Requested quantity for "${item.product}" exceeds available stock (Requested: ${item.quantity}, In Stock: ${stock})`
+                      }
+                    </li>
+                  );
+                })}
+                {lowStockItems.map((item: any, i: number) => {
+                  const matched = inventory.find((p: any) => p.productName === item.product);
+                  const stock = matched ? matched.stockQuantity : 0;
+                  return (
+                    <li key={`low-${i}`} className="text-amber-400">
+                      {isRtl 
+                        ? `مخزون منخفض: المنتج 「${item.product}」 قارب على الانتهاء (متبقي فقط ${stock} قطع في المستودع)`
+                        : `Low stock warning: "${item.product}" is running out (only ${stock} units remaining)`
+                      }
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {warnings.length > 0 && (
         <motion.div 

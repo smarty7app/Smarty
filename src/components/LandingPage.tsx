@@ -108,6 +108,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
   const [customText, setCustomText] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
+  const [resultView, setResultView] = useState<"visual" | "json">("visual");
 
   useEffect(() => {
     // Check if prompt is already stashed in window
@@ -164,58 +165,80 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
     {
       label: lang === "ar" ? "رسالة ماسنجر بالدَّارجة" : lang === "fr" ? "Chat Messenger en Darija" : "Darija Messenger Chat",
       text: lang === "ar" 
-        ? "سلام خويا، حاب نشري الكيت و الشارجور هذاك الأصلي تاع الآيفون. راني نسكن في قسنطينة باتريس لومومبا، اسمي كمال بن عيسى، هاهو نميرو للتأكيد 0775889922. قولي برك وقتاش تلحقني خو ديرلي شحن للدار"
-        : "Slam khouya, hab nechri l-kit o chargour hadak l'original ta3 iphone. Rani nskon f constantine patrice lumumba, esmi kamel benaissa, haho nemero ta3i 0775889922 tel9ani dima ghadi dirlna f-dar d'accord",
+        ? "سلام عليكم خويا، حاب نطلب هاد السيروم تاع البشرة الجافة و الحجم الصغير، ومعاه كريم مرطب حبة وحدة. ديرلي شحن للمنزل ولاية غليزان بلدية سيدي امحمد بن علي حي النصر، الاسم عائشة بن عودة ورقم الهاتف 0773665544 ربي يخليك ويريت لوكان تخليهالي فالعشية"
+        : "Salam khouya, hab nechri serum ta3 bachra jaffa sghir w m3ah creme hydratante 1pc. Dirlna livraison leldar Relizane, sidi m'hamed ben ali, حي النصر, ism aicha benouda w tel 0773665544 dirlha f l'aprem rabi yhafdak.",
       result: {
-        customer_name: "كمال بن عيسى / Kamel Benaissa",
-        phone: "0775889922",
-        wilaya: lang === "ar" ? "25 - قسنطينة" : "25 - Constantine",
-        commune: lang === "ar" ? "قسنطينة (وسط المدينة)" : lang === "fr" ? "Constantine (Centre-ville)" : "Constantine (Centre)",
-        address: "Patrice Lumumba / باتريس لومومبا",
-        delivery_type: lang === "ar" ? "شحن للمنزل (إقامة)" : lang === "fr" ? "À domicile" : "Home Delivery (À domicile)",
+        name: "عائشة بن عودة",
+        customer_name: "عائشة بن عودة / Aicha Benouda",
+        phone: "0773665544",
+        wilaya: lang === "ar" ? "48 - غليزان" : "48 - Relizane",
+        commune: lang === "ar" ? "سيدي امحمد بن علي" : "Sidi M'Hamed Ben Ali",
+        address: "حي النصر / Cité En-Nasr",
+        delivery_type: "home",
+        delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
-          { name: "iPhone Charger (Original)", qty: 1 },
-          { name: "iPhone Earphones Kit", qty: 1 }
+          { product: "سيروم الهيالورونيك للبشرة الجافة (صغير)", quantity: 1, size: "S", color: "شفاف", pricePerUnit: 2400 },
+          { product: "كريم الترطيب العمليق ومغذي للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
         ],
-        reliability: "High (✅ Valid Algerian number)",
-        processingTime: "1.4s"
+        note: lang === "ar" ? "تفضل التوصيل في الفترة المسائية" : "Livraison souhaitée l'après-midi",
+        possible_fake_order: false,
+        shippingFee: 650,
+        totalPrice: 4850,
+        status: "pending",
+        reliability: "High (✅ Valid Relizane active line)",
+        processingTime: "1.1s"
       }
     },
     {
       label: lang === "ar" ? "طلب إنستغرام بخلط فرانكو" : lang === "fr" ? "Commande Instagram Franco" : "Franco/French Instagram Order",
-      text: "bnsr, bghit l-pack m-serum de cheveux l'oran blasa bir el djir, cite rym. esm l-moustamil fatiha bouzidi, tel: 0550114477, dirli f bureau yalidine rabi ykhalik.",
+      text: "bnsr khouya, bghit 1 pack serum de cheveux hydratant l'oran blasa bir el djir, cite rym. esm l-moustamil meriem belkacem, tel: 0550114477, dirlna f bureau yalidine rabi ykhalik. size t-shirt m3ah cadeau size M noir stp si c'est possible.",
       result: {
-        customer_name: "Fatiha Bouzidi / فتيحة بوزيدي",
+        name: "مريم بلقاسم",
+        customer_name: "Meriem Belkacem / مريم بلقاسم",
         phone: "0550114477",
         wilaya: lang === "ar" ? "31 - وهران" : "31 - Oran",
         commune: lang === "ar" ? "بئر الجير" : "Bir El Djir",
         address: "Cité Rym / حي ريم",
-        delivery_type: lang === "ar" ? "شحن للمكتب (Yalidine Desk)" : lang === "fr" ? "Point relais / Bureau" : "Desk Delivery (Desk/Bureau)",
+        delivery_type: "desk",
+        delivery_type_label: lang === "ar" ? "شحن للمكتب (ياليدين)" : "Bureau Yalidine",
         items: [
-          { name: "Hair Care Serum Pack", qty: 1 }
+          { product: "سيروم الشعر المرطب ومغذي", quantity: 1, size: "Default", color: "Default", pricePerUnit: 3200 },
+          { product: "قميص مهدى مع الباقة (Cadeau T-Shirt)", quantity: 1, size: "M", color: "Noir", pricePerUnit: 0 }
         ],
-        reliability: "High (✅ Active phone line)",
-        processingTime: "1.1s"
+        note: "Cité Rym / حي ريم - هدية تيشرت مقاس M بلون أسود",
+        possible_fake_order: false,
+        shippingFee: 350,
+        totalPrice: 3550,
+        status: "pending",
+        reliability: "High (✅ Valid Oran active line)",
+        processingTime: "0.8s"
       }
     },
     {
       label: lang === "ar" ? "فويس وملاحظات واتساب مشوشة" : lang === "fr" ? "Notes WhatsApp confuses" : "Messy WhatsApp Text",
       text: lang === "ar"
-        ? "أهلاً، سجل عندك طلبية لبرج الكيفان في العاصمة. كاين 3 حبات سويتات نوار دوبل لارج و زوج كاسكيطات بلونش. رقم التلفون 0662334455 الاسم ليتيسيا بوزيد. الشحن للمكتب تاعكم"
-        : "Ahla, sajjel 3ndek talbiya l bordj el kiffan f l'alger. Kayn 3 sweat noir XXL w zouj casquettes blanches. Tel 0662334455 esm Leticia Bouzid f-bureau rabi yhfdek.",
+        ? "السلام عليكم خاوتي، عيِّشكم سجلوا عند الكوموند لبرج الكيفان في لالجيري. حاب 2 حبات من عطر رياض محرز RM7 الجديد وحبة عطر سولكينغ ديلاكس كادو للوالد. برك راني مخلط وداير زوج نيميروات لخاطر الريزو عيان بزاف 0662334455 والزاوج 0550998811. التوصيل ماذابيك خليه لنهار السبت نكون في الدار، خوكم رضا بلعيدي."
+        : "Slam khawti, l'ah yahfadkom sajlou 3ndkom commande l bordj el kiffan l'alger. Bghit 2 bouteilles parfum Riyad Mahrez RM7 jdid w 1 parfum Soolking Deluxe kado ll'walid. Rani dayer 2 numéros 3la jal réseau 3iyan 0662334455 w tany 0550998811. Livraison dirlna f-sabt rabi y3ichkom, khokom Reda Belaidi.",
       result: {
-        customer_name: "Leticia Bouzid / ليتيسيا بوزيد",
+        name: "رضا بلعيدي",
+        customer_name: "Reda Belaidi / رضا بلعيدي",
         phone: "0662334455",
         wilaya: lang === "ar" ? "16 - الجزائر" : "16 - Algiers",
         commune: lang === "ar" ? "برج الكيفان" : "Bordj El Kiffan",
         address: "Bordj El Kiffan Centre / وسط برج الكيفان",
-        delivery_type: lang === "ar" ? "شحن للمكتب (Desk/Bureau)" : lang === "fr" ? "Point relais / Bureau" : "Desk Delivery (Desk/Bureau)",
+        delivery_type: "home",
+        delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
-          { name: "Black Sweatshirt (XXL)", qty: 3 },
-          { name: "White Cap", qty: 2 }
+          { product: "عطر رياض محرز (RM7 VIP Edition)", quantity: 2, size: "100ml", color: "ذهبي", pricePerUnit: 2900 },
+          { product: "عطر سولكينغ الأسود بوهيم (Black Soolking Deluxe)", quantity: 1, size: "100ml", color: "أسود", pricePerUnit: 3500 }
         ],
-        reliability: "High (✅ Valid layout & items detected)",
-        processingTime: "1.6s"
+        note: lang === "ar" ? "الزبون قدم رقم هاتف احتياطي (0550998811) بسبب رداءة الشبكة. التوصيل مبرمج لنهار السبت بالتنسيق معه." : "Alternative active line provided (0550998811) due to weak signal coverage. Delivery scheduled for Saturday.",
+        possible_fake_order: false,
+        shippingFee: 400,
+        totalPrice: 9700,
+        status: "pending",
+        reliability: "High (✅ Dual active lines provided)",
+        processingTime: "1.0s"
       }
     }
   ];
@@ -585,10 +608,19 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
               
               <div className="space-y-4">
-                <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5 uppercase font-mono">
-                  <Database className="w-3.5 h-3.5 text-purple-500" />
-                  {t.demo_structured_result_title || "Structured & Cleansed Order Result"}
-                </span>
+                <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                  <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5 uppercase font-sans">
+                    <FileText className="w-4 h-4 text-purple-450" />
+                    {lang === "ar" ? "بطاقة الطلب المعالجة الجاهزة للشحن" : lang === "fr" ? "Fiche de commande validée" : "Processed Order Slip"}
+                  </span>
+                  
+                  {extractedData && (
+                    <div className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {lang === "ar" ? "تم التحقق والتدقيق" : lang === "fr" ? "Vérifié & Prêt" : "Verified & Ready"}
+                    </div>
+                  )}
+                </div>
 
                 <AnimatePresence mode="wait">
                   {isExtracting ? (
@@ -604,61 +636,92 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-zinc-300 font-bold">{t.demo_analyzing_status_msg || "Analyzing dialect clusters, communes & entities..."}</p>
-                        <p className="text-[10px] text-zinc-500 font-mono">GPT-Custom-Algerian-Linguistics-Model v4.5</p>
                       </div>
                     </motion.div>
                   ) : extractedData ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.99 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs"
+                      className="flex flex-col space-y-4 w-full"
                     >
-                      {/* Name */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                        <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px] block">{t.full_name || "Full Name"}</span>
-                        <span className="font-bold text-white text-sm">{extractedData.customer_name}</span>
-                      </div>
-
-                      {/* Phone */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                        <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px] block">{t.phone_number || "Phone"}</span>
-                        <span className="font-mono font-bold text-emerald-400 text-sm tracking-wide">{extractedData.phone}</span>
-                      </div>
-
-                      {/* Wilaya & Commune */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                        <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px] block">{t.wilaya || "Wilaya"} / {t.commune || "Commune"}</span>
-                        <div className="font-bold text-white text-sm">
-                           {extractedData.wilaya} • <span className="text-zinc-350">{extractedData.commune}</span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs w-full">
+                        {/* Name */}
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.full_name || "Full Name"}</span>
+                          <span className="font-bold text-white text-xs">{extractedData.customer_name}</span>
                         </div>
-                      </div>
 
-                      {/* Delivery */}
-                      <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                        <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px] block">{t.delivery_type || "Delivery Preference"}</span>
-                        <span className="font-bold text-purple-400">{extractedData.delivery_type}</span>
-                      </div>
-
-                      {/* Items */}
-                      <div className="md:col-span-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2">
-                        <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px] block">{lang === "ar" ? "السلع والكميات المكتشفة" : lang === "fr" ? "Produits & Quantités Détectés" : "Parsed Items & Quantities"}</span>
-                        <div className="space-y-1.5">
-                          {extractedData.items.map((item: any, i: number) => (
-                            <div key={i} className="flex justify-between items-center text-white font-semibold border-b border-white/[0.03] pb-1 last:border-0 last:pb-0">
-                              <span>{item.name}</span>
-                              <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-mono text-purple-300">x{item.qty}</span>
-                            </div>
-                          ))}
+                        {/* Phone */}
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.phone_number || "Phone"}</span>
+                          <span className="font-mono font-bold text-emerald-400 text-xs tracking-wide">{extractedData.phone}</span>
                         </div>
-                      </div>
 
-                      {/* Stats footer built inside */}
-                      <div className="md:col-span-2 flex items-center justify-between pt-2 border-t border-white/[0.05] text-[9px] text-zinc-500">
-                        <span className="flex items-center gap-1">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>{extractedData.reliability}</span>
-                        </span>
-                        <span>{t.demo_extracted_speed || "Speed:"} <strong className="text-white">{extractedData.processingTime}</strong></span>
+                        {/* Wilaya & Commune */}
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.wilaya || "Wilaya"} / {t.commune || "Commune"}</span>
+                          <div className="font-bold text-white text-xs">
+                             {extractedData.wilaya} • <span className="text-zinc-350">{extractedData.commune}</span>
+                          </div>
+                        </div>
+
+                        {/* Delivery */}
+                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.delivery_type || "Delivery Preference"}</span>
+                          <span className="font-bold text-purple-400 text-xs">{extractedData.delivery_type_label || (extractedData.delivery_type === "home" ? "Domicile / شحن للمنزل" : "Relais / شحن للمكتب")}</span>
+                        </div>
+
+                        {/* Items */}
+                        <div className="md:col-span-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2">
+                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "السلع والكميات المكتشفة" : lang === "fr" ? "Produits & Quantités Détectés" : "Parsed Items & Quantities"}</span>
+                          <div className="space-y-1.5">
+                            {extractedData.items.map((item: any, i: number) => (
+                              <div key={i} className="border-b border-white/[0.03] pb-1.5 pt-1.5 first:pt-0 last:border-0 last:pb-0">
+                                <div className="flex justify-between items-center text-white font-semibold">
+                                  <span>{item.product}</span>
+                                  <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-mono text-purple-300">x{item.quantity}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-x-4 mt-1 text-[10px] text-zinc-500 font-mono">
+                                  {item.size && item.size !== "Default" && (
+                                    <span>Size: <strong className="text-zinc-300">{item.size}</strong></span>
+                                  )}
+                                  {item.color && item.color !== "Default" && (
+                                    <span>Color: <strong className="text-zinc-300">{item.color}</strong></span>
+                                  )}
+                                  {item.pricePerUnit > 0 ? (
+                                    <span>Price: <strong className="text-emerald-400">{item.pricePerUnit} DA</strong></span>
+                                  ) : (
+                                    <span className="text-amber-500 font-bold">Cadeau / هدية مجانية</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Extra user notes parsed */}
+                        {extractedData.note && (
+                          <div className="md:col-span-2 bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-1">
+                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "الملاحظات الخاصة للتوصيل" : "Parsed Customer Instructions"}</span>
+                            <p className="text-zinc-300 font-medium text-[11px] leading-relaxed">{extractedData.note}</p>
+                          </div>
+                        )}
+
+                        {/* Pricing Ledger summary mimicking real app checkout */}
+                        <div className="md:col-span-2 bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/10 rounded-xl p-3 space-y-1 text-xs">
+                          <div className="flex justify-between items-center text-zinc-400">
+                            <span>{lang === "ar" ? "المجموع الفرعي للسلع" : "Subtotal Items"}</span>
+                            <span>{extractedData.totalPrice - extractedData.shippingFee} DA</span>
+                          </div>
+                          <div className="flex justify-between items-center text-zinc-400">
+                            <span>{lang === "ar" ? "تكلفة التوصيل (Yalidine)" : "Yalidine Shipping"}</span>
+                            <span>+ {extractedData.shippingFee} DA</span>
+                          </div>
+                          <div className="border-t border-purple-500/10 pt-1.5 flex justify-between items-center font-bold text-white font-sans">
+                            <span>{lang === "ar" ? "الإجمالي الكلي المعزز" : "Total Collectable Amount"}</span>
+                            <span className="text-emerald-450 font-mono text-sm">{extractedData.totalPrice} DA</span>
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
                   ) : (
@@ -1108,8 +1171,6 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             <div>SmartyAi Order &copy; 2026 • Made for Algerian E-Commerce Excellence</div>
             <div className="flex bg-zinc-950/20 px-3 py-1 rounded-full border border-zinc-900 text-[9px] text-[#52525b]/80 gap-1.5 justify-center items-center">
               <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-              <span>{t.secure_shield_label || "Fully Secure & Shielded"}</span>
-              <span>•</span>
               <span>v4.1.0-ALGERIA</span>
             </div>
           </div>

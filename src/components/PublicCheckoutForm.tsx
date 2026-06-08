@@ -133,6 +133,58 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
   // Toast indicator
   const [showAddedToast, setShowAddedToast] = useState<boolean>(false);
 
+  // Floating Social Proof active notification info
+  const [activeNotification, setActiveNotification] = useState<{
+    customerName: string;
+    wilaya: string;
+    productName: string;
+    timeSpan: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (products.length === 0 || activeTab !== "store") {
+      setActiveNotification(null);
+      return;
+    }
+
+    const firstNames = ["عبد القادر", "سارة", "محمد", "ياسمين", "أحمد", "شيماء", "بلال", "إيمان", "عفراء", "مريم", "حمزة", "أنيسة", "بلقاسم", "أسامة", "منال", "إلياس", "فاطمة", "سفيان", "خديجة", "أيوب"];
+    const algerianWilayas = ["الجزائر العاصمة", "وهران", "قسنطينة", "سطيف", "تلمسان", "باتنة", "عنابة", "البويرة", "بجاية", "البليدة", "الشلف", "تيزي وزو", "سكيكدة", "بسكرة", "جيجل", "المسيلة", "سيدي بلعباس"];
+    const relativeTimes = ["قبل دقيقة فقط", "قبل دقيقتين", "قبل 5 دقائق", "قبل 12 دقيقة", "قبل 20 دقيقة", "قبل نصف ساعة"];
+
+    const triggerNotification = () => {
+      // Pick random parameters
+      const randomName = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + (Math.floor(Math.random() * 2) === 0 ? "ب." : "م.");
+      const randomWilaya = algerianWilayas[Math.floor(Math.random() * algerianWilayas.length)];
+      const randomProduct = products[Math.floor(Math.random() * products.length)];
+      const randomTime = relativeTimes[Math.floor(Math.random() * relativeTimes.length)];
+
+      if (randomProduct && randomProduct.productName) {
+        setActiveNotification({
+          customerName: randomName,
+          wilaya: randomWilaya,
+          productName: randomProduct.productName,
+          timeSpan: randomTime
+        });
+
+        // Hide notification after 5.5 seconds
+        setTimeout(() => {
+          setActiveNotification(null);
+        }, 5500);
+      }
+    };
+
+    // First trigger after 4 seconds
+    const initialTimer = setTimeout(triggerNotification, 4000);
+
+    // Repeat every 16 seconds
+    const intervalId = setInterval(triggerNotification, 16000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalId);
+    };
+  }, [products, activeTab]);
+
   // Persist cart items uniquely for merchant
   useEffect(() => {
     localStorage.setItem(`smarty_cart_${merchantId}`, JSON.stringify(cart));
@@ -305,62 +357,62 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
       {/* Product Details Customization Popup */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/85 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/90 backdrop-blur-md">
             <motion.div
               initial={{ y: "100%", opacity: 0.5 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="w-full max-w-lg bg-zinc-950 border-t md:border border-zinc-850 rounded-t-3xl md:rounded-3xl overflow-hidden shadow-2xl overflow-y-auto max-h-[90vh]"
+              transition={{ type: "spring", damping: 28, stiffness: 240 }}
+              className="w-full max-w-lg bg-zinc-950 border-t md:border border-zinc-850 rounded-t-[2rem] md:rounded-3xl overflow-hidden shadow-2xl overflow-y-auto max-h-[92vh]"
             >
-              <div className="p-5 md:p-6 space-y-4 text-right" dir="rtl">
+              <div className="p-6 md:p-8 space-y-5 text-right" dir="rtl">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-zinc-900">
                   <button 
                     onClick={() => setSelectedProduct(null)}
-                    className="p-1.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-400 hover:text-white rounded-lg transition-all cursor-pointer"
+                    className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-xl transition-all cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  <h3 className="text-sm font-black text-zinc-100">تخصيص وإضافة المنتج</h3>
+                  <h3 className="text-sm font-extrabold text-white tracking-tight">تخصيص وإضافة المنتج للسلة</h3>
                 </div>
 
                 {/* Product Detail Banner */}
-                <div className="flex gap-4 items-start bg-zinc-900/10 p-3 rounded-2xl border border-zinc-900">
-                  <div className="w-20 h-20 rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900">
+                <div className="flex gap-4 items-start bg-zinc-900/20 p-4 rounded-2xl border border-zinc-900/80">
+                  <div className="w-20 h-20 rounded-xl bg-black overflow-hidden shrink-0 border border-zinc-900 relative">
                     {selectedProduct.imageUrl ? (
                       <img src={selectedProduct.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-800">
-                        <ShoppingBag className="w-8 h-8" />
+                      <div className="w-full h-full flex items-center justify-center text-zinc-805 bg-zinc-950">
+                        <ShoppingBag className="w-8 h-8 text-zinc-800" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <span className="text-[9.5px] uppercase font-mono tracking-widest bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-md font-bold">
+                  <div className="flex-grow space-y-1">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[9px] uppercase font-bold tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
                       {selectedProduct.category || "المنتجات والمخزون"}
                     </span>
-                    <h4 className="text-xs font-black text-zinc-100">{selectedProduct.productName}</h4>
-                    <p className="text-xs font-black text-yellow-500 font-mono">{(Number(selectedProduct.price) || 0).toLocaleString()} DA</p>
-                    <p className="text-[10px] text-zinc-500 line-clamp-2 leading-relaxed">{selectedProduct.description || "لا يوجد وصف إضافي متاح."}</p>
+                    <h4 className="text-sm font-extrabold text-white leading-snug">{selectedProduct.productName}</h4>
+                    <p className="text-sm font-black text-emerald-400 font-mono">{(Number(selectedProduct.price) || 0).toLocaleString()} DA</p>
+                    <p className="text-[10px] text-zinc-500 line-clamp-2 leading-relaxed">{selectedProduct.description || "لا يوجد وصف إضافي متاح لهذا المنتج مسبقاً."}</p>
                   </div>
                 </div>
 
                 {/* Custom Options config */}
-                <div className="space-y-4 py-1.5">
+                <div className="space-y-4 py-1">
                   {/* Option: Size Selection */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] text-zinc-400 font-bold mb-1">حدد المقاس المطلوب (أو اتركه فارغاً)</label>
-                    <div className="flex gap-2 flex-wrap">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] text-zinc-400 font-bold uppercase tracking-wider">حدد المقاس المطلوب (أو اكتبه تلقائياً)</label>
+                    <div className="flex gap-1.5 flex-wrap">
                       {["S", "M", "L", "XL", "XXL", "38", "39", "40", "41", "42", "43"].map(sz => (
                         <button
                           key={sz}
                           type="button"
                           onClick={() => setTempSize(sz)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-colors border cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all border cursor-pointer ${
                             tempSize === sz 
-                              ? "bg-white text-black border-white" 
-                              : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
+                              : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
                           }`}
                         >
                           {sz}
@@ -372,23 +424,23 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                       placeholder="أو اكتب مقاس مخصص هنا..."
                       value={tempSize}
                       onChange={(e) => setTempSize(e.target.value)}
-                      className="w-full mt-2 bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-700 transition-colors"
+                      className="w-full mt-2 bg-black border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-800 transition-colors"
                     />
                   </div>
 
                   {/* Option: Color Selection */}
-                  <div className="space-y-1.5 pt-1">
-                    <label className="block text-[11px] text-zinc-400 font-bold mb-1">حدد اللون المطلوب (اختياري)</label>
-                    <div className="flex gap-2 flex-wrap">
+                  <div className="space-y-2 pt-1">
+                    <label className="block text-[10px] text-zinc-400 font-bold uppercase tracking-wider">حدد اللون المطلوب (أو اكتبه تلقائياً)</label>
+                    <div className="flex gap-1.5 flex-wrap">
                       {["أسود", "أبيض", "أحمر", "أزرق", "رمادي", "بني", "ذهبي"].map(col => (
                         <button
                           key={col}
                           type="button"
                           onClick={() => setTempColor(col)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                             tempColor === col 
-                              ? "bg-white text-black border-white" 
-                              : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-white"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
+                              : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
                           }`}
                         >
                           {col}
@@ -400,18 +452,18 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                       placeholder="أو اكتب لون مخصص هنا..."
                       value={tempColor}
                       onChange={(e) => setTempColor(e.target.value)}
-                      className="w-full mt-2 bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-700 transition-colors"
+                      className="w-full mt-2 bg-black border border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-zinc-700 outline-none focus:border-zinc-800 transition-colors"
                     />
                   </div>
 
                   {/* Option: Quantity Selectors */}
-                  <div className="flex items-center justify-between pt-3 border-t border-zinc-900 select-none">
-                    <span className="text-xs font-bold text-zinc-400">الكمية المطلوبة:</span>
-                    <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-850 p-1 divide-zinc-800 gap-1 leading-none">
+                  <div className="flex items-center justify-between pt-4 border-t border-zinc-900 select-none">
+                    <span className="text-xs font-bold text-zinc-400">الكمية المطلوبة لتوصيل الطرد:</span>
+                    <div className="flex items-center bg-zinc-900/60 rounded-xl border border-zinc-850 p-1 divide-zinc-800 gap-1 leading-none">
                       <button 
                         type="button"
                         onClick={() => setTempQty(prev => Math.max(1, prev - 1))}
-                        className="w-8 h-8 rounded-lg hover:bg-zinc-850 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                        className="w-8 h-8 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -419,7 +471,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                       <button 
                         type="button"
                         onClick={() => setTempQty(prev => prev + 1)}
-                        className="w-8 h-8 rounded-lg hover:bg-zinc-850 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
+                        className="w-8 h-8 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-white cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -427,11 +479,11 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                   </div>
                 </div>
 
-                {/* Confirm control */}
+                {/* Confirm control - Sleek Radiant Emerald Dynamic Button */}
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full py-3.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-extrabold text-xs tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-yellow-500/15"
+                  className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs tracking-wider rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 hover:scale-[1.01]"
                 >
                   <ShoppingCart className="w-4 h-4 shrink-0" />
                   <span>تأكيد الإضافة ومتابعة الشراء 🛒</span>
@@ -450,6 +502,38 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
         </div>
         <p className="text-[9px] text-zinc-600 tracking-wider">SMARTYAI SECURE CLIENT STOREFRONT ENGINE • VERSION 2.0</p>
       </div>
+
+      {/* Dynamic Social Proof Floating Notification for global high-conversion standard */}
+      <AnimatePresence>
+        {activeNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            transition={{ type: "spring", damping: 25 }}
+            className="fixed bottom-6 right-6 left-6 md:left-6 md:right-auto z-50 max-w-sm bg-neutral-950/95 border border-zinc-800 rounded-2xl p-4 shadow-2xl backdrop-blur-md flex items-center gap-3.5"
+            dir="rtl"
+          >
+            {/* Minimal pulse ring visual indicator */}
+            <div className="relative flex h-3.5 w-3.5 shrink-0 align-middle items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </div>
+            
+            <div className="text-right space-y-0.5 select-none pr-1">
+              <p className="text-[10px] text-zinc-400 font-bold leading-tight">
+                طلب حجز جديد متميز! 🎉
+              </p>
+              <p className="text-xs font-normal text-zinc-300">
+                قام <strong className="font-extrabold text-white">{activeNotification.customerName}</strong> من ولاية <strong className="font-bold text-zinc-200">{activeNotification.wilaya}</strong> بشراء <span className="font-extrabold underline decoration-emerald-500/40 text-emerald-400">{activeNotification.productName}</span>
+              </p>
+              <p className="text-[9px] text-zinc-500 font-mono">
+                {activeNotification.timeSpan}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

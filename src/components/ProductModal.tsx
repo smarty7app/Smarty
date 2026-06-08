@@ -45,6 +45,8 @@ interface ProductModalProps {
   handleDrop: (e: React.DragEvent) => void;
   handleImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   apiLoading: boolean;
+  isPublished: boolean;
+  setIsPublished: (val: boolean) => void;
   isRtl: boolean;
   t: any;
 }
@@ -77,6 +79,8 @@ export const ProductModal = React.memo(function ProductModal({
   handleDrop,
   handleImageChange,
   apiLoading,
+  isPublished,
+  setIsPublished,
   isRtl,
   t,
 }: ProductModalProps) {
@@ -407,6 +411,34 @@ export const ProductModal = React.memo(function ProductModal({
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Storefront Display Toggle */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex items-center justify-between gap-4 mt-2">
+            <div className="space-y-1 text-left flex-1">
+              <span className="text-xs font-bold text-white block">
+                {t.upload_to_store_label || "عرض في المتجر الإلكتروني"}
+              </span>
+              <p className="text-[10px] text-zinc-500 leading-normal block">
+                {t.upload_to_store_desc || "سيتيح هذا الخيار عرض هذا المنتج للزبائن للشراء مباشرة من رابط متجرك العام"}
+              </p>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setIsPublished(!isPublished)}
+              className={`w-11 h-6 rounded-full relative transition-colors duration-200 shrink-0 cursor-pointer focus:outline-none ${
+                isPublished ? "bg-emerald-500 animate-pulse" : "bg-zinc-800"
+              }`}
+            >
+              <div
+                className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-200 ${
+                  isRtl 
+                    ? (isPublished ? "right-6" : "right-1") 
+                    : (isPublished ? "left-6" : "left-1")
+                }`}
+              />
+            </button>
           </div>
 
           {/* Interactive Drag and Drop visual uploader with fallback input link */}
