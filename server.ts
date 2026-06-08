@@ -787,10 +787,13 @@ const orderExtractionSchema = {
       items: {
         type: "OBJECT",
         properties: {
-          product: { type: "STRING", description: "Name of the product in French" },
+          product: { type: "STRING", description: "Name of the product in French or matched exact inventory product name" },
           quantity: { type: "INTEGER", description: "Quantity" },
           size: { type: "STRING", description: "Size (e.g., 42, XL)" },
-          color: { type: "STRING", description: "Color" }
+          color: { type: "STRING", description: "Color" },
+          pricePerUnit: { type: "NUMBER", description: "Retail unit price of this product" },
+          is_low_stock: { type: "BOOLEAN", description: "True if the matched inventory item stock quantity is low (<= 5)" },
+          low_stock_warning: { type: "STRING", description: "Optional Arabic warning message specifying remaining stock" }
         },
         required: ["product", "quantity"]
       }
@@ -909,10 +912,27 @@ function normalizeAlgerianWilaya(input: string): string {
 }
 
 apiRouter.post("/extract-order", extractOrderLimiter, authenticate, async (req, res) => {
-  const { conversation, fileUrl, fileMimeType, fileBase64 } = req.body;
+  const { conversation, fileUrl, fileMimeType, fileBase64, inventoryList } = req.body;
+  const uid = (req as any).uid;
 
   if (!conversation && !fileUrl && !fileBase64) {
     return res.status(400).json({ error: "Conversation text or an uploaded file is required" });
+  }
+
+  // Retrieve the merchant's current inventory list
+  let inventoryDocs: any[] = [];
+  if (inventoryList && Array.isArray(inventoryList)) {
+    inventoryDocs = inventoryList;
+  } else if (db && uid) {
+    try {
+      const snap = await db.collection("inventory").where("userId", "==", uid).get();
+      inventoryDocs = snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (err) {
+      console.warn("Loading user inventory for extraction on backend fell back:", err);
+    }
   }
 
   try {
@@ -963,18 +983,80 @@ apiRouter.post("/extract-order", extractOrderLimiter, authenticate, async (req, 
       });
     }
 
+    // Format a highly informative, detailed inventory section for the Gemini model block
+    let inventoryPromptSegment = "";
+    if (inventoryDocs.length > 0) {
+      inventoryPromptSegment = "\nCRITICAL MERCHANT WAREHOUSE INVENTORY LIST:\n" +
+        inventoryDocs.map((p, idx) => {
+          return `${idx + 1}. Product Name: "${p.productName}", Unit Price: ${p.price || 0} DZD, Stock Quantity: ${p.stockQuantity || 0}, SKU: "${p.sku || ''}"`;
+        }).join("\n") +
+        "\n\nINVENTORY MATCHING DIRECTIONS:\n" +
+        "- Compare the customer's request against the MERCHANT WAREHOUSE INVENTORY LIST above.\n" +
+        "- You must align other accents, dialect names, and spelling variants of products to our list. E.g. map 'serum de cheveux' or 'سيروم' to 'سيروم الشعر المرطب ومغذي' if it is in the inventory.\n" +
+        "- Set 'product' strictly to the exact match 'Product Name' if found in the inventory list.\n" +
+        "- If a match is found in inventory, fill other fields if they are missing (e.g. set 'pricePerUnit' to the matching item 'Unit Price').\n" +
+        "- If the matched product's 'Stock Quantity' is 5 or less, specify 'is_low_stock' as true and write a helpful warning in the 'low_stock_warning' field, detailing the exact and actual count of remaining pieces on the shelf (e.g. 'تنبيه: مخزون منخفض جداً، متبقي 3 قطع فقط!').\n" +
+        "- If the product is not in the list, extract the name normally and translate/transliterate to French as usual, leaving 'is_low_stock' to false and 'pricePerUnit' to the estimated price or 0.";
+    } else {
+      inventoryPromptSegment = "\nNo products are currently defined in the merchant inventory. Extract fields dynamically using default translations.";
+    }
+
     if (conversation && conversation.trim()) {
       parts.push({
-        text: `Here is the accompanying conversation text context:\n${conversation}`
+        text: `Here is the accompanying conversation text context:\n${conversation}\n\n${inventoryPromptSegment}`
       });
     } else {
       parts.push({
-        text: "Please extract the order details from the provided file."
+        text: `Please extract the order details from the provided file.\n\n${inventoryPromptSegment}`
       });
     }
 
     const rawTextResponse = await callGeminiViaFetch(parts, GENERAL_EXTRACTION_PROMPT);
     const result = JSON.parse(rawTextResponse || "{}");
+
+    // Double Check and Programmatically Clean Matches Server-Side (Safe & Absolute Guarantee)
+    if (result.items && Array.isArray(result.items)) {
+      result.items = result.items.map((item: any) => {
+        if (inventoryDocs.length > 0) {
+          const itemProductClean = String(item.product || "").trim().toLowerCase();
+          
+          // Look for direct case-insensitive matching or clean substring matching
+          const matched = inventoryDocs.find((inv: any) => {
+            const invNameClean = String(inv.productName || "").trim().toLowerCase();
+            return invNameClean === itemProductClean ||
+                   invNameClean.includes(itemProductClean) ||
+                   itemProductClean.includes(invNameClean);
+          });
+
+          if (matched) {
+            // Overwrite programmatically to ensure perfect database match
+            item.product = matched.productName;
+            item.pricePerUnit = Number(matched.price) || 0;
+            const currentStock = Number(matched.stockQuantity) || 0;
+            
+            if (currentStock <= 5) {
+              item.is_low_stock = true;
+              item.low_stock_warning = `تنبيه: مخزون منخفض جداً، متبقي فقط ${currentStock} قطع في المستودع!`;
+            } else {
+              item.is_low_stock = false;
+              item.low_stock_warning = "";
+            }
+          } else {
+            // Unmatched item, make sure defaults are set
+            item.is_low_stock = false;
+            item.low_stock_warning = "";
+            if (item.pricePerUnit === undefined) {
+              item.pricePerUnit = 0;
+            }
+          }
+        } else {
+          item.is_low_stock = false;
+          item.low_stock_warning = "";
+        }
+        return item;
+      });
+    }
+
     if (result.wilaya) {
       result.wilaya = normalizeAlgerianWilaya(result.wilaya);
     }
@@ -2572,8 +2654,8 @@ apiRouter.get("/store/:merchantId/products", async (req, res) => {
       ...doc.data()
     })) as any[];
 
-    // Filter to only retain items in stock
-    items = items.filter(item => Number(item.stockQuantity) > 0);
+    // Filter to only retain items in stock and published to the store
+    items = items.filter(item => Number(item.stockQuantity) > 0 && item.isPublished === true);
 
     // Collect list of unique categories before filtering
     const categories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));
