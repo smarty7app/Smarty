@@ -270,7 +270,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
           { product: "سيروم الهيالورونيك للبشرة الجافة (صغير)", quantity: 1, size: "S", color: "شفاف", pricePerUnit: 2400 },
-          { product: "كريم الترطيب العمليق ومغذي للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
+          { product: "كريم الترطيب للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
         ],
         note: lang === "ar" ? "تفضل التوصيل في الفترة المسائية" : "Livraison souhaitée l'après-midi",
         possible_fake_order: false,
@@ -294,7 +294,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         delivery_type: "desk",
         delivery_type_label: lang === "ar" ? "شحن للمكتب (ياليدين)" : "Bureau Yalidine",
         items: [
-          { product: "سيروم الشعر المرطب ومغذي", quantity: 1, size: "Default", color: "Default", pricePerUnit: 3200 },
+          { product: "سيروم الشعر المرطب والمغذي", quantity: 1, size: "Default", color: "Default", pricePerUnit: 3200 },
           { product: "قميص مهدى مع الباقة (Cadeau T-Shirt)", quantity: 1, size: "M", color: "Noir", pricePerUnit: 0 }
         ],
         note: "Cité Rym / حي ريم - هدية تيشرت مقاس M بلون أسود",
