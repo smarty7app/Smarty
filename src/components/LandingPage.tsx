@@ -270,7 +270,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
           { product: "سيروم الهيالورونيك للبشرة الجافة (صغير)", quantity: 1, size: "S", color: "شفاف", pricePerUnit: 2400 },
-          { product: "كريم الترطيب العمليق ومغذي للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
+          { product: "كريم الترطيب للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
         ],
         note: lang === "ar" ? "تفضل التوصيل في الفترة المسائية" : "Livraison souhaitée l'après-midi",
         possible_fake_order: false,
