@@ -88,6 +88,53 @@ function initializeFirebase() {
 initializeFirebase();
 
 // Courier plan allowance helper
+const PLAN_ORDER_LIMITS: Record<string, number> = {
+  free: 50,
+  basic: 50,
+  pro: 500,
+  professional: 500,
+  unlimited: 2000,
+  business: 2000,
+  enterprise: 999999999,
+};
+
+async function checkOrderLimit(userId: string, planType?: string, currentCount?: number) {
+  if (!db) {
+    return { allowed: true, limit: 999999999, used: 0, currentPlan: "basic" };
+  }
+
+  let resolvedPlan = planType;
+  let resolvedCount = currentCount;
+
+  if (!resolvedPlan || resolvedCount === undefined) {
+    try {
+      const userDoc = await db.collection("users").doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        resolvedPlan = resolvedPlan || userData?.planType || "basic";
+        resolvedCount = resolvedCount !== undefined ? resolvedCount : (userData?.orderCounter || 0);
+      } else {
+        resolvedPlan = resolvedPlan || "basic";
+        resolvedCount = resolvedCount !== undefined ? resolvedCount : 0;
+      }
+    } catch (err) {
+      console.warn("checkOrderLimit Firestore fetch error:", err);
+      resolvedPlan = resolvedPlan || "basic";
+      resolvedCount = resolvedCount !== undefined ? resolvedCount : 0;
+    }
+  }
+
+  const limit = PLAN_ORDER_LIMITS[resolvedPlan.toLowerCase()] || PLAN_ORDER_LIMITS.basic;
+  const allowed = resolvedCount < limit;
+
+  return {
+    allowed,
+    limit,
+    used: resolvedCount,
+    currentPlan: resolvedPlan
+  };
+}
+
 function getAllowedCouriers(planType: string): string[] {
   const plan = (planType || "free").toLowerCase();
   if (plan === "free" || plan === "basic") {
@@ -915,6 +962,24 @@ apiRouter.post("/extract-order", extractOrderLimiter, authenticate, async (req, 
   const { conversation, fileUrl, fileMimeType, fileBase64, inventoryList } = req.body;
   const uid = (req as any).uid;
 
+  if (uid) {
+    try {
+      const limitCheck = await checkOrderLimit(uid);
+      if (!limitCheck.allowed) {
+        return res.status(403).json({
+          error: "subscription_limit_reached",
+          message: `لقد تجاوزت حد طلبات خطتك الحالية (${limitCheck.used} من ${limitCheck.limit}). يرجى ترقية حسابك.`,
+          requiresUpgrade: true,
+          currentPlan: limitCheck.currentPlan,
+          limit: limitCheck.limit,
+          used: limitCheck.used
+        });
+      }
+    } catch (limitErr) {
+      console.error("Error checking subscription limits in extract-order:", limitErr);
+    }
+  }
+
   if (!conversation && !fileUrl && !fileBase64) {
     return res.status(400).json({ error: "Conversation text or an uploaded file is required" });
   }
@@ -1305,6 +1370,20 @@ const handleMasterWebhook = async (req: express.Request, res: express.Response) 
       console.warn(`Blocked Webhook message: channel ${unifiedMessage.channel} is forbidden on plan ${plan} for merchant ${merchantId}`);
       return res.status(403).json({ 
         error: `هذه القناة (${unifiedMessage.channel}) غير مدعومة في خطتك الحالية (${plan}). يتطلب الاشتراك في باقة أعلى.` 
+      });
+    }
+
+    // Check order subscription limits
+    const limitCheck = await checkOrderLimit(unifiedMessage.merchantId);
+    if (!limitCheck.allowed) {
+      console.warn(`Blocked Webhook order creation: limit reached for merchant ${unifiedMessage.merchantId}`);
+      return res.status(403).json({
+        error: "subscription_limit_reached",
+        message: `لقد تجاوزت حد طلبات خطتك الحالية (${limitCheck.used} من ${limitCheck.limit}). يرجى ترقية حسابك.`,
+        requiresUpgrade: true,
+        currentPlan: limitCheck.currentPlan,
+        limit: limitCheck.limit,
+        used: limitCheck.used
       });
     }
 
@@ -2758,6 +2837,23 @@ apiRouter.post("/store/create-order", async (req, res) => {
   }
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "Items list is empty or invalid" });
+  }
+
+  // Check subscription limits before proceeding
+  try {
+    const limitCheck = await checkOrderLimit(merchantId);
+    if (!limitCheck.allowed) {
+      return res.status(403).json({
+        error: "subscription_limit_reached",
+        message: `لقد تجاوزت حد طلبات خطتك الحالية (${limitCheck.used} من ${limitCheck.limit}). يرجى ترقية حسابك.`,
+        requiresUpgrade: true,
+        currentPlan: limitCheck.currentPlan,
+        limit: limitCheck.limit,
+        used: limitCheck.used
+      });
+    }
+  } catch (limitErr) {
+    console.error("Error checking subscription limits in /store/create-order:", limitErr);
   }
 
   try {
