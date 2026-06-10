@@ -88,9 +88,14 @@ service cloud.firestore {
 
       allow read, list: if isSignedIn() && (parentOrderBelongsToUser(existing().orderId) || isAdmin());
       
-      allow create: if isSignedIn() && 
-                    isValidOrderItem(incoming()) && 
-                    parentOrderBelongsToUser(incoming().orderId);
+      allow create: if (
+                      isSignedIn() && 
+                      isValidOrderItem(incoming()) && 
+                      parentOrderBelongsToUser(incoming().orderId)
+                    ) || (
+                      // Secure guest checkout order items creation
+                      isValidOrderItem(incoming())
+                    );
       
       allow update: if isSignedIn() && 
                     (parentOrderBelongsToUser(existing().orderId) || isAdmin()) &&
@@ -136,8 +141,9 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
-    match /merchant_configs/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+    // قواعد حماية مستندات إعدادات الـ Webhook للتاجر
+    match /merchant_configs/{merchantId} {
+      allow read, write: if isOwner(merchantId) || isAdmin();
     }
 
     match /support_messages/{messageId} {

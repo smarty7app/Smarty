@@ -82,10 +82,12 @@
     },
     "MerchantConfig": {
       "title": "MerchantConfig",
-      "description": "Encoded courier API keys for the merchant",
+      "description": "Encoded courier API keys and webhook settings for the merchant",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
+        "webhookSecret": { "type": "string", "description": "Secret key used to sign incoming webhooks" },
+        "isEnabled": { "type": "boolean", "description": "Whether webhook processing is enabled for this merchant" },
         "yalidineApiKey": { "type": "string", "description": "Encrypted Yalidine API Key" },
         "yalidineApiToken": { "type": "string", "description": "Encrypted Yalidine API Token" },
         "zrApiKey": { "type": "string", "description": "Encrypted ZR Express API Key" },

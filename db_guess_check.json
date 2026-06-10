@@ -1,0 +1,12 @@
+{
+  "projectId": "gen-lang-client-0000489085",
+  "(default)": {
+    "error": "5 NOT_FOUND: "
+  },
+  "ai-studio-9e0e2f57-8306-4675-947b-f00d370788e4": {
+    "error": "7 PERMISSION_DENIED: Missing or insufficient permissions."
+  },
+  "gen-lang-client-0000489085": {
+    "error": "5 NOT_FOUND: "
+  }
+}
