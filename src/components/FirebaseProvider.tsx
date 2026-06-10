@@ -19,6 +19,14 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
+    // Absolute timeout to prevent infinite loading if Firebase hangs
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn("⏳ [Firebase Provider] Initialization timed out after 10s. Forcing loading state to false.");
+        setLoading(false);
+      }
+    }, 10000);
+
     // Check for redirect result on load
     getRedirectResult(auth)
       .then((result) => {
@@ -30,30 +38,16 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         console.error("Redirect sign-in error:", error);
       });
 
-    // onIdTokenChanged triggers on sign-in, sign-out, or token change
-    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
+    // onAuthStateChanged triggers on sign-in and sign-out
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      clearTimeout(timeoutId);
       setUser(currentUser);
       setLoading(false);
-
-      if (currentUser) {
-        try {
-          // Safe background token refresh to prevent redundant triggers and potential infinite loops
-          const lastRefresh = safeSessionStorage.getItem("last_token_refresh");
-          const now = Date.now();
-          if (!lastRefresh || now - parseInt(lastRefresh) > 15 * 60 * 1000) {
-            try {
-              await currentUser.getIdToken(true);
-              safeSessionStorage.setItem("last_token_refresh", now.toString());
-            } catch (e) {
-              console.error("Token background refresh failure:", e);
-            }
-          }
-        } catch (storageError) {
-          console.warn("sessionStorage is blocked or unavailable in this sandboxed environment:", storageError);
-        }
-      }
     });
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   const signIn = async () => {
