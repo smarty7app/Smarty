@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { ALGERIA_68_WILAYAS } from "./WilayasList";
 import { WILAYA_COMMUNES } from "./PublicCheckoutForm";
+import { safeStorage } from "../lib/utils";
 
 interface CartItem {
   cartItemId: string;
@@ -161,8 +162,8 @@ export default function StorefrontCart({
       const data = await res.json();
 
       if (res.status === 403 || data.requiresUpgrade || data.error === "subscription_limit_reached") {
-        localStorage.setItem("upgrade_pending", "true");
-        localStorage.setItem("orderDataPending", JSON.stringify(payload));
+        safeStorage.setItem("upgrade_pending", "true");
+        safeStorage.setItem("orderDataPending", JSON.stringify(payload));
         window.location.href = "/?screen=subscription&upgrade_needed=true";
         return;
       }

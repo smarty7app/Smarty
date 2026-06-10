@@ -6,6 +6,7 @@ import {
 import { ALGERIA_68_WILAYAS } from "./WilayasList";
 import Storefront from "./Storefront";
 import StorefrontCart from "./StorefrontCart";
+import { safeStorage } from "../lib/utils";
 
 export const WILAYA_COMMUNES: Record<string, string[]> = {
   "01": ["Adrar", "Reggane", "Timimoun", "Aoulef", "Fenoughil", "Tsabit", "Zaouiet Kounta"],
@@ -116,7 +117,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
   // Cart & Screen transition
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
-      const saved = localStorage.getItem(`smarty_cart_${merchantId}`);
+      const saved = safeStorage.getItem(`smarty_cart_${merchantId}`);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -187,7 +188,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
 
   // Persist cart items uniquely for merchant
   useEffect(() => {
-    localStorage.setItem(`smarty_cart_${merchantId}`, JSON.stringify(cart));
+    safeStorage.setItem(`smarty_cart_${merchantId}`, JSON.stringify(cart));
   }, [cart, merchantId]);
 
   // 1. Fetch Store metadata

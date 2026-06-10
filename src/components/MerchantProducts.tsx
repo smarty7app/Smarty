@@ -25,12 +25,15 @@ import {
   ChevronLeft,
   Store,
   Link,
-  Copy
+  Copy,
+  Key,
+  Terminal
 } from "lucide-react";
 import { db, auth } from "../lib/firebase";
 import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, addDoc, deleteDoc } from "firebase/firestore";
 import { Product } from "../types";
 import { ProductCard } from "./ProductCard";
+import { safeStorage } from "../lib/utils";
 import { ProductModal } from "./ProductModal";
 
 interface MerchantProductsProps {
@@ -38,6 +41,196 @@ interface MerchantProductsProps {
   userData?: any;
   t: any;
   isRtl: boolean;
+}
+
+interface WebhookSetupCardProps {
+  user: any;
+  isRtl: boolean;
+}
+
+function WebhookSetupCard({ user, isRtl }: WebhookSetupCardProps) {
+  const [loading, setLoading] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [isEnabled, setIsEnabled] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const fetchWebhookConfig = async (action: "get" | "regenerate" = "get") => {
+    if (!user) return;
+    setLoading(true);
+    setErrorMsg(null);
+
+    const maxRetries = 3;
+    const delayMs = 2000;
+
+    const attemptFetch = async (attempt: number): Promise<void> => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/merchant/webhook-setup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            action: action === "regenerate" ? "regenerate" : undefined
+          })
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          console.error("[Webhook Fetch Error Detail]:", res.status, errorData);
+          throw new Error(errorData.error || (isRtl ? "فشل الاتصال بالخادم لجلب إعدادات الـ Webhook." : "Server failed to retrieve webhook config."));
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          setSecret(data.webhookSecret || null);
+          setIsEnabled(data.isEnabled !== false);
+        } else {
+          throw new Error(data.error || (isRtl ? "حدث خطأ غير معروف." : "Unknown error occurred."));
+        }
+      } catch (err: any) {
+        console.warn(`[Webhook Fetch Attempt ${attempt} Failed]:`, err);
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+          return attemptFetch(attempt + 1);
+        } else {
+          setErrorMsg(err.message || String(err));
+        }
+      }
+    };
+
+    try {
+      await attemptFetch(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWebhookConfig("get");
+  }, [user]);
+
+  const webhookUrl = `${window.location.origin}/api/webhooks/smarty-orders`;
+
+  return (
+    <div className="bg-[#090909]/40 border border-zinc-900 rounded-3xl p-6 text-right space-y-5 shadow-xl backdrop-blur-md">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+        <div className="flex items-center gap-2">
+          <Terminal className="w-4 h-4 text-purple-500" />
+          <h3 className="text-sm font-bold text-white">
+            {isRtl ? "إعدادات المطور والـ Webhook" : "Developer & Webhook Settings"}
+          </h3>
+        </div>
+        <span className="flex items-center gap-1 text-[10px] bg-zinc-900 px-2 py-0.5 rounded text-zinc-400 border border-zinc-850 font-mono">
+          <span className={`w-1.5 h-1.5 rounded-full ${secret ? "bg-green-500 animate-pulse" : "bg-yellow-500"}`} />
+          {secret ? (isRtl ? "مفعّل" : "Active") : (isRtl ? "غير مهيأ" : "Not configured")}
+        </span>
+      </div>
+
+      <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed text-right">
+        {isRtl
+          ? "رابط الـ Webhook العام المخصص لمتجرك لتلقي طلبات البوتات والمنصات الخارجية مشفراً وآلياً بالكامل:"
+          : "Your dedicated public Webhook URL to securely verify and auto-import orders from external platforms:"}
+      </p>
+
+      {/* Webhook URL Input */}
+      <div className="space-y-1.5">
+        <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-2xl flex items-center justify-between gap-1.5">
+          <span className="text-[10px] font-mono text-zinc-400 select-all truncate max-w-[190px] text-left" dir="ltr">
+            {webhookUrl}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(webhookUrl);
+              setCopiedUrl(true);
+              setTimeout(() => setCopiedUrl(false), 2000);
+            }}
+            className="p-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-350 hover:text-white rounded-xl transition-all shrink-0 cursor-pointer"
+            title={isRtl ? "نسخ الرابط" : "Copy webhook URL"}
+          >
+            {copiedUrl ? (
+              <Check className="w-3.5 h-3.5 text-green-400" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Hidden/Masked Webhook Secret Section */}
+      <div className="space-y-2 pt-1">
+        <label className="text-[10.5px] font-bold text-zinc-350 block text-right">
+          {isRtl ? "المفتاح السري الرقمي الخاص بك (Webhook Secret):" : "Your Webhook Secret Token:"}
+        </label>
+
+        {secret ? (
+          <div className="space-y-2">
+            <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-2xl flex items-center justify-between gap-1.5">
+              <span className="text-[10px] font-mono text-zinc-350 select-all truncate max-w-[190px] text-left font-black" dir="ltr">
+                {secret}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(secret);
+                  setCopiedSecret(true);
+                  setTimeout(() => setCopiedSecret(false), 2000);
+                }}
+                className="p-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-350 hover:text-white rounded-xl transition-all shrink-0 cursor-pointer"
+                title={isRtl ? "نسخ المفتاح السري" : "Copy Secret Token"}
+              >
+                {copiedSecret ? (
+                  <Check className="w-3.5 h-3.5 text-green-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+            <p className="text-[9px] text-zinc-500 leading-normal text-right">
+              {isRtl
+                ? "⚠️ احتفظ بهذا المفتاح بشكل سري للغاية! يتم استخدامه لتأكيد هوية وتوقيع Payload الـ Webhook حماية لك من الاختراقات."
+                : "⚠️ Keep this key extremely secure. It signs webhook requests to cryptographically guarantee authenticity."}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-zinc-950/50 rounded-2xl p-4 border border-dashed border-zinc-850 text-center space-y-1">
+            <p className="text-[10px] text-zinc-500">
+              {isRtl ? "لم تقم بتوليد مفتاح الـ Webhook السري بعد." : "No webhook secret token generated yet."}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {errorMsg && (
+        <div className="p-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] rounded-xl text-center">
+          {errorMsg}
+        </div>
+      )}
+
+      {/* Primary Action Button */}
+      <button
+        type="button"
+        disabled={loading}
+        onClick={() => fetchWebhookConfig(secret ? "regenerate" : "get")}
+        className="w-full bg-zinc-900 hover:bg-zinc-850 hover:text-white disabled:bg-zinc-950 disabled:text-zinc-700 text-zinc-300 border border-zinc-800 rounded-xl py-2.5 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+      >
+        {loading ? (
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Key className="w-3.5 h-3.5 text-purple-405" />
+        )}
+        {secret 
+          ? (isRtl ? "إعادة توليد المفتاح السري" : "Regenerate Secret Key")
+          : (isRtl ? "توليد مفتاح الـ Webhook السري" : "Generate Webhook Secret")
+        }
+      </button>
+    </div>
+  );
 }
 
 const PRODUCT_LIMITS: Record<string, number> = {
@@ -58,7 +251,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
   
   // LocalStorage-based template choice (grid, table, kanban)
   const [viewTemplate, setViewTemplate] = useState<"grid" | "table" | "kanban">(() => {
-    return (localStorage.getItem("merchant_products_template") as any) || "grid";
+    return (safeStorage.getItem("merchant_products_template") as any) || "grid";
   });
 
   // Table Sort State
@@ -115,7 +308,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
 
   // Persistence of template selection
   useEffect(() => {
-    localStorage.setItem("merchant_products_template", viewTemplate);
+    safeStorage.setItem("merchant_products_template", viewTemplate);
   }, [viewTemplate]);
 
   // Real-time Firestore Sync
@@ -1033,6 +1226,9 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                 {isRtl ? "فتح وتنزيل رمز الـ QR بدقة كاملة" : "Download Print-Ready QR"}
               </a>
             </div>
+
+            {/* 3. Developer & Webhook Settings Card */}
+            <WebhookSetupCard user={user} isRtl={isRtl} />
           </div>
         </motion.div>
       ) : (

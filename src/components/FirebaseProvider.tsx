@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { onAuthStateChanged, User as FirebaseUser, signInWithPopup, GoogleAuthProvider, signOut, onIdTokenChanged, getRedirectResult } from 'firebase/auth';
 import { auth } from "../lib/firebase";
+import { safeSessionStorage } from "../lib/utils";
 
 interface UserContextType {
   user: FirebaseUser | null;
@@ -37,12 +38,12 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
       if (currentUser) {
         try {
           // Safe background token refresh to prevent redundant triggers and potential infinite loops
-          const lastRefresh = sessionStorage.getItem("last_token_refresh");
+          const lastRefresh = safeSessionStorage.getItem("last_token_refresh");
           const now = Date.now();
           if (!lastRefresh || now - parseInt(lastRefresh) > 15 * 60 * 1000) {
             try {
               await currentUser.getIdToken(true);
-              sessionStorage.setItem("last_token_refresh", now.toString());
+              safeSessionStorage.setItem("last_token_refresh", now.toString());
             } catch (e) {
               console.error("Token background refresh failure:", e);
             }
