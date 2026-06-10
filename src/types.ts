@@ -68,3 +68,23 @@ export enum OperationType {
   GET = 'get',
   WRITE = 'write',
 }
+
+export interface MerchantWebhookConfig {
+  userId: string;
+  webhookSecret: string;
+  isEnabled: boolean;
+  platformConfigs: {
+    telegram?: { botToken: string; chatId?: string };
+    whatsapp?: { phoneNumberId: string; accessToken: string };
+    instagram?: { pageId: string; accessToken: string };
+  };
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface WebhookPayload {
+  messageText: string;
+  platform: "telegram" | "whatsapp" | "instagram";
+  platformUserId: string;
+  timestamp: number;
+}

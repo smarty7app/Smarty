@@ -26,7 +26,7 @@ import {
 import { db, auth } from "./lib/firebase";
 import { translations, Language } from "./lib/translations";
 import { OrderData, InventoryItem, UserData, OperationType } from "./types";
-import { handleFirestoreError } from "./lib/utils";
+import { handleFirestoreError, safeStorage } from "./lib/utils";
 import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
 import { Logo } from "./components/CommonUI";
 import LandingPage from "./components/LandingPage";
@@ -72,9 +72,13 @@ const PLAN_LIMITS: Record<string, number> = {
 // --- Main App Component ---
 function AppContent() {
   const { user, loading: authLoading, signIn, logout } = useUser();
-  const [lang, setLang] = useState<Language>(
-    () => (localStorage.getItem("smarty_lang") as Language) || "fr",
-  );
+  const [lang, setLang] = useState<Language>(() => {
+    const saved = safeStorage.getItem("smarty_lang");
+    if (saved === "ar" || saved === "fr" || saved === "en") {
+      return saved;
+    }
+    return "fr";
+  });
   const [screen, setScreen] = useState<
     | "dashboard"
     | "products"
@@ -87,13 +91,13 @@ function AppContent() {
   >("dashboard");
 
   useEffect(() => {
-    localStorage.setItem("smarty_lang", lang);
+    safeStorage.setItem("smarty_lang", lang);
   }, [lang]);
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
     document.documentElement.classList.remove("light");
-    localStorage.setItem("smarty_theme", "dark");
+    safeStorage.setItem("smarty_theme", "dark");
   }, []);
 
   useEffect(() => {
