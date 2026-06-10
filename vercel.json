@@ -1,8 +1,14 @@
 {
-  "rewrites": [
+  "version": 2,
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/webhooks/generate-secret",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/server.ts" 
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server.ts"
     }
   ]
 }
