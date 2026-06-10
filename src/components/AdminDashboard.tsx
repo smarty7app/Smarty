@@ -132,40 +132,40 @@ export default function AdminDashboard({ t, isRtl, setScreen }: any) {
   const filteredUsers = users.filter(u => u.email?.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6 pb-20 w-full max-w-4xl mx-auto">
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-20 w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => setScreen("dashboard")} className={`p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 ${isRtl ? 'rotate-180' : ''}`}>
+          <button onClick={() => setScreen("dashboard")} className={`p-2.5 rounded-xl bg-zinc-950 border border-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-800 transition-all cursor-pointer ${isRtl ? 'rotate-180' : ''}`}>
             <ArrowRight className="w-5 h-5" />
           </button>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <ShieldCheck className="text-blue-500" /> {t.admin_title}
+          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <ShieldCheck className="text-blue-500 animate-pulse" /> {t.admin_title}
           </h2>
         </div>
       </div>
 
-      <div className="flex gap-2 p-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl w-fit">
+      <div className="flex gap-1.5 p-1.5 bg-zinc-950/80 border border-zinc-900 rounded-2xl w-fit backdrop-blur-md">
         <button 
           onClick={() => setActiveTab("requests")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'requests' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'requests' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/15' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
           <CreditCard className="w-4 h-4" /> {t.admin_requests} ({requests.filter(r => r.status === 'pending').length})
         </button>
         <button 
           onClick={() => setActiveTab("users")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'users' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/15' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
           <Users className="w-4 h-4" /> {t.admin_users} ({users.length})
         </button>
         <button 
           onClick={() => setActiveTab("support")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'support' ? 'bg-blue-600 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'support' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/15' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
           <Filter className="w-4 h-4" /> {isRtl ? "الدعم التقني" : "Tech Support"} ({supportMessages.length})
         </button>
       </div>
 
-      <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-[2rem] overflow-hidden min-h-[400px]">
+      <div className="glass-panel rounded-[2rem] overflow-hidden min-h-[400px]">
         {activeTab === "requests" ? (
           <div className="divide-y divide-zinc-800/50">
             {requests.length === 0 ? (

@@ -53,7 +53,7 @@ export default function Storefront({
   onPageChange
 }: StorefrontProps) {
   return (
-    <div className="space-y-8 text-right font-sans">
+    <div className="space-y-8 text-right font-sans" dir="rtl">
       
       {/* Dynamic Global Top Marketing Promo Bar */}
       <div className="w-full bg-gradient-to-r from-emerald-600/10 via-zinc-950/60 to-teal-500/10 border border-emerald-500/15 shadow-inner rounded-2xl py-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -106,7 +106,7 @@ export default function Storefront({
             <div className="space-y-2.5 max-w-xl">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-400 font-extrabold uppercase tracking-wide">
-                  <Sparkles className="w-3 h-3 text-emerald-400" />
+                  <Star className="w-3 h-3 text-emerald-400 fill-emerald-400" />
                   متجر رسمي موثق
                 </span>
               </div>
@@ -305,7 +305,7 @@ export default function Storefront({
             
             <div className="space-y-3.5 relative z-10 text-right">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
-                <Sparkles className="w-5 h-5 text-emerald-400" />
+                <Star className="w-5 h-5 text-emerald-400 fill-emerald-400" />
               </div>
               <h4 className="text-xs font-black text-white">معاينة الطلب وضمان الدفع عند الاستلام 💵</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
@@ -327,7 +327,7 @@ export default function Storefront({
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <ShoppingCart className="w-5 h-5 text-emerald-400" />
               </div>
-              <h4 className="text-xs font-black text-white">توصيل سريع مع Yalidine Express لـ 58 ولاية 🚚</h4>
+              <h4 className="text-xs font-black text-white">توصيل سريع مع Yalidine Express لـ 68 ولاية 🚚</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
                 نقوم بتسليم وتغليف طرودك وإرسالها عبر شبكة Yalidine الموثوقة لتضمن توصيلها الآمن لباب بيتك أو لمكتب الولاية بأفضل الأسعار.
               </p>

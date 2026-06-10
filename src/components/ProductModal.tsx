@@ -200,9 +200,8 @@ export const ProductModal = React.memo(function ProductModal({
                 onClick={() => setAiActive(!aiActive)}
                 className="flex items-center gap-2 text-xs font-bold text-indigo-300 hover:text-white transition-colors cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
                 <span>
-                  {isRtl ? "مساعد الذكاء الاصطناعي الذكي ✨" : "Smart AI Auto-Fill ✨"}
+                  {isRtl ? "مساعد الذكاء الاصطناعي الذكي" : "Smart AI Auto-Fill"}
                 </span>
               </button>
               
@@ -278,7 +277,7 @@ export const ProductModal = React.memo(function ProductModal({
                 {/* Status displays */}
                 {aiStatus === "success" && (
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-medium text-center animate-fadeIn">
-                     ✨ {isRtl ? "تم ملء كافة الحقول بنجاح! يرجى مراجعتها وتأكيد الإضافة." : "Form fields populated successfully! Check out details below."}
+                    {isRtl ? "تم ملء كافة الحقول بنجاح! يرجى مراجعتها وتأكيد الإضافة." : "Form fields populated successfully! Check out details below."}
                   </div>
                 )}
 

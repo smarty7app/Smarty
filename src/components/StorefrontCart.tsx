@@ -160,6 +160,13 @@ export default function StorefrontCart({
 
       const data = await res.json();
 
+      if (res.status === 403 || data.requiresUpgrade || data.error === "subscription_limit_reached") {
+        localStorage.setItem("upgrade_pending", "true");
+        localStorage.setItem("orderDataPending", JSON.stringify(payload));
+        window.location.href = "/?screen=subscription&upgrade_needed=true";
+        return;
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || "فشل تسجيل طلب الشحن والتوصيل.");
       }

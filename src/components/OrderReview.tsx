@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer, Clock, RefreshCw } from "lucide-react";
+import { User, Phone, MapPin, Truck, Save, ArrowRight, Download, Package, Plus, Trash2, AlertTriangle, Eye, X, ShieldAlert, FileText, Printer, Clock, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { InputField } from "./CommonUI";
 import { collection, query, where, onSnapshot, addDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
 
 export default function OrderReview({ userData, order, setOrder, loading, handleSave, handleShipOrder, addItem, removeItem, updateItem, setScreen, t, isRtl, initialOrder }: any) {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [collapsedItems, setCollapsedItems] = useState<{[key: number]: boolean}>({});
   const [inventory, setInventory] = useState<any[]>([]);
   const [activeItemDropdown, setActiveItemDropdown] = useState<number | null>(null);
   const [quickRegStatus, setQuickRegStatus] = useState<{
@@ -173,7 +174,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
   });
 
   return (
-    <motion.div initial={{ opacity: 0, x: isRtl ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-20">
+    <motion.div initial={{ opacity: 0, x: isRtl ? -20 : 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-20" dir={isRtl ? "rtl" : "ltr"}>
       <div className="flex items-center gap-3">
         <button onClick={() => setScreen(order.id ? "dashboard" : "input")} className={`p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 ${isRtl ? 'rotate-180' : ''}`}>
           <ArrowRight className="w-5 h-5" />
@@ -232,17 +233,17 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
         <motion.div 
           initial={{ opacity: 0, y: -10 }} 
           animate={{ opacity: 1, y: 0 }}
-          className="bg-yellow-500/10 border border-yellow-500/20 rounded-3xl p-5 mb-6"
+          className="bg-amber-500/[0.03] border border-amber-500/15 backdrop-blur-md rounded-2xl p-4 mb-6 shadow-lg shadow-amber-505/[0.02]"
         >
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-yellow-500/20 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-6 h-6 text-yellow-500" />
+          <div className="flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-500/15">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
             </div>
             <div className="space-y-1">
-              <p className="font-bold text-yellow-500 text-sm">{t.warning_missing_data}</p>
-              <ul className="list-disc list-inside text-xs text-yellow-500/70 space-y-0.5">
+              <p className="font-extrabold text-amber-500 text-xs tracking-wide">{t.warning_missing_data}</p>
+              <ul className="list-disc list-inside text-[11px] text-zinc-400 font-bold space-y-0.5">
                 {warnings.map((w, i) => (
-                   <li key={i}>{w}</li>
+                   <li key={i} className="leading-relaxed">{w}</li>
                 ))}
               </ul>
             </div>
@@ -304,188 +305,235 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
         </div>
 
         <div className="space-y-4">
-          {order.items.map((item: any, idx: number) => (
-            <div key={idx} className="bg-black/40 border border-zinc-800/50 rounded-2xl p-4 space-y-3 relative group">
-              <button 
-                onClick={() => removeItem(idx)}
-                className={`absolute top-4 ${isRtl ? 'right-4' : 'left-4'} text-zinc-600 hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-500/10 z-10`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              
-              <div className="space-y-1 relative">
-                <label className="text-[10px] text-zinc-500 uppercase tracking-widest block px-1">
-                  {t.product}
-                </label>
-                <div className="relative flex items-center bg-black/50 border border-zinc-800 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden">
-                  <select
-                    value={item.product || ""}
-                    onChange={(e) => {
-                      const selectedVal = e.target.value;
-                      const matched = inventory.find(p => p.productName === selectedVal);
-                      updateItem(idx, 'product', selectedVal);
-                      if (matched) {
-                        updateItem(idx, 'pricePerUnit', matched.price);
-                        if (matched.sku) {
-                          updateItem(idx, 'size', matched.sku);
-                        }
-                      } else {
-                        updateItem(idx, 'pricePerUnit', 0);
-                      }
-                    }}
-                    className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
-                  >
-                    <option value="" className="bg-zinc-950 text-zinc-500">
-                      {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
-                    </option>
-                    {inventory.map(p => (
-                      <option key={p.id} value={p.productName} className="bg-zinc-950 text-zinc-300">
-                        {p.productName} ({p.price.toLocaleString()} DZD - {p.stockQuantity} pcs)
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 text-xs">
-                    ▼
+          {order.items.map((item: any, idx: number) => {
+            const isCollapsed = collapsedItems[idx] || false;
+            const itemsCount = idx + 1;
+            return (
+              <div key={idx} className={`bg-gradient-to-r from-zinc-950 via-[#131317] to-zinc-900 border ${isCollapsed ? 'border-zinc-900/80 hover:border-zinc-800' : 'border-zinc-800/80 shadow-[0_8px_25px_rgba(0,0,0,0.3)]'} rounded-2xl transition-all duration-300 relative overflow-hidden`}>
+                {/* Item Header / Collapse Toggle strip */}
+                <div 
+                  onClick={() => setCollapsedItems(prev => ({ ...prev, [idx]: !isCollapsed }))}
+                  className="flex items-center justify-between px-4 py-3.5 bg-black/40 hover:bg-black/60 border-b border-zinc-900/60 cursor-pointer select-none transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-5.5 h-5.5 rounded-lg bg-zinc-900 text-zinc-400 border border-zinc-800/60 flex items-center justify-center text-[10px] font-black font-mono">
+                      {itemsCount}
+                    </span>
+                    <span className="text-xs font-semibold text-zinc-100 truncate max-w-[170px] sm:max-w-xs">
+                      {item.product || (isRtl ? "عنصر جديد (لم يتم تحديده)" : "New item (unspecified)")}
+                    </span>
+                    {isCollapsed && (
+                      <span className="text-[10px] text-zinc-450 font-bold bg-zinc-900/40 px-2 py-0.5 rounded-md">
+                        {item.quantity || 1} {isRtl ? "قطع" : "pcs"} {item.size ? `• ${item.size}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Delete button (uncollapsed/collapsed) */}
+                    <button 
+                      type="button"
+                      onClick={() => removeItem(idx)}
+                      className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedItems(prev => ({ ...prev, [idx]: !isCollapsed }))}
+                      className="p-1.5 rounded-lg text-zinc-455 hover:text-white transition-all cursor-pointer"
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
-                {/* Display Red Warning if quantity is greater than current stock or general stock count */}
-                {item.product && (() => {
-                  const matched = inventory.find(p => p.productName === item.product);
-                  if (matched) {
-                    const reqQty = Number(item.quantity) || 1;
-                    const stock = Number(matched.stockQuantity) || 0;
-                    const isInsufficient = stock < reqQty;
-
-                    if (isInsufficient) {
-                      return (
-                        <div className="flex items-center gap-1.5 mt-1 text-red-500 text-[10.5px] font-black animate-pulse bg-red-500/5 px-2.5 py-1 rounded-lg border border-red-500/10">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-500" />
-                          <span>
-                            {isRtl 
-                              ? `تنبيه: الكمية المطلوبة (${reqQty}) تفوق المتوفر في المستودع (${stock} قطع متبقية!)` 
-                              : `Warning: Requested quantity (${reqQty}) exceeds available stock (${stock} left!)`
-                            }
-                          </span>
-                        </div>
-                      );
-                    } else if (stock <= 5) {
-                      return (
-                        <div className="flex items-center gap-1.5 mt-1 text-yellow-500 text-[10px] bg-yellow-500/5 px-2.5 py-1 rounded-lg border border-yellow-500/10 font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
-                          <span>
-                            {isRtl 
-                              ? `مخزون منخفض: متبقي فقط ${stock} قطع في المستودع` 
-                              : `Low stock: Only ${stock} items left in stock`
-                            }
-                          </span>
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <div className="flex items-center gap-1.5 mt-1 text-emerald-400 text-[10px] bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                          <span>
-                            {isRtl 
-                              ? `المخزون متوفر: يوجد ${stock} قطعة جاهزة للتسليم` 
-                              : `In stock: ${stock} items available and ready`
-                            }
-                          </span>
-                        </div>
-                      );
-                    }
-                  } else {
-                    const regState = quickRegStatus[idx];
-                    if (regState?.status === "success") {
-                      return (
-                        <div className="mt-2 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold text-xs">
-                            <span className="text-base">🎉</span>
-                            <span className="text-emerald-400 font-extrabold">{regState.message}</span>
+                {/* Body Content with AnimatePresence */}
+                <AnimatePresence initial={false}>
+                  {!isCollapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="p-4.5 space-y-4 overflow-hidden"
+                    >
+                      <div className="space-y-1 relative">
+                        <label className="text-[10px] text-zinc-500 uppercase tracking-widest block px-1">
+                          {t.product}
+                        </label>
+                        <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20">
+                          <select
+                            value={item.product || ""}
+                            onChange={(e) => {
+                              const selectedVal = e.target.value;
+                              const matched = inventory.find(p => p.productName === selectedVal);
+                              updateItem(idx, 'product', selectedVal);
+                              if (matched) {
+                                updateItem(idx, 'pricePerUnit', matched.price);
+                                if (matched.sku) {
+                                  updateItem(idx, 'size', matched.sku);
+                                }
+                              } else {
+                                updateItem(idx, 'pricePerUnit', 0);
+                              }
+                            }}
+                            className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
+                          >
+                            <option value="" className="bg-zinc-950 text-zinc-500">
+                              {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
+                            </option>
+                            {inventory.map(p => (
+                              <option key={p.id} value={p.productName} className="bg-zinc-950 text-zinc-300">
+                                {p.productName} ({p.price.toLocaleString()} DZD - {p.stockQuantity} pcs)
+                              </option>
+                            ))}
+                          </select>
+                          <div className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 text-xs`}>
+                            ▼
                           </div>
                         </div>
-                      );
-                    }
 
-                    return (
-                      <div className="mt-2 p-3.5 rounded-2xl bg-zinc-950 border border-yellow-500/20 text-yellow-500 space-y-2.5">
-                        <div className="flex items-center gap-1.5 font-bold text-xs">
-                          <AlertTriangle className="w-4 h-4 shrink-0 text-yellow-500 animate-pulse" />
-                          <span>
-                            {isRtl 
-                              ? `تنبيه: المنتج 「${item.product}」 غير مسجل في مستودع المنتجات الخاص بك.` 
-                              : `Notice: "${item.product}" is not currently in your inventory database.`
+                        {/* Display Red Warning if quantity is greater than current stock or general stock count */}
+                        {item.product && (() => {
+                          const matched = inventory.find(p => p.productName === item.product);
+                          if (matched) {
+                            const reqQty = Number(item.quantity) || 1;
+                            const stock = Number(matched.stockQuantity) || 0;
+                            const isInsufficient = stock < reqQty;
+
+                            if (isInsufficient) {
+                              return (
+                                <div className="flex items-center gap-1.5 mt-1.5 text-red-500 text-[10.5px] font-black animate-pulse bg-red-500/5 px-2.5 py-1 rounded-lg border border-red-500/10">
+                                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                                  <span>
+                                    {isRtl 
+                                      ? `تنبيه: الكمية المطلوبة (${reqQty}) تفوق المتوفر في المستودع (${stock} قطع متبقية!)` 
+                                      : `Warning: Requested quantity (${reqQty}) exceeds available stock (${stock} left!)`
+                                    }
+                                  </span>
+                                </div>
+                              );
+                            } else if (stock <= 5) {
+                              return (
+                                <div className="flex items-center gap-1.5 mt-1.5 text-yellow-500 text-[10px] bg-yellow-500/5 px-2.5 py-1 rounded-lg border border-yellow-500/10 font-bold">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0" />
+                                  <span>
+                                    {isRtl 
+                                      ? `مخزون منخفض: متبقي فقط ${stock} قطع في المستودع` 
+                                      : `Low stock: Only ${stock} items left in stock`
+                                    }
+                                  </span>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="flex items-center gap-1.5 mt-1.5 text-emerald-400 text-[10px] bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10 font-bold">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                                  <span>
+                                    {isRtl 
+                                      ? `المخزون متوفر: يوجد ${stock} قطعة جاهزة للتسليم` 
+                                      : `In stock: ${stock} items available and ready`
+                                    }
+                                  </span>
+                                </div>
+                              );
                             }
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-zinc-400 leading-normal font-sans">
-                          {isRtl 
-                            ? "اضغط أدناه لحفظ وتخزين هذا المنتج فوراً في مخزنك ليتسنى لك إدارة كمياته وشحنه بصورة صحيحة." 
-                            : "Click below to quickly register this product to enable proper stock tracking and logistics deduction."
+                          } else {
+                            const regState = quickRegStatus[idx];
+                            if (regState?.status === "success") {
+                              return (
+                                <div className="mt-2.5 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 space-y-1">
+                                  <div className="flex items-center gap-1.5 font-bold text-xs">
+                                    <span className="text-base">🎉</span>
+                                    <span className="text-emerald-400 font-extrabold">{regState.message}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="mt-2.5 p-3.5 rounded-2xl bg-[#0a0a0c] border border-amber-500/15 text-amber-500 space-y-2.5">
+                                <div className="flex items-center gap-1.5 font-bold text-xs">
+                                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500 animate-pulse" />
+                                  <span>
+                                    {isRtl 
+                                      ? `تنبيه: المنتج 「${item.product}」 غير مسجل في مستودع المنتجات الخاص بك.` 
+                                      : `Notice: "${item.product}" is not currently in your inventory database.`
+                                    }
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-zinc-500 leading-normal font-sans">
+                                  {isRtl 
+                                    ? "اضغط أدناه لحفظ وتخزين هذا المنتج فوراً في مخزنك ليتسنى لك إدارة كمياته وشحنه بصورة صحيحة." 
+                                    : "Click below to quickly register this product to enable proper stock tracking and logistics deduction."
+                                  }
+                                </p>
+
+                                {regState?.status === "error" && (
+                                  <p className="text-[10.5px] font-extrabold text-red-500 bg-red-500/5 p-2 rounded-xl border border-red-500/10 font-sans">
+                                    ❌ {regState.message}
+                                  </p>
+                                )}
+
+                                <button
+                                  type="button"
+                                  disabled={regState?.status === "loading"}
+                                  onClick={() => handleQuickRegisterProduct(idx, item.product, Number(item.pricePerUnit) || 0)}
+                                  className="w-full py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-[0.98] transition-all text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/10 cursor-pointer disabled:opacity-55 font-sans"
+                                >
+                                  {regState?.status === "loading" ? (
+                                    <>
+                                      <RefreshCw className="animate-spin w-3.5 h-3.5" />
+                                      <span>{isRtl ? "جاري الإضافة السريعة للمخزن..." : "Registering to warehouse..."}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>➕ {isRtl ? "إضافة وحفظ المنتج إلى المخزون والمستودع" : "Register and Add item to Inventory"}</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
                           }
-                        </p>
-
-                        {regState?.status === "error" && (
-                          <p className="text-[10.5px] font-extrabold text-red-500 bg-red-500/5 p-2 rounded-xl border border-red-500/10">
-                            ❌ {regState.message}
-                          </p>
-                        )}
-
-                        <button
-                          type="button"
-                          disabled={regState?.status === "loading"}
-                          onClick={() => handleQuickRegisterProduct(idx, item.product, Number(item.pricePerUnit) || 0)}
-                          className="w-full py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 active:scale-[0.98] transition-all text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/10 cursor-pointer disabled:opacity-55"
-                        >
-                          {regState?.status === "loading" ? (
-                            <>
-                              <RefreshCw className="animate-spin w-3.5 h-3.5" />
-                              <span>{isRtl ? "جاري الإضافة السريعة للمخزن..." : "Registering to warehouse..."}</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>➕ {isRtl ? "إضافة وحفظ المنتج إلى المخزون والمستودع" : "Register and Add item to Inventory"}</span>
-                            </>
-                          )}
-                        </button>
+                        })()}
                       </div>
-                    );
-                  }
-                })()}
+                      
+                      <div className="grid grid-cols-2 gap-3.5">
+                        <InputField 
+                          label={t.quantity} 
+                          value={item.quantity === 0 ? "" : String(item.quantity)} 
+                          onChange={(v) => {
+                            const val = v === "" ? 0 : Math.max(0, Number(v) || 0);
+                            updateItem(idx, 'quantity', val);
+                          }} 
+                          type="number"
+                        />
+                        <InputField 
+                          label={isRtl ? "سعر القطعة (دج)" : "Prix Unitaire (DA)"} 
+                          value={item.pricePerUnit === 0 || item.pricePerUnit === undefined ? "" : String(item.pricePerUnit)} 
+                          onChange={(v) => {
+                            const val = v === "" ? 0 : Math.max(0, Number(v) || 0);
+                            updateItem(idx, 'pricePerUnit', val);
+                          }} 
+                          type="number"
+                        />
+                        <InputField 
+                          label={t.size} 
+                          value={item.size} 
+                          onChange={(v) => updateItem(idx, 'size', v)} 
+                        />
+                        <InputField 
+                          label={t.color} 
+                          value={item.color} 
+                          onChange={(v) => updateItem(idx, 'color', v)} 
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <InputField 
-                  label={t.quantity} 
-                  value={item.quantity === 0 ? "" : String(item.quantity)} 
-                  onChange={(v) => {
-                    const val = v === "" ? 0 : Math.max(0, Number(v) || 0);
-                    updateItem(idx, 'quantity', val);
-                  }} 
-                  type="number"
-                />
-                <InputField 
-                  label={isRtl ? "سعر القطعة (دج)" : "Prix Unitaire (DA)"} 
-                  value={item.pricePerUnit === 0 || item.pricePerUnit === undefined ? "" : String(item.pricePerUnit)} 
-                  onChange={(v) => {
-                    const val = v === "" ? 0 : Math.max(0, Number(v) || 0);
-                    updateItem(idx, 'pricePerUnit', val);
-                  }} 
-                  type="number"
-                />
-                <InputField 
-                  label={t.size} 
-                  value={item.size} 
-                  onChange={(v) => updateItem(idx, 'size', v)} 
-                />
-                <InputField 
-                  label={t.color} 
-                  value={item.color} 
-                  onChange={(v) => updateItem(idx, 'color', v)} 
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
         </div>

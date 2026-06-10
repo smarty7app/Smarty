@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  ArrowRight, RefreshCw, Sparkles, ClipboardPaste, 
+  ArrowRight, RefreshCw, Zap, ClipboardPaste, 
   UploadCloud, Image as ImageIcon, FileText, Music, X, Check, FileCode
 } from "lucide-react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -229,6 +229,7 @@ export default function OrderInput({
       initial={{ opacity: 0, x: isRtl ? -20 : 20 }} 
       animate={{ opacity: 1, x: 0 }} 
       className="space-y-6"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="flex items-center gap-3">
         <button 
@@ -240,27 +241,29 @@ export default function OrderInput({
         <h2 className="text-xl font-bold tracking-tight">{t.new_order}</h2>
       </div>
 
-      <div className="bg-zinc-900/30 border border-zinc-800 rounded-3xl p-6 space-y-4 shadow-xl backdrop-blur-md">
+      <div className="glass-panel rounded-[2rem] p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+        {/* Glow effect at background */}
+        <div className="absolute top-[-30%] right-[-10%] w-72 h-72 bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
         
         {/* Paste Area */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 px-1">
-            <ClipboardPaste className="w-4 h-4 text-zinc-500" />
-            <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">{t.paste_label}</p>
+            <ClipboardPaste className="w-4 h-4 text-purple-400" />
+            <p className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-widest">{t.paste_label}</p>
           </div>
           <textarea 
             value={conversation} 
             onChange={(e) => setConversation(e.target.value)} 
             placeholder={t.placeholder} 
-            className="w-full h-40 bg-black/40 border border-zinc-800/80 rounded-2xl p-4 text-sm text-zinc-200 focus:outline-none focus:border-zinc-500 transition-all resize-none font-sans"
+            className="w-full h-44 p-4 text-sm text-zinc-100 bg-zinc-950 border border-zinc-800/80 rounded-2xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 outline-none focus:outline-none transition-all duration-300 resize-none font-sans placeholder-zinc-600"
           />
         </div>
 
         {/* Dropzone / Upload Form */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center gap-2 px-1">
-            <UploadCloud className="w-4 h-4 text-zinc-500" />
-            <p className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">
+            <UploadCloud className="w-4 h-4 text-purple-400" />
+            <p className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-widest">
               {t.upload_media || "Upload Files & Media"}
             </p>
           </div>
@@ -270,12 +273,12 @@ export default function OrderInput({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => !isUploading && !isOptimizing && !fileUrl && fileInputRef.current?.click()}
-            className={`cursor-pointer group relative flex flex-col items-center justify-center border border-dashed rounded-2xl p-6 text-center transition-all duration-300 min-h-[140px] ${
+            className={`cursor-pointer group relative flex flex-col items-center justify-center border-2 border-dashed rounded-3xl p-8 text-center transition-all duration-500 min-h-[160px] overflow-hidden ${
               isDragging 
-                ? "border-cyan-500 bg-cyan-950/10 shadow-[0_0_15px_rgba(6,182,212,0.15)]" 
+                ? "border-purple-500 bg-purple-500/[0.04] shadow-[0_0_35px_rgba(168,85,247,0.15)]" 
                 : fileUrl 
-                  ? "border-zinc-800 bg-black/20" 
-                  : "border-zinc-800/80 bg-black/40 hover:border-zinc-700 hover:bg-zinc-900/10"
+                  ? "border-zinc-800 bg-zinc-950/40" 
+                  : "border-zinc-850 hover:border-purple-550/40 bg-zinc-900/[0.12] hover:bg-purple-950/[0.03] hover:shadow-[0_12px_40px_rgba(168,85,247,0.06)]"
             }`}
           >
             <input 
@@ -294,8 +297,8 @@ export default function OrderInput({
                   exit={{ opacity: 0 }}
                   className="w-full space-y-3 animate-pulse"
                 >
-                  <Sparkles className="w-8 h-8 text-yellow-400 animate-spin mx-auto" style={{ animationDuration: '3s' }} />
-                  <p className="text-xs text-yellow-500 font-bold font-sans">
+                  <RefreshCw className="w-8 h-8 text-purple-400 animate-spin mx-auto" />
+                  <p className="text-xs text-purple-400 font-bold font-sans">
                     {t.optimizing_image || "Optimizing & compressing image..."}
                   </p>
                 </motion.div>
@@ -306,15 +309,15 @@ export default function OrderInput({
                   exit={{ opacity: 0 }}
                   className="w-full space-y-3"
                 >
-                  <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mx-auto" />
-                  <p className="text-xs text-zinc-400 font-medium">
+                  <RefreshCw className="w-8 h-8 text-purple-450 animate-spin mx-auto" />
+                  <p className="text-xs text-zinc-400 font-semibold font-mono">
                     {t.upload_progress || "Uploading..."} ({uploadProgress}%)
                   </p>
                   
-                  {/* Cyan Glowing Progress Tracker */}
-                  <div className="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden relative border border-zinc-800">
+                  {/* Purple Glowing Progress Tracker */}
+                  <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden relative border border-zinc-900">
                     <motion.div 
-                      className="bg-cyan-500 h-full rounded-full shadow-[0_0_8px_#22d3ee]"
+                      className="bg-purple-500 h-full rounded-full shadow-[0_0_8px_rgba(147,51,234,0.5)] bg-gradient-to-r from-purple-600 to-indigo-500"
                       initial={{ width: 0 }}
                       animate={{ width: `${uploadProgress}%` }}
                       transition={{ duration: 0.1 }}
@@ -326,43 +329,47 @@ export default function OrderInput({
                   initial={{ opacity: 0, scale: 0.95 }} 
                   animate={{ opacity: 1, scale: 1 }} 
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="flex items-center justify-between w-full p-2 bg-zinc-950/40 rounded-xl border border-zinc-800/60 hover:border-zinc-700/60 transition-all"
+                  className="flex items-center justify-between w-full p-3 bg-zinc-950/60 rounded-2xl border border-zinc-800 hover:border-zinc-750 transition-all shadow-inner"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-zinc-900 rounded-lg">
+                    <div className="p-2.5 bg-zinc-900 rounded-xl border border-zinc-800">
                       {renderFileIcon()}
                     </div>
                     <div className="text-left font-sans">
-                      <p className="text-xs font-bold text-zinc-300 max-w-[170px] truncate">
+                      <p className="text-xs font-extrabold text-zinc-100 max-w-[170px] truncate">
                         {fileName}
                       </p>
-                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mt-0.5">
-                        {fileMimeType?.split("/")[1] || "File"} - {t.success_upload || "Ready"}
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-extrabold mt-1">
+                        {fileMimeType?.split("/")[1] || "File"} • {t.success_upload || "Ready"}
                       </p>
                     </div>
                   </div>
                   
                   <button 
                     onClick={removeFile}
-                    className="p-1.5 bg-zinc-90 w-7 h-7 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center cursor-pointer"
+                    className="p-1.5 bg-zinc-900 w-8 h-8 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 border border-zinc-800 hover:border-red-500/20 transition-all flex items-center justify-center cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-4.5 h-4.5" />
                   </button>
                 </motion.div>
               ) : (
                 <motion.div 
                   initial={{ opacity: 0 }} 
                   animate={{ opacity: 1 }} 
-                  className="space-y-1.5 font-sans"
+                  className="space-y-2.5 font-sans"
                 >
-                  <UploadCloud className="w-9 h-9 text-zinc-500 group-hover:text-cyan-400 transition-colors mx-auto" />
-                  <p className="text-xs font-semibold text-zinc-300">
-                    {t.drag_drop_files || "Drag & drop files here or click to browse"}
-                  </p>
-                  <p className="text-[10px] text-zinc-500">
-                    {t.max_size_limit || "Maximum file size is 5MB"} (Images, PDFs, Voicemail Audios)
-                  </p>
+                  <div className="relative w-12 h-12 mx-auto flex items-center justify-center bg-purple-500/5 group-hover:bg-purple-500/10 border border-purple-550/10 group-hover:border-purple-500/20 rounded-2xl transition-all duration-300">
+                    <UploadCloud className="w-6 h-6 text-zinc-500 group-hover:text-purple-400 group-hover:scale-115 transition-all duration-300" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-zinc-200 group-hover:text-white transition-colors">
+                      {t.drag_drop_files || "Drag & drop files here or click to browse"}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 font-medium">
+                      {t.max_size_limit || "Maximum file size is 5MB"} (Images, PDFs, Voicemail Audios)
+                    </p>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -371,14 +378,14 @@ export default function OrderInput({
 
         {/* Local size/type validation alerts */}
         {localError && (
-          <p className="text-yellow-500 text-[10px] font-bold bg-yellow-500/5 p-3 rounded-xl border border-yellow-500/10 font-sans">
+          <p className="text-amber-500 text-xs font-extrabold bg-amber-500/5 p-4 rounded-xl border border-amber-500/15 font-sans">
             {localError}
           </p>
         )}
 
         {/* Backend extraction API errors */}
         {error && (
-          <p className="text-yellow-500 text-[10px] font-bold bg-yellow-500/5 p-3 rounded-xl border border-yellow-500/10 font-sans">
+          <p className="text-amber-500 text-xs font-extrabold bg-amber-500/5 p-4 rounded-xl border border-amber-500/15 font-sans">
             {String(error).toLowerCase().includes("permission") || String(error).toLowerCase().includes("insufficient") 
               ? t.permission_error 
               : error}
@@ -389,21 +396,21 @@ export default function OrderInput({
         <button 
           onClick={handleExtract} 
           disabled={loading || isUploading || isOptimizing || (!conversation.trim() && !fileUrl)} 
-          className="w-full py-4 bg-white hover:bg-zinc-100 text-black rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 disabled:active:scale-100 cursor-pointer font-sans"
+          className="w-full py-4.5 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white rounded-2xl font-extrabold text-sm uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-[0_4px_20px_rgba(147,51,234,0.3)] hover:shadow-[0_8px_30px_rgba(147,51,234,0.5)] transition-all duration-300 hover:scale-[1.01] active:scale-98 disabled:opacity-30 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer font-sans relative overflow-hidden group"
         >
           {loading ? (
-            <RefreshCw className="animate-spin w-5 h-5 text-black" />
+            <RefreshCw className="animate-spin w-5 h-5 text-white" />
           ) : (
-            <Sparkles className="w-5 h-5 text-black" />
-          )} 
-          {loading ? t.extracting : t.extract_button}
+            <Zap className="w-5 h-5 text-white animate-pulse" />
+          )}  
+          <span>{loading ? t.extracting : t.extract_button}</span>
         </button>
 
         {/* Manual Input button */}
         <button 
           type="button"
           onClick={handleManualInput} 
-          className="w-full py-4 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer font-sans mt-3"
+          className="w-full py-4 bg-zinc-900/40 hover:bg-zinc-900/80 hover:border-zinc-800 border border-zinc-850 text-white rounded-2xl font-extrabold text-xs tracking-wider flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 cursor-pointer font-sans mt-3"
         >
           <FileText className="w-5 h-5 text-zinc-400" />
           {t.manual_entry || "ملأ البيانات يدوياً"}

@@ -864,7 +864,6 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           
           <div className="text-center space-y-4">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-purple-500/15 select-none">
-              <Sparkles className="w-3.5 h-3.5" />
               <span>{t.demo_easy_use || "Effortless Flow"}</span>
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">
@@ -1066,7 +1065,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       <div className="absolute top-2 left-2 bg-purple-650 bg-purple-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md">
                         {lang === "ar" ? "الأكثر مبيعاً" : "BEST SELLER"}
                       </div>
-                      <Sparkles className="w-8 h-8 text-zinc-700 animate-pulse" />
+                      <ShoppingBag className="w-8 h-8 text-zinc-700 animate-pulse" />
                     </div>
                     
                     <div className="space-y-1">
@@ -1572,7 +1571,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <div 
                 key={plan.id}
                 className={`
-                  relative p-8 rounded-[2.5rem] border transition-all flex flex-col group overflow-hidden select-none
+                  relative p-8 rounded-[2.5rem] border transition-all flex flex-col group ${plan.popular ? 'overflow-visible' : 'overflow-hidden'} select-none
                   ${plan.popular 
                     ? 'bg-gradient-to-b from-purple-950/20 to-zinc-950/20 border-purple-500 shadow-[0_0_55px_rgba(147,51,234,0.15)] ring-2 ring-purple-500/50 hover:scale-[1.01]' 
                     : plan.color === 'blue'
@@ -1584,11 +1583,10 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               >
                 {plan.popular && (
                   <>
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-purple-500/20 flex items-center gap-1 select-none">
-                      <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-purple-500/20 flex items-center gap-1 select-none font-sans">
                       <span>{t.popular_plan || "Most Popular"}</span>
                     </div>
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none overflow-hidden" />
                   </>
                 )}
                 

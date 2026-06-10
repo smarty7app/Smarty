@@ -339,8 +339,8 @@ export default function WilayasList({ setScreen, t, isRtl, ordersHistory = [] }:
           {/* Intelligent AI Performance Insight widget based on actual mapped orders */}
           <div className="bg-yellow-500/5 border border-yellow-500/10 rounded-xl p-3">
             <h4 className="text-[9px] font-bold text-yellow-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              {getLabel("التحليل الذكي للولايات الأكثر طلباً وتصحيح العناوين", "Insight d'analyse & correction géographique auto", "Address Correction & Performance Insights")}
+              <TrendingUp className="w-3.5 h-3.5 text-yellow-400" />
+              {getLabel("التحليل المتقدم للولايات الأكثر طلباً وتصحيح العناوين", "Insight d'analyse & correction géographique auto", "Address Correction & Performance Insights")}
             </h4>
             <p className="text-[10px] text-zinc-400 leading-relaxed font-sans select-text">
               {(() => {

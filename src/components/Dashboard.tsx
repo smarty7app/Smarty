@@ -188,6 +188,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   // Bilingual detection & labeling helper
   const isAr = t.total_orders === "إجمالي الطلبات";
   const isFr = t.total_orders === "Total Commandes";
+  const isRtl = isAr;
 
   const getLabel = (ar: string, fr: string, en: string) => {
     if (isAr) return ar;
@@ -393,24 +394,25 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         className="space-y-6 animate-fade-in"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         {/* Header section with back button */}
-        <div className="flex items-center justify-between bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4 backdrop-blur-md">
+        <div className="flex items-center justify-between glass-panel rounded-2xl p-4">
           <button
             onClick={() => { setStatusFilter(null); setFilterSearch(""); }}
-            className="p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl transition-colors flex items-center justify-center cursor-pointer"
+            className="p-2.5 bg-zinc-900 border border-zinc-850 hover:border-zinc-800 text-zinc-300 rounded-xl transition-all flex items-center justify-center cursor-pointer active:scale-95 shadow-lg"
           >
             <ArrowLeft className={`w-5 h-5 ${isAr ? "rotate-0" : "rotate-180"}`} />
           </button>
           <div className="text-center flex-1">
             <h2 className="text-sm font-bold text-zinc-100 flex items-center justify-center gap-2">
-              <Filter className="w-4 h-4 text-yellow-500 animate-pulse" />
+              <Filter className="w-4 h-4 text-purple-400 animate-pulse" />
               {getFilterTitle()} 
-              <span className="text-xs bg-yellow-400/10 text-yellow-500 px-2 py-0.5 rounded-full font-mono">
+              <span className="text-xs bg-purple-500/15 text-purple-400 px-2.5 py-0.5 rounded-full font-mono font-bold border border-purple-500/10">
                 {targetOrders.length}
               </span>
             </h2>
-            <p className="text-[10px] text-zinc-500 mt-0.5 leading-relaxed">
+            <p className="text-[10px] text-zinc-400 mt-1 leading-relaxed">
               {getLabel(
                 "قائمة الطلبات المصفاة حسب الحالة المختارة ومحرك البحث السريع",
                 "Liste des commandes filtrées selon le statut choisi",
@@ -422,20 +424,20 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
 
         {/* Search input to refine results within this slice */}
         <div className="relative">
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-zinc-500">
-            <Search className="w-4 h-4" />
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-zinc-550">
+            <Search className="w-4 h-4 text-zinc-500" />
           </div>
           <input
             type="text"
             value={filterSearch}
             onChange={(e) => setFilterSearch(e.target.value)}
             placeholder={getLabel("البحث باسم الزبون، رقمه، أو الولاية...", "Rechercher par nom, tél, wilaya...", "Search by client name, phone, or wilaya...")}
-            className="w-full h-12 pr-10 pl-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-all font-sans"
+            className="w-full h-12 pr-10 pl-4 slick-input text-sm text-zinc-100 placeholder-zinc-650 outline-none focus:outline-none transition-all font-sans"
           />
           {filterSearch && (
             <button
               onClick={() => setFilterSearch("")}
-              className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500 hover:text-zinc-300 text-xs cursor-pointer"
+              className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-450 hover:text-zinc-250 text-xs cursor-pointer"
             >
               {getLabel("مسح", "Effacer", "Clear")}
             </button>
@@ -468,48 +470,48 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                   <div
                     key={order.id}
                     onClick={() => handleViewOrder(order)}
-                    className="bg-gradient-to-br from-[#121215] via-[#0f0f12] to-[#0a0a0c] border border-zinc-800/70 rounded-2xl p-4 flex items-center justify-between group hover:border-zinc-700/80 hover:from-[#151519] hover:to-[#0c0c0f] hover:shadow-[0_10px_25px_rgba(0,0,0,0.65)] hover:scale-[1.015] cursor-pointer transition-all duration-300 select-none"
+                    className="glass-panel p-4 flex items-center justify-between group hover:border-zinc-700/80 hover:bg-white/[0.03] hover:shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:scale-[1.01] cursor-pointer transition-all duration-300 select-none"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 ${
                         order.possible_fake_order 
-                          ? 'bg-yellow-500/10 text-yellow-500' 
+                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' 
                           : (order.storeOrder || order.source === "storefront")
-                            ? 'bg-purple-500/10 text-purple-400'
-                            : 'bg-zinc-800/50 text-zinc-400'
+                            ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                            : 'bg-zinc-900 border-zinc-850 text-zinc-400 group-hover:border-zinc-700'
                       }`}>
                         {order.possible_fake_order ? (
-                          <AlertTriangle className="w-5 h-5" />
+                          <AlertTriangle className="w-5.5 h-5.5" />
                         ) : (order.storeOrder || order.source === "storefront") ? (
-                          <ShoppingBag className="w-5 h-5" />
+                          <ShoppingBag className="w-5.5 h-5.5" />
                         ) : (
-                          <User className="w-5 h-5" />
+                          <User className="w-5.5 h-5.5" />
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-zinc-100 flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-sm font-extrabold text-white flex items-center gap-2 flex-wrap">
                           <span>{order.name}</span>
                           {(order.storeOrder || order.source === "storefront") && (
-                            <span className="text-[9px] bg-purple-500/15 text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded font-bold font-sans">
+                            <span className="text-[9px] bg-purple-550/15 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-black font-sans shrink-0">
                               {isAr ? "طلب المتجر 🛒" : "Storefront 🛒"}
                             </span>
                           )}
                         </h4>
-                        <p className="text-[10px] text-zinc-400 mt-0.5">{order.wilaya} • {order.phone}</p>
+                        <p className="text-[10.5px] text-zinc-400 font-medium mt-1 select-none">{order.wilaya} • {order.phone}</p>
                         {order.createdAt && (
-                          <p className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono">
-                            <Clock className="w-3 h-3 text-zinc-655 shrink-0" />
+                          <p className="text-[9px] text-zinc-500 mt-1 flex items-center gap-1 font-mono font-bold">
+                            <Clock className="w-3 h-3 text-zinc-600 shrink-0" />
                             <span>{formatTime(order.createdAt)}</span>
                           </p>
                         )}
                         {order.note && (
-                          <p className="text-[10px] text-yellow-500/80 mt-1.5 flex items-center gap-1 font-medium bg-yellow-500/5 w-fit px-1.5 py-0.5 rounded border border-yellow-500/10">
+                          <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1.5 font-bold bg-amber-500/5 w-fit px-2 py-0.5 rounded border border-amber-500/10">
                             <FileText className="w-3 h-3 shrink-0" />
                             <span className="truncate max-w-[200px]">{order.note}</span>
                           </p>
                         )}
                         {order.dispatchError && (
-                          <p className="text-[10.5px] text-red-400 font-bold mt-1.5 flex items-center gap-1 bg-red-500/10 border border-red-500/20 w-fit px-1.5 py-0.5 rounded text-direction-rtl">
+                          <p className="text-[10px] text-red-400 font-extrabold mt-1.5 flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 w-fit px-2 py-0.5 rounded text-direction-rtl">
                             <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
                             <span className="truncate max-w-[220px]">{order.dispatchError}</span>
                           </p>
@@ -517,12 +519,12 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] px-2.5 py-1 rounded-full uppercase font-extrabold border transition-all duration-200 ${badgeStyle}`}>
+                      <span className={`text-[9px] px-2.5 py-1.5 rounded-full uppercase font-black tracking-wider border transition-all duration-200 ${badgeStyle}`}>
                         {(t as any)[`status_${order.status}`] || order.status}
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setOrderToDelete(order.id); }}
-                        className="p-2 text-zinc-600 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                        className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100 cursor-pointer shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -546,7 +548,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   }
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       
       {/* Top Banner & Insight Box */}
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-3xl p-6 relative overflow-hidden backdrop-blur-md">
@@ -570,11 +572,11 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
             <button 
               type="button"
               onClick={() => setShowSuspiciousModal(true)}
-              className="bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-3 py-1.5 flex items-center gap-2 self-start md:self-auto animate-pulse select-none transition-all cursor-pointer active:scale-95"
+              className="bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 rounded-xl px-3 py-1.5 flex items-center gap-2 self-start md:self-auto select-none transition-all cursor-pointer active:scale-95"
             >
               <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0" />
               <span className="text-[10px] font-extrabold text-yellow-400 font-sans tracking-wide">
-                {suspiciousCount} {getLabel("طلبيات مشبوهة متبقية", "commandes suspectes", "suspicious orders")}
+                {suspiciousCount} {getLabel("طلبيات مشبوهة", "commandes suspectes", "suspicious orders")}
               </span>
             </button>
           )}
@@ -611,11 +613,11 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           <div className="space-y-6">
             
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
               {/* Total Stock Value Card */}
               <div 
                 onClick={() => setScreen("products")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-emerald-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-emerald-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
@@ -638,11 +640,11 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* Total Orders */}
               <div 
                 onClick={() => setStatusFilter("all")} 
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-yellow-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-purple-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.total_orders}</span>
-                  <div className="p-1.5 rounded-lg bg-zinc-800/50 text-zinc-300 group-hover:bg-yellow-500/10 group-hover:text-yellow-500 transition-colors">
+                  <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
                     <ShoppingBag className="w-4 h-4" />
                   </div>
                 </div>
@@ -657,16 +659,16 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* Pending / Confirming */}
               <div 
                 onClick={() => setStatusFilter("awaiting")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-yellow-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-amber-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.pending_orders}</span>
-                  <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-500">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
                     <Clock className="w-4 h-4 animate-pulse" />
                   </div>
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-yellow-500 tracking-tight">{awaitingProcessing}</span>
+                  <span className="block text-2xl font-black text-amber-500 tracking-tight">{awaitingProcessing}</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("قيد التأكيد والفرز للمخزن", "En attente de traitement", "Pending verification")}
                   </span>
@@ -676,7 +678,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* In Transit Card */}
               <div 
                 onClick={() => setStatusFilter("transit")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-blue-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-blue-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_in_transit}</span>
@@ -695,16 +697,16 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* Delivered Success Card */}
               <div 
                 onClick={() => setStatusFilter("delivered")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-green-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-emerald-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_delivered}</span>
-                  <div className="p-1.5 rounded-lg bg-green-500/10 text-green-400">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-green-400 tracking-tight">{delivered}</span>
+                  <span className="block text-2xl font-black text-emerald-400 tracking-tight">{delivered}</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("طلبات استلمها الزبون بنجاح", "Commandes livrées avec succès", "View successfully delivered")}
                   </span>
@@ -714,7 +716,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* Returned (Rotour) Card */}
               <div 
                 onClick={() => setStatusFilter("returned")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-red-500/20 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-red-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_returned}</span>
@@ -731,7 +733,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               </div>
 
               {/* Delivery success rate card */}
-              <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-zinc-750 transition-all flex flex-col justify-between group col-span-1">
+              <div className="glass-card p-4 hover:border-emerald-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.stats_delivery_rate}</span>
                   <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
@@ -749,18 +751,18 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               {/* Storefront Orders Card */}
               <div 
                 onClick={() => setStatusFilter("storefront")}
-                className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 p-4 rounded-2xl border border-zinc-808 hover:border-yellow-500/25 hover:bg-zinc-900/80 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
+                className="glass-card p-4 hover:border-pink-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
                     {getLabel("طلبات المتجر", "Boutique", "Storefront")}
                   </span>
-                  <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-500">
+                  <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
                     <ShoppingBag className="w-4 h-4 animate-pulse" />
                   </div>
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-yellow-500 tracking-tight">{storefrontOrdersCount}</span>
+                  <span className="block text-2xl font-black text-pink-405 tracking-tight">{storefrontOrdersCount}</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("طلبات قادمة عبر السلة", "Commandes de la boutique", "Orders via store cart")}
                   </span>
@@ -1216,7 +1218,27 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           {/* LargeCentered Add Order Button in Slightly Dark Green */}
           <div className="flex justify-center pb-2">
             <button 
-              onClick={() => setScreen("input")} 
+              onClick={() => {
+                const resolvedPlanLimits = planLimits || {
+                  free: 50,
+                  basic: 50,
+                  pro: 500,
+                  professional: 500,
+                  unlimited: 2000,
+                  business: 2000,
+                  enterprise: 999999999,
+                };
+                const userPlan = (userData?.planType || "free").toLowerCase();
+                const limit = resolvedPlanLimits[userPlan] || resolvedPlanLimits.basic;
+                const isLimitReached = (userData?.orderCounter || 0) >= limit;
+
+                if (isLimitReached) {
+                  setScreen("subscription");
+                  window.history.pushState({}, "", "/?screen=subscription&upgrade_needed=true");
+                } else {
+                  setScreen("input");
+                }
+              }} 
               className="w-full max-w-md py-4 px-6 bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-purple-950/40 transition-all duration-200 active:scale-[0.98] font-sans cursor-pointer border border-purple-500/30"
             >
               <Plus className="w-5 h-5 text-zinc-100" /> 

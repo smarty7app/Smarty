@@ -67,10 +67,12 @@ export const ProductCard = React.memo(function ProductCard({
       exit={{ opacity: 0, scale: 0.95 }}
       layout
       transition={{ duration: 0.25 }}
-      className="bg-zinc-900/10 border border-zinc-850 hover:border-zinc-700/80 rounded-2xl overflow-hidden flex flex-col group relative transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]"
+      className={`glass-card overflow-hidden flex flex-col group relative transition-all duration-300 transform hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5)] ${
+        isSelected ? "border-purple-500/40 shadow-[0_0_20px_rgba(168,85,247,0.15)]" : ""
+      }`}
     >
       {/* Visual Media Bar */}
-      <div className="h-44 bg-zinc-950 relative flex items-center justify-center overflow-hidden border-b border-zinc-900">
+      <div className="h-44 bg-zinc-950 relative flex items-center justify-center overflow-hidden border-b border-zinc-900/60">
         {product.imageUrl ? (
           <img 
             src={product.imageUrl} 
@@ -81,16 +83,16 @@ export const ProductCard = React.memo(function ProductCard({
         ) : (
           <div className="flex flex-col items-center gap-1.5 opacity-30 group-hover:opacity-60 transition-opacity">
             <ImageIcon className="w-8 h-8 text-zinc-500" />
-            <span className="text-[10px] tracking-wider uppercase font-extrabold">{isRtl ? "دون صورة" : "No Media"}</span>
+            <span className="text-[10px] tracking-wider uppercase font-black">{isRtl ? "دون صورة" : "No Media"}</span>
           </div>
         )}
         
         {/* Interactive Selection box */}
         <button 
           onClick={() => toggleSelectProduct(product.id!)}
-          className={`absolute top-3 left-3 w-5 h-5 rounded-md border flex items-center justify-center transition-all cursor-pointer backdrop-blur-md z-[10] ${
+          className={`absolute top-3 left-3 w-5.5 h-5.5 rounded-lg border flex items-center justify-center transition-all cursor-pointer backdrop-blur-md z-[10] ${
             isSelected 
-              ? "bg-white border-white text-black" 
+              ? "bg-purple-500 border-purple-400 text-white shadow-lg" 
               : "bg-black/40 border-white/20 hover:border-white/50"
           }`}
         >
@@ -98,7 +100,7 @@ export const ProductCard = React.memo(function ProductCard({
         </button>
 
         {/* Stock Warning & Counters */}
-        <span className={`absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-md border backdrop-blur-md flex items-center gap-1 z-[10] ${
+        <span className={`absolute top-3 right-3 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border backdrop-blur-md flex items-center gap-1 z-[10] ${
           isOutOfStock 
             ? "bg-red-500/10 text-red-500 border-red-500/20" 
             : isLowStock 
@@ -128,7 +130,7 @@ export const ProductCard = React.memo(function ProductCard({
       </div>
 
       {/* Metadata Specs */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-4 bg-zinc-900/10">
+      <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
         <div>
           <div className="flex items-center justify-between gap-2 overflow-hidden mb-1">
             {product.sku ? (
@@ -137,21 +139,21 @@ export const ProductCard = React.memo(function ProductCard({
               <span className="text-zinc-650 text-[9px] font-mono">===</span>
             )}
           </div>
-          <h4 className="font-extrabold text-white text-sm line-clamp-1 group-hover:text-amber-400/95 transition-colors">{product.productName}</h4>
-          {product.description && <p className="text-[11px] text-zinc-500 line-clamp-2 mt-1 leading-normal">{product.description}</p>}
+          <h4 className="font-black text-white text-sm line-clamp-1 group-hover:text-purple-400 transition-colors">{product.productName}</h4>
+          {product.description && <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-normal font-sans">{product.description}</p>}
         </div>
 
-        <div className="pt-3 border-t border-zinc-900 flex items-center justify-between">
-          <span className="text-emerald-400 font-black text-sm">{product.price.toLocaleString()} {isRtl ? "دج" : "DA"}</span>
+        <div className="pt-3 border-t border-zinc-900/60 flex items-center justify-between">
+          <span className="text-emerald-400 font-extrabold text-sm">{product.price.toLocaleString()} {isRtl ? "دج" : "DA"}</span>
           
-          <div className="flex gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1.5 opacity-0 translate-y-0.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
             {/* Direct storefront publish toggle */}
             <button 
               onClick={() => onTogglePublish?.(product)} 
               className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
                 product.isPublished === true
                   ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25" 
-                  : "bg-zinc-950 border-zinc-850 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "bg-zinc-900 border-zinc-850 hover:border-zinc-750 text-zinc-500 hover:text-zinc-300"
               }`}
               title={product.isPublished === true ? (isRtl ? "حذف من المتجر الإلكتروني" : "Remove from Storefront") : (isRtl ? "رفع وعرض بالمتجر الإلكتروني" : "Publish to Storefront")}
             >
@@ -159,14 +161,14 @@ export const ProductCard = React.memo(function ProductCard({
             </button>
             <button 
               onClick={() => openEditModal(product)} 
-              className="p-1.5 hover:bg-zinc-805 rounded-xl border border-zinc-850 hover:border-zinc-700 hover:text-white text-zinc-400 transition-all cursor-pointer bg-zinc-950"
+              className="p-1.5 hover:bg-zinc-800 rounded-xl border border-zinc-850 hover:border-zinc-700 hover:text-white text-zinc-450 transition-all cursor-pointer bg-zinc-900"
               title={isRtl ? "تعديل السلعة" : t.edit_product || "Edit product"}
             >
               <Edit3 className="w-3.5 h-3.5" />
             </button>
             <button 
               onClick={() => setShowDeleteConfirm(product.id!)} 
-              className="p-1.5 hover:bg-red-500/10 rounded-xl border border-zinc-850 hover:border-red-500/20 hover:text-red-400 text-zinc-500 transition-all cursor-pointer bg-zinc-950"
+              className="p-1.5 hover:bg-red-500/10 rounded-xl border border-zinc-850 hover:border-red-500/20 hover:text-red-400 text-zinc-500 transition-all cursor-pointer bg-zinc-900"
               title={isRtl ? "حذف نهائي" : t.delete_button || "Delete product"}
             >
               <Trash2 className="w-3.5 h-3.5" />

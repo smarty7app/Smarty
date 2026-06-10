@@ -69,6 +69,8 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
   // Copied fields alerts
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  const [upgradeNeeded, setUpgradeNeeded] = useState(false);
+
   // Detect query parameters on mount to initiate automatic payment verification
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -76,6 +78,11 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
     const screenParam = params.get("screen");
     const paymentParam = params.get("payment");
     const planParam = params.get("plan");
+    const upgradeParam = params.get("upgrade_needed");
+
+    if (upgradeParam === "true") {
+      setUpgradeNeeded(true);
+    }
 
     if (planParam) {
       setSelectedPlan(planParam);
@@ -507,6 +514,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
         initial={{ opacity: 0, y: 15 }} 
         animate={{ opacity: 1, y: 0 }} 
         className="space-y-8 py-10 w-full max-w-xl mx-auto text-center"
+        dir={isRtl ? "rtl" : "ltr"}
       >
         <div className="bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
@@ -712,6 +720,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
       initial={{ opacity: 0, y: 15 }} 
       animate={{ opacity: 1, y: 0 }} 
       className="space-y-8 pb-20 w-full max-w-4xl mx-auto"
+      dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="flex items-center gap-3">
         <button 
@@ -730,6 +739,27 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
           </p>
         </div>
       </div>
+
+      {upgradeNeeded && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-500/10 border border-red-500/20 rounded-[1.75rem] p-6 flex flex-col md:flex-row items-center gap-4 text-center md:text-right" 
+          dir={isRtl ? "rtl" : "ltr"}
+        >
+          <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-400 border border-red-500/20 shadow-inner shrink-0">
+            <AlertCircle className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="flex-1 text-right">
+             <h3 className="font-bold text-red-400 text-sm flex items-center gap-1.5 justify-center md:justify-start">
+               <span>{t.subscription_limit_reached_title || "حد الطلبات مكتمل! ⚠️"}</span>
+             </h3>
+             <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+               {t.subscription_limit_reached_desc || "لقد تجاوزت حد خطتك الحالية، يرجى الترقية للمتابعة."}
+             </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Usage Progress Bar */}
       {userData && (
@@ -779,7 +809,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
             <div 
               key={plan.id}
               className={`
-                relative p-6 rounded-[2rem] border transition-all duration-300 flex flex-col group overflow-hidden
+                relative p-6 rounded-[2rem] border transition-all duration-300 flex flex-col group ${plan.popular ? 'overflow-visible' : 'overflow-hidden'}
                 ${plan.popular 
                   ? 'bg-gradient-to-b from-purple-950/10 to-zinc-950/20 border-purple-500 shadow-[0_0_40px_rgba(147,51,234,0.12)] ring-2 ring-purple-500/50' 
                   : plan.color === 'blue'
@@ -792,11 +822,10 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
             >
               {plan.popular && (
                 <>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-purple-500/20 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-white" />
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-purple-500/20 flex items-center gap-1">
                     <span>{isRtl ? "الأكثر شعبية" : "Popular"}</span>
                   </div>
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl pointer-events-none overflow-hidden" />
                 </>
               )}
 

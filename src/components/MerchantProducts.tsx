@@ -447,8 +447,8 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
       setEditingProduct(null);
       resetForm();
       alert(isRtl 
-        ? "✨ تم تحديث بيانات ومعلومات منتجك بنجاح!" 
-        : "✨ Product details updated successfully!"
+        ? "تم تحديث بيانات ومعلومات منتجك بنجاح!" 
+        : "Product details updated successfully!"
       );
     } catch (err: any) {
       console.error("Error updating product:", err);
@@ -661,7 +661,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
   const highStockProducts = filteredProducts.filter(p => p.stockQuantity > 20);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
       
       {/* 1. Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-zinc-900">
@@ -727,14 +727,14 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
       </div>
 
       {/* Segmented Switcher for Products vs Store Settings */}
-      <div className="flex bg-zinc-950/80 border border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur">
+      <div className="flex bg-zinc-950/80 border border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md shadow-2xl">
         <button
           type="button"
           onClick={() => setActiveTab("products")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "products"
-              ? "bg-white text-black shadow-lg font-extrabold"
-              : "text-zinc-500 hover:text-zinc-350"
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
+              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
           }`}
         >
           <Package className="w-4 h-4" />
@@ -745,8 +745,8 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
           onClick={() => setActiveTab("settings")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "settings"
-              ? "bg-white text-black shadow-lg font-extrabold"
-              : "text-zinc-500 hover:text-zinc-350"
+              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
+              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
           }`}
         >
           <Store className="w-4 h-4" />
