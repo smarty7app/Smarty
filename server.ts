@@ -13,6 +13,7 @@ import helmet from "helmet";
 import { fileURLToPath } from "url";
 import firebaseConfig from "./firebase-applet-config.json";
 import { GoogleGenAI } from "@google/genai";
+import { generateWebhookSecret, verifySignature } from "./src/lib/security.js";
 
 dotenv.config();
 
@@ -41,21 +42,19 @@ let db: admin.firestore.Firestore | null = null;
 
 function initializeFirebase() {
   try {
-    const projectId = firebaseConfig.projectId;
     let appObj: admin.app.App;
     if (!admin.apps.length) {
-      console.log("Initializing Firebase Admin with Project ID:", projectId);
+      const projectId = firebaseConfig.projectId;
+      console.log("Initializing Firebase Admin with Project ID from config:", projectId);
       
       const options: admin.AppOptions = {
         projectId: projectId,
       };
-      
-      // Explicitly instruct the SDK to use Application Default Credentials (ADC) to ensure
-      // proper service account bindings are loaded for custom named databases on Cloud Run.
+
       try {
         options.credential = admin.credential.applicationDefault();
-      } catch (e) {
-        console.log("Application Default Credentials not available locally, proceeding with project ID:", e);
+      } catch (credErr) {
+        console.log("Application Default Credentials not available locally:", credErr);
       }
 
       appObj = admin.initializeApp(options);
@@ -65,26 +64,44 @@ function initializeFirebase() {
 
     const dbId = firebaseConfig.firestoreDatabaseId || undefined;
     db = getFirestore(appObj, dbId);
-    console.log("Firestore initialized. Database ID:", dbId || "(default)");
-  } catch (error) {
-    console.error("Firebase Initialization Error:", error);
-    let appObj: admin.app.App;
-    if (!admin.apps.length) {
-      try {
-        appObj = admin.initializeApp({
-          credential: admin.credential.applicationDefault()
+    console.log("Firestore Admin SDK initialized successfully. Database ID:", dbId || "(default)");
+
+    // Non-blocking self-healing connectivity verification
+    if (dbId) {
+      db.collection("users").limit(1).get()
+        .then(() => {
+          console.log(`[Firebase Connectivity] Verification successful. Connected to "${dbId}".`);
+        })
+        .catch((err: any) => {
+          console.warn(`[Firebase Connectivity] Custom database "${dbId}" is unreachable or returned Permission Denied:`, err.message || err);
+          console.log("[Firebase Connectivity] Checking fallback to the '(default)' database instance...");
+          try {
+            const fallbackDb = getFirestore(appObj);
+            fallbackDb.collection("users").limit(1).get()
+              .then(() => {
+                db = fallbackDb;
+                console.log("[Firebase Connectivity] Self-healed successfully: Swapped active database to '(default)'");
+              })
+              .catch((defaultErr: any) => {
+                console.error("[Firebase Connectivity] Fallback '(default)' database also failed verification:", defaultErr.message || defaultErr);
+              });
+          } catch (e) {
+            console.error("[Firebase Connectivity] Error initializing fallback database instance:", e);
+          }
         });
-      } catch (e2) {
-        appObj = admin.initializeApp();
-      }
-    } else {
-      appObj = admin.apps[0]!;
     }
-    const dbId = firebaseConfig.firestoreDatabaseId || undefined;
-    db = getFirestore(appObj, dbId);
+  } catch (error: any) {
+    console.error("Firebase Initialization Critical Error:", error);
+    try {
+      const appObj = admin.apps.length ? admin.apps[0]! : admin.initializeApp();
+      db = getFirestore(appObj, firebaseConfig.firestoreDatabaseId || undefined);
+    } catch (e) {
+      console.error("Ultimate fallback initialization failed:", e);
+    }
   }
 }
 
+// Run synchronous initialization on startup
 initializeFirebase();
 
 // Courier plan allowance helper
@@ -157,8 +174,11 @@ async function getUserId(req: express.Request): Promise<string | null> {
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     return decodedToken.uid;
-  } catch (error) {
-    console.error("Auth Error:", error);
+  } catch (error: any) {
+    console.error("Auth Error [admin.auth().verifyIdToken]:", error.code, error.message);
+    if (error.code === 'auth/argument-error' || error.message.includes('aud')) {
+        console.warn("[Auth mismatch DEBUG] Token was issued for a different project audience than the one current Server is using.");
+    }
     return null;
   }
 }
@@ -682,6 +702,202 @@ apiRouter.post("/bulk-confirm-orders", authenticate, async (req, res) => {
 });
 
 
+
+
+// === SMARTY AI WEBHOOK INTEGRATION ===
+
+export const WEBHOOK_EXTRACTION_PROMPT = 
+  "You are an autonomous order processing engine for Algerian social media sales (Telegram, WhatsApp, Instagram). " +
+  "Analyze the incoming message text which may contain mixed Algerian Darja, French, and Arabic. " +
+  "Extract the following fields into a strictly valid JSON format:\n" +
+  "1. customerName: Full name in French characters.\n" +
+  "2. phoneNumber: Clean Algerian phone number (e.g., 05xx, 06xx, 07xx).\n" +
+  "3. wilaya: Official Latin name of the Algerian state.\n" +
+  "4. commune: Name of the municipality.\n" +
+  "5. items: Array of objects with { product, quantity, size, color }.\n" +
+  "6. deliveryType: Either 'home' or 'desk' based on keywords like 'للبيت', 'دوميسيل', 'مكتب'.\n" +
+  "7. note: Any additional customer request.\n\n" +
+  "If data is missing, use null. If the order seems fake or highly incomplete, set possible_fake_order to true.";
+
+/**
+ * المسار المخصص للتجار لاستقبال طلبات الـ Webhook مع التحقق الصارم من الهوية والتوقيع الرقمي
+ */
+apiRouter.post("/webhooks/smarty-orders", async (req, res) => {
+  const { messageText, platform, platformUserId, merchantId, userId } = req.body;
+  const signature = req.headers["x-smarty-signature"] as string;
+
+  // معرف التاجر الأساسي هو userId أو merchantId (حسب تسمية المنصة)
+  const targetUserId = userId || merchantId;
+
+  if (!targetUserId || !messageText || !signature) {
+    return res.status(400).json({ 
+      error: "Missing required fields (userId/merchantId, messageText, signature)." 
+    });
+  }
+
+  try {
+    if (!db) throw new Error("Firestore not initialized");
+
+    // 1. جلب إعدادات التاجر والرمز السري (Secret Token) بصورة آمنة
+    const configDoc = await db.collection("merchant_configs").doc(targetUserId).get();
+    if (!configDoc.exists) {
+      return res.status(401).json({ error: "Merchant not configured for webhooks." });
+    }
+
+    const config = configDoc.data();
+    if (!config?.webhookSecret || !config?.isEnabled) {
+      return res.status(401).json({ error: "Webhook is disabled or secret is missing." });
+    }
+
+    // 2. التحقق من التوقيع الرقمي باستخدام HMAC-SHA256 والbuffer الآمن زمنياً
+    const payloadString = JSON.stringify(req.body);
+    const isValid = verifySignature(payloadString, signature, config.webhookSecret);
+
+    if (!isValid) {
+      console.warn(`[Security Alert] Invalid signature for merchant: ${targetUserId}`);
+      return res.status(403).json({ error: "Invalid digital signature." });
+    }
+
+    // 3. إرسال استجابة فورية للمنصة (تجنب الـ Timeout)
+    res.status(202).json({ 
+      status: "verified", 
+      message: "Signature valid, processing order in background." 
+    });
+
+    // 4. البدء في المعالجة الآلية (تحليل الذكاء الاصطناعي والحفظ) بشكل آمن تماماً
+    processWebhookOrder(targetUserId, messageText, platform, platformUserId).catch(err => {
+      console.error(`[Webhook Async Root Catch] Fatal error for merchant ${targetUserId}:`, err);
+    });
+
+  } catch (error) {
+    console.error("[Webhook Critical Error] Synchronous handling failed:", error);
+    return res.status(500).json({ error: "Internal server processing error." });
+  }
+});
+
+/**
+ * دالة خلفية لمعالجة الطلب عبر Gemini وحفظه في Firestore
+ */
+async function processWebhookOrder(userId: string, text: string, platform: string, platformUserId: string) {
+  if (!db) return;
+
+  try {
+    console.log(`[Websocket AI] Extracting order for ${userId} from ${platform}`);
+    const aiResponseRaw = await callGeminiViaFetch(
+      [{ text: `Message from ${platform} (ID: ${platformUserId}): ${text}` }],
+      WEBHOOK_EXTRACTION_PROMPT
+    );
+
+    const extracted = JSON.parse(aiResponseRaw);
+    const orderId = `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    
+    const batch = db.batch();
+    
+    // ربط الطلب بالتاجر وتعيين الحالة الافتراضية
+    const orderData = {
+      customerName: extracted.name || extracted.customerName || "زبون مجهول",
+      phoneNumber: extracted.phone || extracted.phoneNumber || "",
+      wilaya: normalizeAlgerianWilaya(extracted.wilaya || ""),
+      commune: extracted.commune || "",
+      deliveryType: extracted.deliveryType || "home",
+      status: "pending", // الحالة الافتراضية للمراجعة
+      possibleFake: !!extracted.possible_fake_order,
+      userId: userId,
+      note: extracted.note || "",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      source: `webhook_${platform}`
+    };
+
+    batch.set(db.collection("orders").doc(orderId), orderData);
+
+    // حفظ محتويات الطلب (Order Items)
+    if (extracted.items && Array.isArray(extracted.items)) {
+      extracted.items.forEach((item: any, idx: number) => {
+        const itemRef = db!.collection("orderItems").doc(`${orderId}_${idx}`);
+        batch.set(itemRef, {
+          orderId,
+          productName: item.product || "منتج",
+          quantity: item.quantity || 1,
+          size: item.size || "",
+          color: item.color || ""
+        });
+      });
+    }
+
+    // تحديث إحصائيات التاجر
+    batch.update(db.collection("users").doc(userId), {
+      orderCounter: admin.firestore.FieldValue.increment(1)
+    });
+
+    await batch.commit();
+    console.log(`[Webhook Success] Order ${orderId} created for merchant ${userId}`);
+
+  } catch (err) {
+    console.error(`[processWebhookOrder Failed] Error processing async order for user ${userId}:`, err);
+  }
+}
+
+/**
+ * مسار محمي للتاجر لتوليد أو جلب الرمز السري الخاص بالـ Webhook
+ */
+apiRouter.post("/merchant/webhook-setup", authenticate, async (req, res) => {
+  const uid = (req as any).uid;
+  if (!db) return res.status(500).json({ error: "DB not initialized" });
+
+  try {
+    const configRef = db.collection("merchant_configs").doc(uid);
+    const doc = await configRef.get();
+
+    if (req.body.action === "regenerate" || !doc.exists) {
+      const newSecret = generateWebhookSecret();
+      await configRef.set({
+        userId: uid,
+        webhookSecret: newSecret,
+        isEnabled: true,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: doc.exists ? doc.data()?.createdAt : admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      return res.json({ 
+        success: true, 
+        webhookSecret: newSecret, 
+        message: "تم توليد مفتاح سري جديد للـ Webhook بنجاح." 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      webhookSecret: doc.data()?.webhookSecret,
+      isEnabled: doc.data()?.isEnabled 
+    });
+
+  } catch (err) {
+    console.error("Webhook setup error:", err);
+    res.status(500).json({ error: "Failed to setup webhook." });
+  }
+});
+
+// Create a helper for specific platform mapping (Optional but recommended)
+apiRouter.post("/webhooks/link-platform", authenticate, async (req, res) => {
+  const uid = (req as any).uid;
+  const { platform, platformId } = req.body;
+  if (!db || !platform || !platformId) return res.status(400).json({ error: "Missing parameters" });
+
+  try {
+    const docId = `${uid}_${platform}`;
+    await db.collection("merchant_platforms").doc(docId).set({
+      userId: uid,
+      platform,
+      platformId,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ success: true, message: `Linked ${platform} to your account.` });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to link platform" });
+  }
+});
+
+// === END WEBHOOK INTEGRATION ===
 
 apiRouter.post("/webhooks/shipping", async (req, res) => {
   const { tracking_number, status } = req.body;

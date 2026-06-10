@@ -27,6 +27,18 @@
         window.dispatchEvent(new CustomEvent('pwaPromptAvailable'));
       });
       
+      // Actively remove all caches and service worker registrations
+      // to resolve active sandbox preview loading and MIME-type issues
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            caches.delete(name).then(() => {
+              console.log('Cleared active cache:', name);
+            });
+          });
+        });
+      }
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
