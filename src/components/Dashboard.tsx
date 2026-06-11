@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   MapPin, Clock, Plus, LayoutDashboard, Trash2, User, AlertTriangle, 
   TrendingUp, CheckCircle2, Truck, XCircle, ShoppingBag, Home, Briefcase, Percent,
-  ArrowLeft, Search, Filter, FileText, Download, X, Eye, RefreshCw
+  ArrowLeft, Search, Filter, FileText, Download, X, Eye, RefreshCw, ShoppingCart, Zap
 } from "lucide-react";
 import { doc, updateDoc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../lib/firebase";
+import { sendNotification } from "../lib/notifications";
 
 export default function Dashboard({ userData, ordersHistory, planLimits, topWilayas, t, setScreen, handleViewOrder, setOrderToDelete }: any) {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -24,6 +25,20 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
+
+    // Send a welcome notification once per session/user if it's their first time seeing the dashboard
+    const welcomeKey = `welcome_notif_sent_${currentUser.uid}`;
+    if (!sessionStorage.getItem(welcomeKey)) {
+      sendNotification({
+        userId: currentUser.uid,
+        title: isAr ? "أهلاً بك في لوحة التحكم! 👋" : "Welcome to your Dashboard! 👋",
+        message: isAr 
+          ? "تم تفعيل نظام الإشعارات بنجاح. ستتلقى هنا تنبيهات الطلبات الجديدة والمخزون المنخفض." 
+          : "Notification system activated. You will receive alerts for new orders and low stock here.",
+        type: "success"
+      });
+      sessionStorage.setItem(welcomeKey, "true");
+    }
 
     const q = query(
       collection(db, "inventory"),
@@ -43,6 +58,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
     return () => unsubscribe();
   }, []);
 
+  const [ordersSearch, setOrdersSearch] = useState("");
   const totalStockValue = products.reduce((sum, p) => sum + ((Number(p.price) || 0) * (Number(p.stockQuantity) || 0)), 0);
   const totalStockQuantity = products.reduce((sum, p) => sum + (Number(p.stockQuantity) || 0), 0);
   const [labelsSearch, setLabelsSearch] = useState("");
@@ -285,7 +301,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
       await Promise.all(promises);
 
       alert(isAr 
-        ? `تم بنجاح إرسال ومزامنة ${selectedOrderIds.length} طلبيات مع شركة التوصيل (${selectedCarrier}) ⚡ وتحويل حالتها إلى "مؤكد"!`
+        ? `تم بنجاح إرسال ومزامنة ${selectedOrderIds.length} طلبيات مع شركة التوصيل (${selectedCarrier}) وتحويل حالتها إلى "مؤكد"!`
         : `Dispatched and confirmed ${selectedOrderIds.length} orders successfully via ${selectedCarrier}!`
       );
       setSelectedOrderIds([]);
@@ -297,7 +313,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         );
         await Promise.all(promises);
         alert(isAr 
-          ? `تم تحديث وتأكيد حالة الطلبيات المحددة (${selectedOrderIds.length}) مباشرة في قاعدة البيانات بنجاح لـ ${selectedCarrier}! ✅`
+          ? `تم تحديث وتأكيد حالة الطلبيات المحددة (${selectedOrderIds.length}) مباشرة في قاعدة البيانات بنجاح لـ ${selectedCarrier}!`
           : `Dispatched locally. Confirmed ${selectedOrderIds.length} orders in Firestore for ${selectedCarrier}.`
         );
         setSelectedOrderIds([]);
@@ -371,7 +387,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         case "returned":
           return getLabel("الطلبيات المرتجعة", "Retours & Rejets", "Returned & Cancelled");
         case "storefront":
-          return getLabel("طلبات المتجر الإلكتروني 🛒", "Commandes de la Boutique 🛒", "Storefront Orders 🛒");
+          return getLabel("طلبات المتجر الإلكتروني", "Commandes de la Boutique", "Storefront Orders");
         default:
           return getLabel("الطلبات المفروزة", "Commandes Filtrées", "Filtered Orders");
       }
@@ -493,7 +509,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                           <span>{order.name}</span>
                           {(order.storeOrder || order.source === "storefront") && (
                             <span className="text-[9px] bg-purple-550/15 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded font-black font-sans shrink-0">
-                              {isAr ? "طلب المتجر 🛒" : "Storefront 🛒"}
+                              {isAr ? "طلب المتجر" : "Storefront"}
                             </span>
                           )}
                         </h4>
@@ -758,7 +774,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                     {getLabel("طلبات المتجر", "Boutique", "Storefront")}
                   </span>
                   <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
-                    <ShoppingBag className="w-4 h-4 animate-pulse" />
+                    <ShoppingCart className="w-4 h-4 animate-pulse" />
                   </div>
                 </div>
                 <div>
@@ -1246,14 +1262,36 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
             </button>
           </div>
 
-           <div className="flex flex-col gap-2.5">
-             <div className="flex items-center justify-between">
-               <h3 className="text-sm font-bold flex items-center gap-2">
-                 <Clock className="w-4 h-4 text-zinc-500" /> 
-                 {t.last_orders}
-               </h3>
-               {ordersHistory.length > 0 && (
-                 <div className="flex items-center gap-2">
+           <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-zinc-500" /> 
+                  {t.last_orders}
+                </h3>
+                
+                <div className="flex-1 max-w-sm relative">
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-zinc-500">
+                    <Search className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={ordersSearch}
+                    onChange={(e) => setOrdersSearch(e.target.value)}
+                    placeholder={getLabel("البحث باسم الزبون أو رقم الهاتف...", "Rechercher par nom ou téléphone...", "Search by name or phone...")}
+                    className="w-full h-10 pr-9 pl-3 bg-zinc-900 border border-zinc-800 focus:border-purple-500/50 outline-none text-zinc-100 rounded-xl text-[11px] transition-all font-sans"
+                  />
+                  {ordersSearch && (
+                    <button
+                      onClick={() => setOrdersSearch("")}
+                      className="absolute inset-y-0 left-0 pl-3 flex items-center text-zinc-500 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {ordersHistory.length > 0 && (
+                  <div className="flex items-center gap-2">
                    <button
                      type="button"
                      onClick={() => {
@@ -1342,7 +1380,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                            </>
                          ) : (
                            <>
-                             إرسال الطلبات المحددة ⚡
+                             إرسال الطلبات المحددة
                            </>
                          )}
                        </button>
@@ -1360,15 +1398,29 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
              </AnimatePresence>
            </div>
              
-             {ordersHistory.length === 0 ? (
-             <div className="bg-zinc-900/20 border border-zinc-800 rounded-3xl py-12 text-center text-zinc-600">
-               <LayoutDashboard className="w-12 h-12 mx-auto mb-2 opacity-20" />
-               <p>{t.no_orders}</p>
-             </div>
-           ) : (
-             <div className="space-y-4">
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-               {ordersHistory.slice(0, ordersLimit).map((order: any) => {
+             {(() => {
+               const filteredOrders = ordersHistory.filter((order: any) => {
+                 const q = ordersSearch.toLowerCase().trim();
+                 if (!q) return true;
+                 return (
+                   (order.customerName || order.name || "").toLowerCase().includes(q) ||
+                   (order.phoneNumber || order.phone || "").includes(q)
+                 );
+               });
+
+               if (filteredOrders.length === 0) {
+                 return (
+                   <div className="bg-zinc-900/20 border border-zinc-800 rounded-3xl py-12 text-center text-zinc-600">
+                     <Search className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                     <p>{isAr ? "لم يتم العثور على أي طلبيات تطابق بحثك." : (ordersHistory.length === 0 ? t.no_orders : "No orders found matching your search.")}</p>
+                   </div>
+                 );
+               }
+
+               return (
+                 <div className="space-y-4">
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                   {filteredOrders.slice(0, ordersLimit).map((order: any) => {
                   const statusColorsMap: any = {
                     pending: "bg-amber-400/5 text-amber-500 border-amber-500/20 hover:bg-amber-400/10",
                     confirmed: "bg-emerald-400/5 text-emerald-400 border-emerald-500/20 hover:bg-emerald-400/10",
@@ -1414,7 +1466,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                             <span>{order.customerName || order.name}</span>
                             {(order.storeOrder || order.source === "storefront") && (
                               <span className="text-[9px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-1.5 py-0.2 rounded font-bold font-sans">
-                                {isAr ? "طلب المتجر 🛒" : "Storefront 🛒"}
+                                {isAr ? "طلب المتجر" : "Storefront"}
                               </span>
                             )}
                           </h4>
@@ -1454,7 +1506,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                  );
                })}
              </div>
-             {ordersHistory.length > ordersLimit && (
+             {filteredOrders.length > ordersLimit && (
                <div id="sentinel-main" ref={mainSentinelRef} className="py-8 flex flex-col items-center justify-center space-y-2 text-center text-zinc-500">
                  <RefreshCw className="w-5 h-5 text-yellow-500 animate-spin" />
                  <p className="text-[10px] font-medium text-zinc-400">
@@ -1463,7 +1515,8 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                </div>
              )}
              </div>
-           )}
+               );
+             })()}
         </div>
       )}
 

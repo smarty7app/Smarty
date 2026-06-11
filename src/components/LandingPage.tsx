@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Zap, Cpu, Shield, Truck, Activity, CheckCircle, Download, X, Info, Clock, Sparkles, 
   Brain, ArrowRight, Lock, AlertCircle, Terminal, Smartphone, Search, Database, 
+  Facebook, Instagram, Send, MessageCircle,
   HelpCircle, ShieldCheck, RefreshCw, FileText, ShoppingBag, CreditCard, Package,
   Image, Paperclip
 } from "lucide-react";
@@ -257,28 +258,27 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
     {
       label: lang === "ar" ? "رسالة ماسنجر بالدَّارجة" : lang === "fr" ? "Chat Messenger en Darija" : "Darija Messenger Chat",
       text: lang === "ar" 
-        ? "سلام عليكم خويا، حاب نطلب هاد السيروم تاع البشرة الجافة و الحجم الصغير، ومعاه كريم مرطب حبة وحدة. ديرلي شحن للمنزل ولاية غليزان بلدية سيدي امحمد بن علي حي النصر، الاسم عائشة بن عودة ورقم الهاتف 0773665544 ربي يخليك ويريت لوكان تخليهالي فالعشية"
-        : "Salam khouya, hab nechri serum ta3 bachra jaffa sghir w m3ah creme hydratante 1pc. Dirlna livraison leldar Relizane, sidi m'hamed ben ali, حي النصر, ism aicha benouda w tel 0773665544 dirlha f l'aprem rabi yhafdak.",
+        ? "السلام عليكم خويا، حاب نطلب هاد لونسومبل (ensemble) تاع الصيف لي حطيتوه فالباج، لاطاي L واللون كحلي (noir). ديرلي شحن لولاية سطيف بلدية العلمة حي 500 مسكن، الإسم محمد بن علي ورقم الهاتف 0661223344. بارك الله فيك ربي يحفظك."
+        : "Salam khouya, bghit ncommandi had l'ensemble ta3 sayf li hatitoh f page, size L w laloun kahl (noir). Dirlna livraison settif, el eulma city 500 logts, ism mohamed ben ali w tel 0661223344. Baraka ellah fik.",
       result: {
-        name: "عائشة بن عودة",
-        customer_name: "عائشة بن عودة / Aicha Benouda",
-        phone: "0773665544",
-        wilaya: lang === "ar" ? "48 - غليزان" : "48 - Relizane",
-        commune: lang === "ar" ? "سيدي امحمد بن علي" : "Sidi M'Hamed Ben Ali",
-        address: "حي النصر / Cité En-Nasr",
+        name: "محمد بن علي",
+        customer_name: "محمد بن علي / Mohamed Ben Ali",
+        phone: "0661223344",
+        wilaya: lang === "ar" ? "19 - سطيف" : "19 - Setif",
+        commune: lang === "ar" ? "العلمة" : "El Eulma",
+        address: "حي 500 مسكن / Cité 500 Logts",
         delivery_type: "home",
         delivery_type_label: lang === "ar" ? "شحن للمنزل" : "Livraison à domicile",
         items: [
-          { product: "سيروم الهيالورونيك للبشرة الجافة (صغير)", quantity: 1, size: "S", color: "شفاف", pricePerUnit: 2400 },
-          { product: "كريم الترطيب العمليق ومغذي للبشرة", quantity: 1, size: "Default", color: "أبيض", pricePerUnit: 1800 }
+          { product: "طقم رجالي صيفي قطني (Noir)", quantity: 1, size: "L", color: "أسود كلاسيك", pricePerUnit: 4500 }
         ],
-        note: lang === "ar" ? "تفضل التوصيل في الفترة المسائية" : "Livraison souhaitée l'après-midi",
+        note: lang === "ar" ? "بارك الله فيك ربي يحفظك" : "Baraka ellah fik",
         possible_fake_order: false,
-        shippingFee: 650,
-        totalPrice: 4850,
+        shippingFee: 600,
+        totalPrice: 5100,
         status: "pending",
-        reliability: "High (✅ Valid Relizane active line)",
-        processingTime: "1.1s"
+        reliability: "High (Valid Setif active line)",
+        processingTime: "0.9s"
       }
     },
     {
@@ -302,7 +302,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         shippingFee: 350,
         totalPrice: 3550,
         status: "pending",
-        reliability: "High (✅ Valid Oran active line)",
+        reliability: "High (Valid Oran active line)",
         processingTime: "0.8s"
       }
     },
@@ -329,7 +329,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         shippingFee: 400,
         totalPrice: 18700,
         status: "pending",
-        reliability: "High (✅ Dual active lines provided)",
+        reliability: "High (Dual active lines provided)",
         processingTime: "1.0s"
       }
     }
@@ -798,7 +798,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         {/* Extra user notes parsed */}
                         {extractedData.note && (
                           <div className="md:col-span-2 bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-1">
-                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "الملاحظات الخاصة للتوصيل" : "Parsed Customer Instructions"}</span>
+                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "الملاحظات الخاصة للتوصيل" : lang === "fr" ? "Instructions de livraison" : "Parsed Customer Instructions"}</span>
                             <p className="text-zinc-300 font-medium text-[11px] leading-relaxed">{extractedData.note}</p>
                           </div>
                         )}
@@ -806,15 +806,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         {/* Pricing Ledger summary mimicking real app checkout */}
                         <div className="md:col-span-2 bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/10 rounded-xl p-3 space-y-1 text-xs">
                           <div className="flex justify-between items-center text-zinc-400">
-                            <span>{lang === "ar" ? "المجموع الفرعي للسلع" : "Subtotal Items"}</span>
+                            <span>{lang === "ar" ? "المجموع الفرعي للسلع" : lang === "fr" ? "Sous-total articles" : "Subtotal Items"}</span>
                             <span>{extractedData.totalPrice - extractedData.shippingFee} DA</span>
                           </div>
                           <div className="flex justify-between items-center text-zinc-400">
-                            <span>{lang === "ar" ? "تكلفة التوصيل (Yalidine)" : "Yalidine Shipping"}</span>
+                            <span>{lang === "ar" ? "تكلفة التوصيل (Yalidine)" : lang === "fr" ? "Frais de livraison (Yalidine)" : "Yalidine Shipping"}</span>
                             <span>+ {extractedData.shippingFee} DA</span>
                           </div>
                           <div className="border-t border-purple-500/10 pt-1.5 flex justify-between items-center font-bold text-white font-sans">
-                            <span>{lang === "ar" ? "الإجمالي الكلي المعزز" : "Total Collectable Amount"}</span>
+                            <span>{lang === "ar" ? "الإجمالي الكلي المعزز" : lang === "fr" ? "Total net à collecter" : "Total Collectable Amount"}</span>
                             <span className="text-emerald-450 font-mono text-sm">{extractedData.totalPrice} DA</span>
                           </div>
                         </div>
@@ -831,7 +831,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         <p className="text-xs text-zinc-400 font-bold">{t.demo_awaiting_context || "Awaiting raw chat context..."}</p>
                         <p className="text-[10px] text-zinc-500 leading-normal max-w-xs mx-auto">
                           {lang === "ar" 
-                            ? "انقر على زر البث البنفسجي بالأعلى لتجربة محاكاة سريعة وواقعية لذكاء SmartyAi"
+                            ? "انقر على أيقونة البث البنفسجية بالأعلى لتجربة محاكاة سريعة وواقعية لذكاء SmartyAi"
                             : lang === "fr"
                             ? "Cliquez sur le bouton de génération à gauche pour simuler l'extraction intelligente instantanément."
                             : "Click the generator button on the left to simulate the extraction pipeline instantly."}
@@ -954,26 +954,11 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={<Cpu className="w-6 h-6 text-purple-400" />} 
-              title={t.landing_feature_1_title} 
-              desc={t.landing_feature_1_desc} 
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <FeatureCard 
               icon={<Shield className="w-6 h-6 text-red-400" />} 
               title={t.landing_feature_2_title} 
               desc={t.landing_feature_2_desc} 
-            />
-            <FeatureCard 
-              icon={<Truck className="w-6 h-6 text-blue-400" />} 
-              title={t.landing_feature_3_title} 
-              desc={t.landing_feature_3_desc} 
-            />
-            <FeatureCard 
-              icon={<Activity className="w-6 h-6 text-green-400" />} 
-              title={t.landing_feature_4_title} 
-              desc={t.landing_feature_4_desc} 
             />
             <FeatureCard 
               icon={<Clock className="w-6 h-6 text-yellow-400" />} 
@@ -986,19 +971,9 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               desc={t.pwa_desc || "Install as a lightweight app on phone, tablet or desktop built to enable massive comfort and accessibility on-the-go."}
             />
             <FeatureCard 
-              icon={<ShoppingBag className="w-6 h-6 text-yellow-500" />} 
-              title={t.feature_store_title || "Custom Public E-Commerce Storefront"} 
-              desc={t.store_desc || "Every merchant automatically gets an elegant online store. Let your buyers select items, add to cart, and checkout directly, bypassing manual messenger copying."}
-            />
-            <FeatureCard 
               icon={<CreditCard className="w-6 h-6 text-emerald-400" />} 
               title={t.feature_payment_title || "Automated Edahabia & CIB via Chargily"} 
               desc={t.payment_desc || "Upgrade or buy securely using Algerian CIB and Edahabia cards via fully automated Chargily Pay workflows, or fall back to traditional CCP receipt verification."}
-            />
-            <FeatureCard 
-              icon={<Package className="w-6 h-6 text-orange-400" />} 
-              title={t.feature_stock_title || "Smart Inventory & Stock Intelligence"} 
-              desc={t.stock_desc || "Track real-time stock levels by size, SKU, and color. Out-of-stock indicators warn you, and confirmed orders subtract stock automatically to secure profits."}
             />
           </div>
         </div>
@@ -1206,7 +1181,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   className="w-full py-2.5 rounded-xl bg-emerald-500 text-neutral-950 font-black text-[10px] tracking-wider uppercase transition-transform active:scale-[0.98] cursor-pointer select-none"
                   onClick={() => alert(isRtl ? "محاكاة ناجحة! هذه هي الواجهة الحقيقية التي يدخل إليها زبناؤك لشراء منتجاتك بسهولة تامة." : "Interactive Simulation success! This is exactly how your customers buy from your elegant custom storefront.")}
                 >
-                  {lang === "ar" ? "تأكيـد الشراء الفوري 🚀" : "Confirm Fast Checkout 🚀"}
+                  {lang === "ar" ? "تأكيـد الشراء الفوري" : "Confirm Fast Checkout"}
                 </button>
 
               </div>
@@ -1375,6 +1350,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 <span>
                   {lang === "ar"
                     ? "عند تفعيل نظام المستودع، تُخصم السلع تلقائياً من مخزونك فور إصدار ملصق الشحن الفعلي من شركة التوصيل، مما يضمن دقة المخزون ويمنع تداخل الحسابات والبيع الزائد."
+                    : lang === "fr"
+                    ? "En activant le système d'entrepôt, les articles sont automatiquement déduits dès l'émission de l'étiquette d'expédition, garantissant une précision totale du stock."
                     : "When the warehouse system is enabled, items are automatically deducted from inventory as soon as the shipping label is issued by the carrier, ensuring perfect stock accuracy and preventing overselling."}
                 </span>
               </div>
@@ -1385,7 +1362,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/10 text-orange-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-orange-500/15 select-none font-sans">
               <Package className="w-3.5 h-3.5" />
-              <span>{lang === "ar" ? "إدارة المستودعات والسلع" : "Warehouse & Inventory Module"}</span>
+              <span>{lang === "ar" ? "إدارة المستودعات والسلع" : lang === "fr" ? "Module de Gestion d'Entrepôt & Stock" : "Warehouse & Inventory Module"}</span>
             </div>
             <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
               {whTitle}
@@ -1414,7 +1391,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 text-green-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-green-500/15 select-none font-sans">
               <Activity className="w-3.5 h-3.5" />
-              <span>{lang === "ar" ? "لوحة التحليلات ومحاربة الاحتيال" : "Intelligent Analytics & Anti-Fraud Suite"}</span>
+              <span>{lang === "ar" ? "لوحة التحليلات ومحاربة الاحتيال" : lang === "fr" ? "Suite d'Analytics Intelligente & Anti-Fraude" : "Intelligent Analytics & Anti-Fraud Suite"}</span>
             </div>
             <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
               {dbShowcaseTitle}
@@ -1442,19 +1419,19 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               {/* Top Summary Blocks */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "نسبة التوصيل" : "Delivered Rate"}</span>
+                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "نسبة التوصيل" : lang === "fr" ? "Taux de Livraison" : "Delivered Rate"}</span>
                   <p className="text-emerald-400 font-sans text-sm md:text-base font-extrabold">91.4%</p>
-                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "شحن ناجح مؤكد" : "Successful deliveries"}</span>
+                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "شحن ناجح مؤكد" : lang === "fr" ? "Livraisons réussies" : "Successful deliveries"}</span>
                 </div>
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الناجحة" : "Sales Collected"}</span>
+                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الناجحة" : lang === "fr" ? "Ventes Collectées" : "Sales Collected"}</span>
                   <p className="text-white font-sans text-sm md:text-base font-extrabold">142,500 DA</p>
-                  <span className="text-[7px] font-mono text-indigo-400 font-bold block">+18.5% {lang === "ar" ? "WTD الأسبوع" : "WTD This Week"}</span>
+                  <span className="text-[7px] font-mono text-indigo-400 font-bold block">+18.5% {lang === "ar" ? "WTD الأسبوع" : lang === "fr" ? "WTD Cette Semaine" : "WTD This Week"}</span>
                 </div>
                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الملغاة" : "Cancelled / Return"}</span>
+                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الملغاة" : lang === "fr" ? "Annulés / Retours" : "Cancelled / Return"}</span>
                   <p className="text-red-400 font-sans text-sm md:text-base font-extrabold">5.6%</p>
-                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "كشف فوري بالأي آي" : "Checked with AI"}</span>
+                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "كشف فوري بالأي آي" : lang === "fr" ? "Vérifié par l'IA" : "Checked with AI"}</span>
                 </div>
               </div>
 
@@ -1468,7 +1445,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 {/* Algiers */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">78 {lang === "ar" ? "طلب مؤكد" : "orders"}</span>
+                    <span className="font-mono text-white font-bold">78 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>16 - الجزائر (Algiers)</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
@@ -1479,7 +1456,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 {/* Oran */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">46 {lang === "ar" ? "طلب مؤكد" : "orders"}</span>
+                    <span className="font-mono text-white font-bold">46 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>31 - وهران (Oran)</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
@@ -1490,7 +1467,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 {/* Blida */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">32 {lang === "ar" ? "طلب مؤكد" : "orders"}</span>
+                    <span className="font-mono text-white font-bold">32 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>09 - البليدة (Blida)</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
@@ -1501,7 +1478,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 {/* Constantine */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">29 {lang === "ar" ? "طلب مؤكد" : "orders"}</span>
+                    <span className="font-mono text-white font-bold">29 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>25 - قسنطينة (Constantine)</span>
                   </div>
                   <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
@@ -1515,12 +1492,140 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <div className="text-[10px] text-zinc-550 text-zinc-500 text-center select-none font-medium text-zinc-400">
                 {lang === "ar" 
                   ? "✓ البيانات تتبَع بشكل دقيق ومن الحظّة الأولى للاتصال بشركات Yalidine و ZR Express ومزامنتها."
+                  : lang === "fr"
+                  ? "✓ Toutes les analyses de livraison correspondent nativement aux retours de Yalidine et ZR Express."
                   : "✓ All delivery analytics automatically match Yalidine and ZR Express courier feedback natively."}
               </div>
 
             </div>
           </div>
 
+        </div>
+      </section>
+
+      {/* SOCIAL INTEGRATION HUB */}
+      <section id="social" className="py-24 px-6 relative bg-gradient-to-b from-[#0A0D17] to-black/20 overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center mb-16">
+            {/* Text Content */}
+            <div className="lg:col-span-6 space-y-8" dir={isRtl ? "rtl" : "ltr"}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/20">
+                <Sparkles className="w-3 h-3" />
+                <span>{lang === "ar" ? "متجرك كله في مكان واحد" : lang === "fr" ? "Votre hub e-commerce complet" : "Your entire store in one hub"}</span>
+              </div>
+              
+              <div className="space-y-6">
+                <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1]">
+                  {lang === "ar" 
+                    ? "ربط منصات التواصل الاجتماعي" 
+                    : lang === "fr"
+                    ? "Intégration des réseaux sociaux"
+                    : "Social Media Integration"}
+                </h2>
+                <p className="text-zinc-400 text-sm md:text-base leading-relaxed font-medium">
+                  {lang === "ar"
+                    ? "بدل التنقل بين التطبيقات وضياع الطلبات، اربط حساباتك في Facebook, Instagram, Telegram, و WhatsApp بمنصة SmartyAi Order لتدير مبيعاتك وتواصلك مع الزبائن وشركات الشحن من شاشة واحدة وبكل بساطة."
+                    : lang === "fr"
+                    ? "Libérez-vous de la gestion fragmentée ! Connectez vos comptes Facebook, Instagram, Telegram et WhatsApp à SmartyAi Order pour gérer vos ventes, vos clients et vos transporteurs depuis un écran unique."
+                    : "Instead of jumping between apps and losing orders, link your Facebook, Instagram, Telegram, and WhatsApp accounts to SmartyAi Order. Manage your sales, customer communication, and shipping carriers from a single screen with total simplicity."}
+                </p>
+              </div>
+
+              {/* Steps */}
+              <div className="space-y-6 pt-4">
+                <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-purple-400" />
+                  {lang === "ar" ? "كيف تعمل الميزة؟ (في 3 خطوات سريعة)" : lang === "fr" ? "Comment ça marche ? (En 3 étapes)" : "How it works? (In 3 quick steps)"}
+                </h3>
+                
+                <div className="space-y-4">
+                  {[
+                    {
+                      step: 1,
+                      title: lang === "ar" ? "إربط بكل سهولة" : lang === "fr" ? "Connexion en un clic" : "Link with One Click",
+                      text: lang === "ar" 
+                        ? "قم بربط حساباتك (Facebook, Instagram, Telegram, WhatsApp) بـ SmartyAi Order بسهولة تامة وبأمان." 
+                        : lang === "fr"
+                        ? "Liez vos comptes (Facebook, Instagram, Telegram, WhatsApp) à SmartyAi Order en toute simplicité et sécurité."
+                        : "Connect your Facebook, Instagram, Telegram, and WhatsApp accounts to SmartyAi Order securely and effortlessly.",
+                      icon: <Lock className="w-5 h-5 text-blue-400" />
+                    },
+                    {
+                      step: 2,
+                      title: lang === "ar" ? "استقبل وأرسل تلقائياً" : lang === "fr" ? "Flux de messages automatisé" : "Automated Flow",
+                      text: lang === "ar" 
+                        ? "بمجرد دخول طلب جديد من أي منصة، يتم تسجيله في النظام، ويبدأ التطبيق بإرسال إشعارات تلقائية للزبون (مثل: تم تأكيد طلبك، طلبك قيد الشحن، أو تم التوصيل) عبر WhatsApp أو Telegram." 
+                        : lang === "fr"
+                        ? "Chaque nouvelle commande est enregistrée instantanément. L'application envoie des notifications automatiques (Confirmée, Expédiée, Livrée) aux clients via WhatsApp ou Telegram."
+                        : "Every new order from any platform is instantly logged. The app automatically sends status notifications (Confirmed, Shipped, Delivered) to customers via WhatsApp or Telegram.",
+                      icon: <MessageCircle className="w-5 h-5 text-emerald-400" />
+                    },
+                    {
+                      step: 3,
+                      title: lang === "ar" ? "إرسال جماعي لشركات الشحن" : lang === "fr" ? "Envoi groupé aux transporteurs" : "Bulk Carrier Dispatch",
+                      text: lang === "ar" 
+                        ? "تصلك الطلبيات كطلبيات غير مؤكدة في لوحتك؛ وبكل بساطة يمكنك تحديد كل الطلبات التي أكدتها وإرسالها دفعة واحدة إلى شركة الشحن دون الحاجة لنسخ البيانات يدوياً." 
+                        : lang === "fr"
+                        ? "Les commandes arrivent en attente sur votre tableau de bord. Validez-les et expédiez-les en masse à votre transporteur sans aucune saisie manuelle."
+                        : "Orders arrive as unconfirmed entries on your dash. After validation, simply select all confirmed orders and dispatch them in bulk to your carrier with zero manual data entry.",
+                      icon: <Truck className="w-5 h-5 text-purple-400" />
+                    }
+                  ].map((item) => (
+                    <div key={item.step} className="flex gap-4 p-4 bg-zinc-900/40 border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-800">
+                        {item.icon}
+                      </div>
+                      <div className="space-y-1">
+                        <h5 className="font-bold text-white text-sm">
+                          <span className="text-purple-500 mr-1.5">{item.step}.</span>
+                          {item.title}
+                        </h5>
+                        <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">{item.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Grid Right */}
+            <div className="lg:col-span-6 grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div className="p-8 bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/20 rounded-3xl group hover:border-blue-500/40 transition-all hover:-translate-y-1">
+                  <Facebook className="w-10 h-10 text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <h4 className="text-sm font-black text-white mb-2 font-sans">Facebook</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                    {lang === "ar" ? "مزامنة لحظية للمحادثات وتحويل الرسائل إلى مشتريات مؤكدة." : lang === "fr" ? "Synchronisation en temps réel pour transformer vos chats en ventes." : "Real-time sync turning messages into confirmed sales."}
+                  </p>
+                </div>
+                <div className="p-8 bg-gradient-to-br from-pink-600/10 to-transparent border border-pink-500/20 rounded-3xl group hover:border-pink-500/40 transition-all hover:translate-y-1">
+                  <Instagram className="w-10 h-10 text-pink-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <h4 className="text-sm font-black text-white mb-2 font-sans">Instagram</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                    {lang === "ar" ? "اجعل منشوراتك وقصصك أبواباً مفتوحة لطلبيات عملائك مباشرة." : lang === "fr" ? "Transformez vos posts et stories en passerelles directes pour vos commandes." : "Turn your posts and stories into direct gateways for orders."}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4 pt-12">
+                <div className="p-8 bg-gradient-to-br from-sky-600/10 to-transparent border border-sky-500/20 rounded-3xl group hover:border-sky-500/40 transition-all hover:-translate-y-1">
+                  <Send className="w-10 h-10 text-sky-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <h4 className="text-sm font-black text-white mb-2 font-sans">Telegram</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                    {lang === "ar" ? "أتمتة كاملة عبر القنوات لإخطار العملاء والمناديب." : lang === "fr" ? "Automatisation complète via canaux pour notifier clients et livreurs." : "Full automation via channels to notify customers and couriers."}
+                  </p>
+                </div>
+                <div className="p-8 bg-gradient-to-br from-emerald-600/10 to-transparent border border-emerald-500/20 rounded-3xl group hover:border-emerald-500/40 transition-all hover:translate-y-1">
+                  <MessageCircle className="w-10 h-10 text-emerald-500 mb-4 group-hover:scale-110 transition-transform" />
+                  <h4 className="text-sm font-black text-white mb-2 font-sans">WhatsApp</h4>
+                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                    {lang === "ar" ? "تتبع ذكي وتذكيرات آلية لضمان استلام الطرود." : lang === "fr" ? "Suivi intelligent et rappels automatiques pour garantir la livraison." : "Smart tracking and automated reminders for safe delivery cycles."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1657,7 +1762,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               </div>
               <p className="text-xs text-zinc-505 leading-relaxed max-w-sm select-none">
                 {lang === "ar" 
-                  ? "المؤسسة الجزائرية الأذكى لأتمتة التجارة الإلكترونية، تفكيك محادثات السحب التلقائي، والربط اللوجستي الفوري بكبسة زر."
+                  ? "المؤسسة الجزائرية الأذكى لأتمتة التجارة الإلكترونية، تفكيك محادثات السحب التلقائي، والربط اللوجستي الفوري بنقرة واحدة."
                   : lang === "fr"
                   ? "La plateforme algérienne la plus intelligente pour l'automatisation du e-commerce, l'extraction de discussions informelles et la synchronisation logistique locale."
                   : "The smartest Algerian platform for e-commerce automation, unstructured chat extraction, and immediate local logistics synchronization."}
@@ -1695,10 +1800,6 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   title: t.footer_platform_services,
                   links: [
                     { 
-                      label: t.footer_platform, 
-                      action: () => scrollToSection("hero") 
-                    },
-                    { 
                       label: t.footer_capabilities, 
                       action: () => scrollToSection("capabilities") 
                     },
@@ -1706,15 +1807,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       label: t.footer_logistics, 
                       action: () => scrollToSection("logistics") 
                     },
+                    { 
+                      label: t.footer_features, 
+                      action: () => scrollToSection("features") 
+                    },
                   ]
                 },
                 {
                   title: t.footer_investment_plans,
                   links: [
-                    { 
-                      label: t.footer_investment_plans, 
-                      action: () => scrollToSection("pricing") 
-                    },
                     { 
                       label: t.footer_sign_in, 
                       action: signIn 
@@ -1723,15 +1824,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       label: t.footer_sign_up, 
                       action: signIn 
                     },
+                    { 
+                      label: t.get_started_btn || "Commencer", 
+                      action: () => scrollToSection("pricing")
+                    },
                   ]
                 },
                 {
                   title: t.footer_company_about,
                   links: [
-                    { 
-                      label: t.footer_company_about, 
-                      action: () => setShowAboutModal(true) 
-                    },
                     { 
                       label: t.footer_faq, 
                       action: () => scrollToSection("faq") 
@@ -1740,15 +1841,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       label: t.footer_tech_support, 
                       action: () => setShowSupportModal(true) 
                     },
+                    { 
+                      label: t.about_project_label || "À propos", 
+                      action: () => setShowAboutModal(true) 
+                    },
                   ]
                 },
                 {
                   title: t.footer_compliance_support,
                   links: [
-                    { 
-                      label: t.footer_compliance_support, 
-                      action: () => setShowComplianceModal(true) 
-                    },
                     { 
                       label: t.footer_terms_use, 
                       action: () => setScreen?.("terms") 
@@ -1756,6 +1857,10 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                     { 
                       label: t.footer_privacy_policy, 
                       action: () => setScreen?.("privacy") 
+                    },
+                    { 
+                      label: t.compliance_shield_label || "Certifications", 
+                      action: () => setShowComplianceModal(true) 
                     },
                   ]
                 }
@@ -1836,7 +1941,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
                     <li>
                       {lang === "ar" 
-                        ? "اضغط على زر المشاركة في متصفح سفاري (أيقونة المربع مع السهم للأعلى)." 
+                        ? "اضغط على أيقونة المشاركة في متصفح سفاري (أيقونة المربع مع السهم للأعلى)." 
                         : lang === "fr"
                         ? "Appuyez sur le bouton de Partage dans Safari (l'icône de carré avec une flèche vers le haut)."
                         : "Tap the Share button in the Safari browser (the square icon with an arrow pointing up)."}
@@ -1867,7 +1972,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
                     <li>
                       {lang === "ar" 
-                        ? "اضغط على زر الخيارات (النقاط الثلاث) في أعلى أو أسفل المتصفح." 
+                        ? "اضغط على أيقونة الخيارات (النقاط الثلاث) في أعلى أو أسفل المتصفح." 
                         : lang === "fr"
                         ? "Appuyez sur le bouton de menu (les trois points) en haut ou en bas de votre navigateur."
                         : "Tap the three dots menu button at the top/bottom of your browser."}

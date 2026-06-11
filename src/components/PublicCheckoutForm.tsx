@@ -94,12 +94,29 @@ interface CartItem {
   color: string;
 }
 
+import { translations } from "../lib/translations";
+import { Globe } from "lucide-react";
+
 export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormProps) {
+  // Lang management
+  const [lang, setLang] = useState<"ar" | "en" | "fr">(() => {
+    const saved = safeStorage.getItem("smarty_public_lang");
+    if (saved === "ar" || saved === "en" || saved === "fr") return saved;
+    return "ar"; // Default to ar for Algerian market
+  });
+
+  const t = translations[lang];
+  const isRtl = lang === "ar";
+
+  useEffect(() => {
+    safeStorage.setItem("smarty_public_lang", lang);
+  }, [lang]);
+
   // Merchant details loaded from unified secure endpoint GET /api/store/:merchantId/info
   const [storeInfo, setStoreInfo] = useState({
     storeName: "متجر SmartyAi",
     storeLogo: "",
-    storeDescription: "أهلاً بك في متجرنا الإلكتروني المتميز. تسوق أفضل المنتجات بأفضل الأسعار مع توصيل سريع لجميع الولايات."
+    storeDescription: ""
   });
   const [loadingMerchant, setLoadingMerchant] = useState<boolean>(true);
 
@@ -297,8 +314,28 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center select-none font-sans" dir="rtl">
+    <div className={`min-h-screen bg-[#050505] text-white flex flex-col items-center select-none font-sans ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       
+      {/* Language Switcher Floating */}
+      <div className={`fixed top-4 ${isRtl ? 'left-4' : 'right-4'} z-[60] flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 p-1.5 rounded-2xl backdrop-blur-md`}>
+        <div className="flex items-center gap-1.5 px-2 text-zinc-500">
+           <Globe className="w-3.5 h-3.5" />
+        </div>
+        <div className="flex bg-zinc-900 rounded-xl p-0.5">
+          {(['ar', 'en', 'fr'] as const).map((l) => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
+                lang === l ? "bg-emerald-500 text-black shadow-lg" : "text-zinc-500 hover:text-white"
+              }`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Toast Alert */}
       <AnimatePresence>
         {showAddedToast && (
@@ -309,7 +346,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
             className="fixed top-6 right-4 left-4 md:left-auto md:right-8 z-50 bg-emerald-500 text-black font-black text-xs px-4 py-3 rounded-2xl shadow-lg flex items-center gap-2"
           >
             <ShoppingCart className="w-4 h-4 shrink-0 animate-bounce" />
-            <span>تم إضافة المنتج إلى سلة الشراء بنجاح! 🛒</span>
+            <span>تم إضافة المنتج إلى سلة الشراء بنجاح!</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -341,6 +378,8 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
+            t={t}
+            isRtl={isRtl}
           />
         ) : (
           <StorefrontCart
@@ -351,6 +390,8 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
             onRemoveItem={handleRemoveItem}
             onBackToStore={() => setActiveTab("store")}
             onClearCart={() => setCart([])}
+            t={t}
+            isRtl={isRtl}
           />
         )}
       </div>
@@ -487,7 +528,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                   className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold text-xs tracking-wider rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 hover:scale-[1.01]"
                 >
                   <ShoppingCart className="w-4 h-4 shrink-0" />
-                  <span>تأكيد الإضافة ومتابعة الشراء 🛒</span>
+                  <span>تأكيد الإضافة ومتابعة الشراء</span>
                 </button>
               </div>
             </motion.div>
@@ -523,7 +564,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
             
             <div className="text-right space-y-0.5 select-none pr-1">
               <p className="text-[10px] text-zinc-400 font-bold leading-tight">
-                طلب حجز جديد متميز! 🎉
+                طلب حجز جديد متميز!
               </p>
               <p className="text-xs font-normal text-zinc-300">
                 قام <strong className="font-extrabold text-white">{activeNotification.customerName}</strong> من ولاية <strong className="font-bold text-zinc-200">{activeNotification.wilaya}</strong> بشراء <span className="font-extrabold underline decoration-emerald-500/40 text-emerald-400">{activeNotification.productName}</span>

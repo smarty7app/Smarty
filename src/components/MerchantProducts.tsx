@@ -35,6 +35,7 @@ import { Product } from "../types";
 import { ProductCard } from "./ProductCard";
 import { safeStorage } from "../lib/utils";
 import { ProductModal } from "./ProductModal";
+import { sendNotification } from "../lib/notifications";
 
 interface MerchantProductsProps {
   user: any;
@@ -700,6 +701,17 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         stockQuantity: targetStock,
         updatedAt: new Date().toISOString()
       });
+
+      // Send notification if stock is critically low
+      if (targetStock < 5 && user?.uid) {
+        const product = products.find(p => p.id === productId);
+        await sendNotification({
+          userId: user.uid,
+          title: t.notification_low_stock,
+          message: `${product?.productName || 'Product'} - ${targetStock} units remaining`,
+          type: "warning"
+        });
+      }
     } catch (err: any) {
       console.error("Error updating stock quantity:", err);
     }

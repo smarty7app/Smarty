@@ -9,6 +9,7 @@ import { WILAYA_COMMUNES } from "./PublicCheckoutForm";
 import { safeStorage } from "../lib/utils";
 import { db } from "../lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { sendNotification } from "../lib/notifications";
 
 interface CartItem {
   cartItemId: string;
@@ -29,6 +30,8 @@ interface StorefrontCartProps {
   onRemoveItem: (cartItemId: string) => void;
   onBackToStore: () => void;
   onClearCart: () => void;
+  t: any;
+  isRtl: boolean;
 }
 
 export default function StorefrontCart({
@@ -38,7 +41,9 @@ export default function StorefrontCart({
   onUpdateQty,
   onRemoveItem,
   onBackToStore,
-  onClearCart
+  onClearCart,
+  t,
+  isRtl
 }: StorefrontCartProps) {
   // Input fields state
   const [customerName, setCustomerName] = useState("");
@@ -106,29 +111,29 @@ export default function StorefrontCart({
 
     // Initial validations
     if (!customerName.trim() || !phoneNumber.trim()) {
-      setOrderErr("يرجى إدخال اسم المستلم ورقم الهاتف للمتابعة.");
+      setOrderErr(isRtl ? "يرجى إدخال اسم المستلم ورقم الهاتف للمتابعة." : "Please enter recipient name and phone number.");
       return;
     }
 
     const cleanPhone = phoneNumber.trim().replace(/\s+/g, "");
     const phoneRegex = /^(05|06|07)\d{8}$/;
     if (!phoneRegex.test(cleanPhone)) {
-      setOrderErr("الرجاء إدخال رقم هاتف جزائري صحيح يتكون من 10 أرقام ويبدأ بـ (05 أو 06 أو 07).");
+      setOrderErr(isRtl ? "الرجاء إدخال رقم هاتف جزائري صحيح يتكون من 10 أرقام ويبدأ بـ (05 أو 06 أو 07)." : "Please enter a valid Algerian phone number.");
       return;
     }
 
     if (!selectedWilaya) {
-      setOrderErr("الرجاء اختيار ولاية التوصيل.");
+      setOrderErr(isRtl ? "الرجاء اختيار ولاية التوصيل." : "Please select a wilaya.");
       return;
     }
 
     if (!selectedCommune) {
-      setOrderErr("الرجاء اختيار بلدية التوصيل.");
+      setOrderErr(isRtl ? "الرجاء اختيار بلدية التوصيل." : "Please select a commune.");
       return;
     }
 
     if (cart.length === 0) {
-      setOrderErr("سلة التسوق فارغة تماماً. الرجاء العودة واختيار منتج واحد على الأقل.");
+      setOrderErr(isRtl ? "سلة التسوق فارغة تماماً. الرجاء العودة واختيار منتج واحد على الأقل." : "Cart is empty.");
       return;
     }
 
@@ -216,11 +221,20 @@ export default function StorefrontCart({
         setSuccessOrderId(orderId);
       }
 
+      // Notify the merchant about the new order
+      await sendNotification({
+        userId: merchantId,
+        title: isRtl ? "طلب جديد من المتجر 🛍️" : "New Store Order 🛍️",
+        message: isRtl ? `وصلك طلب جديد من ${customerName.trim()} بقيمة ${finalPrice.toLocaleString()} DA` : `New order from ${customerName.trim()} for ${finalPrice.toLocaleString()} DA`,
+        type: "success",
+        actionUrl: "/?screen=dashboard"
+      });
+
       // Success! Empty the local cart
       onClearCart();
     } catch (err: any) {
       console.error("[Cart Checkout Failed]:", err);
-      setOrderErr(err.message || "حدث خطأ غير متوقع أثناء حفظ طلبيتك. يرجى المراجعة والمحاولة مجدداً.");
+      setOrderErr(err.message || (isRtl ? "حدث خطأ غير متوقع أثناء حفظ طلبيتك. يرجى المراجعة والمحاولة مجدداً." : "An error occurred. Please try again."));
     } finally {
       setSubmittingOrder(false);
     }
@@ -229,7 +243,7 @@ export default function StorefrontCart({
   // Success view block
   if (successOrderId) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center p-4 text-right" dir="rtl">
+      <div className={`min-h-[70vh] flex items-center justify-center p-4 ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -243,41 +257,41 @@ export default function StorefrontCart({
           </div>
 
           <div className="space-y-2.5">
-            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">تم تسجيل طلبيتك بنجاح! 🎉</h2>
+            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">{t.order_success}</h2>
             <p className="text-xs md:text-sm text-zinc-400 leading-relaxed max-w-md mx-auto font-medium">
-              أهلاً بك، تم إرسال الطلبية وحفظها بنجاح في متجر <span className="text-emerald-400 font-extrabold">{merchantName}</span>. سوف يتواصل معك فريق العمل هاتفياً لتأكيد الشحن لولايتك خلال بضعة ساعات.
+              {t.success_desc}
             </p>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 text-right space-y-3.5 shadow-inner text-xs">
-            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
-              <span className="text-zinc-500 font-bold">اسم المستلم:</span>
+          <div className={`bg-zinc-950 border border-zinc-900 rounded-2xl p-5 ${isRtl ? 'text-right' : 'text-left'} space-y-3.5 shadow-inner text-xs`}>
+            <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+              <span className="text-zinc-500 font-bold">{isRtl ? 'اسم المستلم:' : 'Recipient:'}</span>
               <span className="text-white font-extrabold">{customerName}</span>
             </div>
-            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
-              <span className="text-zinc-500 font-bold">رقم الهاتف الفعال:</span>
+            <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+              <span className="text-zinc-500 font-bold">{isRtl ? 'رقم الهاتف الفعال:' : 'Phone:'}</span>
               <span className="text-emerald-400 font-bold font-mono text-xs">{phoneNumber}</span>
             </div>
-            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
-              <span className="text-zinc-500 font-bold">مكان التوصيل والشحن:</span>
+            <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+              <span className="text-zinc-500 font-bold">{isRtl ? 'مكان التوصيل والشحن:' : 'Location:'}</span>
               <span className="text-white font-extrabold">
                 {activeWilayaObj?.nameAr || selectedWilaya} • {selectedCommune}
               </span>
             </div>
             {deliveryAddress.trim() && (
-              <div className="flex justify-between border-b border-zinc-900/60 pb-3">
-                <span className="text-zinc-500 font-bold">العنوان الكلي التفصيلي:</span>
+              <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+                <span className="text-zinc-500 font-bold">{isRtl ? 'العنوان الكلي التفصيلي:' : 'Full Address:'}</span>
                 <span className="text-zinc-300">{deliveryAddress}</span>
               </div>
             )}
-            <div className="flex justify-between border-b border-zinc-900/60 pb-3">
-              <span className="text-zinc-500 font-bold">طريقة الاستلام المفضلة:</span>
+            <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+              <span className="text-zinc-500 font-bold">{isRtl ? 'طريقة الاستلام المفضلة:' : 'Delivery Type:'}</span>
               <span className="text-white font-extrabold">
-                {deliveryType === "home" ? "توصيل آمن للمنزل 🏠" : "استلام من مكتب مكتب الشحن 📦"}
+                {deliveryType === "home" ? t.store_delivery_home : t.store_delivery_desk}
               </span>
             </div>
-            <div className="flex justify-between pt-1">
-              <span className="text-zinc-400 font-bold">المبلغ المطلوب للتسليم عند الاستلام:</span>
+            <div className={`flex justify-between pt-1 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+              <span className="text-zinc-400 font-bold">{isRtl ? 'المبلغ المطلوب للتسليم عند الاستلام:' : 'Payable on Delivery:'}</span>
               <span className="text-emerald-400 font-mono font-black text-sm">{finalPrice.toLocaleString()} DA</span>
             </div>
           </div>
@@ -295,7 +309,7 @@ export default function StorefrontCart({
             }}
             className="w-full py-4 bg-zinc-900 hover:bg-zinc-850 hover:text-white font-black rounded-2xl text-zinc-300 text-xs transition-colors cursor-pointer border border-zinc-800 hover:border-zinc-700"
           >
-            تصفح المتجر مجدداً وطلب منتجات أخرى
+            {isRtl ? 'تصفح المتجر مجدداً وطلب منتجات أخرى' : 'Browse store again'}
           </button>
         </motion.div>
       </div>
@@ -303,14 +317,13 @@ export default function StorefrontCart({
   }
 
   return (
-    <div className="text-right font-sans" dir="rtl">
-      {/* Back button link with premium scale hover */}
+    <div className={`font-sans ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       <button
         onClick={onBackToStore}
         className="mb-8 py-3 px-5 bg-zinc-900/60 hover:bg-zinc-900 hover:text-white text-zinc-400 rounded-2xl border border-zinc-850 hover:border-zinc-750 transition-all duration-300 inline-flex items-center gap-2 text-xs font-black cursor-pointer active:scale-95 shadow-lg"
       >
-        <ArrowRight className="w-4 h-4 text-emerald-400 shrink-0" />
-        <span>العودة لتصفح منتجات المتجر المتميزة</span>
+        <ArrowRight className={`w-4 h-4 text-emerald-400 shrink-0 ${isRtl ? '' : 'rotate-180'}`} />
+        <span>{t.back_to_store}</span>
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-10 items-start">
@@ -320,18 +333,18 @@ export default function StorefrontCart({
           <div className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-6 rounded-3xl space-y-4 shadow-2xl relative">
             <h3 className="text-xs font-extrabold text-white uppercase tracking-widest flex items-center gap-2 pb-3.5 border-b border-zinc-900">
               <ShoppingCart className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-              سلة التسوق الخاصة بك ({cart.length})
+              {t.cart_title} ({cart.length})
             </h3>
 
             {cart.length === 0 ? (
               <div className="text-center py-16 text-zinc-500 flex flex-col items-center gap-3">
                 <ShoppingBag className="w-12 h-12 text-zinc-800 animate-bounce" />
-                <p className="text-xs font-bold text-zinc-400">لا يوجد أي عناصر في السلة حالياً</p>
+                <p className="text-xs font-bold text-zinc-400">{t.empty_cart}</p>
                 <button
                   onClick={onBackToStore}
                   className="text-xs text-emerald-400 font-extrabold hover:underline cursor-pointer"
                 >
-                  انقر هنا لتصفح المنتجات وبدء التسوق 🛒
+                  {isRtl ? 'انقر هنا لتصفح المنتجات وبدء التسوق 🛒' : 'Click here to start shopping 🛒'}
                 </button>
               </div>
             ) : (
@@ -342,7 +355,6 @@ export default function StorefrontCart({
                     className="flex gap-3 bg-zinc-900/30 border border-zinc-900 p-3 rounded-2xl items-center justify-between group hover:border-zinc-800 transition-colors"
                   >
                     <div className="flex gap-3 items-center">
-                      {/* Frame preview */}
                       <div className="w-12 h-12 rounded-xl bg-black border border-zinc-900 shrink-0 overflow-hidden relative">
                         {item.imageUrl ? (
                           <img src={item.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -353,7 +365,7 @@ export default function StorefrontCart({
                         )}
                       </div>
 
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 text-right">
                         <h4 className="text-[11px] md:text-xs font-extrabold text-white line-clamp-1 group-hover:text-emerald-400 transition-colors">{item.productName}</h4>
                         <div className="flex items-center gap-2.5">
                           <p className="text-[10px] text-emerald-400 font-mono font-bold">{item.price.toLocaleString()} DA</p>
@@ -367,7 +379,6 @@ export default function StorefrontCart({
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Quantity switcher */}
                       <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-0.5">
                         <button
                           type="button"
@@ -385,8 +396,6 @@ export default function StorefrontCart({
                           <Plus className="w-2.5 h-2.5" />
                         </button>
                       </div>
-
-                      {/* Delete */}
                       <button
                         onClick={() => onRemoveItem(item.cartItemId)}
                         className="text-zinc-650 hover:text-red-400 p-1.5 hover:bg-zinc-900/50 rounded-lg transition-colors cursor-pointer"
@@ -399,25 +408,24 @@ export default function StorefrontCart({
               </div>
             )}
 
-            {/* Display Invoice items list totals */}
             {cart.length > 0 && (
               <div className="pt-4 border-t border-zinc-900 text-xs space-y-3">
-                <div className="flex justify-between text-zinc-400">
-                  <span>مجموع المنتجات بالسلة:</span>
+                <div className={`flex justify-between text-zinc-400 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+                  <span>{isRtl ? 'مجموع المنتجات بالسلة:' : 'Subtotal:'}</span>
                   <span className="font-mono font-bold text-white">{itemsTotal.toLocaleString()} DA</span>
                 </div>
-                <div className="flex justify-between text-zinc-400 items-center">
-                  <span>تكلفة شحن و توصيل الطرد:</span>
+                <div className={`flex justify-between text-zinc-400 items-center ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+                  <span>{t.shipping_fee_label}</span>
                   {loadingShipping ? (
                     <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
                   ) : selectedWilaya ? (
-                    <span className="text-emerald-400 font-extrabold font-mono">{shippingFee > 0 ? `+ ${shippingFee} DA` : "توصيل مجاني 🤩"}</span>
+                    <span className="text-emerald-400 font-extrabold font-mono">{shippingFee > 0 ? `+ ${shippingFee} DA` : (isRtl ? "توصيل مجاني 🤩" : "Free Delivery 🤩")}</span>
                   ) : (
-                    <span className="text-zinc-600 text-[10px] font-bold">بانتظار تحديد ولايتك</span>
+                    <span className="text-zinc-600 text-[10px] font-bold">{isRtl ? "بانتظار تحديد ولايتك" : "Waiting for wilaya..."}</span>
                   )}
                 </div>
-                <div className="flex justify-between text-xs md:text-sm font-extrabold pt-3 bg-zinc-900/20 p-3 rounded-2xl border-t border-zinc-900">
-                  <span className="text-white">المبلغ الجملي المراد دفعه عند الاستلام:</span>
+                <div className={`flex justify-between text-xs md:text-sm font-extrabold pt-3 bg-zinc-900/20 p-3 rounded-2xl border-t border-zinc-900 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
+                  <span className="text-white">{t.total_to_pay}</span>
                   <span className="font-mono text-emerald-400 text-sm md:text-base">
                     {finalPrice.toLocaleString()} <span className="text-[11px] text-emerald-400">DA</span>
                   </span>
@@ -434,40 +442,38 @@ export default function StorefrontCart({
             animate={{ opacity: 1, y: 0 }}
             className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-8 rounded-[2rem] shadow-2xl relative"
           >
-            {/* Ambient subtle decorative light leak */}
             <div className="absolute bottom-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-[70px] pointer-events-none" />
 
             <form onSubmit={handleCheckoutSubmit} className="space-y-5">
               {orderErr && (
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 font-bold leading-relaxed text-right">
+                <div className={`p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-xs text-red-400 font-bold leading-relaxed ${isRtl ? 'text-right' : 'text-left'}`}>
                   ⚠️ {orderErr}
                 </div>
               )}
 
-              {/* Title Identity */}
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900">
+                <h3 className={`text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
                   <User className="w-4 h-4 text-emerald-400 shrink-0" />
-                  1. معلومات الاتصال والمستلم الفعال
+                  1. {isRtl ? 'معلومات الاتصال والمستلم الفعال' : 'Contact Information'}
                 </h3>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">الاسم الكامل للمستلم والزبون *</label>
+                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">{t.recipient_name}</label>
                   <div className="relative">
                     <input
                       type="text"
                       required
-                      placeholder="مثال: يونس جلال"
+                      placeholder={isRtl ? "مثال: يونس جلال" : "e.g. John Doe"}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className="w-full text-right pr-10 pl-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all font-medium placeholder:text-zinc-700"
+                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all font-medium placeholder:text-zinc-700`}
                     />
-                    <User className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-600 pointer-events-none" />
+                    <User className={`absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3.5 w-4 h-4 text-zinc-600 pointer-events-none`} />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">رقم هاتف المستلم لتأكيد التوصيل هاتفياً *</label>
+                  <label className="block text-[10px] text-zinc-500 font-black uppercase tracking-wider px-1">{t.phone_label}</label>
                   <div className="relative">
                     <input
                       type="tel"
@@ -475,10 +481,10 @@ export default function StorefrontCart({
                       placeholder="05XXXXXXXX / 06XXXXXXXX"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className="w-full pl-4 pr-10 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs text-left font-mono focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700"
+                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-left font-mono' : 'pl-10 pr-4 text-left font-mono'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700`}
                       dir="ltr"
                     />
-                    <Phone className="absolute right-3.5 top-3.5 w-4 h-4 text-zinc-600 pointer-events-none" />
+                    <Phone className={`absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3.5 w-4 h-4 text-zinc-600 pointer-events-none`} />
                   </div>
                 </div>
               </div>
@@ -487,68 +493,68 @@ export default function StorefrontCart({
 
               {/* Geographical mapping */}
               <div className="space-y-4">
-                <h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900">
+                <h3 className={`text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 pb-2.5 border-b border-zinc-900 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
                   <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-                  2. تفاصيل وتأكيد مكان شحن الطرد
+                  2. {isRtl ? 'تفاصيل وتأكيد مكان شحن الطرد' : 'Shipping Details'}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] text-zinc-500 font-black px-1">الولاية *</label>
-                    <div className="relative font-bold">
+                    <label className="block text-[10px] text-zinc-500 font-black px-1">{t.wilaya_label}</label>
+                    <div className="relative font-bold text-left">
                       <select
                         required
                         value={selectedWilaya}
                         onChange={handleWilayaChange}
-                        className="w-full pl-9 pr-3 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold"
+                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold`}
                       >
-                        <option value="" disabled className="text-zinc-700">اختر الولاية</option>
+                        <option value="" disabled className="text-zinc-700">{isRtl ? 'اختر الولاية' : 'Select Wilaya'}</option>
                         {ALGERIA_68_WILAYAS.map(w => (
                           <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-black text-zinc-200 font-bold">
                             {w.code} - {w.nameAr}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-3 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
+                      <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-3.5 w-4 h-4 text-zinc-500 pointer-events-none`} />
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] text-zinc-500 font-black px-1">البلدية *</label>
-                    <div className="relative font-bold">
+                    <label className="block text-[10px] text-zinc-500 font-black px-1">{t.commune_label}</label>
+                    <div className="relative font-bold text-left">
                       <select
                         required
                         value={selectedCommune}
                         onChange={(e) => setSelectedCommune(e.target.value)}
                         disabled={!selectedWilaya}
-                        className="w-full pl-9 pr-3 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed font-bold"
+                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed font-bold`}
                       >
-                        <option value="" disabled className="text-zinc-700">اختر البلدية</option>
+                        <option value="" disabled className="text-zinc-700">{isRtl ? 'اختر البلدية' : 'Select Commune'}</option>
                         {communesList.map((comm, idx) => (
                           <option key={idx} value={comm} className="bg-black text-zinc-200">
                             {comm}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute left-3 top-3.5 w-4 h-4 text-zinc-500 pointer-events-none" />
+                      <ChevronDown className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-3.5 w-4 h-4 text-zinc-500 pointer-events-none`} />
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] text-zinc-500 font-black px-1">العنوان السكني التفصيلي لتسهيل التوصيل</label>
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">{t.address_label}</label>
                   <input
                     type="text"
-                    placeholder="مثال: حي السلام، عمارة رقم 3، الطابق 2"
+                    placeholder={isRtl ? "مثال: حي السلام، عمارة رقم 3، الطابق 2" : "e.g. Apartment 3, Floor 2"}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700 font-medium"
+                    className={`w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700 font-medium ${isRtl ? 'text-right' : 'text-left'}`}
                   />
                 </div>
 
                 {/* Delivery Type switcher */}
                 <div className="space-y-2">
-                  <label className="block text-[10px] text-zinc-500 font-black px-1">طريقة التوصيل المفضلة والمناسبة لك *</label>
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">{isRtl ? 'طريقة التوصيل المفضلة والمناسبة لك *' : 'Preferred Delivery Method *'}</label>
                   <div className="grid grid-cols-2 gap-3 font-bold">
                     <button
                       type="button"
@@ -559,8 +565,7 @@ export default function StorefrontCart({
                           : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
                       }`}
                     >
-                      <Smartphone className="w-3.5 h-3.5 shrink-0" />
-                      <span>🏠 توصيل للمنزل</span>
+                      <span>{t.store_delivery_home}</span>
                     </button>
                     <button
                       type="button"
@@ -571,26 +576,23 @@ export default function StorefrontCart({
                           : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
                       }`}
                     >
-                      <Truck className="w-3.5 h-3.5 shrink-0" />
-                      <span>📦 استلام من المكتب</span>
+                      <span>{t.store_delivery_desk}</span>
                     </button>
                   </div>
                 </div>
 
-                {/* Note */}
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] text-zinc-500 font-black px-1">ملاحظات تود إرفاقها بالففصل والتوجيه</label>
+                  <label className="block text-[10px] text-zinc-500 font-black px-1">{isRtl ? 'ملاحظات إضافية' : 'Additional Notes'}</label>
                   <textarea
                     rows={2}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    placeholder="أضف أي تفاصيل تود إبلاغ الموزع بها..."
-                    className="w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all resize-none placeholder:text-zinc-700"
+                    placeholder={isRtl ? "أضف أي تفاصيل تود إبلاغ الموزع بها..." : "Any details for the delivery driver..."}
+                    className={`w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all resize-none placeholder:text-zinc-700 ${isRtl ? 'text-right' : 'text-left'}`}
                   />
                 </div>
               </div>
 
-              {/* Submit Trigger - Premium Glowing Button */}
               <button
                 type="submit"
                 disabled={submittingOrder || cart.length === 0}
@@ -599,11 +601,11 @@ export default function StorefrontCart({
                 {submittingOrder ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin text-black" />
-                    <span>جاري إرسال وتوثيق طلبيتك الآن...</span>
+                    <span>{isRtl ? 'جاري إرسال وتوثيق طلبيتك الآن...' : 'Submitting order...'}</span>
                   </>
                 ) : (
                   <>
-                    <span>تأكيد وإرسال الطلب الآن (الدفع عند الاستلام) ⚡</span>
+                    <span>{t.checkout_btn}</span>
                   </>
                 )}
               </button>

@@ -32,6 +32,8 @@ interface StorefrontProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  t: any;
+  isRtl: boolean;
 }
 
 export default function Storefront({
@@ -50,40 +52,42 @@ export default function Storefront({
   loadingProducts,
   currentPage,
   totalPages,
-  onPageChange
+  onPageChange,
+  t,
+  isRtl
 }: StorefrontProps) {
   return (
-    <div className="space-y-8 text-right font-sans" dir="rtl">
+    <div className={`space-y-8 font-sans ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       
       {/* Dynamic Global Top Marketing Promo Bar */}
       <div className="w-full bg-gradient-to-r from-emerald-600/10 via-zinc-950/60 to-teal-500/10 border border-emerald-500/15 shadow-inner rounded-2xl py-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-extrabold text-white text-[11px] md:text-xs">عروض حصرية اليوم:</span>
-          <span className="text-emerald-400 font-extrabold">شحن سريع مخفض + دفع نقداً عند التوصيل واستلام طلبك 🚚</span>
+          <span className="font-extrabold text-white text-[11px] md:text-xs">
+            {isRtl ? 'عروض حصرية اليوم:' : (t.exclusive_offers || 'Exclusive Deals Today:')}
+          </span>
+          <span className="text-emerald-400 font-extrabold">
+            {isRtl ? 'شحن سريع مخفض + دفع نقداً عند التوصيل واستلام طلبك' : 'Fast Shipping + Cash on Delivery Guaranteed'}
+          </span>
         </div>
         <div className="hidden sm:flex items-center gap-4 text-zinc-400 text-[10px] font-bold">
-          <span>🔄 استبدال واسترجاع مجاني خلال 7 أيام</span>
+          <span>{isRtl ? 'استبدال واسترجاع مجاني خلال 7 أيام' : 'Free 7-day Returns'}</span>
           <span>•</span>
-          <span>⭐ منتجات أصلية ذات جودة مضمونة 100%</span>
+          <span>{isRtl ? 'منتجات أصلية ذات جودة مضمونة 100%' : '100% Quality Guaranteed'}</span>
         </div>
       </div>
 
-      {/* Premium Store Header Card with Dynamic Glowing Background & Global Quality Feel */}
+      {/* Premium Store Header Card */}
       <motion.div 
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl border border-zinc-800/80 bg-neutral-950/80 backdrop-blur-2xl p-6 md:p-10 shadow-2xl"
       >
-        {/* Abstract Ambient Glow Effects */}
         <div className="absolute top-[-20%] right-[-10%] w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[5%] w-60 h-60 bg-teal-500/5 rounded-full blur-[80px] pointer-events-none" />
-        
-        {/* Decorative Grid Lines Overlay representing international SaaS interfaces */}
         <div className="absolute inset-0 bg-[radial-gradient(#262626_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-right">
+          <div className={`flex flex-col md:flex-row items-center gap-6 text-center ${isRtl ? 'md:text-right' : 'md:text-left'}`}>
             {storeLogo ? (
               <div className="relative group">
                 <div className="absolute -inset-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-500" />
@@ -104,17 +108,17 @@ export default function Storefront({
             )}
             
             <div className="space-y-2.5 max-w-xl">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <div className={`flex flex-wrap items-center justify-center ${isRtl ? 'md:justify-start' : 'md:justify-start'} gap-2`}>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-400 font-extrabold uppercase tracking-wide">
                   <Star className="w-3 h-3 text-emerald-400 fill-emerald-400" />
-                  متجر رسمي موثق
+                  {isRtl ? 'متجر رسمي موثق' : t.verified_store || 'Verified Store'}
                 </span>
               </div>
               <h1 className="text-2xl md:text-3.5xl font-extrabold text-white tracking-tight leading-none">
                 {storeName}
               </h1>
               <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-normal">
-                {storeDescription || "أهلاً بك في متجرنا المتميز. نوفر لك تشكيلة راقية من المنتجات مع خدمات توصيل متميزة وسهلة."}
+                {storeDescription || (isRtl ? "أهلاً بك في متجرنا المتميز. نوفر لك تشكيلة راقية من المنتجات مع خدمات توصيل متميزة وسهلة." : "Welcome to our premium store. We offer high-quality products with fast delivery.")}
               </p>
             </div>
           </div>
@@ -125,35 +129,33 @@ export default function Storefront({
           >
             <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-2xl blur-md opacity-0 group-hover:opacity-40 transition duration-300" />
             
-            <span className="text-xs font-black relative z-10">سلة المشتريات</span>
+            <span className="text-xs font-black relative z-10">{isRtl ? 'سلة المشتريات' : (t.cart_title || 'Shopping Cart')}</span>
             <ShoppingCart className="w-4.5 h-4.5 text-zinc-900 relative z-10" />
             {cartCount > 0 ? (
               <span className="bg-emerald-500 text-black text-[10px] font-black px-2.5 py-0.5 rounded-lg flex items-center justify-center animate-pulse relative z-10">
                 {cartCount}
               </span>
             ) : (
-              <span className="text-zinc-500 text-xs font-bold relative z-10">فارغة</span>
+              <span className="text-zinc-500 text-xs font-bold relative z-10">{isRtl ? 'فارغة' : (t.empty || 'Empty')}</span>
             )}
           </button>
         </div>
       </motion.div>
 
-      {/* Interactive Finder, Filters and Categories block */}
+      {/* Interactive Finder */}
       <div className="bg-neutral-950/40 border border-zinc-900/60 p-4 md:p-5 rounded-3xl space-y-4">
         <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-          {/* Dynamic Search Box with Modern Glow & Sleek Styling */}
           <div className="relative flex-1">
-            <Search className="absolute right-4 top-3.5 w-4 h-4 text-zinc-500 transition-colors group-focus-within:text-emerald-400" />
+            <Search className={`absolute ${isRtl ? 'right-4' : 'left-4'} top-3.5 w-4 h-4 text-zinc-500 transition-colors group-focus-within:text-emerald-400`} />
             <input 
               type="text" 
-              placeholder="ابحث عن منتج متاح في المتجر..."
+              placeholder={isRtl ? "ابحث عن منتج متاح في المتجر..." : (t.search_placeholder || "Search items...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/80 border border-zinc-800 rounded-2xl py-3.5 pr-11 pl-4 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-medium text-right shadow-inner"
+              className={`w-full bg-black/80 border border-zinc-800 rounded-2xl py-3.5 ${isRtl ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} text-xs text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-medium shadow-inner`}
             />
           </div>
 
-          {/* Ribbon list of Categories - Horizontally scrollable and extremely modern */}
           {categories.length > 0 && (
             <div className="flex gap-2 overflow-x-auto py-1 scrollbar-none scroll-smooth shrink-0 items-center">
               <div className="flex gap-2">
@@ -165,7 +167,7 @@ export default function Storefront({
                       : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900"
                   }`}
                 >
-                  الكل
+                  {isRtl ? 'الكل' : (t.all || 'All')}
                 </button>
                 {categories.map((cat, idx) => (
                   <button
@@ -186,18 +188,18 @@ export default function Storefront({
         </div>
       </div>
 
-      {/* Catalog Grid View with Ultra design details */}
+      {/* Catalog Grid View */}
       {loadingProducts ? (
         <div className="flex flex-col items-center justify-center py-28 gap-4 text-zinc-500 bg-neutral-950/20 border border-zinc-900 rounded-3xl">
           <RefreshCw className="w-10 h-10 animate-spin text-emerald-400" />
-          <p className="text-xs font-bold text-zinc-400">جاري تصفية وتحديث منتجات المتجر والمخزون...</p>
+          <p className="text-xs font-bold text-zinc-400">{isRtl ? 'جاري تصفية وتحديث منتجات المتجر والمخزون...' : 'Loading Store Inventory...'}</p>
         </div>
       ) : products.length === 0 ? (
         <div className="text-center py-24 bg-neutral-950/20 border border-zinc-900 rounded-3xl p-8 max-w-md mx-auto">
           <ShoppingBag className="w-14 h-14 text-zinc-800 mx-auto mb-4 animate-bounce" />
-          <h3 className="text-base font-bold text-zinc-305">لم نعثر على أي منتجات</h3>
+          <h3 className="text-base font-bold text-zinc-305">{isRtl ? 'لم نعثر على أي منتجات' : 'No products found'}</h3>
           <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">
-            المنتجات المطلوبة غير متوفرة حالياً بالمتجر أو غير متطابقة مع تصفيتك الحالية. راسلنا للاستفسار.
+            {isRtl ? 'المنتجات المطلوبة غير متوفرة حالياً بالمتجر أو غير متطابقة مع تصفيتك الحالية.' : 'Selected products are currently unavailable.'}
           </p>
         </div>
       ) : (
@@ -214,13 +216,12 @@ export default function Storefront({
                   className="bg-zinc-950/30 border border-zinc-900/80 hover:border-zinc-800 rounded-3xl p-3 md:p-4 flex flex-col justify-between transition-all duration-300 group shadow-lg hover:shadow-black/60 relative"
                 >
                   <div>
-                    {/* Image Frame with hover scale */}
                     <div className="aspect-square w-full rounded-2xl bg-black border border-zinc-900 overflow-hidden relative mb-4 shadow-inner">
                       {p.imageUrl ? (
                         <img 
                           src={p.imageUrl} 
                           alt={p.productName} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-108"
+                          className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-108 ${outOfStock ? 'opacity-40 grayscale' : ''}`}
                           referrerPolicy="no-referrer"
                         />
                       ) : (
@@ -229,34 +230,31 @@ export default function Storefront({
                         </div>
                       )}
                       
-                      {/* Dark overlay on hover for luxury touch */}
                       <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       
                       {/* Stock Status Badge */}
-                      <div className="absolute top-2.5 right-2.5 z-10">
+                      <div className={`absolute top-2.5 ${isRtl ? 'right-2.5' : 'left-2.5'} z-10`}>
                         {outOfStock ? (
-                          <span className="text-[9px] bg-red-500/15 text-red-400 border border-red-500/25 font-black px-2.5 py-1 rounded-lg backdrop-blur-md">
-                            غير متوفر
+                          <span className="text-[10px] bg-red-500 text-white font-black px-3 py-1 rounded-xl shadow-lg border border-red-400/50">
+                            {t.out_of_stock}
                           </span>
                         ) : p.category ? (
-                          <span className="text-[9px] bg-black/90 text-zinc-350 border border-zinc-800 font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
+                          <span className="text-[9px] bg-black/90 text-emerald-400 border border-emerald-500/20 font-extrabold px-2.5 py-1 rounded-lg backdrop-blur-md">
                             {p.category}
                           </span>
                         ) : null}
                       </div>
 
-                      {/* Floating Stock Warning indicator */}
                       {!outOfStock && p.stockQuantity <= 3 && (
-                        <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-emerald-500 text-black text-[9px] font-black text-center py-1 rounded-lg backdrop-blur-sm shadow-md">
-                          متبقي {p.stockQuantity} قطع فقط!
+                        <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-amber-500/90 text-black text-[9px] font-black text-center py-1 rounded-lg backdrop-blur-sm shadow-md">
+                          {isRtl ? `متبقي ${p.stockQuantity} قطع فقط!` : `Only ${p.stockQuantity} remaining!`}
                         </div>
                       )}
                     </div>
  
-                    {/* Title, rating mock representation, and description */}
-                    <div className="space-y-1.5 px-1 text-right">
-                      <div className="flex items-center gap-1.5 justify-start text-[10px] text-zinc-500">
-                        <span className="text-emerald-400 font-mono">100% أصلي</span>
+                    <div className={`space-y-1.5 px-1 ${isRtl ? 'text-right' : 'text-left'}`}>
+                      <div className={`flex items-center gap-1.5 ${isRtl ? 'justify-start' : 'justify-start'} text-[10px] text-zinc-500`}>
+                        <span className="text-emerald-400 font-mono">100% Quality</span>
                         <span>•</span>
                         <div className="flex items-center text-amber-500">
                           <Star className="w-2.5 h-2.5 fill-amber-500 shrink-0" />
@@ -267,17 +265,17 @@ export default function Storefront({
                         {p.productName}
                       </h3>
                       <p className="text-[10px] md:text-[11px] text-zinc-500 line-clamp-2 leading-relaxed h-8">
-                        {p.description || "لا يوجد وصف إضافي متوفر حالياً لهذا المنتج المميز."}
+                        {p.description || (isRtl ? "شاهد التفاصيل بالداخل..." : "View details...")}
                       </p>
                     </div>
                   </div>
 
-                  {/* Buy action and Pricing details */}
-                  <div className="mt-4 pt-4 border-t border-zinc-900/60 flex items-center justify-between gap-2 px-1">
-                    <div className="text-right">
-                      <p className="text-[9px] text-zinc-500 font-medium">سعر المنتج</p>
-                      <p className="text-xs md:text-sm font-black text-white font-mono mt-0.5">
-                        {(Number(p.price) || 0).toLocaleString()} <span className="text-[10px] text-emerald-400 font-sans font-bold">DA</span>
+                  {/* Enhanced Price Label */}
+                  <div className={`mt-4 pt-4 border-t border-zinc-900/60 flex items-center justify-between gap-2 px-1`}>
+                    <div className={isRtl ? 'text-right' : 'text-left'}>
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t.price_label}</p>
+                      <p className="text-lg md:text-xl font-black text-white font-mono mt-0.5 tracking-tight">
+                        {(Number(p.price) || 0).toLocaleString()} <span className="text-xs text-emerald-400 font-sans font-black">DA</span>
                       </p>
                     </div>
 
@@ -290,8 +288,8 @@ export default function Storefront({
                           : "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-500 font-black shadow-md shadow-emerald-500/10 hover:scale-[1.03] active:scale-95"
                       }`}
                     >
-                      <Plus className="w-3.5 h-3.5 shrink-0" />
-                      <span>{outOfStock ? "نفد" : "أضف للسلة"}</span>
+                      {outOfStock ? null : <Plus className="w-3.5 h-3.5 shrink-0" />}
+                      <span>{outOfStock ? t.sold_out : t.add_to_cart}</span>
                     </button>
                   </div>
                 </motion.div>
@@ -299,42 +297,42 @@ export default function Storefront({
             })}
           </div>
 
-          {/* Global Marketing Trust Badge Matrix under Product Catalog */}
-          <div className="mt-12 p-6 md:p-8 bg-zinc-950/25 border border-zinc-900/60 rounded-[2rem] grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden shadow-2xl">
+          {/* Trusted Badges */}
+          <div className="mt-12 p-6 md:p-8 bg-zinc-950/25 border border-zinc-900/60 rounded-[2.5rem] grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden shadow-2xl">
             <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
             
-            <div className="space-y-3.5 relative z-10 text-right">
+            <div className={`space-y-3.5 relative z-10 ${isRtl ? 'text-right' : 'text-left'}`}>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <Star className="w-5 h-5 text-emerald-400 fill-emerald-400" />
               </div>
-              <h4 className="text-xs font-black text-white">معاينة الطلب وضمان الدفع عند الاستلام 💵</h4>
+              <h4 className="text-xs font-black text-white">{isRtl ? 'معاينة الطلب وضمان الدفع عند الاستلام' : 'Inspection on Delivery'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
-                تسوق بكل راحة وبدون أي قلق! نحن نضمن لك إمكانية مراجعة ومعاينة سلعك بنفسك فور الاستلام وقبل تسليم المبلغ للموزع. لا دفع مسبق أبداً!
+                {isRtl ? 'تسوق بكل راحة وبدون أي قلق! نحن نضمن لك إمكانية مراجعة ومعاينة سلعك بنفسك فور الاستلام.' : 'Check your items upon delivery before paying. 100% Secure.'}
               </p>
             </div>
 
-            <div className="space-y-3.5 relative z-10 text-right border-y md:border-y-0 md:border-x border-zinc-90 w-full md:px-6 py-6 md:py-0 border-zinc-900">
+            <div className={`space-y-3.5 relative z-10 ${isRtl ? 'text-right' : 'text-left'} border-y md:border-y-0 md:border-x border-zinc-900 w-full md:px-6 py-6 md:py-0`}>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <RefreshCw className="w-5 h-5 text-emerald-400 animate-spin-slow" />
               </div>
-              <h4 className="text-xs font-black text-white">ضمان الاستبدال السهل والإرجاع المرن 🔄</h4>
+              <h4 className="text-xs font-black text-white">{isRtl ? 'ضمان الاستبدال السهل والإرجاع المرن' : 'Easy Returns'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
-                رضاك هو غايتنا الأولى! إن لم يتناسب المقاس أو كان هناك أي ملاحظة، تواصل معنا فوراً لنقوم باستبدال المنتج وتوفير الحلول المرضية خلال 24 ساعة.
+                {isRtl ? 'رضاك هو غايتنا الأولى! إن لم يتناسب المقاس، تواصل معنا فوراً لنقوم بالتبديل.' : 'Need a different size? Contact us for a fast exchange.'}
               </p>
             </div>
 
-            <div className="space-y-3.5 relative z-10 text-right">
+            <div className={`space-y-3.5 relative z-10 ${isRtl ? 'text-right' : 'text-left'}`}>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <ShoppingCart className="w-5 h-5 text-emerald-400" />
               </div>
-              <h4 className="text-xs font-black text-white">توصيل سريع مع Yalidine Express لـ 68 ولاية 🚚</h4>
+              <h4 className="text-xs font-black text-white">{isRtl ? 'توصيل سريع لـ 58 ولاية' : '58 Wilaya Delivery'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
-                نقوم بتسليم وتغليف طرودك وإرسالها عبر شبكة Yalidine الموثوقة لتضمن توصيلها الآمن لباب بيتك أو لمكتب الولاية بأفضل الأسعار.
+                {isRtl ? 'نقوم بتسليم طرودك عبر شبكة Yalidine الموثوقة لتضمن توصيلها الآمن.' : 'We ship via Yalidine Express for the safest and fastest delivery in Algeria.'}
               </p>
             </div>
           </div>
 
-          {/* Pagination Controls formatted beautifully */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 pt-6 border-t border-zinc-900/40">
               <button
@@ -342,24 +340,24 @@ export default function Storefront({
                 onClick={() => onPageChange(currentPage + 1)}
                 className="px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 font-extrabold rounded-xl text-xs hover:bg-zinc-850 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95"
               >
-                التالي
+                {isRtl ? 'التالي' : 'Next'}
               </button>
               <span className="text-xs font-bold text-zinc-400 font-mono bg-zinc-950 px-3.5 py-1.5 rounded-lg border border-zinc-900">
-                صفحة {currentPage} من {totalPages}
+                {isRtl ? `صفحة ${currentPage} من ${totalPages}` : `Page ${currentPage} of ${totalPages}`}
               </span>
               <button
                 disabled={currentPage === 1}
                 onClick={() => onPageChange(currentPage - 1)}
                 className="px-4 py-2.5 bg-zinc-900 border border-zinc-800 text-zinc-300 font-extrabold rounded-xl text-xs hover:bg-zinc-850 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all active:scale-95"
               >
-                السابق
+                {isRtl ? 'السابق' : 'Prev'}
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Floating Sticky Mobile Cart CTA for dynamic checkout acceleration */}
+      {/* Floating Sticky Mobile Cart CTA */}
       {cartCount > 0 && (
         <div className="fixed bottom-6 left-6 right-6 z-40 md:hidden">
           <motion.button
@@ -376,11 +374,11 @@ export default function Storefront({
                   {cartCount}
                 </span>
               </div>
-              <span>عرض سلة التسوق وإتمام الطلبية ⚡</span>
+              <span>{isRtl ? 'إتمام الطلبية' : 'Proceed to Checkout'}</span>
             </div>
             <div className="flex items-center gap-1 font-extrabold">
-              <span>طلب الآن</span>
-              <ArrowRight className="w-3.5 h-3.5 shrink-0 rotate-180" />
+              <span>{isRtl ? 'طلب الآن' : 'Order Now'}</span>
+              <ArrowRight className={`w-3.5 h-3.5 shrink-0 ${isRtl ? 'rotate-180' : ''}`} />
             </div>
           </motion.button>
         </div>

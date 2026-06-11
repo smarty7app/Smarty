@@ -17,7 +17,7 @@ export default function TermsConditions({ setScreen, t, isRtl }: any) {
       dir={isRtl ? "rtl" : "ltr"}
     >
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* زر الرجوع */}
+        {/* أيقونة الرجوع */}
         <div className="flex items-center gap-3">
           <button
             onClick={handleBackToDashboard}
