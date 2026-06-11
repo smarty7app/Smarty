@@ -29,19 +29,9 @@ import { db, auth, handleFirestoreError, OperationType } from "./lib/firebase";
 import { translations, Language } from "./lib/translations";
 
 // --- Connection Watchdog ---
-async function testFirebaseConnection() {
-  try {
-    // Try to reach Firestore server directly to verify config & connectivity
-    await getDocFromServer(doc(db, "_system_health", "connection"));
-    console.log("✅ [Firebase Connectivity] Successfully reached Firestore server.");
-  } catch (error: any) {
-    console.error("❌ [Firebase Connectivity] Failed to reach Firestore server:", error.message);
-    if (error.message.includes("client is offline") || error.message.includes("network")) {
-       console.warn("⚠️ [Firebase Diagnostic] The environment appears to be blocking outgoing connections to Firebase. Please try opening the app in a new tab.");
-    }
-  }
-}
-testFirebaseConnection();
+// Removed testFirebaseConnection for reduced bundle noise and startup speed.
+// Connection health is now implicitly handled by provider hooks.
+
 import { OrderData, InventoryItem, UserData } from "./types";
 import { safeStorage } from "./lib/utils";
 import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
@@ -146,16 +136,17 @@ function AppContent() {
 
   // Startup watchdog for auth loading
   useEffect(() => {
+    // Shorter check to warn user but not necessarily error out if it's just slow
     const timeoutId = setTimeout(() => {
-      if (authLoading) {
+      if (authLoading && !user) {
         setAuthStallDetected(true);
-        console.error(
-          "⚠️ [Redirection Watchdog] CRITICAL: Firebase Auth continues to load after 8 seconds. This might indicate that the Firebase App configuration is incorrect, the server is unreachable, or the browser is blocking connection in a sandboxed iframe. If the application is unable to direct you from the landing page, please open the app in a new browser tab.",
+        console.warn(
+          "⏳ [Auth Watchdog] Authentication is taking longer than expected. This often happens in restricted preview frames.",
         );
       }
-    }, 8000);
+    }, 5000);
     return () => clearTimeout(timeoutId);
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   // Watchdog for Landing page to Dashboard redirection
   useEffect(() => {
@@ -295,6 +286,7 @@ function AppContent() {
               orderCounter: 0,
               subscriptionStatus: "active",
               email: user.email || "",
+              hasBeenWelcomed: false,
             };
             await setDoc(doc(db, "users", user.uid), newUser);
           }

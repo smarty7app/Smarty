@@ -58,6 +58,7 @@ export interface UserData {
   expiresAt?: string;
   subscriptionStatus: "active" | "pending_verification" | "expired";
   email?: string;
+  hasBeenWelcomed?: boolean;
 }
 
 export enum OperationType {
