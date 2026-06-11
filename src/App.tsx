@@ -46,6 +46,7 @@ import { OrderData, InventoryItem, UserData } from "./types";
 import { safeStorage } from "./lib/utils";
 import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
 import { Logo } from "./components/CommonUI";
+import { NotificationBell } from "./components/Notifications";
 import LandingPage from "./components/LandingPage";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
@@ -58,6 +59,7 @@ import PublicCheckoutForm from "./components/PublicCheckoutForm";
 import TermsConditions from "./components/TermsConditions";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import MerchantProducts from "./components/MerchantProducts";
+import NetworkStatus from "./components/NetworkStatus";
 
 // --- Constants ---
 const initialOrder: OrderData = {
@@ -655,7 +657,7 @@ function AppContent() {
             </p>
             <p className="text-zinc-400 opacity-90 leading-relaxed text-[11px]">
               {isRtl
-                ? "إذا كنت تشاهد التطبيق من خلال نافذة المعاينة المؤطرة، فقد يتم حظر الاتصال في متصفحك. يرجى محاولة فتح التطبيق في نافذة مستقلة جديدة باستخدام زر 'فتح في علامة تبويب جديدة'."
+                ? "إذا كنت تشاهد التطبيق من خلال نافذة المعاينة المؤطرة، فقد يتم حظر الاتصال في متصفحك. يرجى محاولة فتح التطبيق في نافذة مستقلة جديدة باستخدام خيار 'فتح في علامة تبويب جديدة'."
                 : "If you are viewing inside a preview iframe, your browser might block cross-origin components. Please try opening the application in a new browser tab."}
             </p>
           </motion.div>
@@ -687,6 +689,7 @@ function AppContent() {
       className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-200"
       dir={isRtl ? "rtl" : "ltr"}
     >
+      <NetworkStatus isRtl={isRtl} lang={lang} />
       {/* Redirect/Sync Warning Notice Bar */}
       {showRedirectWarning && (
         <motion.div
@@ -728,6 +731,10 @@ function AppContent() {
             <h2 className="text-lg font-bold tracking-tight text-white/90">
               {screen === "dashboard" ? t.nav_dashboard : t.nav_inventory}
             </h2>
+          </div>
+
+          <div className="flex items-center gap-3">
+             <NotificationBell t={t} isRtl={isRtl} />
           </div>
         </motion.div>
       )}
