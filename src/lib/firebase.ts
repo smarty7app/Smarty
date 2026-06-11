@@ -25,19 +25,22 @@ export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// Enable Firestore offline persistence
+// Enable Firestore offline persistence (de-prioritized for startup speed)
 if (typeof window !== 'undefined') {
-  enableMultiTabIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      // Falling back to single-tab persistence if multi-tab fails (can happen in some browsers)
-      console.warn('Firestore multi-tab persistence failed-precondition, trying single-tab');
-      enableIndexedDbPersistence(db).catch(console.error);
-    } else if (err.code === 'unimplemented') {
-      console.warn('Firestore persistence unimplemented in this browser');
-    } else {
-      console.error('Firestore persistence error:', err);
-    }
-  });
+  // Use a small delay to avoid blocking initial load/auth
+  setTimeout(() => {
+    enableMultiTabIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        // Falling back to single-tab persistence if multi-tab fails (can happen in some browsers)
+        console.warn('Firestore multi-tab persistence failed-precondition, trying single-tab');
+        enableIndexedDbPersistence(db).catch(() => {}); // Silent fail
+      } else if (err.code === 'unimplemented') {
+        console.warn('Firestore persistence unimplemented in this browser');
+      } else {
+        console.error('Firestore persistence error:', err);
+      }
+    });
+  }, 100);
 }
 
 export enum OperationType {
