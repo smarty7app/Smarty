@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, X, Info, CheckCircle2, AlertTriangle, AlertCircle, ExternalLink } from "lucide-react";
+import { Trash2, Bell, X, Info, CheckCircle2, AlertTriangle, AlertCircle, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   collection, 
@@ -9,6 +9,7 @@ import {
   onSnapshot, 
   doc, 
   updateDoc, 
+  deleteDoc,
   limit,
   serverTimestamp
 } from "firebase/firestore";
@@ -67,6 +68,14 @@ export function NotificationBell({ t, isRtl }: { t: any, isRtl: boolean }) {
     await updateDoc(doc(db, "notifications", id), { read: true });
   };
 
+  const deleteNotification = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "notifications", id));
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "success": return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
@@ -107,9 +116,9 @@ export function NotificationBell({ t, isRtl }: { t: any, isRtl: boolean }) {
               initial={{ opacity: 0, y: 10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className={`absolute top-full mt-3 w-80 sm:w-96 glass-panel overflow-hidden z-50 shadow-[0_20px_50px_rgba(0,0,0,0.5)] ${isRtl ? 'left-0' : 'right-0'}`}
+              className={`absolute top-full mt-3 w-80 sm:w-96 bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)] ${isRtl ? 'left-0' : 'right-0'}`}
             >
-              <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+              <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/80 backdrop-blur-sm">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Bell className="w-4 h-4 text-purple-400" />
                   {t.notifications_title}
@@ -138,52 +147,83 @@ export function NotificationBell({ t, isRtl }: { t: any, isRtl: boolean }) {
                 ) : (
                   <div className="divide-y divide-zinc-800/50">
                     {notifications.map((notif) => (
-                      <div 
-                        key={notif.id}
-                        className={`p-4 hover:bg-white/[0.02] transition-colors cursor-default relative group ${!notif.read ? 'bg-purple-500/[0.03]' : ''}`}
+                      <motion.div 
+                        key={notif.id} 
+                        layout
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="relative overflow-hidden group border-b border-zinc-800/50"
                       >
-                        <div className="flex gap-3">
-                          <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${
-                            notif.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
-                            notif.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20' :
-                            notif.type === 'error' ? 'bg-rose-500/10 border-rose-500/20' :
-                            'bg-blue-500/10 border-blue-500/20'
-                          }`}>
-                            {getTypeIcon(notif.type)}
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className={`text-xs font-bold ${notif.read ? 'text-zinc-300' : 'text-white'}`}>
-                                {notif.title}
-                              </h4>
-                              {!notif.read && (
-                                <button 
-                                  onClick={() => markAsRead(notif.notifId || notif.id)}
-                                  className="w-2 h-2 rounded-full bg-purple-500 shrink-0 mt-1 cursor-pointer"
-                                  title="Mark as read"
-                                />
-                              )}
-                            </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed">
-                              {notif.message}
-                            </p>
-                            <div className="flex items-center justify-between pt-1">
-                              <span className="text-[9px] text-zinc-600 font-mono">
-                                {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString() : new Date().toLocaleString()}
-                              </span>
-                              {notif.actionUrl && (
-                                <a 
-                                  href={notif.actionUrl}
-                                  className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-bold"
-                                >
-                                  {isRtl ? 'عرض المصدر' : 'View Source'}
-                                  <ExternalLink className="w-3 h-3" />
-                                </a>
-                              )}
-                            </div>
-                          </div>
+                        {/* Action Background (Revealed on swipe) */}
+                        <div className="absolute inset-y-0 left-0 w-[100px] flex items-center justify-center bg-rose-950/30 border-r border-rose-900/20">
+                          <button
+                            onClick={() => deleteNotification(notif.id)}
+                            className="flex flex-col items-center gap-1 text-rose-500 hover:text-rose-400 h-full w-full justify-center transition-all active:scale-95"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                            <span className="text-[10px] font-bold">{isRtl ? 'حذف' : 'Delete'}</span>
+                          </button>
                         </div>
-                      </div>
+
+                        {/* Draggable Card */}
+                        <motion.div 
+                          drag="x"
+                          dragConstraints={{ left: 0, right: 100 }}
+                          dragElastic={0.1}
+                          dragSnapToOrigin={false}
+                          whileDrag={{ cursor: "grabbing" }}
+                          className={`p-4 bg-zinc-950 hover:bg-white/[0.01] transition-colors relative z-10 ${
+                            !notif.read ? 'bg-purple-500/[0.03]' : ''
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${
+                              notif.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
+                              notif.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20' :
+                              notif.type === 'error' ? 'bg-rose-500/10 border-rose-500/20' :
+                              'bg-blue-500/10 border-blue-500/20'
+                            }`}>
+                              {getTypeIcon(notif.type)}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className={`text-xs font-bold leading-tight ${notif.read ? 'text-zinc-400' : 'text-white'}`}>
+                                  {notif.title}
+                                </h4>
+                                {!notif.read && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markAsRead(notif.id);
+                                    }}
+                                    className="w-2 h-2 rounded-full bg-purple-500 shrink-0 mt-1 cursor-pointer"
+                                    title="Mark as read"
+                                  />
+                                )}
+                              </div>
+                              <p className={`text-[11px] leading-relaxed ${notif.read ? 'text-zinc-500' : 'text-zinc-300'}`}>
+                                {notif.message}
+                              </p>
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-[9px] text-zinc-600 font-mono">
+                                  {notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleString() : new Date().toLocaleString()}
+                                </span>
+                                {notif.actionUrl && (
+                                  <a 
+                                    href={notif.actionUrl}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-bold"
+                                  >
+                                    {isRtl ? 'عرض المصدر' : 'View Source'}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      </motion.div>
                     ))}
                   </div>
                 )}

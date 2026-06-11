@@ -19,31 +19,25 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
-    // Absolute timeout to prevent infinite loading if Firebase hangs
+    // Proactive timeout to satisfy the app's watchdog and prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (loading) {
-        console.warn("⏳ [Firebase Provider] Initialization timed out after 10s. Forcing loading state to false.");
+        console.warn("⏳ [Firebase Provider] Initialization timed out after 6s. Forcing loading state to false.");
         setLoading(false);
       }
-    }, 10000);
+    }, 6000); // Trigger slightly before the 8s watchdog in App.tsx
 
-    // Check for redirect result on load
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setUser(result.user);
-        }
-      })
-      .catch((error) => {
-        console.error("Redirect sign-in error:", error);
-      });
-
-    // onAuthStateChanged triggers on sign-in and sign-out
+    // onAuthStateChanged is the primary source of truth for session status
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       clearTimeout(timeoutId);
       setUser(currentUser);
       setLoading(false);
+    }, (error) => {
+      console.error("❌ [Firebase Provider] Auth state change error:", error);
+      clearTimeout(timeoutId);
+      setLoading(false);
     });
+    
     return () => {
       clearTimeout(timeoutId);
       unsubscribe();

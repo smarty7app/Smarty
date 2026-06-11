@@ -22,22 +22,50 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   const [dashboardTab, setDashboardTab] = useState<"stats" | "labels">("stats");
   const [products, setProducts] = useState<any[]>([]);
 
+  // Bilingual detection & labeling helper
+  const isAr = t.total_orders === "إجمالي الطلبات";
+  const isFr = t.total_orders === "Total Commandes";
+  const isRtl = isAr;
+
+  const hasSentWelcome = useRef(false);
+
   useEffect(() => {
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
+    if (!currentUser || !userData || hasSentWelcome.current) return;
 
-    // Send a welcome notification once per session/user if it's their first time seeing the dashboard
-    const welcomeKey = `welcome_notif_sent_${currentUser.uid}`;
-    if (!sessionStorage.getItem(welcomeKey)) {
+    // Send a welcome notification once per user (persistent in Firestore)
+    if (userData.hasBeenWelcomed === false) {
+      hasSentWelcome.current = true;
+      
+      const firstName = userData.name?.split(' ')[0] || currentUser.displayName?.split(' ')[0] || "";
+      const nameGap = firstName ? ` ${firstName}` : "";
+
+      const welcomeTitle = isAr 
+        ? `🎉 أهلاً بك${nameGap} في عائلة SmartyAi!` 
+        : isFr 
+          ? `🎉 Bienvenue${nameGap} dans la famille SmartyAi !` 
+          : `🎉 Welcome${nameGap} to SmartyAi Family!`;
+          
+      const welcomeMsg = isAr
+        ? "حسابك الجديد جاهز الآن. دعنا نساعدك في تحويل رسائل زبائنك إلى طلبات شحن حقيقية بحركة واحدة."
+        : isFr
+          ? "Votre nouveau compte marchand est actif. Laissez-nous vous aider à transformer les messages de vos clients en véritables commandes d'expédition en un seul geste."
+          : "Your brand new merchant account is active. Let's start automating your sales and scaling your delivery workflow.";
+
       sendNotification({
         userId: currentUser.uid,
-        title: isAr ? "أهلاً بك في لوحة التحكم! 👋" : "Welcome to your Dashboard! 👋",
-        message: isAr 
-          ? "تم تفعيل نظام الإشعارات بنجاح. ستتلقى هنا تنبيهات الطلبات الجديدة والمخزون المنخفض." 
-          : "Notification system activated. You will receive alerts for new orders and low stock here.",
+        title: welcomeTitle,
+        message: welcomeMsg,
         type: "success"
       });
-      sessionStorage.setItem(welcomeKey, "true");
+
+      // Mark as welcomed in Firestore so they don't see it again
+      updateDoc(doc(db, "users", currentUser.uid), {
+        hasBeenWelcomed: true
+      }).catch(err => {
+        console.error("Error updating welcome status:", err);
+        hasSentWelcome.current = false; // Reset on failure so it can retry
+      });
     }
 
     const q = query(
@@ -56,7 +84,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userData, isAr, isFr]);
 
   const [ordersSearch, setOrdersSearch] = useState("");
   const totalStockValue = products.reduce((sum, p) => sum + ((Number(p.price) || 0) * (Number(p.stockQuantity) || 0)), 0);
@@ -200,11 +228,6 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
   })();
-
-  // Bilingual detection & labeling helper
-  const isAr = t.total_orders === "إجمالي الطلبات";
-  const isFr = t.total_orders === "Total Commandes";
-  const isRtl = isAr;
 
   const getLabel = (ar: string, fr: string, en: string) => {
     if (isAr) return ar;
