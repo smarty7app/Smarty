@@ -112,6 +112,21 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when submitted" }
       },
       "required": ["name", "email", "message"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User specific notifications about orders, stock, or system updates",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner of the notification" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "actionUrl": { "type": "string", "description": "Optional link to a specific screen or order" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
     }
   },
   "firestore": {
@@ -142,6 +157,10 @@
     "/support_messages/{messageId}": {
       "schema": "SupportMessage",
       "description": "Technical support messages received"
+    },
+    "/notifications/{notifId}": {
+      "schema": "Notification",
+      "description": "User notifications"
     }
   }
 }

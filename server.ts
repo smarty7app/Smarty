@@ -62,8 +62,8 @@ function initializeFirebase() {
     fbAuth = admin.auth(appObj);
     
     // Connect to the specific database instance
-    db = getFirestore(appObj, databaseId === "(default)" ? undefined : databaseId);
-    console.log(`[Firebase Admin] Initialized. Database: ${databaseId}`);
+    db = (admin.firestore as any)('ai-studio-9e0e2f57-8306-4675-947b-f00d370788e4');
+    console.log(`[Firebase Admin] Initialized. Database: ai-studio-9e0e2f57-8306-4675-947b-f00d370788e4`);
 
     // Quick verification write/read (non-blocking) to log status
     db.collection('_system_health').doc('check').set({ 
@@ -3007,8 +3007,8 @@ apiRouter.get("/store/:merchantId/products", async (req, res) => {
       ...doc.data()
     })) as any[];
 
-    // Filter to only retain items in stock and published to the store
-    items = items.filter(item => Number(item.stockQuantity) > 0 && item.isPublished === true);
+    // Filter to only retain items published to the store
+    items = items.filter(item => item.isPublished === true);
 
     // Collect list of unique categories before filtering
     const categories = Array.from(new Set(items.map(item => item.category).filter(Boolean)));

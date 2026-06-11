@@ -37,121 +37,58 @@ service cloud.firestore {
       return resource.data;
     }
 
-    match /orders/{orderId} {
-      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (
-                    (existing().userId == request.auth.uid && (request.query.limit == null || request.query.limit <= 100)) ||
-                    isAdmin()
-                  );
-      
-      allow create: if (
-                      isSignedIn() && 
-                      ("customerName" in incoming() && incoming().customerName is string) &&
-                      ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
-                      incoming().userId == request.auth.uid &&
-                      (!("createdAt" in incoming()) || incoming().createdAt == request.time)
-                    ) || (
-                      // Secure guest checkout order creation
-                      ("customerName" in incoming() && incoming().customerName is string) &&
-                      ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
-                      ("userId" in incoming() && incoming().userId is string) &&
-                      incoming().status == "pending" &&
-                      (!("createdAt" in incoming()) || incoming().createdAt == request.time)
-                    );
-      
-      allow update: if isSignedIn() && 
-                    (existing().userId == request.auth.uid || isAdmin()) &&
-                    ("customerName" in incoming() && incoming().customerName is string) &&
-                    ("phoneNumber" in incoming() && incoming().phoneNumber is string) &&
-                    incoming().userId == existing().userId &&
-                    (!("createdAt" in incoming()) || incoming().createdAt == existing().createdAt) && (
-                      incoming().diff(existing()).affectedKeys().hasAny(['status', 'deliveryType', 'commune', 'customerName', 'phoneNumber', 'wilaya', 'possibleFake', 'note', 'shippingCompany', 'trackingNumber', 'labelUrl', 'locationUrl', 'items', 'shippingFee', 'totalPrice'])
-                    );
-      
-      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-    }
+    // --- Collections ---
 
-    // --- OrderItem Validation ---
-    function isValidOrderItem(data) {
-      return data.orderId is string &&
-             data.productName is string && data.productName.size() <= 250 &&
-             data.quantity is int && data.quantity >= 0 &&
-             data.size is string && data.size.size() <= 50 &&
-             data.color is string && data.color.size() <= 50;
+    // الطلبيات: التاجر يرى طلبياته، والآدمن يرى الكل، والكل ينشئ طلبية (للمتجر العام)
+    match /orders/{orderId} {
+      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (request.query.limit <= 100 || isAdmin());
+      allow create: if true;
     }
 
     match /orderItems/{itemId} {
-      // Identity check: The parent order must belong to the user
-      function parentOrderBelongsToUser(orderId) {
-        return get(/databases/$(database)/documents/orders/$(orderId)).data.userId == request.auth.uid;
-      }
-
-      allow read, list: if isSignedIn() && (parentOrderBelongsToUser(existing().orderId) || isAdmin());
-      
-      allow create: if (
-                      isSignedIn() && 
-                      isValidOrderItem(incoming()) && 
-                      parentOrderBelongsToUser(incoming().orderId)
-                    ) || (
-                      // Secure guest checkout order items creation
-                      isValidOrderItem(incoming())
-                    );
-      
-      allow update: if isSignedIn() && 
-                    (parentOrderBelongsToUser(existing().orderId) || isAdmin()) &&
-                    isValidOrderItem(incoming()) &&
-                    incoming().orderId == existing().orderId &&
-                    incoming().diff(existing()).affectedKeys().hasAny(['productName', 'quantity', 'size', 'color']);
-      
-      allow delete: if isSignedIn() && (parentOrderBelongsToUser(existing().orderId) || isAdmin());
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isSignedIn() && (
+        (exists(/databases/$(database)/documents/orders/$(incoming().orderId)) &&
+         get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.userId == request.auth.uid) || 
+        isAdmin()
+      );
     }
 
     match /inventory/{itemId} {
-      allow read, list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow read: if true; // Storefront and public reviews
+      allow write: if isSignedIn() && (
+        (incoming().userId == request.auth.uid || existing().userId == request.auth.uid) || 
+        isAdmin()
+      );
     }
 
-    function isValidUser(data) {
-      return (data.planType == null || data.planType in ['free', 'pro', 'unlimited', 'basic', 'professional', 'business', 'enterprise']) &&
-             (data.orderCounter == null || data.orderCounter is int) &&
-             (data.subscriptionStatus == null || data.subscriptionStatus in ['active', 'pending_verification', 'expired']);
-    }
-
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && 
-                    incoming().planType == "free" && 
-                    incoming().orderCounter == 0 &&
-                    incoming().subscriptionStatus == "active";
-      allow update: if (isOwner(userId) || isAdmin()) && 
-                    isValidUser(incoming()) &&
-                    (isAdmin() || (
-                      (!("email" in incoming()) || !("email" in existing()) || incoming().email == existing().email) &&
-                      incoming().diff(existing()).affectedKeys().hasAny(['orderCounter', 'displayName', 'subscriptionStatus', 'planType', 'storeSettings'])
-                    ));
-      allow list: if isAdmin();
-    }
-
-    match /subscription_requests/{requestId} {
-      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid && incoming().status == "pending";
-      allow list: if isSignedIn() && (isAdmin() || request.query.limit <= 100);
-      allow update: if isAdmin();
-    }
-
-    // قواعد حماية مستندات إعدادات الـ Webhook للتاجر
     match /merchant_configs/{merchantId} {
       allow read, write: if isOwner(merchantId) || isAdmin();
     }
 
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /subscription_requests/{requestId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if true;
+    }
+
+    match /_system_health/{docId} {
+      allow read: if true;
+    }
+
     match /support_messages/{messageId} {
-      allow create: if ("name" in incoming() && incoming().name is string && incoming().name.size() <= 150) &&
-                    ("email" in incoming() && incoming().email is string && incoming().email.size() <= 150) &&
-                    ("message" in incoming() && incoming().message is string && incoming().message.size() <= 3000) &&
-                    (!("attachment" in incoming()) || (incoming().attachment is string && incoming().attachment.size() <= 1600000)) &&
-                    (!("createdAt" in incoming()) || incoming().createdAt == request.time);
+      allow create: if true; 
       allow read, list, delete: if isAdmin();
       allow update: if false;
     }
