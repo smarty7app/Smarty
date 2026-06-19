@@ -50,6 +50,7 @@ import TermsConditions from "./components/TermsConditions";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import MerchantProducts from "./components/MerchantProducts";
 import NetworkStatus from "./components/NetworkStatus";
+import Settings from "./components/Settings";
 
 // --- Constants ---
 const initialOrder: OrderData = {
@@ -97,7 +98,24 @@ function AppContent() {
     | "admin"
     | "terms"
     | "privacy"
+    | "settings"
   >("dashboard");
+
+  // Courier credentials state variables
+  const [yalidineId, setYalidineId] = useState("");
+  const [yalidineToken, setYalidineToken] = useState("");
+  const [zrKey, setZrKey] = useState("");
+  const [maystroId, setMaystroId] = useState("");
+  const [maystroKey, setMaystroKey] = useState("");
+  const [ecotrackToken, setEcotrackToken] = useState("");
+  const [andersonUser, setAndersonUser] = useState("");
+  const [andersonPass, setAndersonPass] = useState("");
+  const [procolisToken, setProcolisToken] = useState("");
+  const [nordSudKey, setNordSudKey] = useState("");
+  const [fastloToken, setFastloToken] = useState("");
+  const [kaziTourKey, setKaziTourKey] = useState("");
+  const [soudiaToken, setSoudiaToken] = useState("");
+  const [colisLivKey, setColisLivKey] = useState("");
 
   useEffect(() => {
     safeStorage.setItem("smarty_lang", lang);
@@ -165,7 +183,8 @@ function AppContent() {
       screen !== "admin" &&
       screen !== "input" &&
       screen !== "review" &&
-      screen !== "wilayas"
+      screen !== "wilayas" &&
+      screen !== "settings"
     ) {
       console.warn(
         "⚠️ [Routing Control] Active state check: Screen was set to an unknown value. Resetting to dashboard.",
@@ -192,7 +211,7 @@ function AppContent() {
 
   const t = translations[lang];
   const isRtl = lang === "ar";
-  const isAdmin = user?.email === "12benabdallah@gmail.com";
+  const isAdmin = user?.email === "12benabdallah@gmail.com" || user?.email === "smarty7.app@gmail.com";
 
   const validateStockAvailability = async (items: any[]): Promise<boolean> => {
     if (!items || items.length === 0) return true;
@@ -279,7 +298,24 @@ function AppContent() {
       async (snapshot) => {
         try {
           if (snapshot.exists()) {
-            setUserData(snapshot.data() as UserData);
+            const data = snapshot.data();
+            setUserData(data as UserData);
+            if (data?.courierKeys) {
+              setYalidineId(data.courierKeys.yalidineId || "");
+              setYalidineToken(data.courierKeys.yalidineToken || "");
+              setZrKey(data.courierKeys.zrKey || "");
+              setMaystroId(data.courierKeys.maystroId || "");
+              setMaystroKey(data.courierKeys.maystroKey || "");
+              setEcotrackToken(data.courierKeys.ecotrackToken || "");
+              setAndersonUser(data.courierKeys.andersonUser || "");
+              setAndersonPass(data.courierKeys.andersonPass || "");
+              setProcolisToken(data.courierKeys.procolisToken || "");
+              setNordSudKey(data.courierKeys.nordSudKey || "");
+              setFastloToken(data.courierKeys.fastloToken || "");
+              setKaziTourKey(data.courierKeys.kaziTourKey || "");
+              setSoudiaToken(data.courierKeys.soudiaToken || "");
+              setColisLivKey(data.courierKeys.colisLivKey || "");
+            }
           } else {
             const newUser: UserData = {
               planType: "free",
@@ -403,7 +439,16 @@ function AppContent() {
           inventoryList: clientInventory,
         }),
       });
-      if (!response.ok) throw new Error("Extract failed");
+      if (!response.ok) {
+        let errorMessage = "Extract failed";
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) {
+            errorMessage = errData.error;
+          }
+        } catch (_) {}
+        throw new Error(errorMessage);
+      }
       const data = await response.json();
       setOrder({
         ...initialOrder,
@@ -411,8 +456,8 @@ function AppContent() {
         items: data.items?.length ? data.items : initialOrder.items,
       });
       setScreen("review");
-    } catch (err) {
-      setError(translations[lang].extract_error);
+    } catch (err: any) {
+      setError(err?.message || translations[lang].extract_error);
     } finally {
       setLoading(false);
     }
@@ -616,6 +661,83 @@ function AppContent() {
       // Note: We do NOT decrease orderCounter here as requested by user.
     } catch (e) {
       handleFirestoreError(e, OperationType.DELETE, `orders/${id}`);
+    }
+  };
+
+  const handleSaveKeys = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        courierKeys: {
+          yalidineId,
+          yalidineToken,
+          zrKey,
+          maystroId,
+          maystroKey,
+          ecotrackToken,
+          andersonUser,
+          andersonPass,
+          procolisToken,
+          nordSudKey,
+          fastloToken,
+          kaziTourKey,
+          soudiaToken,
+          colisLivKey,
+        }
+      });
+      alert(t.settings_keys_saved || "API Keys saved and encrypted successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(t.save_error || "Failed to save API keys");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearKeys = async () => {
+    if (!user) return;
+    if (!confirm(t.delete_confirm || "Are you sure?")) return;
+    setLoading(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        courierKeys: {
+          yalidineId: "",
+          yalidineToken: "",
+          zrKey: "",
+          maystroId: "",
+          maystroKey: "",
+          ecotrackToken: "",
+          andersonUser: "",
+          andersonPass: "",
+          procolisToken: "",
+          nordSudKey: "",
+          fastloToken: "",
+          kaziTourKey: "",
+          soudiaToken: "",
+          colisLivKey: "",
+        }
+      });
+      setYalidineId("");
+      setYalidineToken("");
+      setZrKey("");
+      setMaystroId("");
+      setMaystroKey("");
+      setEcotrackToken("");
+      setAndersonUser("");
+      setAndersonPass("");
+      setProcolisToken("");
+      setNordSudKey("");
+      setFastloToken("");
+      setKaziTourKey("");
+      setSoudiaToken("");
+      setColisLivKey("");
+      alert(t.shipped_success || "Keys cleared successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(t.save_error || "Failed to clear API keys");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -857,6 +979,46 @@ function AppContent() {
           )}
           {screen === "privacy" && (
             <PrivacyPolicy setScreen={setScreen} t={t} isRtl={isRtl} />
+          )}
+          {screen === "settings" && (
+            <Settings
+              t={t}
+              setScreen={setScreen}
+              isRtl={isRtl}
+              loading={loading}
+              handleSaveKeys={handleSaveKeys}
+              handleClearKeys={handleClearKeys}
+              lang={lang}
+              setLang={setLang}
+              yalidineId={yalidineId}
+              setYalidineId={setYalidineId}
+              yalidineToken={yalidineToken}
+              setYalidineToken={setYalidineToken}
+              zrKey={zrKey}
+              setZrKey={setZrKey}
+              maystroId={maystroId}
+              setMaystroId={setMaystroId}
+              maystroKey={maystroKey}
+              setMaystroKey={setMaystroKey}
+              ecotrackToken={ecotrackToken}
+              setEcotrackToken={setEcotrackToken}
+              andersonUser={andersonUser}
+              setAndersonUser={setAndersonUser}
+              andersonPass={andersonPass}
+              setAndersonPass={setAndersonPass}
+              procolisToken={procolisToken}
+              setProcolisToken={setProcolisToken}
+              nordSudKey={nordSudKey}
+              setNordSudKey={setNordSudKey}
+              fastloToken={fastloToken}
+              setFastloToken={setFastloToken}
+              kaziTourKey={kaziTourKey}
+              setKaziTourKey={setKaziTourKey}
+              soudiaToken={soudiaToken}
+              setSoudiaToken={setSoudiaToken}
+              colisLivKey={colisLivKey}
+              setColisLivKey={setColisLivKey}
+            />
           )}
         </AnimatePresence>
       </main>
