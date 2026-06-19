@@ -6,91 +6,67 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- Helpers ---
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
       return isSignedIn() && (
-        ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "12benabdallah@gmail.com") || 
-        ("email" in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() == "17benabdallah@gmail.com") ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         "role" in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+        request.auth.token.email == "12benabdallah@gmail.com" || 
+        request.auth.token.email == "17benabdallah@gmail.com" || 
+        request.auth.token.email == "smarty7.app@gmail.com"
       );
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // --- Collections ---
-
-    // الطلبيات: التاجر يرى طلبياته، والآدمن يرى الكل، والكل ينشئ طلبية (للمتجر العام)
-    match /orders/{orderId} {
-      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (request.query.limit <= 100 || isAdmin());
-      allow create: if true;
-    }
-
-    match /orderItems/{itemId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if isSignedIn() && (
-        (exists(/databases/$(database)/documents/orders/$(incoming().orderId)) &&
-         get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.userId == request.auth.uid) || 
-        isAdmin()
-      );
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid) || isAdmin();
     }
 
     match /inventory/{itemId} {
-      allow read: if true; // Storefront and public reviews
-      allow write: if isSignedIn() && (
-        (incoming().userId == request.auth.uid || existing().userId == request.auth.uid) || 
-        isAdmin()
-      );
+      allow read: if true; // Public for storefront check
+      allow write, delete: if isSignedIn() && (request.resource.data.userId == request.auth.uid || resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    match /merchant_configs/{merchantId} {
-      allow read, write: if isOwner(merchantId) || isAdmin();
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if true; // Public checkout
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    match /users/{userId} {
-      allow read, write: if isOwner(userId) || isAdmin();
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write, delete: if isSignedIn() && (request.resource.data.userId == request.auth.uid || resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /subscription_requests/{requestId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isSignedIn();
-      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isAdmin();
-    }
-
-    match /notifications/{notifId} {
-      allow read, update, delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow create: if true;
-    }
-
-    match /_system_health/{docId} {
-      allow read: if true;
+      allow update, delete: if isAdmin();
     }
 
     match /support_messages/{messageId} {
-      allow create: if true; 
-      allow read, list, delete: if isAdmin();
-      allow update: if false;
+      allow read: if isAdmin();
+      allow create: if true; // Allowed for contact form
+      allow update, delete: if isAdmin();
+    }
+
+    match /merchant_configs/{uid} {
+      allow read, write: if isOwner(uid) || isAdmin();
+    }
+
+    match /merchant_public_configs/{uid} {
+      allow read, write: if true;
+    }
+
+    match /orderItems/{itemId} {
+      allow read: if isSignedIn() || isAdmin();
+      allow create: if true; // Public storefront checkout write fallback
+      allow update, delete: if isSignedIn() || isAdmin();
     }
   }
 }

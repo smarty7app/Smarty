@@ -1,166 +1,70 @@
 {
   "entities": {
-    "Order": {
-      "title": "Order",
-      "description": "Main order details extracted from conversations",
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the merchant or admin",
       "type": "object",
       "properties": {
-        "customerName": { "type": "string", "description": "Full name of the customer" },
-        "phoneNumber": { "type": "string", "description": "Customer phone number" },
-        "wilaya": { "type": "string", "description": "State/Wilaya in Algeria" },
-        "commune": { "type": "string", "description": "Municipality in Algeria" },
-        "deliveryType": { "type": "string", "enum": ["home", "desk"], "description": "Type of delivery" },
-        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "delivered", "returned"], "description": "Order status" },
-        "possibleFake": { "type": "boolean", "description": "Flag for suspicious orders" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "When the order was created" },
-        "userId": { "type": "string", "description": "The UID of the seller who created it" },
-        "note": { "type": "string", "description": "General notes" },
-        "shippingCompany": { "type": "string", "description": "Selected shipping courier" },
-        "trackingNumber": { "type": "string", "description": "Tracking number from the courier" },
-        "labelUrl": { "type": "string", "description": "URL to the shipping label PDF" },
-        "locationUrl": { "type": "string", "description": "Google Maps link for the customer address" }
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["merchant", "admin"] },
+        "subscriptionPlan": { "type": "string", "enum": ["free", "pro", "elite"] },
+        "subscriptionStatus": { "type": "string", "enum": ["active", "expired", "canceled"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["customerName", "phoneNumber", "userId", "createdAt"]
-    },
-    "OrderItem": {
-      "title": "OrderItem",
-      "description": "Individual items within an order",
-      "type": "object",
-      "properties": {
-        "orderId": { "type": "string", "description": "ID of the parent order" },
-        "productName": { "type": "string", "description": "Product name" },
-        "quantity": { "type": "integer", "description": "Number of units" },
-        "size": { "type": "string", "description": "Product size" },
-        "color": { "type": "string", "description": "Product color" }
-      },
-      "required": ["orderId", "productName", "quantity"]
+      "required": ["uid", "email", "role", "subscriptionPlan", "subscriptionStatus"]
     },
     "Product": {
       "title": "Product",
-      "description": "Stock items and products for the seller",
+      "description": "A product sold by a merchant",
       "type": "object",
       "properties": {
-        "productName": { "type": "string", "description": "Name of the product (required)" },
-        "description": { "type": "string", "description": "Short description of the product" },
-        "price": { "type": "number", "description": "Price in DZD (required)" },
-        "stockQuantity": { "type": "integer", "description": "Available stock quantity (required)" },
-        "category": { "type": "string", "description": "Product category" },
-        "sku": { "type": "string", "description": "Unique SKU identifier" },
-        "imageUrl": { "type": "string", "description": "Image URL from Storage or Base64 URI" },
-        "userId": { "type": "string", "description": "The UID of the seller who owns the product" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when added" },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of last modification" }
-      },
-      "required": ["productName", "price", "stockQuantity", "userId"]
-    },
-    "User": {
-      "title": "User",
-      "description": "User profile and subscription data",
-      "type": "object",
-      "properties": {
-        "displayName": { "type": "string" },
-        "email": { "type": "string" },
-        "planType": { "type": "string", "enum": ["free", "pro", "unlimited"] },
-        "orderCounter": { "type": "integer" },
-        "expiresAt": { "type": "string", "format": "date-time" },
-        "subscriptionStatus": { "type": "string", "enum": ["active", "pending_verification", "expired"] }
-      }
-    },
-    "SubscriptionRequest": {
-      "title": "SubscriptionRequest",
-      "description": "Requests for plan upgrades via manual payment",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "userEmail": { "type": "string" },
-        "requestedPlan": { "type": "string", "enum": ["pro", "unlimited"] },
-        "receiptUrl": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "requestedPlan", "receiptUrl", "status", "createdAt"]
-    },
-    "MerchantConfig": {
-      "title": "MerchantConfig",
-      "description": "Encoded courier API keys and webhook settings for the merchant",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "webhookSecret": { "type": "string", "description": "Secret key used to sign incoming webhooks" },
-        "isEnabled": { "type": "boolean", "description": "Whether webhook processing is enabled for this merchant" },
-        "yalidineApiKey": { "type": "string", "description": "Encrypted Yalidine API Key" },
-        "yalidineApiToken": { "type": "string", "description": "Encrypted Yalidine API Token" },
-        "zrApiKey": { "type": "string", "description": "Encrypted ZR Express API Key" },
-        "maystroId": { "type": "string", "description": "Encrypted Maystro Merchant ID" },
-        "maystroApiKey": { "type": "string", "description": "Encrypted Maystro API Key" },
-        "ecotrackToken": { "type": "string", "description": "Encrypted ECOTRACK Token" },
-        "andersonUser": { "type": "string", "description": "Encrypted Anderson Username" },
-        "andersonPass": { "type": "string", "description": "Encrypted Anderson Password" },
+        "id": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "stock": { "type": "integer" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "updatedAt"]
+      "required": ["id", "merchantId", "name", "price", "stock"]
     },
-    "SupportMessage": {
-      "title": "SupportMessage",
-      "description": "Technical support and contact inquiries from merchants and visitors",
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "Full name of the contact person" },
-        "email": { "type": "string", "description": "Email address of the contact person" },
-        "message": { "type": "string", "description": "Text of the support message" },
-        "attachment": { "type": "string", "description": "Optional attached image Base64 data URL" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when submitted" }
-      },
-      "required": ["name", "email", "message"]
-    },
-    "Notification": {
-      "title": "Notification",
-      "description": "User specific notifications about orders, stock, or system updates",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string", "description": "Owner of the notification" },
-        "title": { "type": "string" },
-        "message": { "type": "string" },
-        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
-        "read": { "type": "boolean" },
+        "id": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "wilaya": { "type": "string" },
+        "commune": { "type": "string" },
+        "address": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "shipped", "delivered", "returned", "canceled"] },
         "createdAt": { "type": "string", "format": "date-time" },
-        "actionUrl": { "type": "string", "description": "Optional link to a specific screen or order" }
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+      "required": ["id", "merchantId", "customerName", "customerPhone", "wilaya", "status"]
     }
   },
   "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profile data"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Products available for sale"
+    },
     "/orders/{orderId}": {
       "schema": "Order",
-      "description": "User's orders"
-    },
-    "/orderItems/{itemId}": {
-      "schema": "OrderItem",
-      "description": "Items for orders"
-    },
-    "/inventory/{itemId}": {
-      "schema": "Product",
-      "description": "Seller's inventory"
-    },
-    "/users/{userId}": {
-      "schema": "User",
-      "description": "User metadata"
-    },
-    "/subscription_requests/{requestId}": {
-      "schema": "SubscriptionRequest",
-      "description": "Manual payment verification requests"
-    },
-    "/merchant_configs/{userId}": {
-      "schema": "MerchantConfig",
-      "description": "Encrypted API keys"
-    },
-    "/support_messages/{messageId}": {
-      "schema": "SupportMessage",
-      "description": "Technical support messages received"
-    },
-    "/notifications/{notifId}": {
-      "schema": "Notification",
-      "description": "User notifications"
+      "description": "Customer orders"
     }
   }
 }

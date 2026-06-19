@@ -1,8 +1,6 @@
 {
-  "name": "SmartyAi Order",
-  "description": "تطبيق ذكي لاستخراج بيانات الطلبات من محادثات التواصل بسرعة وسهولة - SmartyAi Order.",
+  "name": "SmartyAI",
+  "description": "Smart Order Management for Algerian Merchants - AI-powered order parsing, storefronts, and integrated payments.",
   "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
