@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, enableMultiTabIndexedDbPersistence, enableIndexedDbPersistence } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -18,30 +18,12 @@ const config = {
 
 console.log("[Firebase Frontend Init] Active Project ID:", config.projectId);
 
-const databaseId = 'ai-studio-9e0e2f57-8306-4675-947b-f00d370788e4';
+const databaseId = firebaseConfig.firestoreDatabaseId || 'ai-studio-64ffac1e-c7a5-4b17-a837-7b1e29c3c8c8';
 
 const app = initializeApp(config);
 export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
-
-// Enable Firestore offline persistence (de-prioritized for startup speed)
-if (typeof window !== 'undefined') {
-  // Use a small delay to avoid blocking initial load/auth
-  setTimeout(() => {
-    enableMultiTabIndexedDbPersistence(db).catch((err) => {
-      if (err.code === 'failed-precondition') {
-        // Falling back to single-tab persistence if multi-tab fails (can happen in some browsers)
-        console.warn('Firestore multi-tab persistence failed-precondition, trying single-tab');
-        enableIndexedDbPersistence(db).catch(() => {}); // Silent fail
-      } else if (err.code === 'unimplemented') {
-        console.warn('Firestore persistence unimplemented in this browser');
-      } else {
-        console.error('Firestore persistence error:', err);
-      }
-    });
-  }, 100);
-}
 
 export enum OperationType {
   CREATE = 'create',
