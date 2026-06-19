@@ -16,6 +16,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
       message?: string;
     }
   }>({});
+  const [manualMode, setManualMode] = useState<{[key: number]: boolean}>({});
 
   const handleQuickRegisterProduct = async (idx: number, productName: string, pricePerUnit: number) => {
     const uid = auth.currentUser?.uid;
@@ -358,40 +359,79 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                       className="p-4.5 space-y-4 overflow-hidden"
                     >
                       <div className="space-y-1 relative">
-                        <label className="text-[10px] text-zinc-500 uppercase tracking-widest block px-1">
-                          {t.product}
-                        </label>
-                        <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20">
-                          <select
-                            value={item.product || ""}
-                            onChange={(e) => {
-                              const selectedVal = e.target.value;
-                              const matched = inventory.find(p => p.productName === selectedVal);
-                              updateItem(idx, 'product', selectedVal);
-                              if (matched) {
-                                updateItem(idx, 'pricePerUnit', matched.price);
-                                if (matched.sku) {
-                                  updateItem(idx, 'size', matched.sku);
-                                }
-                              } else {
-                                updateItem(idx, 'pricePerUnit', 0);
-                              }
+                        <div className="flex items-center justify-between px-1 mb-1">
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-widest block font-bold">
+                            {t.product}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentVal = manualMode[idx] !== undefined 
+                                ? manualMode[idx] 
+                                : (item.product ? !inventory.some(p => p.productName === item.product) : false);
+                              setManualMode(prev => ({ ...prev, [idx]: !currentVal }));
                             }}
-                            className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
+                            className="text-[10px] font-bold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-1 cursor-pointer select-none"
                           >
-                            <option value="" className="bg-zinc-950 text-zinc-500">
-                              {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
-                            </option>
-                            {inventory.map(p => (
-                              <option key={p.id} value={p.productName} className="bg-zinc-950 text-zinc-300">
-                                {p.productName} ({p.price.toLocaleString()} DZD - {p.stockQuantity} pcs)
-                              </option>
-                            ))}
-                          </select>
-                          <div className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 text-xs`}>
-                            ▼
-                          </div>
+                            {(manualMode[idx] !== undefined ? manualMode[idx] : (item.product ? !inventory.some(p => p.productName === item.product) : false))
+                              ? (isRtl ? "📋 اختيار من القائمة" : "📋 Select from list") 
+                              : (isRtl ? "✍️ كتابة يدوية" : "✍️ Type manually")
+                            }
+                          </button>
                         </div>
+
+                        {(manualMode[idx] !== undefined ? manualMode[idx] : (item.product ? !inventory.some(p => p.productName === item.product) : false)) ? (
+                          <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20 px-4 py-1">
+                            <input
+                              type="text"
+                              value={item.product || ""}
+                              placeholder={isRtl ? "اكتب اسم المنتج يدوياً..." : "Write product name manually..."}
+                              onChange={(e) => updateItem(idx, 'product', e.target.value)}
+                              className="w-full bg-transparent text-white py-2.5 text-xs font-semibold outline-none placeholder:text-zinc-650"
+                            />
+                            {item.product && (
+                              <button
+                                type="button"
+                                onClick={() => updateItem(idx, 'product', '')}
+                                className="text-zinc-500 hover:text-zinc-300 select-none p-1 shrink-0"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20">
+                            <select
+                              value={item.product || ""}
+                              onChange={(e) => {
+                                const selectedVal = e.target.value;
+                                const matched = inventory.find(p => p.productName === selectedVal);
+                                updateItem(idx, 'product', selectedVal);
+                                if (matched) {
+                                  updateItem(idx, 'pricePerUnit', matched.price);
+                                  if (matched.sku) {
+                                    updateItem(idx, 'size', matched.sku);
+                                  }
+                                } else {
+                                  updateItem(idx, 'pricePerUnit', 0);
+                                }
+                              }}
+                              className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
+                            >
+                              <option value="" className="bg-zinc-950 text-zinc-500">
+                                {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
+                              </option>
+                              {inventory.map(p => (
+                                <option key={p.id} value={p.productName} className="bg-zinc-950 text-zinc-300">
+                                  {p.productName} ({p.price.toLocaleString()} DZD - {p.stockQuantity} pcs)
+                                </option>
+                              ))}
+                            </select>
+                            <div className={`absolute ${isRtl ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 text-xs`}>
+                              ▼
+                            </div>
+                          </div>
+                        )}
 
                         {/* Display Red Warning if quantity is greater than current stock or general stock count */}
                         {item.product && (() => {
@@ -574,6 +614,24 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                     </option>
                     <option value="Anderson" disabled={!isBusinessOrAbove}>
                       Anderson {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Procolis" disabled={!isBusinessOrAbove}>
+                      Procolis {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Nord & Sud Express" disabled={!isBusinessOrAbove}>
+                      Nord & Sud Express {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Fastlo" disabled={!isBusinessOrAbove}>
+                      Fastlo {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Kazi Tour" disabled={!isBusinessOrAbove}>
+                      Kazi Tour {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="Soudia Express" disabled={!isBusinessOrAbove}>
+                      Soudia Express {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
+                    </option>
+                    <option value="ColisLiv" disabled={!isBusinessOrAbove}>
+                      ColisLiv {!isBusinessOrAbove ? `(${isRtl ? "يتطلب باقة Business" : "Requires Business plan"})` : ""}
                     </option>
                   </>
                 );

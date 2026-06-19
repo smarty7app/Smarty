@@ -289,18 +289,46 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
 
   // Sync states if userData changes
   useEffect(() => {
+    let activeSettings: any = null;
     if (userData?.storeSettings) {
       setStoreName(userData.storeSettings.storeName || userData.displayName || "");
       setStoreDescription(userData.storeSettings.storeDescription || "");
       setStoreLogo(userData.storeSettings.storeLogo || userData.photoURL || "");
       setShippingCostType(userData.storeSettings.shippingCostType || "auto");
       setFixedShippingCost(userData.storeSettings.fixedShippingCost?.toString() || "600");
+      activeSettings = {
+        storeName: userData.storeSettings.storeName || userData.displayName || "",
+        storeDescription: userData.storeSettings.storeDescription || "",
+        storeLogo: userData.storeSettings.storeLogo || userData.photoURL || "",
+        shippingCostType: userData.storeSettings.shippingCostType || "auto",
+        fixedShippingCost: Number(userData.storeSettings.fixedShippingCost) || 600,
+        planType: userData.planType || "free",
+        orderCounter: userData.orderCounter || 0,
+      };
     } else if (userData) {
+      const defaultDesc = "أهلاً بك في متجرنا الإلكتروني المتميز. تسوق أفضل المنتجات بأفضل الأسعار مع توصيل سريع لجميع الولايات.";
       setStoreName(userData.displayName || "");
       setStoreLogo(userData.photoURL || "");
-      setStoreDescription("أهلاً بك في متجرنا الإلكتروني المتميز. تسوق أفضل المنتجات بأفضل الأسعار مع توصيل سريع لجميع الولايات.");
+      setStoreDescription(defaultDesc);
+      activeSettings = {
+        storeName: userData.displayName || "",
+        storeDescription: defaultDesc,
+        storeLogo: userData.photoURL || "",
+        shippingCostType: "auto",
+        fixedShippingCost: 600,
+        planType: userData.planType || "free",
+        orderCounter: userData.orderCounter || 0,
+      };
     }
-  }, [userData]);
+
+    if (activeSettings && user?.uid) {
+      // Silently sync to merchant_public_configs for seamless public visibility
+      const publicRef = doc(db, "merchant_public_configs", user.uid);
+      setDoc(publicRef, activeSettings, { merge: true }).catch(err => {
+        console.warn("Public config sync error:", err);
+      });
+    }
+  }, [userData, user]);
 
   // Persistence of template selection
   useEffect(() => {
@@ -462,15 +490,27 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     setSettingsSaving(true);
     try {
       const userRef = doc(db, "users", user.uid);
+      const publicRef = doc(db, "merchant_public_configs", user.uid);
+      
+      const payload = {
+        storeName: storeName.trim(),
+        storeDescription: storeDescription.trim(),
+        storeLogo: storeLogo,
+        shippingCostType: shippingCostType,
+        fixedShippingCost: Number(fixedShippingCost) || 0,
+      };
+
       await setDoc(userRef, {
-        storeSettings: {
-          storeName: storeName.trim(),
-          storeDescription: storeDescription.trim(),
-          storeLogo: storeLogo,
-          shippingCostType: shippingCostType,
-          fixedShippingCost: Number(fixedShippingCost) || 0,
-        }
+        storeSettings: payload
       }, { merge: true });
+
+      await setDoc(publicRef, {
+        ...payload,
+        planType: userData?.planType || "free",
+        orderCounter: userData?.orderCounter || 0,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
       alert(isRtl ? "تم حفظ إعدادات المتجر بنجاح!" : "Store settings saved successfully!");
     } catch (err) {
       console.error("Error saving store settings:", err);

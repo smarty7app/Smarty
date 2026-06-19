@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { LayoutDashboard, CreditCard, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp, Package } from "lucide-react";
+import { LayoutDashboard, CreditCard, LogOut, User, Globe, ShieldCheck, ChevronDown, ChevronUp, Package, Settings as SettingsIcon } from "lucide-react";
 import { Logo } from "./CommonUI";
 
 export default function Sidebar({ 
@@ -144,7 +144,19 @@ export default function Sidebar({
                 <span className="text-sm font-bold">{t.sub_upgrade}</span>
               </button>
 
-              {user?.email === "12benabdallah@gmail.com" && (
+              <button 
+                onClick={() => { setScreen("settings"); setShowSidebar(false); }} 
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border ${
+                  screen === 'settings' 
+                    ? 'bg-gradient-to-r from-purple-600/15 to-indigo-600/15 border-purple-550/30 text-white font-extrabold shadow-[0_0_20px_rgba(168,85,247,0.1)]' 
+                    : 'border-transparent text-zinc-400 hover:bg-white/[0.02] hover:text-zinc-200'
+                }`}
+              >
+                <SettingsIcon className="w-5 h-5 animate-spin-slow" /> 
+                <span className="text-sm font-bold">{t.settings_title}</span>
+              </button>
+
+              {(user?.email === "12benabdallah@gmail.com" || user?.email === "smarty7.app@gmail.com") && (
                 <button 
                   onClick={() => { setScreen("admin"); setShowSidebar(false); }} 
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all cursor-pointer border ${

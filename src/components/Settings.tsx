@@ -107,7 +107,10 @@ export default function Settings({
   t, setScreen, isRtl, loading, handleSaveKeys, handleClearKeys, lang, setLang,
   yalidineId, setYalidineId, yalidineToken, setYalidineToken,
   zrKey, setZrKey, maystroId, setMaystroId, maystroKey, setMaystroKey,
-  ecotrackToken, setEcotrackToken, andersonUser, setAndersonUser, andersonPass, setAndersonPass
+  ecotrackToken, setEcotrackToken, andersonUser, setAndersonUser, andersonPass, setAndersonPass,
+  procolisToken, setProcolisToken, nordSudKey, setNordSudKey,
+  fastloToken, setFastloToken, kaziTourKey, setKaziTourKey,
+  soudiaToken, setSoudiaToken, colisLivKey, setColisLivKey
 }: any) {
   const [isBulkEditing, setIsBulkEditing] = useState(false);
   const backupRef = useRef<any>(null);
@@ -123,7 +126,13 @@ export default function Settings({
         maystroKey,
         ecotrackToken,
         andersonUser,
-        andersonPass
+        andersonPass,
+        procolisToken,
+        nordSudKey,
+        fastloToken,
+        kaziTourKey,
+        soudiaToken,
+        colisLivKey
       };
       setIsBulkEditing(true);
     } else {
@@ -137,6 +146,12 @@ export default function Settings({
         setEcotrackToken(backupRef.current.ecotrackToken || "");
         setAndersonUser(backupRef.current.andersonUser || "");
         setAndersonPass(backupRef.current.andersonPass || "");
+        setProcolisToken(backupRef.current.procolisToken || "");
+        setNordSudKey(backupRef.current.nordSudKey || "");
+        setFastloToken(backupRef.current.fastloToken || "");
+        setKaziTourKey(backupRef.current.kaziTourKey || "");
+        setSoudiaToken(backupRef.current.soudiaToken || "");
+        setColisLivKey(backupRef.current.colisLivKey || "");
       }
       setIsBulkEditing(false);
     }
@@ -216,6 +231,42 @@ export default function Settings({
             <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-zinc-500 pl-3">Anderson</h4>
             <InputField label={t.settings_anderson_user} value={andersonUser} onChange={setAndersonUser} readOnly={!isBulkEditing} />
             <SecureTokenField label={t.settings_anderson_pass} value={andersonPass} onChange={setAndersonPass} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* Procolis */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-purple-500 pl-3">Procolis</h4>
+            <SecureTokenField label={t.settings_procolis_token} value={procolisToken} onChange={setProcolisToken} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* Nord & Sud */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-emerald-500 pl-3">Nord & Sud Express</h4>
+            <SecureTokenField label={t.settings_nordsud_key} value={nordSudKey} onChange={setNordSudKey} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* Fastlo */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-pink-500 pl-3">Fastlo</h4>
+            <SecureTokenField label={t.settings_fastlo_token} value={fastloToken} onChange={setFastloToken} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* Kazi Tour */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-teal-500 pl-3">Kazi Tour</h4>
+            <SecureTokenField label={t.settings_kazitour_key} value={kaziTourKey} onChange={setKaziTourKey} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* Soudia Express */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-rose-500 pl-3">Soudia Express</h4>
+            <SecureTokenField label={t.settings_soudia_token} value={soudiaToken} onChange={setSoudiaToken} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
+          </div>
+
+          {/* ColisLiv */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-bold text-zinc-400 border-l-2 border-cyan-500 pl-3">ColisLiv</h4>
+            <SecureTokenField label={t.settings_colisliv_key} value={colisLivKey} onChange={setColisLivKey} isRtl={isRtl} t={t} forceEdit={isBulkEditing} />
           </div>
         </div>
 

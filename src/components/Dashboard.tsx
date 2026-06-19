@@ -22,6 +22,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
   const [dashboardTab, setDashboardTab] = useState<"stats" | "labels">("stats");
   const [products, setProducts] = useState<any[]>([]);
 
+
   // Bilingual detection & labeling helper
   const isAr = t.total_orders === "إجمالي الطلبات";
   const isFr = t.total_orders === "Total Commandes";
@@ -651,6 +652,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           /* Stats Analytics view section */
           <div className="space-y-6">
             
+
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
               {/* Total Stock Value Card */}
@@ -1051,6 +1053,12 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                     <option value="maystro">Maystro Delivery</option>
                     <option value="ecotrack">ECOTRACK</option>
                     <option value="anderson">Anderson</option>
+                    <option value="procolis">Procolis</option>
+                    <option value="nordsud">Nord & Sud Express</option>
+                    <option value="fastlo">Fastlo</option>
+                    <option value="kazitour">Kazi Tour</option>
+                    <option value="soudia">Soudia Express</option>
+                    <option value="colisliv">ColisLiv</option>
                   </select>
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
                     <Filter className="w-3.5 h-3.5" />

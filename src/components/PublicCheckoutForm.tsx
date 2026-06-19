@@ -7,6 +7,8 @@ import { ALGERIA_68_WILAYAS } from "./WilayasList";
 import Storefront from "./Storefront";
 import StorefrontCart from "./StorefrontCart";
 import { safeStorage } from "../lib/utils";
+import { db } from "../lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export const WILAYA_COMMUNES: Record<string, string[]> = {
   "01": ["Adrar", "Reggane", "Timimoun", "Aoulef", "Fenoughil", "Tsabit", "Zaouiet Kounta"],
@@ -104,6 +106,7 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
     if (saved === "ar" || saved === "en" || saved === "fr") return saved;
     return "ar"; // Default to ar for Algerian market
   });
+  const [showLangMenu, setShowLangMenu] = useState<boolean>(false);
 
   const t = translations[lang];
   const isRtl = lang === "ar";
@@ -148,60 +151,9 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
   const [tempSize, setTempSize] = useState<string>("");
   const [tempColor, setTempColor] = useState<string>("");
 
+
   // Toast indicator
   const [showAddedToast, setShowAddedToast] = useState<boolean>(false);
-
-  // Floating Social Proof active notification info
-  const [activeNotification, setActiveNotification] = useState<{
-    customerName: string;
-    wilaya: string;
-    productName: string;
-    timeSpan: string;
-  } | null>(null);
-
-  useEffect(() => {
-    if (products.length === 0 || activeTab !== "store") {
-      setActiveNotification(null);
-      return;
-    }
-
-    const firstNames = ["عبد القادر", "سارة", "محمد", "ياسمين", "أحمد", "شيماء", "بلال", "إيمان", "عفراء", "مريم", "حمزة", "أنيسة", "بلقاسم", "أسامة", "منال", "إلياس", "فاطمة", "سفيان", "خديجة", "أيوب"];
-    const algerianWilayas = ["الجزائر العاصمة", "وهران", "قسنطينة", "سطيف", "تلمسان", "باتنة", "عنابة", "البويرة", "بجاية", "البليدة", "الشلف", "تيزي وزو", "سكيكدة", "بسكرة", "جيجل", "المسيلة", "سيدي بلعباس"];
-    const relativeTimes = ["قبل دقيقة فقط", "قبل دقيقتين", "قبل 5 دقائق", "قبل 12 دقيقة", "قبل 20 دقيقة", "قبل نصف ساعة"];
-
-    const triggerNotification = () => {
-      // Pick random parameters
-      const randomName = firstNames[Math.floor(Math.random() * firstNames.length)] + " " + (Math.floor(Math.random() * 2) === 0 ? "ب." : "م.");
-      const randomWilaya = algerianWilayas[Math.floor(Math.random() * algerianWilayas.length)];
-      const randomProduct = products[Math.floor(Math.random() * products.length)];
-      const randomTime = relativeTimes[Math.floor(Math.random() * relativeTimes.length)];
-
-      if (randomProduct && randomProduct.productName) {
-        setActiveNotification({
-          customerName: randomName,
-          wilaya: randomWilaya,
-          productName: randomProduct.productName,
-          timeSpan: randomTime
-        });
-
-        // Hide notification after 5.5 seconds
-        setTimeout(() => {
-          setActiveNotification(null);
-        }, 5500);
-      }
-    };
-
-    // First trigger after 4 seconds
-    const initialTimer = setTimeout(triggerNotification, 4000);
-
-    // Repeat every 16 seconds
-    const intervalId = setInterval(triggerNotification, 16000);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(intervalId);
-    };
-  }, [products, activeTab]);
 
   // Persist cart items uniquely for merchant
   useEffect(() => {
@@ -210,25 +162,54 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
 
   // 1. Fetch Store metadata
   useEffect(() => {
-    async function fetchStoreMetadata() {
-      try {
-        setLoadingMerchant(true);
-        const res = await fetch(`/api/store/${merchantId}/info`);
-        const data = await res.json();
-        if (data.success) {
-          setStoreInfo({
-            storeName: data.storeName,
-            storeLogo: data.storeLogo,
-            storeDescription: data.storeDescription
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load storefront metrics:", err);
-      } finally {
+    if (!merchantId) return;
+    setLoadingMerchant(true);
+
+    // Set up a real-time Firestore listener for merchant settings so changes propagate instantly!
+    const docRef = doc(db, "merchant_public_configs", merchantId);
+    const unsubscribe = onSnapshot(docRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setStoreInfo({
+          storeName: data.storeName || "متجر SmartyAi",
+          storeLogo: data.storeLogo || "",
+          storeDescription: data.storeDescription || ""
+        });
         setLoadingMerchant(false);
+      } else {
+        // Fallback to fetch from API if public config snapshot does not exist yet
+        fetch(`/api/store/${merchantId}/info`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              setStoreInfo({
+                storeName: data.storeName,
+                storeLogo: data.storeLogo,
+                storeDescription: data.storeDescription
+              });
+            }
+          })
+          .catch(err => console.error("API billing info failed fallback:", err))
+          .finally(() => setLoadingMerchant(false));
       }
-    }
-    fetchStoreMetadata();
+    }, (error) => {
+      console.warn("Real-time public settings listener failed, falling back to REST API:", error);
+      // Fallback
+      fetch(`/api/store/${merchantId}/info`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setStoreInfo({
+              storeName: data.storeName,
+              storeLogo: data.storeLogo,
+              storeDescription: data.storeDescription
+            });
+          }
+        })
+        .finally(() => setLoadingMerchant(false));
+    });
+
+    return () => unsubscribe();
   }, [merchantId]);
 
   // 2. Fetch Store catalog (reacts to category choice, keyword searches and page transitions)
@@ -317,23 +298,58 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
     <div className={`min-h-screen bg-[#050505] text-white flex flex-col items-center select-none font-sans ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       
       {/* Language Switcher Floating */}
-      <div className={`fixed top-4 ${isRtl ? 'left-4' : 'right-4'} z-[60] flex items-center gap-2 bg-zinc-950/80 border border-zinc-800 p-1.5 rounded-2xl backdrop-blur-md`}>
-        <div className="flex items-center gap-1.5 px-2 text-zinc-500">
-           <Globe className="w-3.5 h-3.5" />
-        </div>
-        <div className="flex bg-zinc-900 rounded-xl p-0.5">
-          {(['ar', 'en', 'fr'] as const).map((l) => (
-            <button
-              key={l}
-              onClick={() => setLang(l)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer ${
-                lang === l ? "bg-emerald-500 text-black shadow-lg" : "text-zinc-500 hover:text-white"
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+      <div className={`fixed top-4 ${isRtl ? 'left-4' : 'right-4'} z-[60] flex flex-col ${isRtl ? 'items-start' : 'items-end'}`}>
+        <button
+          onClick={() => setShowLangMenu(!showLangMenu)}
+          className="flex items-center gap-2 bg-zinc-950/90 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 p-2.5 px-3.5 rounded-2xl backdrop-blur-md transition-all duration-200 cursor-pointer shadow-lg active:scale-95 group"
+          title="Change language / تغيير اللغة"
+        >
+          <Globe className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
+          <span className="text-xs font-bold text-zinc-300 uppercase tracking-wide">
+            {lang === "ar" ? "العربية" : lang === "fr" ? "Français" : "English"}
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 text-zinc-500 transition-transform duration-200 ${showLangMenu ? 'rotate-180 text-emerald-400' : ''}`} />
+        </button>
+
+        <AnimatePresence>
+          {showLangMenu && (
+            <>
+              {/* Overlay background to dismiss */}
+              <div 
+                className="fixed inset-0 z-[-1] cursor-default" 
+                onClick={() => setShowLangMenu(false)} 
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="mt-2 w-44 bg-zinc-950/98 border border-zinc-800 rounded-2xl shadow-xl backdrop-blur-md overflow-hidden p-1.5 space-y-1"
+              >
+                {(['ar', 'fr', 'en'] as const).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => {
+                      setLang(l);
+                      setShowLangMenu(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                      lang === l 
+                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                        : "text-zinc-400 hover:text-white hover:bg-zinc-900/60 border border-transparent"
+                    }`}
+                  >
+                    <span>
+                      {l === "ar" ? "العربية" : l === "fr" ? "Français" : "English"}
+                    </span>
+                    {lang === l && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  </button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Toast Alert */}
@@ -544,38 +560,6 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
         </div>
         <p className="text-[9px] text-zinc-600 tracking-wider">SMARTYAI SECURE CLIENT STOREFRONT ENGINE • VERSION 2.0</p>
       </div>
-
-      {/* Dynamic Social Proof Floating Notification for global high-conversion standard */}
-      <AnimatePresence>
-        {activeNotification && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            transition={{ type: "spring", damping: 25 }}
-            className="fixed bottom-6 right-6 left-6 md:left-6 md:right-auto z-50 max-w-sm bg-neutral-950/95 border border-zinc-800 rounded-2xl p-4 shadow-2xl backdrop-blur-md flex items-center gap-3.5"
-            dir="rtl"
-          >
-            {/* Minimal pulse ring visual indicator */}
-            <div className="relative flex h-3.5 w-3.5 shrink-0 align-middle items-center justify-center">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </div>
-            
-            <div className="text-right space-y-0.5 select-none pr-1">
-              <p className="text-[10px] text-zinc-400 font-bold leading-tight">
-                طلب حجز جديد متميز!
-              </p>
-              <p className="text-xs font-normal text-zinc-300">
-                قام <strong className="font-extrabold text-white">{activeNotification.customerName}</strong> من ولاية <strong className="font-bold text-zinc-200">{activeNotification.wilaya}</strong> بشراء <span className="font-extrabold underline decoration-emerald-500/40 text-emerald-400">{activeNotification.productName}</span>
-              </p>
-              <p className="text-[9px] text-zinc-500 font-mono">
-                {activeNotification.timeSpan}
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );
