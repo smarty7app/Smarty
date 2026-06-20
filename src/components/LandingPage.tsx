@@ -1901,35 +1901,6 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
       {/* Modals & Guides */}
       <AnimatePresence>
-        {/* PWA Installation Instructions Modal */}
-        {showGuide && (
-          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-6 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
-              dir={isRtl ? "rtl" : "ltr"}
-            >
-              {/* Close Button */}
-              <button 
-                onClick={() => setShowGuide(false)} 
-                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3" dir="ltr">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white border border-purple-500/20 shrink-0 shadow-lg shadow-purple-500/20 select-none">
-                  <Download className="w-5 h-5 select-none" />
-                </div>
-                <div className="text-left select-none">
-                  <h3 className="text-xl font-bold tracking-tight text-white select-none">{t.pwa_install_guide}</h3>
-                  <p className="text-[10px] text-zinc-505 font-mono mt-0.5 select-none" dir="ltr">
-                    Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-extrabold select-none">Ai</span> <span className="text-[8px] opacity-80 uppercase font-bold select-none">Order</span> Premium App
-                  </p>
-                </div>
-              </div>
 
               <div className="space-y-4">
                 {/* Method 1: Safari / iOS */}
