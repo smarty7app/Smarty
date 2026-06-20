@@ -2177,5 +2177,5 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         )}
       </AnimatePresence>
     </div>
-  );
-            }
+  );      
+}
