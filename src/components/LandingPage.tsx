@@ -38,6 +38,7 @@ const renderFormattedBrandText = (text: string) => {
 
 export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean, setScreen?: (s: any) => void }) {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [showGuide, setShowGuide] = useState(false);
   const [installed, setInstalled] = useState(false);
   
   // Additional Modals
@@ -249,9 +250,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         console.error("Installation choice error:", err);
       }
     } else {
-      // No install prompt available; silently do nothing.
-      // The button is hidden when installPrompt is null, so this branch is rarely reached.
-      console.warn("Installation not supported in this browser.");
+      setShowGuide(true);
     }
   };
 
@@ -273,7 +272,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         items: [
           { product: "طقم رجالي صيفي قطني (Noir)", quantity: 1, size: "L", color: "أسود كلاسيك", pricePerUnit: 4500 }
         ],
-        note: lang === "ar" ? "حي 500 مسكن" : "Cité 500 Logts",
+        note: lang === "ar" ? "بارك الله فيك ربي يحفظك" : "Baraka ellah fik",
         possible_fake_order: false,
         shippingFee: 600,
         totalPrice: 5100,
@@ -575,7 +574,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <span>{t.landing_cta}</span>
             </button>
             
-            {!installed && installPrompt && (
+            {!installed && (
               <button 
                 onClick={handleInstallClick} 
                 className="w-full sm:w-auto px-8 py-4.5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-350 active:scale-95 flex items-center justify-center gap-3 cursor-pointer bg-zinc-900/80 hover:bg-zinc-850 border border-zinc-800 text-white select-none"
@@ -585,8 +584,6 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               </button>
             )}
           </div>
-
-
           
           {/* Logistics logos */}
           <div id="logistics" className="pt-20">
@@ -1904,6 +1901,116 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
       {/* Modals & Guides */}
       <AnimatePresence>
+        {/* PWA Installation Instructions Modal */}
+        {showGuide && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-6 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setShowGuide(false)} 
+                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3" dir="ltr">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white border border-purple-500/20 shrink-0 shadow-lg shadow-purple-500/20 select-none">
+                  <Download className="w-5 h-5 select-none" />
+                </div>
+                <div className="text-left select-none">
+                  <h3 className="text-xl font-bold tracking-tight text-white select-none">{t.pwa_install_guide}</h3>
+                  <p className="text-[10px] text-zinc-505 font-mono mt-0.5 select-none" dir="ltr">
+                    Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-extrabold select-none">Ai</span> <span className="text-[8px] opacity-80 uppercase font-bold select-none">Order</span> Premium App
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Method 1: Safari / iOS */}
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded border border-purple-500/10">iOS</span>
+                    <h4 className="text-sm font-bold text-zinc-200">Apple Safari</h4>
+                  </div>
+                  <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                    <li>
+                      {lang === "ar" 
+                        ? "اضغط على أيقونة المشاركة في متصفح سفاري (أيقونة المربع مع السهم للأعلى)." 
+                        : lang === "fr"
+                        ? "Appuyez sur le bouton de Partage dans Safari (l'icône de carré avec une flèche vers le haut)."
+                        : "Tap the Share button in the Safari browser (the square icon with an arrow pointing up)."}
+                    </li>
+                    <li>
+                      {lang === "ar" 
+                        ? "قم بالتمرير للأسفل واختر (إضافة إلى الصفحة الرئيسية)." 
+                        : lang === "fr"
+                        ? "Faites défiler vers le bas et sélectionnez 'Sur l'écran d'accueil'."
+                        : "Scroll down and select 'Add to Home Screen'."}
+                    </li>
+                    <li>
+                      {lang === "ar" 
+                        ? "اضغط (إضافة) لتثبيت التطبيق على جهازك." 
+                        : lang === "fr"
+                        ? "Appuyez sur 'Ajouter' pour installer l'application sur votre appareil."
+                        : "Tap 'Add' to install the app on your device."}
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Method 2: Android / Chrome / Edge */}
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded border border-yellow-500/10">Android / PC</span>
+                    <h4 className="text-sm font-bold text-zinc-200">Google Chrome & Edge</h4>
+                  </div>
+                  <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                    <li>
+                      {lang === "ar" 
+                        ? "اضغط على أيقونة الخيارات (النقاط الثلاث) في أعلى أو أسفل المتصفح." 
+                        : lang === "fr"
+                        ? "Appuyez sur le bouton de menu (les trois points) en haut ou en bas de votre navigateur."
+                        : "Tap the three dots menu button at the top/bottom of your browser."}
+                    </li>
+                    <li>
+                      {lang === "ar" 
+                        ? "اختر (تثبيت التطبيق) أو (إضافة إلى الشاشة الرئيسية)." 
+                        : lang === "fr"
+                        ? "Sélectionnez 'Installer l'application' ou 'Ajouter à l'écran d'accueil' dans la liste."
+                        : "Select 'Install App' or 'Add to Home Screen' from the menu list."}
+                    </li>
+                    <li>
+                      {lang === "ar" 
+                        ? "إذا كنت تستخدم الكمبيوتر، يمكنك الضغط على أيقونة التنزيل التي تظهر مباشرة في شريط العناوين بالمتصفح."
+                        : lang === "fr"
+                        ? "Sur ordinateur, cliquez sur l'icône d'installation directement dans la barre d'adresse de votre navigateur."
+                        : "On desktop, click on the install/download icon directly in your browser's address bar."}
+                    </li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-between items-center text-xs text-zinc-505" dir={isRtl ? "rtl" : "ltr"}>
+                <div className="flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-zinc-650 shrink-0" />
+                  <span className="text-[11px] text-zinc-550 text-zinc-505">{t.pwa_lightweight || "Very lightweight, fast, no updates required"}</span>
+                </div>
+                <button 
+                  onClick={() => setShowGuide(false)}
+                  className="px-4 py-2 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-zinc-350 font-bold cursor-pointer"
+                >
+                  {t.got_it_btn || "Got it"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* 1. About Modal */}
         {showAboutModal && (
           <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -2181,4 +2288,4 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </AnimatePresence>
     </div>
   );
-          }
+      }
