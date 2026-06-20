@@ -233,24 +233,27 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
   }, []);
 
   const handleInstallClick = async () => {
-  if (installed) return;
+    if (installed) return;
 
-  if (installPrompt) {
-    installPrompt.prompt();
-    try {
-      const { outcome } = await installPrompt.userChoice;
-      console.log(`User response to install prompt: ${outcome}`);
-      if (outcome === 'accepted') {
-        setInstalled(true);
-        setInstallPrompt(null);
-        (window as any).deferredPrompt = null;
+    if (installPrompt) {
+      installPrompt.prompt();
+      try {
+        const { outcome } = await installPrompt.userChoice;
+        console.log(`User response to install prompt: ${outcome}`);
+        if (outcome === 'accepted') {
+          setInstalled(true);
+          setInstallPrompt(null);
+          (window as any).deferredPrompt = null;
+        }
+      } catch (err) {
+        console.error("Installation choice error:", err);
       }
-    } catch (err) {
-      console.error("Installation choice error:", err);
+    } else {
+      // No install prompt available; silently do nothing.
+      // The button is hidden when installPrompt is null, so this branch is rarely reached.
+      console.warn("Installation not supported in this browser.");
     }
-  } else {
-  }
-};
+  };
 
   const demoPresets = [
     {
@@ -572,7 +575,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <span>{t.landing_cta}</span>
             </button>
             
-            {!installed && (
+            {!installed && installPrompt && (
               <button 
                 onClick={handleInstallClick} 
                 className="w-full sm:w-auto px-8 py-4.5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-350 active:scale-95 flex items-center justify-center gap-3 cursor-pointer bg-zinc-900/80 hover:bg-zinc-850 border border-zinc-800 text-white select-none"
@@ -1898,9 +1901,9 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
         </div>
       </footer>
-            {/* Modals & Guides */}
-      <AnimatePresence>
 
+      {/* Modals & Guides */}
+      <AnimatePresence>
         {/* 1. About Modal */}
         {showAboutModal && (
           <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
@@ -2177,5 +2180,5 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         )}
       </AnimatePresence>
     </div>
-  );      
-}
+  );
+          }
