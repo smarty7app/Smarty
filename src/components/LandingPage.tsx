@@ -1898,7 +1898,18 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
         </div>
       </footer>
+            {/* Modals & Guides */}
+      <AnimatePresence>
 
+        {/* 1. About Modal */}
+        {showAboutModal && (
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              dir={isRtl ? "rtl" : "ltr"}
             >
               <button 
                 onClick={() => setShowAboutModal(false)} 
@@ -2167,4 +2178,4 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </AnimatePresence>
     </div>
   );
-}
+            }
