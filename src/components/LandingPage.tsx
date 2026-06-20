@@ -38,7 +38,6 @@ const renderFormattedBrandText = (text: string) => {
 
 export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean, setScreen?: (s: any) => void }) {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [showGuide, setShowGuide] = useState(false);
   const [installed, setInstalled] = useState(false);
   
   // Additional Modals
@@ -234,25 +233,24 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
   }, []);
 
   const handleInstallClick = async () => {
-    if (installed) return;
+  if (installed) return;
 
-    if (installPrompt) {
-      installPrompt.prompt();
-      try {
-        const { outcome } = await installPrompt.userChoice;
-        console.log(`User response to install prompt: ${outcome}`);
-        if (outcome === 'accepted') {
-          setInstalled(true);
-          setInstallPrompt(null);
-          (window as any).deferredPrompt = null;
-        }
-      } catch (err) {
-        console.error("Installation choice error:", err);
+  if (installPrompt) {
+    installPrompt.prompt();
+    try {
+      const { outcome } = await installPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        setInstalled(true);
+        setInstallPrompt(null);
+        (window as any).deferredPrompt = null;
       }
-    } else {
-      setShowGuide(true);
+    } catch (err) {
+      console.error("Installation choice error:", err);
     }
-  };
+  } else {
+  }
+};
 
   const demoPresets = [
     {
