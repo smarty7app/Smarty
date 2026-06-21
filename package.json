@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "dev": "node -e \"const fs = require('fs'); if (!fs.existsSync('firebase-applet-config.json')) fs.writeFileSync('firebase-applet-config.json', fs.readFileSync('firebase-applet-config.example.json'));\" && tsx server.ts",
+    "build": "node -e \"const fs = require('fs'); if (!fs.existsSync('firebase-applet-config.json')) fs.writeFileSync('firebase-applet-config.json', fs.readFileSync('firebase-applet-config.example.json'));\" && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "node -e \"const fs = require('fs'); if (!fs.existsSync('firebase-applet-config.json')) fs.writeFileSync('firebase-applet-config.json', fs.readFileSync('firebase-applet-config.example.json'));\" && tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

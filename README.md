@@ -1,309 +1,178 @@
-# 🎉 Smarty AI - Security Fixes Applied Successfully!
+# 📦 SmartyAI - منصة إدارة الطلبيات الذكية والتجارة الإلكترونية في الجزائر
+### *THE LUXURY SUITE FOR ALGERIAN MERCHANTS & DROP-SHIPPERS*
 
-## 📦 What You're Getting
-
-Your project archive `Smarty-FIXED.zip` contains the complete refactored codebase with all three critical security fixes fully implemented.
-
----
-
-## 🔒 The Three Fixes Applied
-
-### ✅ Fix #1: Chargily Payment Verification
-**Problem:** Users could fake payment and activate subscriptions without paying  
-**Solution:** Implement webhook signature verification (HMAC-SHA256) + server-side activation  
-**Impact:** Payment fraud now impossible
-
-### ✅ Fix #2: Firebase Credentials in Git
-**Problem:** API keys could be accidentally committed to Git  
-**Solution:** Environment variables + .gitignore + example template  
-**Impact:** Credentials now safely managed
-
-### ✅ Fix #3: Monolithic server.ts
-**Problem:** One bug could crash entire server  
-**Solution:** Decompose into modular, isolated routes  
-**Impact:** Better maintainability and isolation
+منصة **SmartyAI** هي نظام سحابي متكامل (Full-Stack App) مصمم خصيصاً لمرافقة وتمكين التجار والمسوقين الإلكترونيين في السوق الجزائرية. يجمع التطبيق بين قوة الذكاء الاصطناعي التوليدي عبر نماذج **Gemini** من Google في استخلاص الطلبيات فورياً، وبوابات الدفع الوطنية الرسمية لتفعيل الاشتراكات تلقائياً، والربط الاحترافي اللوجستي مع كبرى شركات التوصيل الجزائرية في واجهة استخدام أحادية وسلسة للغاية.
 
 ---
 
-## 📚 Documentation Files
+## 🚀 الميزات التقنية والريادية الكبرى في المنصة
 
-### Quick Start
-1. **SUMMARY_AR.md** - ملخص الإصلاحات (Arabic)
-2. **SUMMARY_EN.md** - Security Fixes Summary (English)
+### 1. تفكيك الطلبات الجوال عبر الذكاء الاصطناعي (Gemini SDK Wrapper)
+* **دعم المدخلات الفوضوية والمتعددة الوسائط (Multimodal Inputs)**: يمكن للتاجر لصق محادثة كاملة من فيسبوك ماسنجر أو واتساب، أو شحن لقطة شاشة لفاتورة (Image Checkout Receipt)، أو تسجيل صوتي (Vocal Note)، وسيتولى الذكاء الاصطناعي فرز وحفظ البيانات.
+* **التعامل الذكي مع اللوجستيات المحلية**: يتعرف النموذج فورياً على اسم المستلم الجزائري، ويقوم بنمذجة رقم الهاتف ونسبة شكوك جودته، مع تصنيف دقيق للولاية (Normalizing to French) ومطابقة البلديات (Communes)، وتحديد رغبة الزبون في التوصيل للمنزل (`home`) أو الاستلام من المكتب (`desk / bureau`).
+* **خوارزمية التراجع الذكي وتجنب التوقف (Model Fallback Strategy)**: في ملف `src/server/config.ts` طورنا المحرك `generateContentWithRetry` ليتنقل أوتوماتيكياً بين النماذج (`gemini-2.5-flash`, `gemini-3.5-flash`, `gemini-1.5-flash`, `gemini-2.5-pro`) مع ميزة التباطؤ الأسي المتضاعف (Exponential Backoff) لامتصاص الأخطاء اللحظية وحماية العمليات الحيوية للتاجر.
 
-### Detailed Information
-3. **DEPLOYMENT_CHECKLIST.md** - Step-by-step deployment guide
-   - Local development setup
-   - Vercel deployment
-   - Render.com deployment
-   - Testing checklist
-   - Troubleshooting
+### 2. منظومة المتاجر الرقمية المستقلة (Storefront Ecosystem)
+* **صفحات مبيعات مخصصة للعموم**: يحصل كل تاجر فورياً على مسار متجر رقمي خاص به (بالمسار `/store/:merchantId`) يعرض بضائعه المدرجة في المخازن بتصميم جذاب يراعي سرعة التحميل على الهواتف.
+* **سلة تسوق وعربة سريعة**: واجهة `StorefrontCart.tsx` و `PublicCheckoutForm.tsx` تتيح للمشتري النهائي اختيار المقاس، اللون، والكمية، مع حساب تلقائي وموثوق لمصاريف الشحن وتوفير ميزة تتبع المخزون اللحظية.
 
-### Inside the ZIP Archive
-- **SECURITY.md** - Deep dive into each vulnerability
-- **FIXES_APPLIED.md** - Complete change summary
-- **.env.example** - All environment variables documented
-- **New code:** All 24 new files with full comments
+### 3. بوابات الاشتراكات الرقمية والترقية الآلية (Chargily Pay V2)
+* **ربط فوري ومؤتمت**: ربط مباشر مع البوابة المالية الوطنية الأولى في الجزائر **Chargily Pay** لتنفيذ عمليات الدفع بواسطة البطاقة الذهبية لبريد الجزائر وبطاقة CIB البنكية.
+* **بيئة Sandbox تفاعلية**: عند غياب مفتاح التشفير السحابي يتم توجيه المشترك لبيئة دفع تجريبية آمنة في واجهة التطبيق لتجربة الترقية السلسة والمحاكاة الآمنة.
+* **نظام CCP والموافقة الإدارية**: يدعم التطبيق كذلك خيار الترقية التقليدية لرفع إيصال الحوالة البريدية (CCP) مع واجهة مخصصة للمطورين في لوحة المسؤول لتدقيق الصور وتسهيل تفعيل الحسابات يدوياً.
+
+### 4. محرك الشحن الجزائري والاتصال بالناقلين (Courier Dispatch Engine)
+* **تغطية شاملة لأبرز شركات التوصيل**: تكامل ذكي وافتراضي يولد أرقام التتبع وبطاقات الشحن الرمزية (Thermal Waybills) فورياً لمختلف شركات الشحن المتداولة في السوق الوطنية:
+  * **Yalidine Express** • **ZR Express** • **Maystro Delivery** • **Ecotrack** • **Anderson Express** • **Procolis** • **Nord & Sud Express** • **Fastlo** • **Kazi Tour** • **Soudia Express** • **Colisliv**.
+* **مكافحة المرتجعات وتحليل المخاطر (Return Rate Analytics)**: نظام ذكي يحسب ويقيس كفاءة ونسب التسليم في الـ 58 ولاية جزائرية، مع إبراز تحذيرات حمراء للولايات التي تسجل نسب مرتفعة من الطرود غير المستلمة لحث التاجر على التأكيد الهاتفي قبل البعث.
+
+### 5. رصد الشبكة، دروع الحماية ووحدة المراقبة (PWA & Watchdogs)
+* **دعم التصفح دون إنترنت (Offline Resilience)**: إدماج مكون `NetworkStatus.tsx` للتنبيه بجودة ونشاط الاتصال في أسواق الجملة أو المستودعات ضعيفة التغطية وحفظ التغييرات للمزامنة المعززة لاحقاً.
+* **دروع واقية لمستعرضات iFrame**: نظام رصد آمن (Redirection & Auth Watchdog) يتفادى القيود الصارمة لملفات الكوكيز داخل المعاينات المؤطرة في متصفحات المطورين، مع تقديم شريط تلميح ذكي لتوجيه التاجر لفتح التطبيق في نافذة حرة.
+* **قنوات الـ Webhooks والمعايرة الرقمية**: بوابات استقبال إشارات الدفع الرقمية مزودة بحسابات بصمة التشفير الآمنة (HMAC SHA-256) لمنع الاحتيال وضمان استقرار عمليات الدفع.
 
 ---
 
-## 🚀 Quick Start (3 Steps)
+## 📂 هيكل بناء وتنظيم ملفات المشروع (Directory Architecture)
 
-### 1. Extract
-```bash
-unzip Smarty-FIXED.zip
-cd Smarty-main
+```text
+SmartyAI Workspace
+├── .env.example                       # المحتوى النموذجي للمتغيرات البيئية ومفاتيح الربط
+├── .gitignore                         # استبعاد الملفات الخاصة والمؤقتة وحزم المزامنة السحابية
+├── firebase-applet-config.json       # تفاصيل الاتصال النشط والتحقق بقاعدة بيانات Firebase
+├── firebase-applet-config.example.json# نموذج استرشادي لربط وإعداد قاعدة البيانات وحجرات Firestore
+├── firebase-blueprint.json            # المخطط والخرائط الهيكلية للجداول والمجموعات على Firebase
+├── firestore.rules                    # قواعد الصلاحيات والأمان الصارمة لحفظ خصوصية التاجر
+├── index.html                         # نقطة البناء والتحميل في المتصفح لواجهات React
+├── metadata.json                      # تصاريح وصلاحيات التطبيق المتوافقة مع سحابة AI Studio
+├── package.json                       # الحزم البرمجية وإعدادات ومخرجات البناء (React + Express)
+├── server.ts                          # خادم Express السحابي الرئيسي (الذكاء الاصطناعي، الشحن، وبوابات الدفع)
+│
+├── 📁 src/                            # التطبيق الأمامي والأكواد الوظيفية
+│   ├── main.tsx                       # نقطة الدخول وجسر الربط لـ React v19 / Vite v6
+│   ├── App.tsx                        # المكون القيادي الموجه للملاحة ومراقبة الجلسات وتأمين الـ iFrames
+│   ├── index.css                      # ملف الأنماط الموحد المدعم بتقنيات Tailwind CSS v4 الحديثة
+│   ├── types.ts                       # الهياكل القياسية للبيانات (الطلبيات، التاجر، الخطط، والمنتجات)
+│   │
+│   ├── 📁 components/                 # وحدات الواجهة المقسمة والذكية (Modular UI)
+│   │   ├── LandingPage.tsx            # صفحة واجهة المنصة التفاعلية والترويجية بثلاث لغات
+│   │   ├── Sidebar.tsx                # القائمة الجانبية المرنة للتنقل الهادئ بين تبويبات الإدارة
+│   │   ├── Dashboard.tsx              # اللوحة التحليلية الرائعة مع الفرز المتشعب والمباشر لمستويات التوصيل
+│   │   ├── OrderInput.tsx             # ملصق المحادثات وموجه تفكيك البيانات بالذكاء الاصطناعي
+│   │   ├── OrderReview.tsx            # نافذة التدقيق اللطيفة والتأكيد الجغرافي الجزائري
+│   │   ├── WilayasList.tsx            # الدليل الجغرافي الشامل للـ 58 ولاية مع حاسبة الشحن الذكية
+│   │   ├── AdminDashboard.tsx         # واجهة تفعيل اشتراكات CCP للمسؤولين وحجم المبيعات
+│   │   ├── MerchantProducts.tsx       # لوحة إدارة وتحديث بضائع ومخزون التاجر وصور المنتجات
+│   │   ├── DynamicStorefront.tsx      # المتجر العام الموجه للعائلات والمشترين عبر الرابط
+│   │   ├── StorefrontCart.tsx         # عربة التسوق البسيطة وتجربة الدفع اللوجستية السريعة
+│   │   ├── Subscription.tsx           # بوابة الإشتراك الوطني والبطاقات الرقمية وتنزيل الإيصالات
+│   │   ├── FirebaseProvider.tsx       # مزود سياق وتوثيق الدخول الآمن وحماية بيانات Firestore
+│   │   ├── ErrorBoundary.tsx          # سياق احتواء وتخطي الأخطاء غير المتوقعة في الواجهات
+│   │   ├── Settings.tsx               # لوحة إعدادات التاجر، روابط حساباته، ومخازن الشحن
+│   │   ├── NetworkStatus.tsx          # شريط رصد نشاط وتغطية الإنترنت الفورية للمزامنة
+│   │   └── Notifications.tsx          # جرس الإشعارات وإدارة التنبيهات المباشرة للمبيعات الجديدة 
+│   │
+│   ├── 📁 lib/                        # المساعدات البرمجية والأدوات التحليلية
+│   │   ├── firebase.ts                # الاتصال الثنائي المتقدم وتجهيز خدمات السحابة والتحقق
+│   │   ├── notifications.ts           # وحدة صناعة وتوزيع التنبيهات الفورية لقاعدة البيانات
+│   │   ├── security.ts                # تشفير HMAC والتحقق الأمني لبوابات الدفع وقنوات Messenger
+│   │   └── translations.ts            # القاموس السلوكي واللوجستي الثلاثي للمنصة (AR / FR / EN)
+│   │
+│   └── 📁 server/                     # المنظومة الخلفية لإدارة الخادم (Sever-side Modules)
+│       ├── config.ts                  # تهيئة Firebase، تعريف الخطط، وإعداد معالج Gemini المرن
+│       └── 📁 routes/                 # المسارات الأساسية للتحكم بالذكاء، الشحن والمبيعات
+│           ├── ai.routes.ts           # مسارات تفكيك ومعالجة المحادثات والصور المتعددة اللغات
+│           ├── subscription.routes.ts # إدارة الجلسات الرقمية والـ Sandbox لبوابات Chargily Pay
+│           ├── shipping.routes.ts     # تسيير بوابات التوصيل وإنشاء أوراق الطبع اللحظية
+│           ├── store.routes.ts        # معالجة طلبات المشتري النهائي وحساب رسوم الشحن
+│           ├── inventory.routes.ts    # تسيير وحفظ صور البضائع والمنتجات
+│           └── 📁 webhooks/           # مسارات استقبال الإشارات والاتصال بالدول الخارجية
+│               ├── chargily.routes.ts # بوابات التحقق والتأكيد التلقائي المالي للاشتراكات بـ HMAC
+│               └── facebook.routes.ts # استقبال إشارات فيسبوك ماسنجر و Meta للتواصل المستمر
 ```
 
-### 2. Setup
+---
+
+## 🛠️ كيفية التشغيل وتثبيت المشروع محلياً (Run Guide)
+
+### 1. المتطلبات الأساسية وجلب الحزمة
+قم بتثبيت بيئة تشغيل **Node.js** (يفضل إصدار 18 فما فوق). تأكد من جلب الشيفرات المطلوبة ثم قم بتثبيت الحزم التابعة للمشروع:
 ```bash
 npm install
-cp firebase-applet-config.example.json firebase-applet-config.json
-# Edit firebase-applet-config.json with your Firebase credentials
 ```
 
-### 3. Run
+### 2. إعداد المتغيرات البيئية ومفاتيح الربط
+قم بإنشاء ملف `.env` في المجلد الرئيسي بناءً على الهيكل الموضح في `.env.example`:
+```env
+# مفتاح الذكاء الاصطناعي السري للبحث وحفظ البيانات (سيرفر سايد)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# سري بوابات الدفع الوطنية الجزائرية Chargily Pay V2
+CHARGILY_SECRET_KEY=your_chargily_secret_key_here
+CHARGILY_WEBHOOK_SECRET=your_chargily_webhook_signature_here
+```
+
+### 3. إعداد وتهيئة خوادم قاعدة بيانات Firebase
+1. قم بإنشاء مشروع جديد عبر منصة [Firebase Console](https://console.firebase.google.com).
+2. قم بتفعيل قاعدة بيانات **Cloud Firestore** ونظام المصادقة **Firebase Authentication** (جوجل وبريد إلكتروني).
+3. قم بإنشاء تطبيق ويب (Web App) وانسخ بيانات إعداد المزامنة إلى ملف `firebase-applet-config.json` في المجلد الرئيسي للتطبيق:
+```json
+{
+  "apiKey": "your_api_key",
+  "authDomain": "your_auth_domain",
+  "projectId": "your_project_id",
+  "storageBucket": "your_storage_bucket",
+  "messagingSenderId": "your_sender_id",
+  "appId": "your_app_id",
+  "firestoreDatabaseId": "(default)"
+}
+```
+
+### 4. تشغيل خادم التطوير السريع لـ Express و Vite
+لتشغيل خادم التطوير المتكامل في المنفذ `3000`:
 ```bash
 npm run dev
 ```
 
-Done! Server runs at `http://localhost:3000`
-
----
-
-## 📋 What's Inside the ZIP
-
-```
-Smarty-main/
-├── 🆕 src/server/lib/           (8 new shared utilities)
-│   ├── auth.ts
-│   ├── chargily.ts              ⭐ Payment verification
-│   ├── db.ts
-│   ├── firebaseAdmin.ts
-│   ├── gemini.ts
-│   ├── plans.ts
-│   ├── shipping.ts
-│   └── subscriptionSessions.ts  ⭐ Payment sessions
-│
-├── 🆕 src/server/routes/        (4 feature modules)
-│   ├── ai.routes.ts
-│   ├── shipping.routes.ts
-│   ├── store.routes.ts
-│   ├── subscription.routes.ts   ⭐ Payment checkout
-│   └── webhooks/
-│       └── chargily.routes.ts   ⭐ Webhook handler (critical)
-│
-├── 📝 SECURITY.md               (Detailed vulnerability docs)
-├── 📝 FIXES_APPLIED.md          (Change summary)
-├── ✏️ .env.example              (Updated environment vars)
-├── ✏️ .gitignore                (Updated to exclude config)
-├── ✏️ firestore.rules           (Enhanced security rules)
-├── ✏️ server.ts                 (Refactored for modular routes)
-├── 🆕 firebase-applet-config.example.json (Template)
-│
-└── [All original source files preserved]
-```
-
----
-
-## ✨ Key Improvements
-
-| Area | Before | After |
-|------|--------|-------|
-| **Payment Security** | Frontend activates subscription ❌ | Webhook signature verified ✅ |
-| **Credentials** | In Git repo ❌ | Environment variables ✅ |
-| **Code Organization** | 730-line monolith ❌ | Modular routes ✅ |
-| **Webhook Handler** | Missing ❌ | Implemented ✅ |
-| **Error Isolation** | One bug = server crash ❌ | Per-feature isolation ✅ |
-
----
-
-## 🔧 Deployment Guides
-
-### For Vercel (Recommended)
-See **DEPLOYMENT_CHECKLIST.md** → "Production Deployment (Vercel)"
-- Push to Git
-- Vercel auto-deploys
-- Set 15 environment variables
-- Takes ~2 minutes
-
-### For Render.com
-See **DEPLOYMENT_CHECKLIST.md** → "Production Deployment (Render.com)"
-- Similar to Vercel
-- Good alternative
-- Free tier available
-
-### For Cloud Run / GCP
-See **DEPLOYMENT_CHECKLIST.md** → Cloud Run section
-- Most secure option
-- Uses Application Default Credentials
-- No need to pass service account key
-
----
-
-## ⚠️ IMPORTANT: Environment Variables
-
-**This is critical for production security!**
-
-Set these on your deployment platform BEFORE deploying:
-
-```
-# Firebase (get from Firebase Console)
-FIREBASE_API_KEY
-FIREBASE_PROJECT_ID
-FIREBASE_AUTH_DOMAIN
-FIREBASE_STORAGE_BUCKET
-FIREBASE_MESSAGING_SENDER_ID
-FIREBASE_APP_ID
-FIREBASE_SERVICE_ACCOUNT_JSON  ← Full JSON from service account
-
-# Chargily (get from Chargily Dashboard)
-CHARGILY_SECRET_KEY             ← Use live_sk_ in production
-
-# Gemini (get from AI Studio)
-GEMINI_API_KEY
-
-# URLs
-BACKEND_URL                     ← Your backend domain
-FRONTEND_URL                    ← Your frontend domain
-
-# Other
-NODE_ENV=production
-```
-
-**See DEPLOYMENT_CHECKLIST.md for exact setup instructions!**
-
----
-
-## ✅ Pre-Deployment Checklist
-
-Before going live:
-- [ ] Read DEPLOYMENT_CHECKLIST.md
-- [ ] Extract and test locally
-- [ ] Set all environment variables
-- [ ] Deploy to production
-- [ ] Test Chargily webhook
-- [ ] Verify subscription activation
-- [ ] Check Firestore security rules
-- [ ] Monitor error logs
-
----
-
-## 🧪 Testing the Fixes
-
-### Test Fix #1 (Payment Security)
-```
-1. Open DevTools → Console
-2. Try: updateDoc(doc(db, "users", uid), {planType: "pro"})
-3. Expected: ❌ Permission denied (Firestore rule blocks it)
-```
-
-### Test Fix #2 (Credentials)
+### 5. بناء الحزمة الإنتاجية والتشغيل المثالي (Production Build)
+لبناء المشروع وتضمين نظام الواجهات والخلفية المجمعة عبر أداة `esbuild` في ملف مضغوط وحيد وسريع في الحاويات:
 ```bash
-git log --name-only | grep firebase-applet-config.json
-# Expected: No results (file never committed)
-```
-
-### Test Fix #3 (Modular Routes)
-```
-Each route is now independent:
-- /api/ai/* (isolated)
-- /api/shipping/* (isolated)
-- /api/store/* (isolated)
-- /api/payments/* (isolated)
-- /api/webhooks/chargily/* (isolated) ⭐
+npm run build
+npm start
 ```
 
 ---
 
-## 📖 Documentation Map
+## 🌐 دليل ربط واستقبال المحادثات من منصات التواصل الاجتماعي (Social Webhooks API Integration Guide)
 
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| This README | Quick overview | Everyone |
-| SUMMARY_AR.md | Arabic summary | Arabic readers |
-| SUMMARY_EN.md | English summary | English readers |
-| DEPLOYMENT_CHECKLIST.md | Step-by-step guide | Developers |
-| SECURITY.md (in ZIP) | Deep technical details | Security team |
-| FIXES_APPLIED.md (in ZIP) | Code changes | Developers |
+من أجل تشغيل تفكيك الطلبيات الفوري بمجرد إرسال الزبون لرسالة على فيسبوك، إنستغرام أو واتساب، اتبع التوجيهات البرمجية التالية لوصل شبكات التواصل الاجتماعي بخادم **SmartyAI**:
 
----
+### 📊 بوابات ومسارات الاستقبال المهيأة لخادم الـ Webhooks
 
-## 🚨 Critical Security Notes
-
-1. **Never commit firebase-applet-config.json**
-   - It's now in .gitignore
-   - Use environment variables instead
-
-2. **Always use HTTPS in production**
-   - Vercel/Render provide it automatically
-   - Never use HTTP for production
-
-3. **Keep CHARGILY_SECRET_KEY secret**
-   - Don't share with anyone
-   - Don't commit to Git
-   - Use env vars only
-
-4. **Firebase Service Account is sensitive**
-   - Treat like a password
-   - Only set in production platform UI
-   - Never commit to Git
+| المنصة والشبكة | 🌐 واجهة الاتصال (API Endpoints) | البروتوكول المستهدف | مسارات التوجيه في `server.ts` |
+| :--- | :--- | :--- | :--- |
+| **فيسبوك ماسنجر** | Meta Messenger Platform API | HTTP POST / GET | `/api/webhooks/facebook` |
+| **إنستغرام دايركت** | Instagram Graph Messaging | Meta Webhooks Client | `/api/webhooks/facebook` |
+| **واتساب بيزنس** | Cloud WhatsApp API / Twilio | Express Request Payload | `/api/webhooks/facebook` |
+| **تبادل عام وشامل**| Unified CRM Multi-Channel API | Secure Custom Payload | `/api/webhooks/master` |
 
 ---
 
-## ❓ FAQ
+### 🚀 خطوات تفصيلية لتأكيد الاتصال وتفعيل تفكيك رسائل الزبائن تلقائياً:
 
-**Q: Do I need to change my database schema?**  
-A: No! All fixes are backward compatible. Existing data is preserved.
+1. **إعداد تطبيق للمطورين على Meta Developer Dashboard**:
+   * قم بالتوجه للموقع [developers.facebook.com](https://developers.facebook.com) والبدء في إنشاء تطبيق تجاري مخصص.
+   * أضف ميزة "Messenger" أو "Instagram" إلى باقة التطبيق.
+   * قم بتوليد مفتاح وصول الصفحة (Page Access Token) والاحتفاظ به في إعدادات المنصة.
 
-**Q: Can I deploy to platforms other than Vercel/Render?**  
-A: Yes! Any Node.js host works (Railway, Heroku, self-hosted, etc). See DEPLOYMENT_CHECKLIST.md
+2. **ضبط معايير التحقق الفوري (Verification Challenge)**:
+   * في لوحة تحويل إشارات Meta، أدخل رابط استقبال السيرفر الخاص بمتجرك:
+     `https://your-domain.com/api/webhooks/facebook`
+   * أدخل رمز التحقق السري (Verify Token) والذي يتطابق مع القيمة الافتراضية في `server.ts` وهي `smarty_verification_token` (أو قم بكتابة متغير بيئي يحمل الاسم `FACEBOOK_VERIFY_TOKEN`).
+   * سيقوم خادم Express في السيرفر بالرد الفوري بتمرير الشفرة وتأكيد ربط القناة بنجاح في بضع ثوانٍ.
 
-**Q: How do I test without Chargily?**  
-A: Sandbox mode is available. See DEPLOYMENT_CHECKLIST.md → "Testing Checklist"
-
-**Q: What if I break something during deployment?**  
-A: Use Git to revert: `git revert <commit>`  
-Or redeploy from previous commit in platform UI.
-
-**Q: How do I get Firebase Service Account JSON?**  
-A: Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+3. **نموذج استقبال وتدفق رسالة المحادثة بالـ JSON لإرسالها للتفكيك بالذكاء الاصطناعي**:
+عند استقبال رسالة من زبون، يرسل فيسبوك إشارة (Webhook Event). سيقوم خادمك الخلفي بالتقاط ملف الرسالة، إرساله فورياً إلى بوابة تفكيك الطلبات `/api/extract-order` لاسترجاع تفاصيل الشحنة ثم إدراجها بالكامل في Firestore وتنبيه التاجر بتوليد رنين إشعار المبيعات الفوري في بضع ثوانٍ حية!
 
 ---
-
-## 📞 Need Help?
-
-1. **Read DEPLOYMENT_CHECKLIST.md** - Most questions answered there
-2. **Check SECURITY.md** - Technical details in the ZIP
-3. **Review code comments** - Search for "SECURITY FIX #1" etc.
-
----
-
-## 🎯 Next Steps
-
-1. ✅ Extract Smarty-FIXED.zip
-2. ✅ Read DEPLOYMENT_CHECKLIST.md
-3. ✅ Test locally: `npm run dev`
-4. ✅ Set environment variables
-5. ✅ Deploy to production
-6. ✅ Test payment workflow
-7. ✅ Monitor logs
-
----
-
-## 📝 License
-
-SPDX-License-Identifier: Apache-2.0
-
-All code is properly licensed.
-
----
-
-## ✨ Summary
-
-Your Smarty AI application is now:
-- 🔒 **Secure** - Payment fraud impossible, credentials protected
-- 📦 **Modular** - Clean code structure, easy to maintain
-- 🚀 **Production-ready** - Fully documented deployment guides
-- ✅ **Verified** - All features preserved, all fixes implemented
-
+*SmartyAI • الخيار الأقوى والأذكى لتسريع ونمذجة تجارة التجزئة والتوصيل السريع في الـ 58 ولاية جزائرية.*
