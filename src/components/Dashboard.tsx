@@ -623,11 +623,11 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
         </div>
 
         {/* Segmented Switcher */}
-        <div className="flex bg-black/60 border border-zinc-800 p-1 rounded-2xl mb-6 backdrop-blur-sm">
+        <div className="flex bg-zinc-900 border border-zinc-800 p-1 rounded-2xl mb-6 backdrop-blur-sm shadow-inner">
           <button 
             type="button"
             onClick={() => setDashboardTab("stats")}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${dashboardTab === "stats" ? "bg-white text-black shadow-lg font-extrabold" : "text-zinc-500 hover:text-zinc-350"}`}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${dashboardTab === "stats" ? "bg-zinc-950 text-zinc-100 shadow-md font-extrabold" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
             {isAr ? "إحصائيات الأداء والمؤشرات" : "Analyses & Indicateurs"}
@@ -635,12 +635,12 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
           <button 
             type="button"
             onClick={() => setDashboardTab("labels")}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${dashboardTab === "labels" ? "bg-white text-black shadow-lg font-extrabold" : "text-zinc-500 hover:text-zinc-350"}`}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${dashboardTab === "labels" ? "bg-zinc-950 text-zinc-100 shadow-md font-extrabold" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             <FileText className="w-3.5 h-3.5" />
             {isAr ? "أرشيف ملصقات الشحن" : "Archived Shipping Labels"}
             {ordersHistory.filter((o: any) => o.tracking_number || o.label_url).length > 0 && (
-              <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold leading-none ${dashboardTab === "labels" ? "bg-zinc-950 text-emerald-400" : "bg-emerald-500/15 text-emerald-400"}`}>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none ${dashboardTab === "labels" ? "bg-zinc-800 text-emerald-400" : "bg-emerald-500/15 text-emerald-400"}`}>
                 {ordersHistory.filter((o: any) => o.tracking_number || o.label_url).length}
               </span>
             )}
@@ -685,12 +685,12 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.total_orders}</span>
-                  <div className="p-1.5 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                  <div className="p-1.5 rounded-lg bg-purple-600/10 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:bg-purple-600/20 transition-colors">
                     <ShoppingBag className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-white tracking-tight">{total}</span>
+                  <span className="block text-2xl font-black text-zinc-100 tracking-tight">{total}</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("عرض كل الطلبيات المتاحة", "Voir toutes les commandes", "View all orders")}
                   </span>
@@ -704,7 +704,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.pending_orders}</span>
-                  <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                  <div className="p-1.5 rounded-lg bg-amber-600/10 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500">
                     <Clock className="w-4 h-4 animate-pulse" />
                   </div>
                 </div>
@@ -723,7 +723,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_in_transit}</span>
-                  <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+                  <div className="p-1.5 rounded-lg bg-blue-600/10 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
                     <Truck className="w-4 h-4" />
                   </div>
                 </div>
@@ -742,7 +742,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_delivered}</span>
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <div className="p-1.5 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                 </div>
@@ -761,7 +761,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.status_returned}</span>
-                  <div className="p-1.5 rounded-lg bg-red-500/10 text-red-400">
+                  <div className="p-1.5 rounded-lg bg-red-600/10 dark:bg-red-500/10 text-red-600 dark:text-red-400">
                     <XCircle className="w-4 h-4" />
                   </div>
                 </div>
@@ -777,7 +777,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
               <div className="glass-card p-4 hover:border-emerald-500/30 cursor-pointer active:scale-95 transition-all flex flex-col justify-between group">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">{t.stats_delivery_rate}</span>
-                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <div className="p-1.5 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <Percent className="w-4 h-4" />
                   </div>
                 </div>
@@ -798,12 +798,12 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap">
                     {getLabel("طلبات المتجر", "Boutique", "Storefront")}
                   </span>
-                  <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-400">
+                  <div className="p-1.5 rounded-lg bg-pink-600/10 dark:bg-pink-500/10 text-pink-600 dark:text-pink-400">
                     <ShoppingCart className="w-4 h-4 animate-pulse" />
                   </div>
                 </div>
                 <div>
-                  <span className="block text-2xl font-black text-pink-405 tracking-tight">{storefrontOrdersCount}</span>
+                  <span className="block text-2xl font-black text-pink-500 tracking-tight">{storefrontOrdersCount}</span>
                   <span className="text-[9px] text-zinc-500 truncate leading-none block">
                     {getLabel("طلبات قادمة عبر السلة", "Commandes de la boutique", "Orders via store cart")}
                   </span>
@@ -936,9 +936,9 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
             </div>
 
             {/* 3. Bestselling Products Card */}
-            <div className="bg-gradient-to-br from-[#0a0a0a] to-[#0c0c0c] border border-zinc-900 rounded-2xl p-5 text-right space-y-4 shadow-xl">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-right space-y-4 shadow-xl">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center justify-start gap-2">
+                <h3 className="text-sm font-bold text-zinc-100 flex items-center justify-start gap-2">
                   <span className="text-yellow-500 text-lg">🏆</span>
                   {getLabel("المنتجات الأكثر مبيعاً في المتجر", "Produits les Plus Vendus", "Bestselling Storefront Products")}
                 </h3>
@@ -959,15 +959,15 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                 <div className="overflow-x-auto">
                   <table className="w-full text-right text-xs">
                     <thead>
-                      <tr className="border-b border-zinc-900 text-zinc-400 font-bold">
+                      <tr className="border-b border-zinc-800 text-zinc-400 font-bold">
                         <th className="pb-2.5 font-bold">{getLabel("المنتج", "Produit", "Product")}</th>
                         <th className="pb-2.5 text-center font-bold">{getLabel("الكمية المباعة", "Quantité", "Qty Sold")}</th>
                         <th className="pb-2.5 text-left font-bold">{getLabel("إجمالي الإيرادات", "Revenu Total", "Total Revenue")}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-900/60 font-sans">
+                    <tbody className="divide-y divide-zinc-800/40 font-sans">
                       {bestsellingProducts.map((p, idx) => (
-                        <tr key={p.id} className="hover:bg-zinc-950/40 transition-colors">
+                        <tr key={p.id} className="hover:bg-zinc-900/40 transition-colors">
                           <td className="py-3 flex items-center gap-2.5">
                             <span className="text-xs font-mono font-bold text-zinc-650 w-4">#{idx + 1}</span>
                             <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-855 flex items-center justify-center overflow-hidden shrink-0">
@@ -1380,17 +1380,17 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                            const isBusinessOrAbove = planType === "unlimited" || planType === "business" || planType === "enterprise";
                            return (
                              <>
-                               <option value="Yalidine Express" className="bg-[#0b0b0b] text-zinc-100 font-bold">Yalidine Express</option>
-                               <option value="ZR Express" disabled={!isProOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                               <option value="Yalidine Express" className="bg-zinc-950 text-zinc-100 font-bold">Yalidine Express</option>
+                               <option value="ZR Express" disabled={!isProOrAbove} className="bg-zinc-950 text-zinc-100 font-bold">
                                  ZR Express {!isProOrAbove ? `(${isAr ? "طلب ترقية Pro" : "Pro required"})` : ""}
                                </option>
-                               <option value="Maystro Delivery" disabled={!isProOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                               <option value="Maystro Delivery" disabled={!isProOrAbove} className="bg-zinc-950 text-zinc-100 font-bold">
                                  Maystro Delivery {!isProOrAbove ? `(${isAr ? "طلب ترقية Pro" : "Pro required"})` : ""}
                                </option>
-                               <option value="ECOTRACK" disabled={!isBusinessOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                               <option value="ECOTRACK" disabled={!isBusinessOrAbove} className="bg-zinc-950 text-zinc-100 font-bold">
                                  ECOTRACK {!isBusinessOrAbove ? `(${isAr ? "طلب ترقية Business" : "Business required"})` : ""}
                                </option>
-                               <option value="Anderson" disabled={!isBusinessOrAbove} className="bg-[#0b0b0b] text-zinc-100 font-bold">
+                               <option value="Anderson" disabled={!isBusinessOrAbove} className="bg-zinc-950 text-zinc-100 font-bold">
                                  Anderson {!isBusinessOrAbove ? `(${isAr ? "طلب ترقية Business" : "Business required"})` : ""}
                                </option>
                              </>
@@ -1466,7 +1466,7 @@ export default function Dashboard({ userData, ordersHistory, planLimits, topWila
                    <div 
                      key={order.id} 
                      onClick={() => handleViewOrder(order)} 
-                     className={`border rounded-2xl p-4 flex items-center justify-between group cursor-pointer transition-all duration-300 animate-fade-in hover:scale-[1.015] hover:shadow-[0_10px_25px_rgba(0,0,0,0.65)] select-none ${isSelected ? 'border-yellow-500/40 bg-gradient-to-br from-[#16161a] via-[#eab308]/[0.02] to-[#0a0a0d] shadow-[0_0_20px_rgba(234,179,8,0.05)]' : 'bg-gradient-to-br from-[#121215] via-[#0f0f12] to-[#0a0a0c] border-zinc-800/70 hover:border-zinc-750'}`}
+                     className={`border rounded-2xl p-4 flex items-center justify-between group cursor-pointer transition-all duration-300 animate-fade-in hover:scale-[1.015] hover:shadow-[0_10px_25px_rgba(0,0,0,0.1)] select-none ${isSelected ? 'border-yellow-500/40 bg-yellow-500/5 shadow-[0_0_20px_rgba(234,179,8,0.05)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700/80'}`}
                    >
                      <div className="flex items-center gap-3">
                        {/* High fidelity checkbox indicator */}

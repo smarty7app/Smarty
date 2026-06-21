@@ -60,13 +60,13 @@ export default function Storefront({
     <div className={`space-y-8 font-sans ${isRtl ? 'text-right' : 'text-left'}`} dir={isRtl ? 'rtl' : 'ltr'}>
       
       {/* Dynamic Global Top Marketing Promo Bar */}
-      <div className="w-full bg-gradient-to-r from-emerald-600/10 via-zinc-950/60 to-teal-500/10 border border-emerald-500/15 shadow-inner rounded-2xl py-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="w-full bg-gradient-to-r from-emerald-600/10 via-zinc-900/40 to-teal-500/10 border border-emerald-500/15 shadow-inner rounded-2xl py-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-extrabold text-white text-[11px] md:text-xs">
+          <span className="font-extrabold text-zinc-100 text-[11px] md:text-xs">
             {isRtl ? 'عروض حصرية اليوم:' : (t.exclusive_offers || 'Exclusive Deals Today:')}
           </span>
-          <span className="text-emerald-400 font-extrabold">
+          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
             {isRtl ? 'شحن سريع مخفض + دفع نقداً عند التوصيل واستلام طلبك' : 'Fast Shipping + Cash on Delivery Guaranteed'}
           </span>
         </div>
@@ -81,7 +81,7 @@ export default function Storefront({
       <motion.div 
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-zinc-800/80 bg-neutral-950/80 backdrop-blur-2xl p-6 md:p-10 shadow-2xl"
+        className="relative overflow-hidden rounded-3xl border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-2xl p-6 md:p-10 shadow-2xl"
       >
         <div className="absolute top-[-20%] right-[-10%] w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(#262626_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
@@ -101,7 +101,7 @@ export default function Storefront({
             ) : (
               <div className="relative">
                 <div className="absolute -inset-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full blur-md opacity-30" />
-                <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-zinc-900 to-zinc-950 text-emerald-400 border border-zinc-800 flex items-center justify-center shadow-2xl">
+                <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-zinc-900 to-zinc-950 text-emerald-600 dark:text-emerald-400 border border-zinc-800 flex items-center justify-center shadow-2xl">
                   <ShoppingBag className="w-11 h-11" />
                 </div>
               </div>
@@ -109,12 +109,12 @@ export default function Storefront({
             
             <div className="space-y-2.5 max-w-xl">
               <div className={`flex flex-wrap items-center justify-center ${isRtl ? 'md:justify-start' : 'md:justify-start'} gap-2`}>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-400 font-extrabold uppercase tracking-wide">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold uppercase tracking-wide">
                   <Star className="w-3 h-3 text-emerald-400 fill-emerald-400" />
                   {isRtl ? 'متجر رسمي موثق' : t.verified_store || 'Verified Store'}
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3.5xl font-extrabold text-white tracking-tight leading-none">
+              <h1 className="text-2xl md:text-3.5xl font-extrabold text-zinc-100 tracking-tight leading-none">
                 {storeName}
               </h1>
               <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-normal">
@@ -143,7 +143,7 @@ export default function Storefront({
       </motion.div>
 
       {/* Interactive Finder */}
-      <div className="bg-neutral-950/40 border border-zinc-900/60 p-4 md:p-5 rounded-3xl space-y-4">
+      <div className="bg-zinc-950/40 border border-zinc-900/60 p-4 md:p-5 rounded-3xl space-y-4">
         <div className="flex flex-col lg:flex-row gap-4 items-stretch">
           <div className="relative flex-1">
             <Search className={`absolute ${isRtl ? 'right-4' : 'left-4'} top-3.5 w-4 h-4 text-zinc-500 transition-colors group-focus-within:text-emerald-400`} />
@@ -152,7 +152,7 @@ export default function Storefront({
               placeholder={isRtl ? "ابحث عن منتج متاح في المتجر..." : (t.search_placeholder || "Search items...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full bg-black/80 border border-zinc-800 rounded-2xl py-3.5 ${isRtl ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} text-xs text-white placeholder:text-zinc-600 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-medium shadow-inner`}
+              className={`w-full bg-zinc-900/80 border border-zinc-800 rounded-2xl py-3.5 ${isRtl ? 'pr-11 pl-4 text-right' : 'pl-11 pr-4 text-left'} text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all font-medium shadow-inner`}
             />
           </div>
 
@@ -164,7 +164,7 @@ export default function Storefront({
                   className={`px-5 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer border ${
                     selectedCategory === "all" 
                       ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/10" 
-                      : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                      : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900"
                   }`}
                 >
                   {isRtl ? 'الكل' : (t.all || 'All')}
@@ -176,7 +176,7 @@ export default function Storefront({
                     className={`px-5 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer border ${
                       selectedCategory === cat 
                         ? "bg-emerald-500 text-black border-emerald-500 shadow-md shadow-emerald-500/10" 
-                        : "bg-zinc-900/40 border-zinc-800 text-zinc-405 hover:text-white hover:bg-zinc-900"
+                        : "bg-zinc-900/40 border-zinc-800 text-zinc-405 hover:text-zinc-100 hover:bg-zinc-900"
                     }`}
                   >
                     {cat}
@@ -190,12 +190,12 @@ export default function Storefront({
 
       {/* Catalog Grid View */}
       {loadingProducts ? (
-        <div className="flex flex-col items-center justify-center py-28 gap-4 text-zinc-500 bg-neutral-950/20 border border-zinc-900 rounded-3xl">
+        <div className="flex flex-col items-center justify-center py-28 gap-4 text-zinc-500 bg-zinc-950/20 border border-zinc-900 rounded-3xl">
           <RefreshCw className="w-10 h-10 animate-spin text-emerald-400" />
           <p className="text-xs font-bold text-zinc-400">{isRtl ? 'جاري تصفية وتحديث منتجات المتجر والمخزون...' : 'Loading Store Inventory...'}</p>
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-24 bg-neutral-950/20 border border-zinc-900 rounded-3xl p-8 max-w-md mx-auto">
+        <div className="text-center py-24 bg-zinc-950/20 border border-zinc-900 rounded-3xl p-8 max-w-md mx-auto">
           <ShoppingBag className="w-14 h-14 text-zinc-800 mx-auto mb-4 animate-bounce" />
           <h3 className="text-base font-bold text-zinc-305">{isRtl ? 'لم نعثر على أي منتجات' : 'No products found'}</h3>
           <p className="text-[11px] text-zinc-500 mt-2 leading-relaxed">
@@ -213,7 +213,7 @@ export default function Storefront({
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{ y: -6 }}
-                  className="bg-zinc-950/30 border border-zinc-900/80 hover:border-zinc-800 rounded-3xl p-3 md:p-4 flex flex-col justify-between transition-all duration-300 group shadow-lg hover:shadow-black/60 relative"
+                  className="bg-zinc-950/60 border border-zinc-900/80 hover:border-zinc-800 rounded-3xl p-3 md:p-4 flex flex-col justify-between transition-all duration-300 group shadow-lg hover:shadow-black/60 relative"
                 >
                   <div>
                     <div className="aspect-square w-full rounded-2xl bg-black border border-zinc-900 overflow-hidden relative mb-4 shadow-inner">
@@ -225,7 +225,7 @@ export default function Storefront({
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-zinc-950 text-zinc-800">
+                        <div className="w-full h-full flex items-center justify-center bg-zinc-950 text-zinc-400">
                           <ShoppingBag className="w-10 h-10" />
                         </div>
                       )}
@@ -261,7 +261,7 @@ export default function Storefront({
                           <span className="font-mono ml-0.5 text-[9px]">4.9</span>
                         </div>
                       </div>
-                      <h3 className="text-xs md:text-sm font-extrabold text-white line-clamp-1 group-hover:text-emerald-400 transition-colors">
+                      <h3 className="text-xs md:text-sm font-extrabold text-zinc-100 line-clamp-1 group-hover:text-emerald-400 transition-colors">
                         {p.productName}
                       </h3>
                       <p className="text-[10px] md:text-[11px] text-zinc-500 line-clamp-2 leading-relaxed h-8">
@@ -274,7 +274,7 @@ export default function Storefront({
                   <div className={`mt-4 pt-4 border-t border-zinc-900/60 flex items-center justify-between gap-2 px-1`}>
                     <div className={isRtl ? 'text-right' : 'text-left'}>
                       <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">{t.price_label}</p>
-                      <p className="text-lg md:text-xl font-black text-white font-mono mt-0.5 tracking-tight">
+                      <p className="text-lg md:text-xl font-black text-zinc-100 font-mono mt-0.5 tracking-tight">
                         {(Number(p.price) || 0).toLocaleString()} <span className="text-xs text-emerald-400 font-sans font-black">DA</span>
                       </p>
                     </div>
@@ -298,14 +298,14 @@ export default function Storefront({
           </div>
 
           {/* Trusted Badges */}
-          <div className="mt-12 p-6 md:p-8 bg-zinc-950/25 border border-zinc-900/60 rounded-[2.5rem] grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden shadow-2xl">
+          <div className="mt-12 p-6 md:p-8 bg-zinc-950/50 border border-zinc-900/60 rounded-[2.5rem] grid grid-cols-1 md:grid-cols-3 gap-8 relative overflow-hidden shadow-2xl">
             <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
             
             <div className={`space-y-3.5 relative z-10 ${isRtl ? 'text-right' : 'text-left'}`}>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <Star className="w-5 h-5 text-emerald-400 fill-emerald-400" />
               </div>
-              <h4 className="text-xs font-black text-white">{isRtl ? 'معاينة الطلب وضمان الدفع عند الاستلام' : 'Inspection on Delivery'}</h4>
+              <h4 className="text-xs font-black text-zinc-100">{isRtl ? 'معاينة الطلب وضمان الدفع عند الاستلام' : 'Inspection on Delivery'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
                 {isRtl ? 'تسوق بكل راحة وبدون أي قلق! نحن نضمن لك إمكانية مراجعة ومعاينة سلعك بنفسك فور الاستلام.' : 'Check your items upon delivery before paying. 100% Secure.'}
               </p>
@@ -315,7 +315,7 @@ export default function Storefront({
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <RefreshCw className="w-5 h-5 text-emerald-400 animate-spin-slow" />
               </div>
-              <h4 className="text-xs font-black text-white">{isRtl ? 'ضمان الاستبدال السهل والإرجاع المرن' : 'Easy Returns'}</h4>
+              <h4 className="text-xs font-black text-zinc-100">{isRtl ? 'ضمان الاستبدال السهل والإرجاع المرن' : 'Easy Returns'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
                 {isRtl ? 'رضاك هو غايتنا الأولى! إن لم يتناسب المقاس، تواصل معنا فوراً لنقوم بالتبديل.' : 'Need a different size? Contact us for a fast exchange.'}
               </p>
@@ -325,7 +325,7 @@ export default function Storefront({
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
                 <ShoppingCart className="w-5 h-5 text-emerald-400" />
               </div>
-              <h4 className="text-xs font-black text-white">{isRtl ? 'توصيل سريع لـ 58 ولاية' : '58 Wilaya Delivery'}</h4>
+              <h4 className="text-xs font-black text-zinc-100">{isRtl ? 'توصيل سريع لـ 58 ولاية' : '58 Wilaya Delivery'}</h4>
               <p className="text-[11px] text-zinc-400 leading-relaxed font-normal">
                 {isRtl ? 'نقوم بتسليم طرودك عبر شبكة Yalidine الموثوقة لتضمن توصيلها الآمن.' : 'We ship via Yalidine Express for the safest and fastest delivery in Algeria.'}
               </p>

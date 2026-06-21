@@ -247,7 +247,7 @@ export default function StorefrontCart({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-xl bg-neutral-950 border border-zinc-850/80 p-6 md:p-10 rounded-[2rem] text-center space-y-6 shadow-2xl relative overflow-hidden"
+          className="w-full max-w-xl bg-zinc-950 border border-zinc-850/80 p-6 md:p-10 rounded-[2rem] text-center space-y-6 shadow-2xl relative overflow-hidden"
         >
           {/* Abstract background glows */}
           <div className="absolute top-[-20%] left-[-20%] w-64 h-64 bg-emerald-500/10 rounded-full blur-[90px] pointer-events-none" />
@@ -257,16 +257,16 @@ export default function StorefrontCart({
           </div>
 
           <div className="space-y-2.5">
-            <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">{t.order_success}</h2>
+            <h2 className="text-xl md:text-2xl font-black text-zinc-100 tracking-tight">{t.order_success}</h2>
             <p className="text-xs md:text-sm text-zinc-400 leading-relaxed max-w-md mx-auto font-medium">
               {t.success_desc}
             </p>
           </div>
 
-          <div className={`bg-zinc-950 border border-zinc-900 rounded-2xl p-5 ${isRtl ? 'text-right' : 'text-left'} space-y-3.5 shadow-inner text-xs`}>
+          <div className={`bg-zinc-900/30 border border-zinc-900 rounded-2xl p-5 ${isRtl ? 'text-right' : 'text-left'} space-y-3.5 shadow-inner text-xs`}>
             <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
               <span className="text-zinc-500 font-bold">{isRtl ? 'اسم المستلم:' : 'Recipient:'}</span>
-              <span className="text-white font-extrabold">{customerName}</span>
+              <span className="text-zinc-100 font-extrabold">{customerName}</span>
             </div>
             <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
               <span className="text-zinc-500 font-bold">{isRtl ? 'رقم الهاتف الفعال:' : 'Phone:'}</span>
@@ -274,19 +274,19 @@ export default function StorefrontCart({
             </div>
             <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
               <span className="text-zinc-500 font-bold">{isRtl ? 'مكان التوصيل والشحن:' : 'Location:'}</span>
-              <span className="text-white font-extrabold">
+              <span className="text-zinc-100 font-extrabold">
                 {activeWilayaObj?.nameAr || selectedWilaya} • {selectedCommune}
               </span>
             </div>
             {deliveryAddress.trim() && (
               <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
                 <span className="text-zinc-500 font-bold">{isRtl ? 'العنوان الكلي التفصيلي:' : 'Full Address:'}</span>
-                <span className="text-zinc-300">{deliveryAddress}</span>
+                <span className="text-zinc-200">{deliveryAddress}</span>
               </div>
             )}
             <div className={`flex justify-between border-b border-zinc-900/60 pb-3 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
               <span className="text-zinc-500 font-bold">{isRtl ? 'طريقة الاستلام المفضلة:' : 'Delivery Type:'}</span>
-              <span className="text-white font-extrabold">
+              <span className="text-zinc-100 font-extrabold">
                 {deliveryType === "home" ? t.store_delivery_home : t.store_delivery_desk}
               </span>
             </div>
@@ -330,8 +330,8 @@ export default function StorefrontCart({
         
         {/* Left column: Cart goods list */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-6 rounded-3xl space-y-4 shadow-2xl relative">
-            <h3 className="text-xs font-extrabold text-white uppercase tracking-widest flex items-center gap-2 pb-3.5 border-b border-zinc-900">
+          <div className="bg-zinc-950 border border-zinc-900/80 p-5 md:p-6 rounded-3xl space-y-4 shadow-2xl relative">
+            <h3 className="text-xs font-extrabold text-zinc-100 uppercase tracking-widest flex items-center gap-2 pb-3.5 border-b border-zinc-900">
               <ShoppingCart className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
               {t.cart_title} ({cart.length})
             </h3>
@@ -366,7 +366,7 @@ export default function StorefrontCart({
                       </div>
 
                       <div className="space-y-0.5 text-right">
-                        <h4 className="text-[11px] md:text-xs font-extrabold text-white line-clamp-1 group-hover:text-emerald-400 transition-colors">{item.productName}</h4>
+                        <h4 className="text-[11px] md:text-xs font-extrabold text-zinc-100 line-clamp-1 group-hover:text-emerald-400 transition-colors">{item.productName}</h4>
                         <div className="flex items-center gap-2.5">
                           <p className="text-[10px] text-emerald-400 font-mono font-bold">{item.price.toLocaleString()} DA</p>
                           {(item.size || item.color) && (
@@ -387,7 +387,7 @@ export default function StorefrontCart({
                         >
                           <Minus className="w-2.5 h-2.5" />
                         </button>
-                        <span className="text-[11px] font-mono font-black w-5.5 text-center text-white">{item.quantity}</span>
+                        <span className="text-[11px] font-mono font-black w-5.5 text-center text-zinc-100">{item.quantity}</span>
                         <button
                           type="button"
                           onClick={() => onUpdateQty(item.cartItemId, 1)}
@@ -412,7 +412,7 @@ export default function StorefrontCart({
               <div className="pt-4 border-t border-zinc-900 text-xs space-y-3">
                 <div className={`flex justify-between text-zinc-400 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
                   <span>{isRtl ? 'مجموع المنتجات بالسلة:' : 'Subtotal:'}</span>
-                  <span className="font-mono font-bold text-white">{itemsTotal.toLocaleString()} DA</span>
+                  <span className="font-mono font-bold text-zinc-100">{itemsTotal.toLocaleString()} DA</span>
                 </div>
                 <div className={`flex justify-between text-zinc-400 items-center ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
                   <span>{t.shipping_fee_label}</span>
@@ -425,7 +425,7 @@ export default function StorefrontCart({
                   )}
                 </div>
                 <div className={`flex justify-between text-xs md:text-sm font-extrabold pt-3 bg-zinc-900/20 p-3 rounded-2xl border-t border-zinc-900 ${isRtl ? 'flex-row' : 'flex-row-reverse'}`}>
-                  <span className="text-white">{t.total_to_pay}</span>
+                  <span className="text-zinc-100">{t.total_to_pay}</span>
                   <span className="font-mono text-emerald-400 text-sm md:text-base">
                     {finalPrice.toLocaleString()} <span className="text-[11px] text-emerald-400">DA</span>
                   </span>
@@ -440,7 +440,7 @@ export default function StorefrontCart({
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-neutral-950 border border-zinc-900/80 p-5 md:p-8 rounded-[2rem] shadow-2xl relative"
+            className="bg-zinc-950 border border-zinc-900/80 p-5 md:p-8 rounded-[2rem] shadow-2xl relative"
           >
             <div className="absolute bottom-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-[70px] pointer-events-none" />
 
@@ -466,7 +466,7 @@ export default function StorefrontCart({
                       placeholder={isRtl ? "مثال: يونس جلال" : "e.g. John Doe"}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all font-medium placeholder:text-zinc-700`}
+                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-right' : 'pl-10 pr-4 text-left'} py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-101 text-zinc-100 text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all font-medium placeholder:text-zinc-500`}
                     />
                     <User className={`absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3.5 w-4 h-4 text-zinc-600 pointer-events-none`} />
                   </div>
@@ -481,7 +481,7 @@ export default function StorefrontCart({
                       placeholder="05XXXXXXXX / 06XXXXXXXX"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-left font-mono' : 'pl-10 pr-4 text-left font-mono'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700`}
+                      className={`w-full ${isRtl ? 'pr-10 pl-4 text-left font-mono' : 'pl-10 pr-4 text-left font-mono'} py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-101 text-zinc-100 text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-500`}
                       dir="ltr"
                     />
                     <Phone className={`absolute ${isRtl ? 'right-3.5' : 'left-3.5'} top-3.5 w-4 h-4 text-zinc-600 pointer-events-none`} />
@@ -506,11 +506,11 @@ export default function StorefrontCart({
                         required
                         value={selectedWilaya}
                         onChange={handleWilayaChange}
-                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold`}
+                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer font-bold`}
                       >
                         <option value="" disabled className="text-zinc-700">{isRtl ? 'اختر الولاية' : 'Select Wilaya'}</option>
                         {ALGERIA_68_WILAYAS.map(w => (
-                          <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-black text-zinc-200 font-bold">
+                          <option key={w.code} value={`${w.code} - ${w.nameAr}`} className="bg-zinc-950 text-zinc-100 font-bold">
                             {w.code} - {w.nameAr}
                           </option>
                         ))}
@@ -527,11 +527,11 @@ export default function StorefrontCart({
                         value={selectedCommune}
                         onChange={(e) => setSelectedCommune(e.target.value)}
                         disabled={!selectedWilaya}
-                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed font-bold`}
+                        className={`w-full ${isRtl ? 'pl-9 pr-3' : 'pr-9 pl-3'} py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-200 text-xs focus:border-emerald-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed font-bold`}
                       >
                         <option value="" disabled className="text-zinc-700">{isRtl ? 'اختر البلدية' : 'Select Commune'}</option>
                         {communesList.map((comm, idx) => (
-                          <option key={idx} value={comm} className="bg-black text-zinc-200">
+                          <option key={idx} value={comm} className="bg-zinc-950 text-zinc-100">
                             {comm}
                           </option>
                         ))}
@@ -548,7 +548,7 @@ export default function StorefrontCart({
                     placeholder={isRtl ? "مثال: حي السلام، عمارة رقم 3، الطابق 2" : "e.g. Apartment 3, Floor 2"}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className={`w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-700 font-medium ${isRtl ? 'text-right' : 'text-left'}`}
+                    className={`w-full px-4 py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-101 text-zinc-100 text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all placeholder:text-zinc-500 font-medium ${isRtl ? 'text-right' : 'text-left'}`}
                   />
                 </div>
 
@@ -561,8 +561,8 @@ export default function StorefrontCart({
                       onClick={() => setDeliveryType("home")}
                       className={`py-3 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
                         deliveryType === "home" 
-                          ? "bg-white text-black border-white shadow-lg font-black" 
-                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                          ? "bg-emerald-500 text-black border-emerald-500 shadow-lg font-black" 
+                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-zinc-101 hover:text-zinc-100 hover:bg-zinc-900"
                       }`}
                     >
                       <span>{t.store_delivery_home}</span>
@@ -572,8 +572,8 @@ export default function StorefrontCart({
                       onClick={() => setDeliveryType("desk")}
                       className={`py-3 rounded-xl border text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
                         deliveryType === "desk" 
-                          ? "bg-white text-black border-white shadow-lg font-black" 
-                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                          ? "bg-emerald-500 text-black border-emerald-500 shadow-lg font-black" 
+                          : "bg-zinc-900/30 border-zinc-900 text-zinc-400 hover:text-zinc-101 hover:text-zinc-100 hover:bg-zinc-900"
                       }`}
                     >
                       <span>{t.store_delivery_desk}</span>
@@ -588,7 +588,7 @@ export default function StorefrontCart({
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder={isRtl ? "أضف أي تفاصيل تود إبلاغ الموزع بها..." : "Any details for the delivery driver..."}
-                    className={`w-full px-4 py-3 bg-black border border-zinc-900 hover:border-zinc-800 rounded-xl text-white text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all resize-none placeholder:text-zinc-700 ${isRtl ? 'text-right' : 'text-left'}`}
+                    className={`w-full px-4 py-3 bg-zinc-900/60 border border-zinc-900 hover:border-zinc-850 rounded-xl text-zinc-101 text-zinc-100 text-xs focus:ring-1 focus:ring-emerald-500/20 focus:border-emerald-500/50 focus:outline-none transition-all resize-none placeholder:text-zinc-500 ${isRtl ? 'text-right' : 'text-left'}`}
                   />
                 </div>
               </div>

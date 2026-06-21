@@ -967,18 +967,18 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
       </div>
 
       {/* Segmented Switcher for Products vs Store Settings */}
-      <div className="flex bg-zinc-950/80 border border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md shadow-2xl">
+      <div className="flex bg-slate-100/80 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md shadow-md dark:shadow-2xl transition-all">
         <button
           type="button"
           onClick={() => setActiveTab("products")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "products"
               ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
-              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+              : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
           }`}
         >
           <Package className="w-4 h-4" />
-          {isRtl ? "المستودع وقائمة السلع" : "Warehouse List"}
+          {isRtl ? "المستودع وقائمة السلع" : "Warehouse & Products"}
         </button>
         <button
           type="button"
@@ -986,11 +986,11 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
           className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
             activeTab === "settings"
               ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
-              : "text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+              : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
           }`}
         >
           <Store className="w-4 h-4" />
-          {isRtl ? "إعدادات المتجر العام" : "Storefront Settings"}
+          {isRtl ? "إعدادات المتجر" : "Store Settings"}
         </button>
       </div>
 
@@ -998,33 +998,33 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-right"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-right w-full"
           dir={isRtl ? "rtl" : "ltr"}
         >
           {/* Left Column: Store Profile Form */}
-          <div className="lg:col-span-2 bg-[#090909]/40 border border-zinc-900 rounded-3xl p-6 space-y-6 shadow-2xl backdrop-blur-md">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center justify-start gap-2 border-b border-zinc-900 pb-3">
-                <Store className="w-4 h-4 text-yellow-500" />
-                {isRtl ? "إعدادات واجهة المتجر الإلكتروني العام" : "Storefront Configuration"}
-              </h3>
-              <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
-                {isRtl
-                  ? "قم بإدخال تفاصيل متجرك العام وشعاره الخاص لعرض السلع وقبول الطلبات تلقائياً بالكامل."
-                  : "Define your custom logo, description and naming options for the public page."}
-              </p>
-            </div>
+          <div className="lg:col-span-2 bg-white dark:bg-[#090909]/40 border border-slate-200 dark:border-zinc-900 rounded-3xl p-6 space-y-6 shadow-md dark:shadow-2xl backdrop-blur-md transition-all">
+            <form onSubmit={handleSaveStoreSettings} className="space-y-6">
+              <div>
+                <h3 className="text-sm font-bold text-slate-855 dark:text-white flex items-center justify-start gap-2 border-b border-slate-100 dark:border-zinc-900 pb-3">
+                  <Store className="w-4 h-4 text-emerald-500" />
+                  {isRtl ? "إعدادات واجهة المتجر الإلكتروني العام" : "Storefront Configuration"}
+                </h3>
+                <p className="text-[11px] text-slate-600 dark:text-zinc-400 mt-2 leading-relaxed">
+                  {isRtl
+                    ? "قم بإدخال تفاصيل متجرك العام وشعاره الخاص لعرض السلع وقبول الطلبات تلقائياً بالكامل."
+                    : "Define your custom logo, description and naming options for the public page."}
+                </p>
+              </div>
 
-            <form onSubmit={handleSaveStoreSettings} className="space-y-5">
               {/* Store Name */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-350 block">
+                <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 block">
                   {isRtl ? "اسم المتجر العام" : "Public Store Name"}
                 </label>
                 <input
                   type="text"
                   required
-                  className="w-full bg-zinc-950 border border-zinc-850 focus:border-yellow-500/50 outline-none rounded-xl px-4 py-3 text-xs text-white"
+                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 focus:border-purple-500/50 dark:focus:border-purple-500/50 outline-none rounded-xl px-4 py-3 text-xs text-slate-800 dark:text-white transition-all"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
                   placeholder={isRtl ? "اسم متجرك الخاص..." : "My Awesome Store..."}
@@ -1033,13 +1033,13 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
 
               {/* Store Description */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-350 block">
+                <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 block">
                   {isRtl ? "وصف المتجر (تظهر في ترويسة المتجر)" : "Store Description & Welcome Text"}
                 </label>
                 <textarea
                   required
                   rows={3}
-                  className="w-full bg-zinc-950 border border-zinc-850 focus:border-yellow-500/50 outline-none rounded-xl px-4 py-3 text-xs text-white leading-relaxed resize-none text-right"
+                  className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 focus:border-purple-500/50 dark:focus:border-purple-500/50 outline-none rounded-xl px-4 py-3 text-xs text-slate-800 dark:text-white leading-relaxed resize-none transition-all"
                   value={storeDescription}
                   onChange={(e) => setStoreDescription(e.target.value)}
                   placeholder={isRtl ? "اكتب وصفاً جذاباً لمتجرك يظهر للعملاء..." : "Describe your collection..."}
@@ -1048,19 +1048,19 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
 
               {/* Store Logo Drag & Drop */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-zinc-350 block">
+                <label className="text-xs font-bold text-slate-800 dark:text-zinc-200 block">
                   {isRtl ? "شعار المتجر (Logo)" : "Store Logo / Brand Image"}
                 </label>
-                <div className="flex flex-col sm:flex-row items-center gap-4 bg-zinc-950/40 p-4 rounded-2xl border border-zinc-900">
-                  <div className="relative w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50/50 dark:bg-zinc-950/40 p-4 rounded-2xl border border-slate-150 dark:border-zinc-900 transition-all">
+                  <div className="relative w-16 h-16 rounded-full bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
                     {storeLogo ? (
                       <img src={storeLogo} alt="Logo" className="w-full h-full object-cover" />
                     ) : (
-                      <Store className="w-6 h-6 text-zinc-600" />
+                      <Store className="w-6 h-6 text-slate-500 dark:text-zinc-500" />
                     )}
                   </div>
                   <div className="flex-1 w-full space-y-2">
-                    <span className="text-[10px] text-zinc-500 block">
+                    <span className="text-[10px] text-slate-600 dark:text-zinc-400 block">
                       {isRtl
                         ? "ارفع صورة مربعة بدقة عالية لشعار متجرك (JPG, PNG الأقصى 2MB)"
                         : "Upload high-quality square brand image file."}
@@ -1075,9 +1075,9 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                       />
                       <label
                         htmlFor="logo-file-input"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-[10px] cursor-pointer transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-850 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-350 rounded-xl font-bold text-[10px] cursor-pointer transition-all"
                       >
-                        <Upload className="w-3.5 h-3.5 text-zinc-400" />
+                        <Upload className="w-3.5 h-3.5 text-slate-600 dark:text-zinc-400" />
                         {isRtl ? "اختيار صورة الشعار" : "Choose Logo Image"}
                       </label>
                     </div>
@@ -1085,9 +1085,9 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                 </div>
               </div>
 
-              {/* SHIPPING OPTIONS */}
-              <div className="space-y-3.5 pt-3 border-t border-zinc-900">
-                <h4 className="text-xs font-bold text-zinc-300 flex items-center justify-start gap-1.5">
+                            {/* SHIPPING OPTIONS */}
+              <div className="space-y-3.5 pt-3 border-t border-slate-150 dark:border-zinc-900">
+                <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-300 flex items-center justify-start gap-1.5">
                   🚚 {isRtl ? "خيارات ورسوم شحن المتجر" : "Store Delivery Tariffs Settings"}
                 </h4>
 
@@ -1099,11 +1099,11 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                     className={`p-3.5 rounded-xl border text-right transition-all flex flex-col justify-between cursor-pointer ${
                       shippingCostType === "auto"
                         ? "border-emerald-500/30 bg-emerald-500/[0.02]"
-                        : "border-zinc-900 bg-zinc-950/30 hover:border-zinc-800"
+                        : "border-slate-200 dark:border-zinc-900 bg-slate-50/50 dark:bg-zinc-950/30 hover:bg-slate-100/50 dark:hover:bg-zinc-900/30"
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className={`text-[11px] font-black ${shippingCostType === "auto" ? "text-emerald-400" : "text-zinc-300"}`}>
+                      <span className={`text-[11px] font-black ${shippingCostType === "auto" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-300"}`}>
                         {isRtl ? "⚡ حساب شحن تلقائي مدمج" : "Smart Automatic Shipping"}
                       </span>
                       <input
@@ -1113,7 +1113,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                         className="accent-emerald-500"
                       />
                     </div>
-                    <p className="text-[9px] text-zinc-500 mt-1.5 leading-normal">
+                    <p className="text-[9px] text-slate-500 dark:text-zinc-500 mt-1.5 leading-normal">
                       {isRtl
                         ? "استخدم خوارزمية التطبيق لتسعير التوصيل لكل ولاية تلقائياً وعرضه للعميل."
                         : "Apply regional shipping cost algorithm per wilaya dynamically."}
@@ -1126,11 +1126,11 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                     className={`p-3.5 rounded-xl border text-right transition-all flex flex-col justify-between cursor-pointer ${
                       shippingCostType === "fixed"
                         ? "border-yellow-500/30 bg-yellow-500/[0.02]"
-                        : "border-zinc-900 bg-zinc-950/30 hover:border-zinc-800"
+                        : "border-slate-200 dark:border-zinc-900 bg-slate-50/50 dark:bg-zinc-950/30 hover:bg-slate-100/50 dark:hover:bg-zinc-900/30"
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className={`text-[11px] font-black ${shippingCostType === "fixed" ? "text-yellow-400" : "text-zinc-300"}`}>
+                      <span className={`text-[11px] font-black ${shippingCostType === "fixed" ? "text-amber-600 dark:text-yellow-400" : "text-slate-700 dark:text-zinc-300"}`}>
                         {isRtl ? "📍 رسوم توصيل ثابتة موحدة" : "Flat Shipping Rate"}
                       </span>
                       <input
@@ -1140,15 +1140,14 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                         className="accent-yellow-500"
                       />
                     </div>
-                    <p className="text-[9px] text-zinc-500 mt-1.5 leading-normal">
+                    <p className="text-[9px] text-slate-500 dark:text-zinc-500 mt-1.5 leading-normal">
                       {isRtl
                         ? "حدد رسوم شحن موحدة لكافة ولايات الجزائر بغض النظر عن موقع التوصيل."
                         : "Define a unified flat rate delivery tariff for all domestic endpoints."}
                     </p>
                   </button>
                 </div>
-
-                {/* Fixed shipping value input */}
+                          {/* Fixed shipping value input */}
                 <AnimatePresence>
                   {shippingCostType === "fixed" && (
                     <motion.div
@@ -1157,7 +1156,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-1.5 overflow-hidden"
                     >
-                      <label className="text-[10px] font-bold text-zinc-400 block mt-1">
+                      <label className="text-[10px] font-bold text-slate-700 dark:text-zinc-400 block mt-1">
                         {isRtl ? "رسوم التوصيل الثابتة لجميع الولايات (دج)" : "Unified flat rate fee (DZD)"}
                       </label>
                       <div className="relative max-w-xs">
@@ -1165,12 +1164,12 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                           type="number"
                           min="0"
                           required
-                          className="w-full bg-zinc-950 border border-zinc-850 focus:border-yellow-500/50 outline-none rounded-xl pl-12 pr-4 py-2.5 text-xs text-white font-mono"
+                          className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-205 dark:border-zinc-850 focus:border-purple-500/50 dark:focus:border-yellow-500/50 outline-none rounded-xl pl-12 pr-4 py-2.5 text-xs text-slate-800 dark:text-white font-mono"
                           value={fixedShippingCost}
                           onChange={(e) => setFixedShippingCost(e.target.value)}
                           placeholder="600"
                         />
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-500 font-bold text-xs font-mono">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 dark:text-zinc-500 font-bold text-xs font-mono">
                           DZD
                         </div>
                       </div>
@@ -1180,18 +1179,23 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
               </div>
 
               {/* Submit */}
-              <div className="pt-3 border-t border-zinc-900 flex justify-end">
+              <div className="pt-3 border-t border-slate-150 dark:border-zinc-900 flex justify-end">
                 <button
                   type="submit"
                   disabled={settingsSaving}
-                  className="bg-white hover:bg-zinc-100 disabled:bg-zinc-800 disabled:text-zinc-650 text-black px-6 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow"
+                  className="bg-purple-600 hover:bg-purple-700 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-black hover:scale-98 active:scale-95 px-6 py-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-purple-550/10 dark:shadow-none"
                 >
                   {settingsSaving ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      {isRtl ? "جاري الحفظ..." : "Saving..."}
+                    </>
                   ) : (
-                    <Check className="w-4 h-4" />
+                    <>
+                      <Check className="w-4 h-4" />
+                      {isRtl ? "حفظ إعدادات المتجر" : "Save Settings"}
+                    </>
                   )}
-                  {isRtl ? "حفظ التعديلات وعرض المتجر" : "Apply & Save Settings"}
                 </button>
               </div>
             </form>
@@ -1200,13 +1204,13 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
           {/* Right Column: Share Link & QR Generator */}
           <div className="space-y-5">
             {/* 1. Share URL Card */}
-            <div className="bg-[#090909]/40 border border-zinc-900 rounded-3xl p-6 text-center space-y-4 shadow-xl backdrop-blur-md">
+            <div className="bg-white/85 dark:bg-[#090909]/40 border border-slate-205 dark:border-zinc-900 rounded-3xl p-6 text-center space-y-4 shadow-md dark:shadow-xl backdrop-blur-md transition-all">
               <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 flex items-center justify-center mx-auto">
                 <Store className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <h4 className="font-bold text-white text-xs">{isRtl ? "عنوان المتجر الإلكتروني الخاص بك" : "Your Storefront Address"}</h4>
-                <p className="text-[10px] text-zinc-500 leading-normal">
+                <h4 className="font-bold text-slate-800 dark:text-white text-xs">{isRtl ? "عنوان المتجر الإلكتروني الخاص بك" : "Your Storefront Address"}</h4>
+                <p className="text-[10px] text-slate-500 dark:text-zinc-500 leading-normal">
                   {isRtl
                     ? "شارك هذا الرابط المباشر في حسابات التواصل وحملات فيسبوك أو انستغرام لتلقي طلبات الشراء تلقائياً."
                     : "Share this URL on social media. Your customers can purchase products in real-time."}
@@ -1214,8 +1218,8 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
               </div>
 
               {/* Store URL Display & Copy */}
-              <div className="bg-zinc-950 border border-zinc-900 p-3 rounded-2xl flex items-center justify-between gap-1.5">
-                <span className="text-[10.5px] font-mono text-zinc-400 select-all truncate max-w-[190px] text-left">
+              <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-150 dark:border-zinc-900 p-3 rounded-2xl flex items-center justify-between gap-1.5 transition-all">
+                <span className="text-[10.5px] font-mono text-slate-600 dark:text-zinc-400 select-all truncate max-w-[190px] text-left">
                   {`${window.location.origin}/s/${user?.uid || ""}`}
                 </span>
                 <button
@@ -1225,7 +1229,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                     setCopiedLink(true);
                     setTimeout(() => setCopiedLink(false), 2000);
                   }}
-                  className="p-2 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-350 hover:text-white rounded-xl transition-all shrink-0 cursor-pointer"
+                  className="p-2 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-850 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-350 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all shrink-0 cursor-pointer"
                   title={isRtl ? "نسخ الرابط" : "Copy storefront link"}
                 >
                   {copiedLink ? (
@@ -1238,18 +1242,18 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
             </div>
 
             {/* 2. QR Code Scannable Card */}
-            <div className="bg-[#090909]/40 p-6 border border-zinc-900 rounded-3xl text-center space-y-5 shadow-xl backdrop-blur-md">
-              <h4 className="font-bold text-white text-xs flex items-center justify-center gap-1.5">
+            <div className="bg-white/85 dark:bg-[#090909]/40 p-6 border border-slate-205 dark:border-zinc-900 rounded-3xl text-center space-y-5 shadow-md dark:shadow-xl backdrop-blur-md transition-all">
+              <h4 className="font-bold text-slate-800 dark:text-white text-xs flex items-center justify-center gap-1.5">
                 📱 {isRtl ? "رمز الاستجابة السريعة (QR Code)" : "Public QR Scanner"}
               </h4>
-              <p className="text-[10px] text-zinc-500 leading-normal">
+              <p className="text-[10px] text-slate-500 dark:text-zinc-500 leading-normal">
                 {isRtl
                   ? "امسح أو نزل الرمز المطبوع لمشاركته كملصق على واجهة المحل أو داخل الطرود."
                   : "Display or print this barcode. Anyone scanning it is routed to your storefront."}
               </p>
 
               {/* QR Code Container with sleek ambient ring */}
-              <div className="relative w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto border border-zinc-800 shadow-inner flex items-center justify-center transition-all duration-200">
+              <div className="relative w-40 h-40 bg-white p-2.5 rounded-2xl mx-auto border border-slate-150 dark:border-zinc-800 shadow-inner flex items-center justify-center transition-all duration-200">
                 <img
                   src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
                     `${window.location.origin}/s/${user?.uid || ""}`
@@ -1267,9 +1271,9 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-1.5 py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 rounded-xl font-bold text-xs transition-colors"
+                className="inline-flex w-full items-center justify-center gap-1.5 py-2.5 bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-850 border border-slate-200 dark:border-zinc-805 text-slate-700 dark:text-zinc-300 rounded-xl font-bold text-xs transition-all"
               >
-                <FileText className="w-3.5 h-3.5 text-zinc-500" />
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
                 {isRtl ? "فتح وتنزيل رمز الـ QR بدقة كاملة" : "Download Print-Ready QR"}
               </a>
             </div>

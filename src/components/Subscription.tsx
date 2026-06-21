@@ -292,7 +292,17 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
       });
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        const errorText = await response.text();
+        let errorMessage = "Failed to reach payment gateway. Verify your network or secrets configurations.";
+        try {
+          const parsed = JSON.parse(errorText);
+          if (parsed.error) {
+            errorMessage = parsed.error;
+          }
+        } catch (e) {
+          if (errorText) errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
       const resJson = await response.json();
@@ -311,7 +321,7 @@ export default function Subscription({ user, userData, setScreen, t, isRtl, plan
       }
     } catch (err: any) {
       console.error(err);
-      setGatewayError("Failed to reach payment gateway. Verify your network or secrets configurations.");
+      setGatewayError(err.message || "Failed to reach payment gateway. Verify your network or secrets configurations.");
     } finally {
       setGatewayLoading(false);
     }

@@ -56,11 +56,11 @@ export function InputField({ label, value, onChange, icon, highlight, manualLabe
 export function FeatureCard({ icon, title, desc }: { icon: ReactNode, title: string, desc: string }) {
   return (
     <div className="glass-card p-8 group hover:border-purple-500/40 hover:shadow-[0_0_30px_rgba(168,85,247,0.25)] transition-all duration-305">
-      <div className="mb-6 p-3.5 bg-purple-500/10 rounded-2xl w-fit group-hover:scale-110 group-hover:bg-purple-500/25 group-hover:text-purple-400 text-zinc-400 border border-white/5 transition-all duration-300">
+      <div className="mb-6 p-3.5 bg-purple-500/10 rounded-2xl w-fit group-hover:scale-110 group-hover:bg-purple-500/25 group-hover:text-purple-400 text-slate-500 dark:text-zinc-450 border border-slate-200 dark:border-white/5 transition-all duration-300">
         {icon}
       </div>
-      <h3 className="text-lg font-extrabold mb-3 tracking-tight text-white select-none">{title}</h3>
-      <p className="text-zinc-400 leading-relaxed text-sm font-medium">{desc}</p>
+      <h3 className="text-lg font-extrabold mb-3 tracking-tight text-slate-900 dark:text-white select-none">{title}</h3>
+      <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-sm font-medium">{desc}</p>
     </div>
   );
 }
@@ -72,7 +72,7 @@ export function Step({ number, text, isRtl }: { number: number, text: string, is
         {number}
       </div>
       <div className="glass-card p-6 flex-1 hover:border-purple-500/20">
-        <p className="font-semibold text-zinc-200 text-base leading-relaxed">{text}</p>
+        <p className="font-semibold text-slate-800 dark:text-zinc-200 text-base leading-relaxed">{text}</p>
       </div>
     </div>
   );

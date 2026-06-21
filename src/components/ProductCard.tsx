@@ -139,7 +139,7 @@ export const ProductCard = React.memo(function ProductCard({
               <span className="text-zinc-650 text-[9px] font-mono">===</span>
             )}
           </div>
-          <h4 className="font-black text-white text-sm line-clamp-1 group-hover:text-purple-400 transition-colors">{product.productName}</h4>
+          <h4 className="font-black text-zinc-100 text-sm line-clamp-1 group-hover:text-purple-400 transition-colors">{product.productName}</h4>
           {product.description && <p className="text-[11px] text-zinc-400 line-clamp-2 mt-1 leading-normal font-sans">{product.description}</p>}
         </div>
 

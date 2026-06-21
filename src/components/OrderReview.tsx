@@ -381,13 +381,13 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                         </div>
 
                         {(manualMode[idx] !== undefined ? manualMode[idx] : (item.product ? !inventory.some(p => p.productName === item.product) : false)) ? (
-                          <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20 px-4 py-1">
+                          <div className="relative flex items-center bg-zinc-950 border border-zinc-800 rounded-xl focus-within:border-zinc-500 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20 px-4 py-1">
                             <input
                               type="text"
                               value={item.product || ""}
                               placeholder={isRtl ? "اكتب اسم المنتج يدوياً..." : "Write product name manually..."}
                               onChange={(e) => updateItem(idx, 'product', e.target.value)}
-                              className="w-full bg-transparent text-white py-2.5 text-xs font-semibold outline-none placeholder:text-zinc-650"
+                              className="w-full bg-transparent text-zinc-100 py-2.5 text-xs font-semibold outline-none placeholder:text-zinc-500"
                             />
                             {item.product && (
                               <button
@@ -400,7 +400,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                             )}
                           </div>
                         ) : (
-                          <div className="relative flex items-center bg-[#09090b] border border-zinc-855 rounded-xl focus-within:border-zinc-700 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20">
+                          <div className="relative flex items-center bg-zinc-950 border border-zinc-800 rounded-xl focus-within:border-zinc-500 transition-all overflow-hidden focus-within:ring-1 focus-within:ring-purple-500/20">
                             <select
                               value={item.product || ""}
                               onChange={(e) => {
@@ -416,7 +416,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                                   updateItem(idx, 'pricePerUnit', 0);
                                 }
                               }}
-                              className="w-full bg-transparent text-white py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
+                              className="w-full bg-transparent text-zinc-100 py-3 px-4 text-xs font-semibold outline-none appearance-none cursor-pointer pr-10"
                             >
                               <option value="" className="bg-zinc-950 text-zinc-500">
                                 {isRtl ? "-- اختر منتج التاجر --" : "-- Select Merchant Product --"}
@@ -585,7 +585,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
          <label className="text-[10px] text-zinc-500 uppercase tracking-widest">{t.delivery_type}</label>
          <div className="flex gap-2">
            {['home', 'desk'].map((type: any) => (
-             <button key={type} onClick={() => setOrder({...order, delivery_type: type as any})} className={`flex-1 py-3 rounded-2xl text-xs font-bold border transition-all ${order.delivery_type === type ? 'bg-white text-black' : 'bg-black/30 text-zinc-500 border-zinc-800'}`}>{type === 'home' ? t.delivery_home : t.delivery_desk}</button>
+             <button key={type} onClick={() => setOrder({...order, delivery_type: type as any})} className={`flex-1 py-3 rounded-2xl text-xs font-bold border transition-all ${order.delivery_type === type ? 'bg-zinc-100 text-zinc-950 font-extrabold border-zinc-200 shadow-sm' : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700'}`}>{type === 'home' ? t.delivery_home : t.delivery_desk}</button>
            ))}
          </div>
 
@@ -594,7 +594,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
             <select 
               value={order.shipping_company} 
               onChange={(e) => setOrder({...order, shipping_company: e.target.value})}
-              className="w-full bg-black/40 border border-zinc-800 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
+              className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded-2xl py-3 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-all appearance-none"
             >
               <option value="Yalidine Express">Yalidine Express</option>
               {(() => {
@@ -714,7 +714,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
               <button 
                 type="button"
                 onClick={() => setShowPreviewModal(true)} 
-                className="py-3.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-sm cursor-pointer"
+                className="py-3.5 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-100 rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-all text-sm cursor-pointer"
               >
                 <Eye className="w-4 h-4 text-yellow-500" /> {isRtl ? "معاينة مسودة الملصق" : "Draft Preview"}
               </button>
@@ -834,7 +834,7 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                     </div>
 
                     {/* The physical-looking premium label card */}
-                    <div className="relative bg-white text-black p-5 rounded-2xl shadow-xl overflow-hidden border border-zinc-100 flex flex-col select-none no-select">
+                    <div className="relative bg-white text-black p-5 rounded-2xl shadow-xl overflow-hidden border border-slate-200 flex flex-col select-none no-select">
                       
                       {/* Secure Repeating Watermark Grid */}
                       <div className="absolute inset-0 grid grid-cols-2 gap-y-12 gap-x-6 rotate-[-15deg] scale-110 pointer-events-none select-none opacity-5 overflow-hidden">
@@ -848,8 +848,8 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                       {/* Top Header of courier */}
                       <div className="flex justify-between items-center border-b-2 border-black pb-2.5">
                         <div>
-                          <span className="text-[8px] tracking-wider uppercase text-zinc-400 font-bold block">SmartyAi Premium Logistix</span>
-                          <h3 className="text-xs font-black tracking-tighter text-zinc-900">
+                          <span className="text-[8px] tracking-wider uppercase text-slate-400 font-bold block">SmartyAi Premium Logistix</span>
+                          <h3 className="text-xs font-black tracking-tighter text-slate-900">
                             {order.shipping_company ? order.shipping_company.toUpperCase() : "YALIDINE EXPRESS"}
                           </h3>
                         </div>
@@ -859,42 +859,42 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                       </div>
 
                       {/* Mock Barcode Block */}
-                      <div className="py-4 border-b border-zinc-200">
+                      <div className="py-4 border-b border-slate-200">
                         <div className="flex justify-center items-center gap-0.5 mt-1 h-14 select-none pointer-events-none">
                           {[...Array(32)].map((_, i) => (
                             <div key={i} className={`bg-black ${i % 3 === 0 ? "w-[4px]" : i % 5 === 0 ? "w-[1px]" : "w-[2.5px]"} h-full`} />
                           ))}
                         </div>
-                        <p className="text-center font-mono text-[9px] tracking-widest mt-1.5 text-black/80">SMARTY-MOCK-{Math.floor(100000 + Math.random() * 900000)}</p>
+                        <p className="text-center font-mono text-[9px] tracking-widest mt-1.5 text-slate-700">SMARTY-MOCK-{Math.floor(100000 + Math.random() * 900000)}</p>
                       </div>
 
                       {/* Customer Details Grid */}
-                      <div className="py-3 border-b border-zinc-200 text-xs space-y-2 select-none">
-                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5">
-                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "المستلم" : "CLIENT"}</span>
-                          <span className="col-span-8 font-bold text-zinc-900">{order.name || "--- ---"}</span>
+                      <div className="py-3 border-b border-slate-200 text-xs space-y-2 select-none">
+                        <div className="grid grid-cols-12 gap-1 border-b border-slate-100 pb-1.5">
+                          <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "المستلم" : "CLIENT"}</span>
+                          <span className="col-span-8 font-bold text-slate-900">{order.name || "--- ---"}</span>
                         </div>
-                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5">
-                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "الهاتف" : "PHONE"}</span>
-                          <span className="col-span-8 font-mono font-bold text-zinc-900">{order.phone || "---------"}</span>
+                        <div className="grid grid-cols-12 gap-1 border-b border-slate-100 pb-1.5">
+                          <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "الهاتف" : "PHONE"}</span>
+                          <span className="col-span-8 font-mono font-bold text-slate-900">{order.phone || "---------"}</span>
                         </div>
-                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5">
-                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "الموقع" : "LOCATION"}</span>
-                          <span className="col-span-8 font-bold text-zinc-900">
+                        <div className="grid grid-cols-12 gap-1 border-b border-slate-100 pb-1.5">
+                          <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "الموقع" : "LOCATION"}</span>
+                          <span className="col-span-8 font-bold text-slate-900">
                             {(order.wilaya || "----")} {(order.commune ? `• ${order.commune}` : "")}
                           </span>
                         </div>
-                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5">
-                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "طريقة التسليم" : "MODE"}</span>
-                          <span className="col-span-8 font-bold text-zinc-900">
+                        <div className="grid grid-cols-12 gap-1 border-b border-slate-100 pb-1.5">
+                          <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "طريقة التسليم" : "MODE"}</span>
+                          <span className="col-span-8 font-bold text-slate-900">
                             {order.delivery_type === 'home' 
                               ? (isRtl ? "توصيل للمنزل" : "Home Delivery")
                               : (isRtl ? "مكتب شركة الشحن (Stop Desk)" : "Courier Office Stop Desk")}
                           </span>
                         </div>
                         {/* Order Contents (Items & Products) */}
-                        <div className="grid grid-cols-12 gap-1 border-b border-zinc-100 pb-1.5 pt-0.5">
-                          <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "محتوى الطرد" : "CONTENTS"}</span>
+                        <div className="grid grid-cols-12 gap-1 border-b border-slate-100 pb-1.5 pt-0.5">
+                          <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "محتوى الطرد" : "CONTENTS"}</span>
                           <div className="col-span-8 space-y-1">
                             {order.items && order.items.length > 0 ? (
                               order.items.map((item: any, i: number) => {
@@ -903,22 +903,22 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                                 if (item.color) details.push(item.color);
                                 const extraStr = details.length > 0 ? ` (${details.join('/')})` : '';
                                 return (
-                                  <div key={i} className="flex justify-between items-center text-xs text-zinc-905 font-bold leading-tight">
-                                    <span className="truncate">{item.product || "---"}<span className="text-[10px] text-zinc-500 font-medium">{extraStr}</span></span>
-                                    <span className="font-mono text-[10px] bg-zinc-100 px-1.5 py-0.2 rounded-md text-zinc-800 shrink-0 ml-1">x{item.quantity}</span>
+                                  <div key={i} className="flex justify-between items-center text-xs text-slate-900 font-bold leading-tight">
+                                    <span className="truncate">{item.product || "---"}<span className="text-[10px] text-slate-500 font-medium">{extraStr}</span></span>
+                                    <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.2 rounded-md text-slate-800 shrink-0 ml-1">x{item.quantity}</span>
                                   </div>
                                 );
                               })
                             ) : (
-                              <span className="text-zinc-400">---</span>
+                              <span className="text-slate-400">---</span>
                             )}
                           </div>
                         </div>
                         {/* Notes */}
                         {order.note && (
                           <div className="grid grid-cols-12 gap-1 pb-1 pt-0.5">
-                            <span className="col-span-4 text-[9px] text-zinc-400 uppercase font-black">{isRtl ? "ملاحظات" : "NOTE"}</span>
-                            <span className="col-span-8 text-[11px] font-medium text-zinc-850 leading-tight">
+                            <span className="col-span-4 text-[9px] text-slate-400 uppercase font-black">{isRtl ? "ملاحظات" : "NOTE"}</span>
+                            <span className="col-span-8 text-[11px] font-medium text-slate-800 leading-tight">
                               {order.note}
                             </span>
                           </div>
@@ -926,10 +926,10 @@ export default function OrderReview({ userData, order, setOrder, loading, handle
                       </div>
 
                       {/* Total Net price block */}
-                      <div className="mt-3 bg-zinc-50 border-2 border-dashed border-black rounded-lg p-2.5 flex justify-between items-center select-none">
+                      <div className="mt-3 bg-slate-50 border-2 border-dashed border-black rounded-lg p-2.5 flex justify-between items-center select-none">
                         <div>
-                          <span className="text-[8px] text-zinc-400 font-extrabold uppercase block">{isRtl ? "المبلع للدفع" : "COD VALUE"}</span>
-                          <span className="text-[9px] text-zinc-500 leading-none">{isRtl ? "شامل سعر التوصيل والسلعة" : "Inclusive of shipping"}</span>
+                          <span className="text-[8px] text-slate-400 font-extrabold uppercase block">{isRtl ? "المبلع للدفع" : "COD VALUE"}</span>
+                          <span className="text-[9px] text-slate-500 leading-none">{isRtl ? "شامل سعر التوصيل والسلعة" : "Inclusive of shipping"}</span>
                         </div>
                         <div className="text-right text-lg font-black text-black font-sans leading-none">
                           {(order.totalPrice || 0).toLocaleString()} <span className="text-xs">DA</span>

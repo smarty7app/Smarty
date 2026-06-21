@@ -174,7 +174,7 @@ export const ProductModal = React.memo(function ProductModal({
         
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
-          <h3 className="text-base font-bold flex items-center gap-2 text-white">
+          <h3 className="text-base font-bold flex items-center gap-2 text-zinc-100">
             <Package className="w-5 h-5 text-zinc-400" />
             {editingProduct 
               ? (isRtl ? t.edit_product || "تعديل حقول المنتج" : t.edit_product || "Modify Product Data Sheet")
@@ -314,7 +314,7 @@ export const ProductModal = React.memo(function ProductModal({
                 type="text" 
                 required
                 placeholder={isRtl ? "مثال: حذاء رياضي من الجلد الفاخر" : "e.g. Leather sneakers, silk abaya..."}
-                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white"
+                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
               />
@@ -332,7 +332,7 @@ export const ProductModal = React.memo(function ProductModal({
                 <input 
                   type="text" 
                   placeholder={isRtl ? "أدخل رمز SKU" : "AB-4029"}
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white font-mono uppercase"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono uppercase"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                 />
@@ -348,7 +348,7 @@ export const ProductModal = React.memo(function ProductModal({
                 <input 
                   type="text" 
                   placeholder={isRtl ? "مثال: أحذية، ملابس..." : "Clothing, Accessories..."}
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 />
@@ -369,7 +369,7 @@ export const ProductModal = React.memo(function ProductModal({
                   required
                   min="0"
                   placeholder="3500"
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white font-mono font-bold"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono font-bold"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                 />
@@ -387,7 +387,7 @@ export const ProductModal = React.memo(function ProductModal({
                   required
                   min="0"
                   placeholder="15"
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white font-mono"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono"
                   value={stockQuantity}
                   onChange={(e) => setStockQuantity(e.target.value)}
                 />
@@ -405,7 +405,7 @@ export const ProductModal = React.memo(function ProductModal({
               <textarea 
                 rows={2}
                 placeholder={isRtl ? "أضف أية تفاصيل، خيارات الألوان، مواصفات الضمان..." : "Write custom descriptions, color codes, size specs..."}
-                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-white resize-none h-14"
+                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 resize-none h-14"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -415,7 +415,7 @@ export const ProductModal = React.memo(function ProductModal({
           {/* Storefront Display Toggle */}
           <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex items-center justify-between gap-4 mt-2">
             <div className="space-y-1 text-left flex-1">
-              <span className="text-xs font-bold text-white block">
+              <span className="text-xs font-bold text-zinc-100 block">
                 {t.upload_to_store_label || "عرض في المتجر الإلكتروني"}
               </span>
               <p className="text-[10px] text-zinc-500 leading-normal block">

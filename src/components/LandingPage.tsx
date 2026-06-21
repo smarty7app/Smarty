@@ -5,7 +5,7 @@ import {
   Brain, ArrowRight, Lock, AlertCircle, Terminal, Smartphone, Search, Database, 
   Facebook, Instagram, Send, MessageCircle,
   HelpCircle, ShieldCheck, RefreshCw, FileText, ShoppingBag, CreditCard, Package,
-  Image, Paperclip
+  Image, Paperclip, Sun, Moon
 } from "lucide-react";
 import { Logo, FeatureCard } from "./CommonUI";
 import { Language } from "../lib/translations";
@@ -36,7 +36,7 @@ const renderFormattedBrandText = (text: string) => {
   );
 };
 
-export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean, setScreen?: (s: any) => void }) {
+export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen, theme = "dark", setTheme }: { lang: Language, setLang: (l: Language) => void, signIn: () => void, t: any, isRtl: boolean, setScreen?: (s: any) => void, theme?: string, setTheme?: (val: string) => void }) {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [installed, setInstalled] = useState(false);
@@ -236,10 +236,13 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
   const handleInstallClick = async () => {
     if (installed) return;
 
-    if (installPrompt) {
-      installPrompt.prompt();
+    // Direct, real-time access to stashed window event bypassing react loop delay
+    const activePrompt = (window as any).deferredPrompt || installPrompt;
+
+    if (activePrompt) {
+      activePrompt.prompt();
       try {
-        const { outcome } = await installPrompt.userChoice;
+        const { outcome } = await activePrompt.userChoice;
         console.log(`User response to install prompt: ${outcome}`);
         if (outcome === 'accepted') {
           setInstalled(true);
@@ -272,7 +275,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
         items: [
           { product: "طقم رجالي صيفي قطني (Noir)", quantity: 1, size: "L", color: "أسود كلاسيك", pricePerUnit: 4500 }
         ],
-        note: lang === "ar" ? "بارك الله فيك ربي يحفظك" : "Baraka ellah fik",
+        note: lang === "ar" ? "حي 500 مسكن" : "Cité 500 Logts",
         possible_fake_order: false,
         shippingFee: 600,
         totalPrice: 5100,
@@ -510,26 +513,37 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="min-h-screen bg-white dark:bg-[#0B0F19] text-slate-950 dark:text-white font-sans selection:bg-purple-500/30 overflow-x-hidden transition-colors duration-300" dir={isRtl ? "rtl" : "ltr"}>
       
       {/* Background Ambience */}
       <div className="absolute top-[300px] left-[-200px] w-[600px] h-[600px] bg-purple-600/5 blur-[150px] rounded-full pointer-events-none -z-10" />
       <div className="absolute top-[800px] right-[-200px] w-[600px] h-[600px] bg-blue-500/5 blur-[150px] rounded-full pointer-events-none -z-10" />
 
       {/* Navigation Bar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-white/10 bg-[#0B0F19]/80 backdrop-blur-md px-6 py-4 select-none">
+      <nav className="fixed top-0 w-full z-50 border-b border-zinc-200/65 dark:border-white/10 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-md px-6 py-4 select-none">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 select-none" dir="ltr">
             <div className="w-8 h-8 rounded-full overflow-hidden bg-purple-600/10 border border-purple-500/30 p-0 flex items-center justify-center shrink-0 select-none">
               <Logo className="w-full h-full rounded-full select-none" />
             </div>
-            <span className="font-bold tracking-tight glow-text text-white flex flex-col leading-none text-left select-none">
+            <span className="font-bold tracking-tight glow-text text-slate-900 dark:text-white flex flex-col leading-none text-left select-none">
               <span className="text-lg select-none">Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-extrabold select-none">Ai</span></span>
-              <span className="text-[10px] text-zinc-400 tracking-wider uppercase mt-0.5 select-none font-mono">Order</span>
+              <span className="text-[10px] text-slate-500 dark:text-zinc-400 tracking-wider uppercase mt-0.5 select-none font-mono">Order</span>
             </span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            {setTheme && (
+              <button
+                type="button"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-850 dark:hover:bg-zinc-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 transition-all cursor-pointer select-none active:scale-95 flex items-center justify-center shrink-0"
+                title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                <Moon className={`w-4 h-4 transition-colors duration-200 ${theme === "dark" ? "text-white" : "text-black"}`} />
+              </button>
+            )}
             <button 
               onClick={signIn} 
               className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold text-sm tracking-tight hover:scale-105 transition-all duration-300 active:scale-95 shadow-lg shadow-purple-500/15 select-none"
@@ -548,7 +562,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           <motion.h1 
             initial={{ opacity: 0, y: 25 }} 
             animate={{ opacity: 1, y: 0 }} 
-            className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight leading-normal sm:leading-snug md:leading-snug lg:leading-normal max-w-5xl mx-auto text-white select-none"
+            className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight leading-normal sm:leading-snug md:leading-snug lg:leading-normal max-w-5xl mx-auto text-slate-900 dark:text-white select-none"
             dir={isRtl ? "rtl" : "ltr"}
           >
             {renderFormattedBrandText(t.landing_hero_title)}
@@ -558,7 +572,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             initial={{ opacity: 0, y: 20 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ delay: 0.1 }} 
-            className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto leading-relaxed font-normal select-none"
+            className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-zinc-400 max-w-3xl mx-auto leading-relaxed font-normal select-none"
             dir={isRtl ? "rtl" : "ltr"}
           >
             {t.landing_hero_subtitle}
@@ -577,28 +591,30 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             {!installed && (
               <button 
                 onClick={handleInstallClick} 
-                className="w-full sm:w-auto px-8 py-4.5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-350 active:scale-95 flex items-center justify-center gap-3 cursor-pointer bg-zinc-900/80 hover:bg-zinc-850 border border-zinc-800 text-white select-none"
+                className="w-full sm:w-auto px-8 py-4.5 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-350 active:scale-95 flex items-center justify-center gap-3 cursor-pointer bg-white dark:bg-zinc-900/80 hover:bg-slate-105 dark:hover:bg-zinc-850 border border-slate-205 dark:border-zinc-800 text-slate-800 dark:text-white select-none"
               >
-                <Download className="w-5 h-5 text-purple-400 animate-bounce" /> 
+                <Download className="w-5 h-5 text-purple-500 dark:text-purple-400 animate-bounce" /> 
                 <span>{t.pwa_install_btn}</span>
               </button>
             )}
           </div>
+
+
           
           {/* Logistics logos */}
           <div id="logistics" className="pt-20">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-zinc-500 font-bold mb-8 select-none">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500 dark:text-zinc-500 font-bold mb-8 select-none">
               {t.natively_integrated || "Natively Integrated with Algerian Logistics Leaders"}
             </p>
-            <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 opacity-55 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6 opacity-60 dark:opacity-55 grayscale hover:grayscale-0 transition-all duration-700">
               {[
-                { name: 'Yalidine Express', color: 'text-blue-400' },
-                { name: 'ZR Express', color: 'text-orange-400' },
-                { name: 'Maystro Delivery', color: 'text-green-400' },
-                { name: 'ECOTRACK', color: 'text-purple-400' },
-                { name: 'Anderson', color: 'text-pink-400' }
+                { name: 'Yalidine Express', color: 'text-blue-450 dark:text-blue-400' },
+                { name: 'ZR Express', color: 'text-orange-450 dark:text-orange-400' },
+                { name: 'Maystro Delivery', color: 'text-green-450 dark:text-green-400' },
+                { name: 'ECOTRACK', color: 'text-purple-450 dark:text-purple-400' },
+                { name: 'Anderson', color: 'text-pink-450 dark:text-pink-400' }
               ].map(carrier => (
-                <span key={carrier.name} className="text-lg sm:text-xl font-black italic tracking-tighter hover:text-white transition-all cursor-default select-none">
+                <span key={carrier.name} className="text-lg sm:text-xl font-black italic tracking-tighter text-slate-600 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-white transition-all cursor-default select-none">
                   {carrier.name}
                 </span>
               ))}
@@ -608,18 +624,18 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* Interactive AI Live Demo Section */}
-      <section id="capabilities" className="py-20 px-6 bg-gradient-to-b from-black/40 to-[#0A0D17] relative">
+      <section id="capabilities" className="py-20 px-6 bg-white dark:bg-gradient-to-b dark:from-black/40 dark:to-[#0A0D17] border-b border-zinc-200/60 dark:border-0 relative transition-colors duration-300">
         <div className="max-w-7xl mx-auto">
           
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-[10px] uppercase tracking-widest font-black border border-blue-500/15 select-none">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] uppercase tracking-widest font-black border border-blue-500/15 select-none font-sans">
               <Brain className="w-3.5 h-3.5" />
               <span>{t.demo_easy_use || "Interactive Live Playground"}</span>
             </div>
-            <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">
+            <h2 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-snug md:leading-normal text-slate-900 dark:text-white select-none">
               {t.test_extractor_live || "Test the AI Extractor Engine Live"}
             </h2>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-200 text-sm font-medium leading-relaxed">
               {lang === "ar" 
                 ? "اختر أحد النماذج الفوضوية أدناه لترى كيف يستخرج الذكاء الاصطناعي البيانات المرتبة في لمح بصر"
                 : lang === "fr"
@@ -631,11 +647,11 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             
             {/* Input Side */}
-            <div className="lg:col-span-5 bg-zinc-950/40 p-6 rounded-3xl border border-zinc-900 flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-5 bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex flex-col justify-between space-y-6 shadow-sm dark:shadow-none transition-colors duration-300">
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between select-none">
-                  <span className="text-xs font-bold text-zinc-500 flex items-center gap-1.5 uppercase font-mono">
+                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-500 flex items-center gap-1.5 uppercase font-mono">
                     <Terminal className="w-3.5 h-3.5" />
                     {t.demo_raw_msg_title || "Raw Customer Message"}
                   </span>
@@ -652,10 +668,10 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                     <button
                       key={idx}
                       onClick={() => setSelectedDemoPreset(idx)}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all select-none ${
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all select-none border border-slate-205/30 dark:border-0 ${
                         selectedDemoPreset === idx 
                           ? 'bg-purple-600 text-white' 
-                          : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200'
+                          : 'bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-850 hover:text-slate-900 dark:hover:text-zinc-200'
                       }`}
                     >
                       {preset.label}
@@ -667,7 +683,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 <textarea
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
-                  className="w-full h-40 bg-black/60 border border-zinc-850 hover:border-zinc-800 focus:border-purple-500/70 p-4 rounded-2xl text-xs md:text-sm font-medium focus:ring-1 focus:ring-purple-500/40 outline-none text-zinc-300 leading-relaxed resize-none transition-all scrollbar-thin"
+                  className="w-full h-40 bg-slate-50 dark:bg-black/60 border border-slate-200 dark:border-zinc-850 hover:border-slate-300 dark:hover:border-zinc-800 focus:border-purple-500/70 p-4 rounded-2xl text-xs md:text-sm font-medium focus:ring-1 focus:ring-purple-500/40 outline-none text-slate-800 dark:text-zinc-300 leading-relaxed resize-none transition-all scrollbar-thin"
                   placeholder={t.demo_paste_placeholder || "Paste or type a client message here..."}
                 />
               </div>
@@ -693,20 +709,20 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
             {/* Visual Arrow for Desktop */}
             <div className="hidden lg:flex lg:col-span-1 items-center justify-center">
-              <div className="p-3 bg-zinc-900/60 border border-zinc-850 rounded-full text-zinc-550 shrink-0">
-                <ArrowRight className={`w-5 h-5 text-zinc-500 transform ${isRtl ? 'rotate-180' : ''}`} />
+              <div className="p-3 bg-white dark:bg-zinc-900/60 border border-slate-205 dark:border-zinc-850 rounded-full text-slate-550 dark:text-zinc-550 shrink-0 shadow-sm dark:shadow-none">
+                <ArrowRight className={`w-5 h-5 text-slate-400 dark:text-zinc-500 transform ${isRtl ? 'rotate-180' : ''}`} />
               </div>
             </div>
 
             {/* Output Card Side */}
-            <div className="lg:col-span-6 bg-gradient-to-b from-purple-950/5 to-zinc-950/60 p-6 rounded-3xl border border-purple-900/20 flex flex-col justify-between space-y-6 relative overflow-hidden min-h-[350px]">
+            <div className="lg:col-span-6 bg-gradient-to-b from-purple-100/30 to-slate-100/70 dark:from-purple-950/20 dark:to-zinc-950/80 p-6 rounded-3xl border border-purple-200 dark:border-purple-900/20 flex flex-col justify-between space-y-6 relative overflow-hidden min-h-[350px] shadow-sm dark:shadow-none transition-colors duration-300">
               
               <div className="absolute top-0 right-0 w-36 h-36 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-white/5">
-                  <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5 uppercase font-sans">
-                    <FileText className="w-4 h-4 text-purple-450" />
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/5">
+                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1.5 uppercase font-sans">
+                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-450" />
                     {lang === "ar" ? "بطاقة الطلب المعالجة الجاهزة للشحن" : lang === "fr" ? "Fiche de commande validée" : "Processed Order Slip"}
                   </span>
                   
@@ -731,7 +747,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         <Brain className="w-5 h-5 text-purple-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs text-zinc-300 font-bold">{t.demo_analyzing_status_msg || "Analyzing dialect clusters, communes & entities..."}</p>
+                        <p className="text-xs text-slate-600 dark:text-zinc-300 font-bold">{t.demo_analyzing_status_msg || "Analyzing dialect clusters, communes & entities..."}</p>
                       </div>
                     </motion.div>
                   ) : extractedData ? (
@@ -742,52 +758,52 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs w-full">
                         {/* Name */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.full_name || "Full Name"}</span>
-                          <span className="font-bold text-white text-xs">{extractedData.customer_name}</span>
+                        <div className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-white/[0.06] rounded-xl p-3 space-y-1 shadow-xs transition-colors duration-300">
+                          <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.full_name || "Full Name"}</span>
+                          <span className="font-bold text-slate-900 dark:text-white text-xs">{extractedData.customer_name}</span>
                         </div>
 
                         {/* Phone */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.phone_number || "Phone"}</span>
-                          <span className="font-mono font-bold text-emerald-400 text-xs tracking-wide">{extractedData.phone}</span>
+                        <div className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-white/[0.06] rounded-xl p-3 space-y-1 shadow-xs transition-colors duration-300">
+                          <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.phone_number || "Phone"}</span>
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs tracking-wide">{extractedData.phone}</span>
                         </div>
 
                         {/* Wilaya & Commune */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.wilaya || "Wilaya"} / {t.commune || "Commune"}</span>
-                          <div className="font-bold text-white text-xs">
-                             {extractedData.wilaya} • <span className="text-zinc-350">{extractedData.commune}</span>
+                        <div className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-white/[0.06] rounded-xl p-3 space-y-1 shadow-xs transition-colors duration-300">
+                          <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.wilaya || "Wilaya"} / {t.commune || "Commune"}</span>
+                          <div className="font-bold text-slate-900 dark:text-white text-xs">
+                             {extractedData.wilaya} • <span className="text-slate-600 dark:text-zinc-350">{extractedData.commune}</span>
                           </div>
                         </div>
 
                         {/* Delivery */}
-                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1">
-                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.delivery_type || "Delivery Preference"}</span>
-                          <span className="font-bold text-purple-400 text-xs">{extractedData.delivery_type_label || (extractedData.delivery_type === "home" ? "Domicile / شحن للمنزل" : "Relais / شحن للمكتب")}</span>
+                        <div className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-white/[0.06] rounded-xl p-3 space-y-1 shadow-xs transition-colors duration-300">
+                          <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{t.delivery_type || "Delivery Preference"}</span>
+                          <span className="font-bold text-purple-600 dark:text-purple-400 text-xs">{extractedData.delivery_type_label || (extractedData.delivery_type === "home" ? "Domicile / شحن للمنزل" : "Relais / شحن للمكتب")}</span>
                         </div>
 
                         {/* Items */}
-                        <div className="md:col-span-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-2">
-                          <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "السلع والكميات المكتشفة" : lang === "fr" ? "Produits & Quantités Détectés" : "Parsed Items & Quantities"}</span>
+                        <div className="md:col-span-2 bg-white/40 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-white/[0.06] rounded-xl p-3 space-y-2 shadow-xs transition-colors duration-300">
+                          <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "السلع والكميات المكتشفة" : lang === "fr" ? "Produits & Quantités Détectés" : "Parsed Items & Quantities"}</span>
                           <div className="space-y-1.5">
                             {extractedData.items.map((item: any, i: number) => (
-                              <div key={i} className="border-b border-white/[0.03] pb-1.5 pt-1.5 first:pt-0 last:border-0 last:pb-0">
-                                <div className="flex justify-between items-center text-white font-semibold">
+                              <div key={i} className="border-b border-slate-200/40 dark:border-white/[0.03] pb-1.5 pt-1.5 first:pt-0 last:border-0 last:pb-0">
+                                <div className="flex justify-between items-center text-slate-900 dark:text-white font-semibold">
                                   <span>{item.product}</span>
-                                  <span className="px-2 py-0.5 bg-zinc-900 border border-zinc-800 rounded text-[10px] font-mono text-purple-300">x{item.quantity}</span>
+                                  <span className="px-2 py-0.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded text-[10px] font-mono text-purple-650 dark:text-purple-300">x{item.quantity}</span>
                                 </div>
-                                <div className="flex flex-wrap gap-x-4 mt-1 text-[10px] text-zinc-500 font-mono">
+                                <div className="flex flex-wrap gap-x-4 mt-1 text-[10px] text-slate-500 dark:text-zinc-500 font-mono">
                                   {item.size && item.size !== "Default" && (
-                                    <span>Size: <strong className="text-zinc-300">{item.size}</strong></span>
+                                    <span>Size: <strong className="text-slate-700 dark:text-zinc-300">{item.size}</strong></span>
                                   )}
                                   {item.color && item.color !== "Default" && (
-                                    <span>Color: <strong className="text-zinc-300">{item.color}</strong></span>
+                                    <span>Color: <strong className="text-slate-700 dark:text-zinc-300">{item.color}</strong></span>
                                   )}
                                   {item.pricePerUnit > 0 ? (
-                                    <span>Price: <strong className="text-emerald-400">{item.pricePerUnit} DA</strong></span>
+                                    <span>Price: <strong className="text-emerald-600 dark:text-emerald-400">{item.pricePerUnit} DA</strong></span>
                                   ) : (
-                                    <span className="text-amber-500 font-bold">Cadeau / هدية مجانية</span>
+                                    <span className="text-amber-600 dark:text-amber-552 font-bold">Cadeau / هدية مجانية</span>
                                   )}
                                 </div>
                               </div>
@@ -797,23 +813,23 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
                         {/* Extra user notes parsed */}
                         {extractedData.note && (
-                          <div className="md:col-span-2 bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-1">
-                            <span className="text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "الملاحظات الخاصة للتوصيل" : lang === "fr" ? "Instructions de livraison" : "Parsed Customer Instructions"}</span>
-                            <p className="text-zinc-300 font-medium text-[11px] leading-relaxed">{extractedData.note}</p>
+                          <div className="md:col-span-2 bg-white/40 dark:bg-zinc-900/30 border border-slate-200/80 dark:border-white/[0.05] rounded-xl p-3 space-y-1 shadow-xs transition-colors duration-300">
+                            <span className="text-slate-500 dark:text-zinc-500 font-bold uppercase tracking-wider text-[8px] block">{lang === "ar" ? "الملاحظات الخاصة للتوصيل" : lang === "fr" ? "Instructions de livraison" : "Parsed Customer Instructions"}</span>
+                            <p className="text-slate-700 dark:text-zinc-300 font-medium text-[11px] leading-relaxed">{extractedData.note}</p>
                           </div>
                         )}
 
                         {/* Pricing Ledger summary mimicking real app checkout */}
-                        <div className="md:col-span-2 bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-purple-500/10 rounded-xl p-3 space-y-1 text-xs">
-                          <div className="flex justify-between items-center text-zinc-400">
+                        <div className="md:col-span-2 bg-purple-100/10 dark:bg-gradient-to-r dark:from-purple-950/20 dark:to-indigo-950/20 border border-purple-200 dark:border-purple-500/10 rounded-xl p-3 space-y-1 text-xs">
+                          <div className="flex justify-between items-center text-slate-600 dark:text-zinc-400">
                             <span>{lang === "ar" ? "المجموع الفرعي للسلع" : lang === "fr" ? "Sous-total articles" : "Subtotal Items"}</span>
                             <span>{extractedData.totalPrice - extractedData.shippingFee} DA</span>
                           </div>
-                          <div className="flex justify-between items-center text-zinc-400">
+                          <div className="flex justify-between items-center text-slate-600 dark:text-zinc-400">
                             <span>{lang === "ar" ? "تكلفة التوصيل (Yalidine)" : lang === "fr" ? "Frais de livraison (Yalidine)" : "Yalidine Shipping"}</span>
                             <span>+ {extractedData.shippingFee} DA</span>
                           </div>
-                          <div className="border-t border-purple-500/10 pt-1.5 flex justify-between items-center font-bold text-white font-sans">
+                          <div className="border-t border-purple-200 dark:border-purple-500/10 pt-1.5 flex justify-between items-center font-bold text-slate-900 dark:text-white font-sans">
                             <span>{lang === "ar" ? "الإجمالي الكلي المعزز" : lang === "fr" ? "Total net à collecter" : "Total Collectable Amount"}</span>
                             <span className="text-emerald-450 font-mono text-sm">{extractedData.totalPrice} DA</span>
                           </div>
@@ -828,8 +844,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                     >
                       <Terminal className="w-10 h-10 text-zinc-700 animate-pulse" />
                       <div className="space-y-1">
-                        <p className="text-xs text-zinc-400 font-bold">{t.demo_awaiting_context || "Awaiting raw chat context..."}</p>
-                        <p className="text-[10px] text-zinc-500 leading-normal max-w-xs mx-auto">
+                        <p className="text-xs text-slate-600 dark:text-zinc-300 font-bold">{t.demo_awaiting_context || "Awaiting raw chat context..."}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 leading-normal max-w-xs mx-auto">
                           {lang === "ar" 
                             ? "انقر على أيقونة البث البنفسجية بالأعلى لتجربة محاكاة سريعة وواقعية لذكاء SmartyAi"
                             : lang === "fr"
@@ -843,8 +859,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               </div>
 
               {/* Action Button to register */}
-              <div className="flex gap-2.5 items-center bg-white/[0.02] border border-white/5 p-3 rounded-2xl text-[11px] text-zinc-400 font-medium">
-                <Info className="w-4 h-4 text-purple-400 shrink-0" />
+              <div className="flex gap-2.5 items-center bg-white/40 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 p-3 rounded-2xl text-[11px] text-slate-600 dark:text-zinc-300 font-medium">
+                <Info className="w-4 h-4 text-purple-500 dark:text-purple-400 shrink-0" />
                 <span>
                   {isRtl 
                     ? "النتائج أعلاه دقيقة بنسبة 99% وتتكامل فوراً لإصدار ملصقات الشحن." 
@@ -859,17 +875,17 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 px-6 bg-gradient-to-b from-[#0A0D17] to-[#0B0F19] border-t border-b border-white/[0.04]">
+      <section id="how-it-works" className="py-24 px-6 bg-white dark:bg-gradient-to-b dark:from-[#0A0D17] dark:to-[#0B0F19] border-t border-b border-zinc-200 dark:border-white/[0.04] transition-colors duration-300">
         <div className="max-w-7xl mx-auto space-y-16">
           
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-purple-500/15 select-none">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-purple-500/15 select-none font-sans">
               <span>{t.demo_easy_use || "Effortless Flow"}</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal text-slate-900 dark:text-white select-none">
               {t.landing_how_it_works_title || "How It Works?"}
             </h2>
-            <p className="text-zinc-405 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
               {lang === "ar" 
                 ? "ثلاث خطوات بسيطة تفصلك عن أتمتة عملياتك التجارية وزيادة مبيعاتك بشكل آلي وآمن بالكامل."
                 : lang === "fr"
@@ -883,54 +899,54 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             <div className="hidden md:block absolute top-[40%] left-[15%] right-[15%] h-[1px] bg-gradient-to-r from-purple-500/10 via-indigo-500/25 to-blue-500/10 -translate-y-1/2 pointer-events-none -z-10" />
 
             {/* Step 1 */}
-            <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-8 space-y-6 hover:border-purple-500/30 transition-all duration-300 relative group">
-              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-[#111827] group-hover:text-purple-500/10 transition-colors select-none">
+            <div className="bg-white dark:bg-zinc-950/40 border border-slate-200 dark:border-zinc-900 rounded-3xl p-8 space-y-6 hover:border-purple-500/30 transition-all duration-300 relative group shadow-xs">
+              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-slate-200 dark:text-[#111827] group-hover:text-purple-500/10 transition-colors select-none">
                 01
               </div>
               <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-purple-400" />
+                <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="font-bold text-white text-base select-none">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base select-none">
                   {t.step_copy_title || "Copy Buyer Inquiry"}
                 </h3>
-                <p className="text-zinc-404 text-xs sm:text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   {t.landing_step_1_desc || "Copy the customer message from Messenger or Instagram."}
                 </p>
               </div>
             </div>
 
             {/* Step 2 */}
-            <div className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-8 space-y-6 hover:border-indigo-505/30 transition-all duration-300 relative group">
-              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-[#111827] group-hover:text-indigo-500/10 transition-colors select-none">
+            <div className="bg-white dark:bg-zinc-950/40 border border-slate-200 dark:border-zinc-900 rounded-3xl p-8 space-y-6 hover:border-indigo-500/30 transition-all duration-300 relative group shadow-xs">
+              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-slate-200 dark:text-[#111827] group-hover:text-indigo-500/10 transition-colors select-none">
                 02
               </div>
               <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                <Cpu className="w-5 h-5 text-indigo-400" />
+                <Cpu className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="font-bold text-white text-base select-none">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base select-none">
                   {t.step_extract_title || "AI Instant Extraction"}
                 </h3>
-                <p className="text-zinc-404 text-xs sm:text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   {t.landing_step_2_desc || "Paste it in the app for AI to fill the data."}
                 </p>
               </div>
             </div>
 
             {/* Step 3 */}
-            <div className="bg-zinc-950/40 border border-zinc-950 rounded-3xl p-8 space-y-6 hover:border-blue-500/30 transition-all duration-300 relative group">
-              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-[#111827] group-hover:text-blue-500/10 transition-colors select-none">
+            <div className="bg-white dark:bg-zinc-950/40 border border-slate-200 dark:border-zinc-900 rounded-3xl p-8 space-y-6 hover:border-blue-500/30 transition-all duration-300 relative group shadow-xs">
+              <div className="absolute top-6 right-6 font-mono text-4xl font-extrabold text-slate-200 dark:text-[#111827] group-hover:text-blue-500/10 transition-colors select-none">
                 03
               </div>
               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5 text-blue-400" />
+                <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="font-bold text-white text-base select-none">
+                <h3 className="font-bold text-slate-900 dark:text-white text-base select-none">
                   {t.step_ship_title || "1-Click Ship & Print"}
                 </h3>
-                <p className="text-zinc-404 text-xs sm:text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
                   {t.landing_step_3_desc || "Confirm the data and print the shipping label instantly!"}
                 </p>
               </div>
@@ -942,14 +958,14 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* Core App Features Bento-grid */}
-      <section id="features" className="py-24 px-6 bg-[#0B0F19]">
+      <section id="features" className="py-24 px-6 bg-white dark:bg-[#0B0F19] transition-colors duration-300">
         <div className="max-w-7xl mx-auto space-y-16">
           
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none text-slate-900 dark:text-white">
               {t.grid_features_title || "Tailor-made features for Algerian E-Commerce"}
             </h2>
-            <p className="text-zinc-405 max-w-2xl mx-auto text-base">
+            <p className="text-slate-600 dark:text-zinc-400 max-w-2xl mx-auto text-base">
               {t.grid_features_subtitle || "A complete operations console designed specifically to address logistics hurdles locally."}
             </p>
           </div>
@@ -982,26 +998,26 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       {/* --- INTERACTIVE WEB APP FEATURE SHOWCASES --- */}
       
       {/* 1. STOREFRONT SHOWCASE */}
-      <section className="py-24 px-6 border-b border-white/[0.04] bg-[#090C16] overflow-hidden">
+      <section className="py-24 px-6 border-b border-zinc-200 dark:border-white/[0.04] bg-white dark:bg-[#090C16] overflow-hidden transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Text Left */}
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/10 text-yellow-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-yellow-500/15 select-none">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-yellow-500/15 select-none">
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>{lang === "ar" ? "المتجـر الإلكتروني للزبون" : "Public Customer Storefront"}</span>
             </div>
-            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {sfTitle}
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed">
               {sfDesc}
             </p>
             <div className="space-y-3.5 pt-2">
               {sfFeatures.map((feat, i) => (
                 <div key={i} className="flex items-start gap-2.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span className="text-xs font-semibold text-zinc-300 leading-normal">{feat}</span>
+                  <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-normal">{feat}</span>
                 </div>
               ))}
             </div>
@@ -1098,14 +1114,14 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
                         <button
                           onClick={() => setDemoQuantity(Math.max(1, demoQuantity - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-350 text-zinc-300 hover:bg-zinc-800 font-bold"
+                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 hover:bg-zinc-800 font-bold"
                         >
                           -
                         </button>
                         <span className="w-4 text-center font-mono text-[9px] font-bold text-white">{demoQuantity}</span>
                         <button
                           onClick={() => setDemoQuantity(demoQuantity + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-350 text-zinc-300 hover:bg-zinc-800 font-bold"
+                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 hover:bg-zinc-800 font-bold"
                         >
                           +
                         </button>
@@ -1121,7 +1137,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   
                   {/* Wilaya selector simulation */}
                   <div className="space-y-1">
-                    <label className="text-[8px] text-zinc-405 text-zinc-455 block">{lang === "ar" ? "الولاية المستقبلة" : "Shipping Wilaya"}</label>
+                    <label className="text-[8px] text-zinc-400 block">{lang === "ar" ? "الولاية المستقبلة" : "Shipping Wilaya"}</label>
                     <div className="grid grid-cols-2 gap-1.5">
                       {[
                         { name: "16 - الجزائر", fee: 400 },
@@ -1147,25 +1163,25 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   <div className="flex gap-2 justify-end pt-1">
                     <button
                       onClick={() => setDemoHomeDelivery(false)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${!demoHomeDelivery ? 'bg-purple-650 bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
+                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${!demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
                     >
                       {lang === "ar" ? "مكتب يالدين" : "Yalidine Desk"}
                     </button>
                     <button
                       onClick={() => setDemoHomeDelivery(true)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${demoHomeDelivery ? 'bg-purple-650 bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
+                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
                     >
                       {lang === "ar" ? "شحن للمنزل" : "To Domicile"}
                     </button>
                   </div>
 
                   {/* Price Calculator display */}
-                  <div className="bg-black/40 rounded-lg p-2 space-y-1 text-[8px] text-zinc-505 font-mono text-left" dir="ltr">
+                  <div className="bg-black/40 rounded-lg p-2 space-y-1 text-[8px] text-zinc-500 font-mono text-left" dir="ltr">
                     <div className="flex justify-between items-center">
                       <span className="text-zinc-300">{(demoQuantity * (demoSize === "50ml Luxury" ? 4800 : 5900))} DA</span>
                       <span>{lang === "ar" ? "سعر المنتجات" : "Items Price"}</span>
                     </div>
-                    <div className="flex justify-between items-center text-zinc-505">
+                    <div className="flex justify-between items-center text-zinc-500">
                       <span className="text-zinc-300">{demoHomeDelivery ? demoWilayaFee : Math.round(demoWilayaFee * 0.6)} DA</span>
                       <span>{lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}</span>
                     </div>
@@ -1178,7 +1194,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
                 {/* Checkout Submit Call-To-Action inside phone */}
                 <button
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 text-neutral-950 font-black text-[10px] tracking-wider uppercase transition-transform active:scale-[0.98] cursor-pointer select-none"
+                  className="w-full py-2.5 rounded-xl bg-emerald-500 text-neutral-950 font-black text-[10px] tracking-wider uppercase transition-transform active:scale-[0.98] cursor-pointer select-none animate-pulse"
                   onClick={() => alert(isRtl ? "محاكاة ناجحة! هذه هي الواجهة الحقيقية التي يدخل إليها زبناؤك لشراء منتجاتك بسهولة تامة." : "Interactive Simulation success! This is exactly how your customers buy from your elegant custom storefront.")}
                 >
                   {lang === "ar" ? "تأكيـد الشراء الفوري" : "Confirm Fast Checkout"}
@@ -1192,7 +1208,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* 2. ADVANCED WAREHOUSE & INVENTORY SECTION */}
-      <section className="py-24 px-6 border-b border-white/[0.04] bg-[#0B0E1B]">
+      <section className="py-24 px-6 border-b border-zinc-200 dark:border-white/[0.04] bg-white dark:bg-[#0B0E1B] transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Table Mockup Left */}
@@ -1200,128 +1216,46 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none" />
 
             {/* Warehouse card */}
-            <div className="w-full max-w-xl bg-zinc-950/85 border border-zinc-800 rounded-[2rem] shadow-2xl p-5 md:p-6 space-y-5">
-              <div className="flex justify-between items-center border-b border-white/5 pb-4">
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-950/85 border border-slate-200 dark:border-zinc-800 rounded-[2rem] shadow-lg dark:shadow-2xl p-5 md:p-6 space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/5 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                    <Package className="w-4.5 h-4.5 text-orange-400" />
+                    <Package className="w-4.5 h-4.5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div className="text-left">
-                    <h4 className="font-extrabold text-white text-xs select-none">{lang === "ar" ? "جرد مستودع بئر توتة الرئيسي" : "Central Birtouta Warehouse"}</h4>
-                    <p className="text-[10px] text-zinc-550 text-zinc-500 tracking-wider font-mono uppercase">STORE_ID: #4092-DZ</p>
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs select-none">{lang === "ar" ? "جرد مستودع بئر توتة الرئيسي" : "Central Birtouta Warehouse"}</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-500 tracking-wider font-mono uppercase">STORE_ID: #4092-DZ</p>
                   </div>
                 </div>
                 {/* Active totals badge */}
-                <span className="px-2.5 py-0.5 bg-zinc-900 border border-zinc-850 border-zinc-850 rounded-full text-[9px] font-bold text-zinc-400">
+                <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-full text-[9px] font-bold text-slate-650 dark:text-zinc-400">
                   {whProduct1Stock + whProduct2Stock + whProduct3Stock} {lang === "ar" ? "قطع إجمالي" : "Total Items"}
                 </span>
               </div>
 
               {/* Inventory Table Grid simulate */}
               <div className="space-y-3">
-                
+
                 {/* Product Block 1 */}
-                <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3.5 space-y-2.5 text-right lg:text-right" dir="rtl">
+                <div className="bg-slate-100/50 dark:bg-white/[0.01] border border-slate-200/80 dark:border-white/5 rounded-xl p-3.5 space-y-2.5 text-right lg:text-right" dir="rtl">
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-1 text-right flex-1" dir="rtl">
-                      <h5 className="font-bold text-white text-[11px] leading-snug">عطر كريستال عود الفاخر</h5>
-                      <p className="text-[9px] text-zinc-500">Variants: <strong className="text-zinc-400">100ml / أزرق داكن</strong> • SKU: CRYS-OUD-BL</p>
+                      <h5 className="font-bold text-slate-900 dark:text-white text-[11px] leading-snug">عطر كريستال عود الفاخر</h5>
+                      <p className="text-[9px] text-slate-500 dark:text-zinc-500">Variants: <strong className="text-slate-700 dark:text-zinc-400">100ml / أزرق داكن</strong> • SKU: CRYS-OUD-BL</p>
                     </div>
                     {/* Visual adjustable stock block */}
                     <div className="flex flex-col items-end gap-1.5" dir="ltr">
-                      <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-805 border-zinc-800 rounded-lg p-0.5">
+                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5">
                         <button 
                           onClick={() => setWhProduct1Stock(Math.max(0, whProduct1Stock - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
+                          className="w-5 h-5 flex items-center justify-center rounded text-slate-600 dark:text-zinc-300 font-extrabold hover:bg-slate-200 dark:hover:bg-zinc-800"
                         >
                           -
                         </button>
-                        <span className="w-5 text-center font-mono text-[9px] font-bold text-white">{whProduct1Stock}</span>
+                        <span className="w-5 text-center font-mono text-[9px] font-bold text-slate-850 dark:text-white">{whProduct1Stock}</span>
                         <button 
                           onClick={() => setWhProduct1Stock(whProduct1Stock + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
-                        >
-                          +
-                        </button>
-                      </div>
-                      
-                      {/* Critical visual badge reacting to local state! */}
-                      {whProduct1Stock === 0 ? (
-                        <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-bold rounded-md">نفذ من المستودع Out Stock</span>
-                      ) : whProduct1Stock < 10 ? (
-                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-bold rounded-md">شبه نافذ Low Stock</span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-bold rounded-md">مـتوفر بالكامل In Stock</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-zinc-400 pt-1.5 border-t border-white/[0.03]">
-                    <span className="font-mono text-emerald-450 text-emerald-400 font-bold">5900 DA</span>
-                    <span>{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
-                  </div>
-                </div>
-
-                {/* Product Block 2 */}
-                <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3.5 space-y-2.5 text-right lg:text-right" dir="rtl">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="space-y-1 text-right flex-1" dir="rtl">
-                      <h5 className="font-bold text-white text-[11px] leading-snug">عطر الياسمين والمسك الأصلي</h5>
-                      <p className="text-[9px] text-zinc-500">Variants: <strong className="text-zinc-400">Exclusive Luxury</strong> • SKU: JASM-MSK-EXC</p>
-                    </div>
-                    {/* Visual adjustable stock block */}
-                    <div className="flex flex-col items-end gap-1.5" dir="ltr">
-                      <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-805 border-zinc-800 rounded-lg p-0.5">
-                        <button 
-                          onClick={() => setWhProduct2Stock(Math.max(0, whProduct2Stock - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
-                        >
-                          -
-                        </button>
-                        <span className="w-5 text-center font-mono text-[9px] font-bold text-white">{whProduct2Stock}</span>
-                        <button 
-                          onClick={() => setWhProduct2Stock(whProduct2Stock + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
-                        >
-                          +
-                        </button>
-                      </div>
-                      
-                      {/* Critical visual badge reacting to local state! */}
-                      {whProduct2Stock === 0 ? (
-                        <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-bold rounded-md">نفذ من المستودع Out Stock</span>
-                      ) : whProduct2Stock < 10 ? (
-                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-bold rounded-md">شبه نافذ Low Stock</span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-bold rounded-md">مـتوفر بالكامل In Stock</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] text-zinc-400 pt-1.5 border-t border-white/[0.03]">
-                    <span className="font-mono text-emerald-450 text-emerald-400 font-bold">8500 DA</span>
-                    <span>{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
-                  </div>
-                </div>
-
-                {/* Product Block 3 */}
-                <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3.5 space-y-2.5 text-right lg:text-right" dir="rtl">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="space-y-1 text-right flex-1" dir="rtl">
-                      <h5 className="font-bold text-white text-[11px] leading-snug">صابون الماكاديميا الطبي العضوي</h5>
-                      <p className="text-[9px] text-zinc-500">Variants: <strong className="text-zinc-400">Honey Blend</strong> • SKU: MAC-HON</p>
-                    </div>
-                    {/* Visual adjustable stock block */}
-                    <div className="flex flex-col items-end gap-1.5" dir="ltr">
-                      <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-805 border-zinc-800 rounded-lg p-0.5">
-                        <button 
-                          onClick={() => setWhProduct3Stock(Math.max(0, whProduct3Stock - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
-                        >
-                          -
-                        </button>
-                        <span className="w-5 text-center font-mono text-[9px] font-bold text-white">{whProduct3Stock}</span>
-                        <button 
-                          onClick={() => setWhProduct3Stock(whProduct3Stock + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 font-extrabold hover:bg-zinc-800"
+                          className="w-5 h-5 flex items-center justify-center rounded text-slate-600 dark:text-zinc-300 font-extrabold hover:bg-slate-200 dark:hover:bg-zinc-800"
                         >
                           +
                         </button>
@@ -1329,24 +1263,24 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       
                       {/* Critical visual badge reacting to local state! */}
                       {whProduct3Stock === 0 ? (
-                        <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-bold rounded-md">نفذ من المستودع Out Stock</span>
+                        <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-650 dark:text-red-500 text-[8px] font-bold rounded-md">نفذ من المستودع Out Stock</span>
                       ) : whProduct3Stock < 10 ? (
-                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-bold rounded-md">شبه نافذ Low Stock</span>
+                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 text-[8px] font-bold rounded-md">شبه نافذ Low Stock</span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[8px] font-bold rounded-md">مـتوفر بالكامل In Stock</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold rounded-md">مـتوفر بالكامل In Stock</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] text-zinc-400 pt-1.5 border-t border-white/[0.03]">
-                    <span className="font-mono text-emerald-450 text-emerald-400 font-bold">1200 DA</span>
+                  <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-zinc-400 pt-1.5 border-t border-slate-200 dark:border-white/[0.03]">
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">1200 DA</span>
                     <span>{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
                   </div>
                 </div>
 
               </div>
-              
-              <div className="flex gap-2 bg-red-505 bg-orange-500/5 border border-orange-500/10 rounded-xl p-3 text-[10px] text-zinc-400 font-medium text-right" dir="rtl">
-                <AlertCircle className="w-4 h-4 text-orange-400 shrink-0 mt-0.5 ml-2" />
+
+              <div className="flex gap-2 bg-orange-500/5 border border-orange-500/10 rounded-xl p-3 text-[10px] text-slate-600 dark:text-zinc-400 font-medium text-right" dir="rtl">
+                <AlertCircle className="w-4 h-4 text-orange-650 dark:text-orange-400 shrink-0 mt-0.5 ml-2" />
                 <span>
                   {lang === "ar"
                     ? "عند تفعيل نظام المستودع، تُخصم السلع تلقائياً من مخزونك فور إصدار ملصق الشحن الفعلي من شركة التوصيل، مما يضمن دقة المخزون ويمنع تداخل الحسابات والبيع الزائد."
@@ -1360,21 +1294,21 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
           {/* Text Right */}
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/10 text-orange-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-orange-500/15 select-none font-sans">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-500/10 text-orange-605 dark:text-orange-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-orange-500/15 select-none font-sans">
               <Package className="w-3.5 h-3.5" />
               <span>{lang === "ar" ? "إدارة المستودعات والسلع" : lang === "fr" ? "Module de Gestion d'Entrepôt & Stock" : "Warehouse & Inventory Module"}</span>
             </div>
-            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {whTitle}
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed">
               {whDesc}
             </p>
             <div className="space-y-3.5 pt-2">
               {whFeatures.map((feat, i) => (
                 <div key={i} className="flex items-start gap-2.5">
-                  <CheckCircle className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                  <span className="text-xs font-semibold text-zinc-300 leading-normal">{feat}</span>
+                  <CheckCircle className="w-4 h-4 text-orange-650 dark:text-orange-400 shrink-0 mt-0.5" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-normal">{feat}</span>
                 </div>
               ))}
             </div>
@@ -1384,26 +1318,26 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* 3. SALES METRICS & WISDOM ANALYTICS SHOWCASE */}
-      <section className="py-24 px-6 border-b border-white/[0.04] bg-[#0A0D17]">
+      <section className="py-24 px-6 border-b border-zinc-200 dark:border-white/[0.04] bg-white dark:bg-[#0A0D17] transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
           {/* Text Left */}
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 text-green-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-green-500/15 select-none font-sans">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-green-500/15 select-none font-sans">
               <Activity className="w-3.5 h-3.5" />
               <span>{lang === "ar" ? "لوحة التحليلات ومحاربة الاحتيال" : lang === "fr" ? "Suite d'Analytics Intelligente & Anti-Fraude" : "Intelligent Analytics & Anti-Fraud Suite"}</span>
             </div>
-            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
+            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               {dbShowcaseTitle}
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed">
               {dbDesc}
             </p>
             <div className="space-y-3.5 pt-2">
               {dbFeatures.map((feat, i) => (
                 <div key={i} className="flex items-start gap-2.5">
-                  <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span className="text-xs font-semibold text-zinc-300 leading-normal">{feat}</span>
+                  <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 leading-normal">{feat}</span>
                 </div>
               ))}
             </div>
@@ -1414,74 +1348,74 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
             
             {/* Stats Frame */}
-            <div className="w-full max-w-xl bg-zinc-950/85 border border-zinc-800 rounded-[2rem] shadow-2xl p-5 md:p-6 space-y-6">
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-950/85 border border-slate-200 dark:border-zinc-800 rounded-[2rem] shadow-lg dark:shadow-2xl p-5 md:p-6 space-y-6 transition-all duration-300">
               
               {/* Top Summary Blocks */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "نسبة التوصيل" : lang === "fr" ? "Taux de Livraison" : "Delivered Rate"}</span>
-                  <p className="text-emerald-400 font-sans text-sm md:text-base font-extrabold">91.4%</p>
-                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "شحن ناجح مؤكد" : lang === "fr" ? "Livraisons réussies" : "Successful deliveries"}</span>
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-3 text-center space-y-1 shadow-xs transition-all duration-300">
+                  <span className="text-slate-500 dark:text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "نسبة التوصيل" : lang === "fr" ? "Taux de Livraison" : "Delivered Rate"}</span>
+                  <p className="text-emerald-600 dark:text-emerald-400 font-sans text-sm md:text-base font-extrabold">91.4%</p>
+                  <span className="text-[7px] text-slate-500 dark:text-zinc-500 font-bold block">{lang === "ar" ? "شحن ناجح مؤكد" : lang === "fr" ? "Livraisons réussies" : "Successful deliveries"}</span>
                 </div>
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الناجحة" : lang === "fr" ? "Ventes Collectées" : "Sales Collected"}</span>
-                  <p className="text-white font-sans text-sm md:text-base font-extrabold">142,500 DA</p>
-                  <span className="text-[7px] font-mono text-indigo-400 font-bold block">+18.5% {lang === "ar" ? "WTD الأسبوع" : lang === "fr" ? "WTD Cette Semaine" : "WTD This Week"}</span>
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-3 text-center space-y-1 shadow-xs transition-all duration-300">
+                  <span className="text-slate-500 dark:text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الناجحة" : lang === "fr" ? "Ventes Collectées" : "Sales Collected"}</span>
+                  <p className="text-slate-900 dark:text-white font-sans text-sm md:text-base font-extrabold">142,500 DA</p>
+                  <span className="text-[7px] font-mono text-indigo-600 dark:text-indigo-400 font-bold block">+18.5% {lang === "ar" ? "WTD الأسبوع" : lang === "fr" ? "WTD Cette Semaine" : "WTD This Week"}</span>
                 </div>
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-center space-y-1">
-                  <span className="text-zinc-550 text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الملغاة" : lang === "fr" ? "Annulés / Retours" : "Cancelled / Return"}</span>
-                  <p className="text-red-400 font-sans text-sm md:text-base font-extrabold">5.6%</p>
-                  <span className="text-[7px] text-zinc-500 font-bold block">{lang === "ar" ? "كشف فوري بالأي آي" : lang === "fr" ? "Vérifié par l'IA" : "Checked with AI"}</span>
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-3 text-center space-y-1 shadow-xs transition-all duration-300">
+                  <span className="text-slate-500 dark:text-zinc-500 text-[8px] font-bold uppercase tracking-wider block">{lang === "ar" ? "الطلبات الملغاة" : lang === "fr" ? "Annulés / Retours" : "Cancelled / Return"}</span>
+                  <p className="text-red-600 dark:text-red-400 font-sans text-sm md:text-base font-extrabold">5.6%</p>
+                  <span className="text-[7px] text-slate-500 dark:text-zinc-500 font-bold block">{lang === "ar" ? "كشف فوري بالأي آي" : lang === "fr" ? "Vérifié par l'IA" : "Checked with AI"}</span>
                 </div>
               </div>
 
               {/* Geographic Demand Bar Chart Mock */}
-              <div className="space-y-3.5 bg-black/40 border border-white/5 rounded-2xl p-4 text-right lg:text-right" dir="rtl">
-                <div className="flex justify-between items-center text-[10px] font-extrabold text-white">
+              <div className="space-y-3.5 bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-right lg:text-right transition-all duration-300" dir="rtl">
+                <div className="flex justify-between items-center text-[10px] font-extrabold text-slate-800 dark:text-white">
                   <span>{lang === "ar" ? "عدد المبيعات" : "Total Deliveries"}</span>
                   <span>{lang === "ar" ? "توزع مبيعات الولايات الـ 68" : "Top Wilaya Distribution"}</span>
                 </div>
                 
                 {/* Algiers */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">78 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
+                  <div className="flex justify-between items-center text-[9px] font-semibold text-slate-500 dark:text-zinc-400">
+                    <span className="font-mono text-slate-800 dark:text-white font-bold">78 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>16 - الجزائر (Algiers)</span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full" style={{ width: '85%' }} />
                   </div>
                 </div>
 
                 {/* Oran */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">46 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
+                  <div className="flex justify-between items-center text-[9px] font-semibold text-slate-500 dark:text-zinc-400">
+                    <span className="font-mono text-slate-800 dark:text-white font-bold">46 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>31 - وهران (Oran)</span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full" style={{ width: '51%' }} />
                   </div>
                 </div>
 
                 {/* Blida */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">32 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
+                  <div className="flex justify-between items-center text-[9px] font-semibold text-slate-500 dark:text-zinc-400">
+                    <span className="font-mono text-slate-800 dark:text-white font-bold">32 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>09 - البليدة (Blida)</span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full" style={{ width: '38%' }} />
                   </div>
                 </div>
 
                 {/* Constantine */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-400">
-                    <span className="font-mono text-white font-bold">29 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
+                  <div className="flex justify-between items-center text-[9px] font-semibold text-slate-500 dark:text-zinc-400">
+                    <span className="font-mono text-slate-800 dark:text-white font-bold">29 {lang === "ar" ? "طلب مؤكد" : lang === "fr" ? "commandes" : "orders"}</span>
                     <span>25 - قسنطينة (Constantine)</span>
                   </div>
-                  <div className="w-full h-2 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-550 rounded-full" style={{ width: '33%' }} />
                   </div>
                 </div>
@@ -1489,7 +1423,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               </div>
               
               {/* Analytics Trust Note */}
-              <div className="text-[10px] text-zinc-550 text-zinc-500 text-center select-none font-medium text-zinc-400">
+              <div className="text-[10px] text-slate-500 dark:text-zinc-400 text-center select-none font-medium transition-colors duration-300">
                 {lang === "ar" 
                   ? "✓ البيانات تتبَع بشكل دقيق ومن الحظّة الأولى للاتصال بشركات Yalidine و ZR Express ومزامنتها."
                   : lang === "fr"
@@ -1504,27 +1438,27 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* SOCIAL INTEGRATION HUB */}
-      <section id="social" className="py-24 px-6 relative bg-gradient-to-b from-[#0A0D17] to-black/20 overflow-hidden">
+      <section id="social" className="py-24 px-6 relative bg-white dark:bg-[#0A0D17] transition-colors duration-300 overflow-hidden border-t border-zinc-200 dark:border-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
         <div className="max-w-7xl mx-auto">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center mb-16">
             {/* Text Content */}
             <div className="lg:col-span-6 space-y-8" dir={isRtl ? "rtl" : "ltr"}>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/20">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-purple-500/20">
                 <Sparkles className="w-3 h-3" />
                 <span>{lang === "ar" ? "متجرك كله في مكان واحد" : lang === "fr" ? "Votre hub e-commerce complet" : "Your entire store in one hub"}</span>
               </div>
               
               <div className="space-y-6">
-                <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1]">
+                <h2 className="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1] text-slate-900 dark:text-white">
                   {lang === "ar" 
                     ? "ربط منصات التواصل الاجتماعي" 
                     : lang === "fr"
                     ? "Intégration des réseaux sociaux"
                     : "Social Media Integration"}
                 </h2>
-                <p className="text-zinc-400 text-sm md:text-base leading-relaxed font-medium">
+                <p className="text-slate-600 dark:text-zinc-400 text-sm md:text-base leading-relaxed font-medium">
                   {lang === "ar"
                     ? "بدل التنقل بين التطبيقات وضياع الطلبات، اربط حساباتك في Facebook, Instagram, Telegram, و WhatsApp بمنصة SmartyAi Order لتدير مبيعاتك وتواصلك مع الزبائن وشركات الشحن من شاشة واحدة وبكل بساطة."
                     : lang === "fr"
@@ -1535,8 +1469,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
 
               {/* Steps */}
               <div className="space-y-6 pt-4">
-                <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-purple-400" />
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                   {lang === "ar" ? "كيف تعمل الميزة؟ (في 3 خطوات سريعة)" : lang === "fr" ? "Comment ça marche ? (En 3 étapes)" : "How it works? (In 3 quick steps)"}
                 </h3>
                 
@@ -1550,7 +1484,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         : lang === "fr"
                         ? "Liez vos comptes (Facebook, Instagram, Telegram, WhatsApp) à SmartyAi Order en toute simplicité et sécurité."
                         : "Connect your Facebook, Instagram, Telegram, and WhatsApp accounts to SmartyAi Order securely and effortlessly.",
-                      icon: <Lock className="w-5 h-5 text-blue-400" />
+                      icon: <Lock className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                     },
                     {
                       step: 2,
@@ -1560,7 +1494,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         : lang === "fr"
                         ? "Chaque nouvelle commande est enregistrée instantanément. L'application envoie des notifications automatiques (Confirmée, Expédiée, Livrée) aux clients via WhatsApp ou Telegram."
                         : "Every new order from any platform is instantly logged. The app automatically sends status notifications (Confirmed, Shipped, Delivered) to customers via WhatsApp or Telegram.",
-                      icon: <MessageCircle className="w-5 h-5 text-emerald-400" />
+                      icon: <MessageCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
                     },
                     {
                       step: 3,
@@ -1570,19 +1504,19 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                         : lang === "fr"
                         ? "Les commandes arrivent en attente sur votre tableau de bord. Validez-les et expédiez-les en masse à votre transporteur sans aucune saisie manuelle."
                         : "Orders arrive as unconfirmed entries on your dash. After validation, simply select all confirmed orders and dispatch them in bulk to your carrier with zero manual data entry.",
-                      icon: <Truck className="w-5 h-5 text-purple-400" />
+                      icon: <Truck className="w-5 h-5 text-purple-500 dark:text-purple-400" />
                     }
                   ].map((item) => (
-                    <div key={item.step} className="flex gap-4 p-4 bg-zinc-900/40 border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-zinc-950 flex items-center justify-center shrink-0 border border-zinc-800">
+                    <div key={item.step} className="flex gap-4 p-4 bg-slate-50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 rounded-2xl hover:border-slate-300 dark:hover:border-zinc-700 transition-colors duration-300 shadow-sm dark:shadow-none">
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-950 flex items-center justify-center shrink-0 border border-slate-200 dark:border-zinc-800">
                         {item.icon}
                       </div>
                       <div className="space-y-1">
-                        <h5 className="font-bold text-white text-sm">
-                          <span className="text-purple-500 mr-1.5">{item.step}.</span>
+                        <h5 className="font-bold text-slate-900 dark:text-white text-sm">
+                          <span className="text-purple-600 dark:text-purple-500 mr-1.5">{item.step}.</span>
                           {item.title}
                         </h5>
-                        <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">{item.text}</p>
+                        <p className="text-[11px] text-slate-650 dark:text-zinc-500 leading-relaxed font-medium">{item.text}</p>
                       </div>
                     </div>
                   ))}
@@ -1595,15 +1529,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <div className="space-y-4">
                 <div className="p-8 bg-gradient-to-br from-blue-600/10 to-transparent border border-blue-500/20 rounded-3xl group hover:border-blue-500/40 transition-all hover:-translate-y-1">
                   <Facebook className="w-10 h-10 text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
-                  <h4 className="text-sm font-black text-white mb-2 font-sans">Facebook</h4>
-                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2 font-sans">Facebook</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
                     {lang === "ar" ? "مزامنة لحظية للمحادثات وتحويل الرسائل إلى مشتريات مؤكدة." : lang === "fr" ? "Synchronisation en temps réel pour transformer vos chats en ventes." : "Real-time sync turning messages into confirmed sales."}
                   </p>
                 </div>
                 <div className="p-8 bg-gradient-to-br from-pink-600/10 to-transparent border border-pink-500/20 rounded-3xl group hover:border-pink-500/40 transition-all hover:translate-y-1">
                   <Instagram className="w-10 h-10 text-pink-500 mb-4 group-hover:scale-110 transition-transform" />
-                  <h4 className="text-sm font-black text-white mb-2 font-sans">Instagram</h4>
-                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2 font-sans">Instagram</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
                     {lang === "ar" ? "اجعل منشوراتك وقصصك أبواباً مفتوحة لطلبيات عملائك مباشرة." : lang === "fr" ? "Transformez vos posts et stories en passerelles directes pour vos commandes." : "Turn your posts and stories into direct gateways for orders."}
                   </p>
                 </div>
@@ -1611,15 +1545,15 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               <div className="space-y-4 pt-12">
                 <div className="p-8 bg-gradient-to-br from-sky-600/10 to-transparent border border-sky-500/20 rounded-3xl group hover:border-sky-500/40 transition-all hover:-translate-y-1">
                   <Send className="w-10 h-10 text-sky-500 mb-4 group-hover:scale-110 transition-transform" />
-                  <h4 className="text-sm font-black text-white mb-2 font-sans">Telegram</h4>
-                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2 font-sans">Telegram</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
                     {lang === "ar" ? "أتمتة كاملة عبر القنوات لإخطار العملاء والمناديب." : lang === "fr" ? "Automatisation complète via canaux pour notifier clients et livreurs." : "Full automation via channels to notify customers and couriers."}
                   </p>
                 </div>
                 <div className="p-8 bg-gradient-to-br from-emerald-600/10 to-transparent border border-emerald-500/20 rounded-3xl group hover:border-emerald-500/40 transition-all hover:translate-y-1">
                   <MessageCircle className="w-10 h-10 text-emerald-500 mb-4 group-hover:scale-110 transition-transform" />
-                  <h4 className="text-sm font-black text-white mb-2 font-sans">WhatsApp</h4>
-                  <p className="text-[10px] text-zinc-400 leading-relaxed font-medium">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white mb-2 font-sans">WhatsApp</h4>
+                  <p className="text-[10px] text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
                     {lang === "ar" ? "تتبع ذكي وتذكيرات آلية لضمان استلام الطرود." : lang === "fr" ? "Suivi intelligent et rappels automatiques pour garantir la livraison." : "Smart tracking and automated reminders for safe delivery cycles."}
                   </p>
                 </div>
@@ -1630,27 +1564,27 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* Interactive FAQ Section Accordion-style layout */}
-      <section id="faq" className="py-20 px-6 bg-[#080B13]/40 border-t border-white/[0.05]">
+      <section id="faq" className="py-20 px-6 bg-white dark:bg-[#080B13]/40 border-t border-zinc-200 dark:border-white/[0.05] transition-colors duration-300">
         <div className="max-w-4xl mx-auto space-y-12">
           
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 text-purple-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-purple-500/15 select-none">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-lg text-[10px] uppercase tracking-widest font-bold border border-purple-500/15 select-none">
               <HelpCircle className="w-3.5 h-3.5" />
               <span>{t.faq_title_label || "FAQ / Support"}</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">
+            <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight leading-snug md:leading-normal select-none text-slate-900 dark:text-white">
               {t.faq_heading || "Frequently Asked Questions"}
             </h2>
           </div>
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
-              <div key={idx} className="bg-zinc-950/40 border border-zinc-900 rounded-3xl p-6 hover:border-zinc-800 transition-all duration-300">
-                <h4 className="font-bold text-white text-sm sm:text-base mb-2.5 flex items-start gap-2.5 select-none animate-shimmer">
+              <div key={idx} className="bg-white/50 dark:bg-zinc-950/40 border border-zinc-205 dark:border-zinc-955 rounded-3xl p-6 hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-300">
+                <h4 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base mb-2.5 flex items-start gap-2.5 select-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 shrink-0 animate-pulse" />
                   {faq.q}
                 </h4>
-                <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed pl-4 pr-4">
+                <p className="text-slate-605 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed pl-4 pr-4">
                   {faq.a}
                 </p>
               </div>
@@ -1661,14 +1595,14 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* Pricing Section Grid & Simulated Switcher */}
-      <section id="pricing" className="py-24 px-6 relative">
+      <section id="pricing" className="py-24 px-6 relative bg-white dark:bg-[#0B0F19] transition-colors duration-300 border-t border-zinc-200 dark:border-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none -z-10" />
         
         <div className="max-w-7xl mx-auto space-y-16">
           
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none">{t.sub_upgrade || "Upgrade Plans"}</h2>
-            <p className="text-zinc-405 text-lg max-w-2xl mx-auto">{t.landing_pricing_subtitle || "Choose the best plan for your business."}</p>
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-snug md:leading-normal select-none text-slate-900 dark:text-white">{t.sub_upgrade || "Upgrade Plans"}</h2>
+            <p className="text-slate-650 dark:text-zinc-400 text-lg max-w-2xl mx-auto">{t.landing_pricing_subtitle || "Choose the best plan for your business."}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
@@ -1678,12 +1612,12 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 className={`
                   relative p-8 rounded-[2.5rem] border transition-all flex flex-col group ${plan.popular ? 'overflow-visible' : 'overflow-hidden'} select-none
                   ${plan.popular 
-                    ? 'bg-gradient-to-b from-purple-950/20 to-zinc-950/20 border-purple-500 shadow-[0_0_55px_rgba(147,51,234,0.15)] ring-2 ring-purple-500/50 hover:scale-[1.01]' 
+                    ? 'bg-gradient-to-b from-purple-50/50 to-white dark:from-purple-950/20 dark:to-zinc-950/20 border-purple-500 shadow-[0_0_55px_rgba(147,51,234,0.15)] ring-2 ring-purple-500/50 hover:scale-[1.01] text-slate-900 dark:text-white' 
                     : plan.color === 'blue'
-                      ? 'bg-white/[0.01] border-blue-900/30 hover:border-blue-500/50 hover:scale-[1.01]'
+                      ? 'bg-slate-50 dark:bg-white/[0.01] border-slate-200 dark:border-blue-900/30 hover:border-blue-500/50 hover:scale-[1.01] text-slate-900 dark:text-white'
                       : plan.color === 'yellow'
-                        ? 'bg-white/[0.01] border-yellow-905/30 hover:border-yellow-500/50 hover:scale-[1.01]'
-                        : 'bg-white/[0.02] border-white/10 hover:border-white/20 hover:scale-[1.01]'}
+                        ? 'bg-slate-50 dark:bg-white/[0.01] border-slate-200 dark:border-yellow-905/30 hover:border-yellow-500/50 hover:scale-[1.01] text-slate-900 dark:text-white'
+                        : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/10 hover:border-white/20 hover:scale-[1.01] text-slate-900 dark:text-white'}
                 `}
               >
                 {plan.popular && (
@@ -1696,24 +1630,24 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 )}
                 
                 <h3 className={`text-base font-black uppercase tracking-wider mb-2 select-none ${
-                  plan.color === 'blue' ? 'text-blue-400' : 
-                  plan.color === 'purple' ? 'text-purple-400' : 
-                  plan.color === 'yellow' ? 'text-yellow-400' : 'text-zinc-400'
+                  plan.color === 'blue' ? 'text-blue-605 dark:text-blue-400' : 
+                  plan.color === 'purple' ? 'text-purple-605 dark:text-purple-400' : 
+                  plan.color === 'yellow' ? 'text-amber-605 dark:text-yellow-400' : 'text-slate-500 dark:text-zinc-400'
                 }`}>
                   {plan.name}
                 </h3>
                 <div className="text-4xl font-extrabold mb-1 tracking-tighter select-none" dir="ltr">{plan.price}</div>
-                <div className="text-[10px] text-zinc-505 mb-8 lowercase font-medium select-none">/ {t.per_month_label || "per month"}</div>
+                <div className="text-[10px] text-slate-500 dark:text-zinc-500 mb-8 lowercase font-medium select-none">/ {t.per_month_label || "per month"}</div>
                 
                 <div className="space-y-4 mb-10 flex-1 select-none">
                   {plan.features.map((feature, i) => (
                     <div key={i} className="flex items-start gap-3 select-none">
                       <CheckCircle className={`w-4 h-4 mt-0.5 shrink-0 ${
-                        plan.color === 'blue' ? 'text-blue-400' : 
-                        plan.color === 'purple' ? 'text-purple-400' : 
-                        plan.color === 'yellow' ? 'text-yellow-400' : 'text-zinc-505'
+                        plan.color === 'blue' ? 'text-blue-600 dark:text-blue-400' : 
+                        plan.color === 'purple' ? 'text-purple-650 dark:text-purple-400' : 
+                        plan.color === 'yellow' ? 'text-amber-500 dark:text-yellow-400' : 'text-slate-450 dark:text-zinc-505'
                       }`} />
-                      <span className="text-xs font-medium text-zinc-350 text-zinc-300 leading-normal select-none">{feature}</span>
+                      <span className="text-xs font-medium text-slate-700 dark:text-zinc-300 leading-normal select-none">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -1723,12 +1657,12 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                   className={`
                     w-full py-4 rounded-[1.25rem] font-bold text-xs tracking-wider uppercase transition-all duration-350 active:scale-95 cursor-pointer select-none
                     ${plan.color === 'blue' 
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-505 shadow-xl shadow-blue-500/15 animate-shimmer' 
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-500 hover:to-indigo-505 shadow-xl shadow-blue-500/15' 
                         : plan.color === 'purple'
-                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-505 shadow-xl shadow-purple-500/15 animate-shimmer'
+                          ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-505 shadow-xl shadow-purple-500/15'
                           : plan.color === 'yellow'
-                            ? 'bg-yellow-500 text-black hover:bg-yellow-405 shadow-xl shadow-yellow-500/10 hover:shadow-yellow-500/20'
-                            : 'bg-white text-black hover:bg-zinc-200'
+                            ? 'bg-yellow-500 text-black hover:bg-yellow-450 shadow-xl shadow-yellow-500/10'
+                            : 'bg-slate-900 text-white dark:bg-white dark:text-black hover:bg-slate-800 dark:hover:bg-zinc-200 border border-slate-200 dark:border-transparent'
                     }
                   `}
                 >
@@ -1743,24 +1677,24 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </section>
 
       {/* Styled Footer and Language Switcher */}
-      <footer className="py-20 px-6 border-t border-white/10 bg-[#070A11] relative select-none">
+      <footer className="py-20 px-6 border-t border-zinc-200 dark:border-white/10 bg-white dark:bg-[#070A11] relative select-none transition-colors duration-300">
         <div className="max-w-7xl mx-auto space-y-16">
           
           {/* Main Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 text-zinc-400">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 text-slate-600 dark:text-zinc-400">
             
             {/* Branding Column */}
             <div className="lg:col-span-2 space-y-6 text-right md:text-right select-none" dir={isRtl ? "rtl" : "ltr"}>
               <div className="flex items-center gap-2.5 select-none" dir="ltr">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800/40 border border-zinc-700/50 flex items-center justify-center p-0 shrink-0 select-none">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800/20 dark:bg-zinc-800/40 border border-slate-200 dark:border-zinc-700/50 flex items-center justify-center p-0 shrink-0 select-none">
                   <Logo className="w-full h-full rounded-full select-none" />
                 </div>
-                <span className="font-bold text-white tracking-tight flex flex-col leading-none select-none text-left">
+                <span className="font-bold text-slate-900 dark:text-white tracking-tight flex flex-col leading-none select-none text-left">
                   <span className="text-lg select-none">Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-extrabold select-none">Ai</span></span>
-                  <span className="text-[10px] text-zinc-450 tracking-wider uppercase mt-0.5 select-none font-mono">Order</span>
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-450 tracking-wider uppercase mt-0.5 select-none font-mono">Order</span>
                 </span>
               </div>
-              <p className="text-xs text-zinc-505 leading-relaxed max-w-sm select-none">
+              <p className="text-xs text-slate-600 dark:text-zinc-500 leading-relaxed max-w-sm select-none">
                 {lang === "ar" 
                   ? "المؤسسة الجزائرية الأذكى لأتمتة التجارة الإلكترونية، تفكيك محادثات السحب التلقائي، والربط اللوجستي الفوري بنقرة واحدة."
                   : lang === "fr"
@@ -1769,8 +1703,8 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
               </p>
               
               <div className="pt-2">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-605 text-zinc-505 block mb-2 select-none">{t.select_lang_placeholder || "Select Platform Language"}</span>
-                <div className="inline-flex bg-zinc-900/50 p-1 rounded-2xl border border-zinc-850 select-none">
+                <span className="text-[9px] uppercase tracking-wider text-slate-500 dark:text-zinc-505 block mb-2 select-none">{t.select_lang_placeholder || "Select Platform Language"}</span>
+                <div className="inline-flex bg-slate-150 dark:bg-zinc-900/50 p-1 rounded-2xl border border-slate-200 dark:border-zinc-850 select-none">
                   {[
                     { code: 'ar', label: 'العربية' },
                     { code: 'fr', label: 'Français' },
@@ -1779,7 +1713,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                     <button 
                       key={l.code} 
                       onClick={() => setLang(l.code as any)} 
-                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none ${lang === l.code ? 'bg-white text-black shadow-lg shadow-white/5' : 'text-zinc-505 hover:text-zinc-350'}`}
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none ${lang === l.code ? 'bg-white dark:bg-white text-slate-900 dark:text-black shadow-md' : 'text-slate-500 dark:text-zinc-505 hover:text-slate-800 dark:hover:text-zinc-350'}`}
                     >
                       {l.label}
                     </button>
@@ -1787,9 +1721,9 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 </div>
               </div>
 
-              <div className="pt-3 text-xs text-zinc-505">
+              <div className="pt-3 text-xs text-slate-500 dark:text-zinc-505">
                 {t.contact_support_prefix || "Contact & Support: "}
-                <a href="mailto:smarty@smartyai.net" className="text-blue-400 hover:text-blue-300 transition-all font-mono font-medium">smarty@smartyai.net</a>
+                <a href="mailto:smarty@smartyai.net" className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-all font-mono font-medium">smarty@smartyai.net</a>
               </div>
             </div>
 
@@ -1866,7 +1800,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                 }
               ].map((section, idx) => (
                 <div key={idx} className="space-y-4 text-start" dir={isRtl ? "rtl" : "ltr"}>
-                  <h4 className="text-[11px] font-black uppercase tracking-wider text-zinc-300 border-b border-white/[0.05] pb-2 text-start">
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-zinc-300 border-b border-slate-200 dark:border-white/[0.05] pb-2 text-start">
                     {section.title}
                   </h4>
                   <ul className="space-y-2">
@@ -1874,7 +1808,7 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
                       <li key={lIdx}>
                         <button
                           onClick={link.action}
-                          className="text-zinc-405 hover:text-white transition-colors text-xs cursor-pointer text-start flex items-start justify-start w-full gap-1 p-0.5"
+                          className="text-slate-600 dark:text-zinc-405 hover:text-slate-900 dark:hover:text-white transition-colors text-xs cursor-pointer text-start flex items-start justify-start w-full gap-1 p-0.5"
                         >
                           <span className="whitespace-normal break-words text-start leading-relaxed">{link.label}</span>
                         </button>
@@ -1888,9 +1822,9 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
           </div>
           
           {/* Copyright Bar */}
-          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] uppercase tracking-widest text-[#52525b] text-center md:text-right" dir={isRtl ? "rtl" : "ltr"}>
+          <div className="pt-8 border-t border-slate-200 dark:border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] uppercase tracking-widest text-[#52525b] text-center md:text-right" dir={isRtl ? "rtl" : "ltr"}>
             <div>SmartyAi Order &copy; 2026 • Made for Algerian E-Commerce Excellence</div>
-            <div className="flex bg-zinc-950/20 px-3 py-1 rounded-full border border-zinc-900 text-[9px] text-[#52525b]/80 gap-1.5 justify-center items-center">
+            <div className="flex bg-slate-100 dark:bg-zinc-950/20 px-3 py-1 rounded-full border border-slate-205 dark:border-zinc-900 text-[9px] text-slate-500 dark:text-[#52525b]/80 gap-1.5 justify-center items-center">
               <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
               <span>v4.1.0</span>
             </div>
@@ -2288,4 +2222,4 @@ export default function LandingPage({ lang, setLang, signIn, t, isRtl, setScreen
       </AnimatePresence>
     </div>
   );
-      }
+}
