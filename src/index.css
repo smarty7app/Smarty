@@ -1,13 +1,95 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --theme-bg: #f8fafc; /* Slate 50 - clean offwhite background */
+  --theme-bg-secondary: #f1f5f9; /* Slate 100 - subtle sidebar/panel bg */
+  --theme-card: #ffffff; /* pure white for widgets/cards */
+  --theme-card-hover: #f1f5f9; 
+  --theme-text: #0f172a; /* Slate 900 - high contrast beautiful dark text */
+  --theme-text-muted: #64748b; /* Slate 500 - for secondary labels */
+  --theme-border: #e2e8f0; /* Slate 200 - elegant thin border */
+  --theme-panel: rgba(255, 255, 255, 0.7); /* glassmorphism light version */
+  --theme-input-bg: rgba(255, 255, 255, 0.85);
+  --theme-input-focus: rgba(255, 255, 255, 1);
+  --theme-input-border: #cbd5e1; /* Slate 300 */
+  --theme-glow: rgba(147, 51, 234, 0.03);
+  --theme-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.03);
+  --theme-card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 4px 12px -2px rgba(0, 0, 0, 0.02);
+
+  /* Adaptive zinc colors for Light Mode */
+  --adaptive-zinc-50: #fafafa;
+  --adaptive-zinc-100: #0f172a; /* Adaptive text (Slate 900) */
+  --adaptive-zinc-200: #1e293b; /* Adaptive text (Slate 800) */
+  --adaptive-zinc-300: #334155; /* Adaptive text (Slate 700) */
+  --adaptive-zinc-400: #475569; /* Adaptive text (Slate 600) */
+  --adaptive-zinc-500: #64748b; /* Adaptive text (Slate 500) */
+  --adaptive-zinc-800: #e2e8f0; /* Borders */
+  --adaptive-zinc-850: rgba(15, 23, 42, 0.04); /* Translucent thin layer */
+  --adaptive-zinc-900: #f8fafc; /* Soft background */
+  --adaptive-zinc-950: #ffffff; /* Pure white surface */
+}
+
+.dark {
+  --theme-bg: #050505;
+  --theme-bg-secondary: #0a0a0a;
+  --theme-card: #0c0c0e;
+  --theme-card-hover: #141417;
+  --theme-text: #ffffff;
+  --theme-text-muted: #a1a1aa; /* zinc-405 */
+  --theme-border: #1f1f23; /* custom dark border */
+  --theme-panel: rgba(10, 10, 10, 0.45);
+  --theme-input-bg: rgba(15, 15, 15, 0.4);
+  --theme-input-focus: rgba(20, 20, 20, 0.6);
+  --theme-input-border: rgba(255, 255, 255, 0.08);
+  --theme-glow: rgba(147, 51, 234, 0.08);
+  --theme-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  --theme-card-shadow: 0 12px 40px 0 rgba(147, 51, 234, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+
+  /* Adaptive zinc colors for Dark Mode */
+  --adaptive-zinc-50: #fafafa;
+  --adaptive-zinc-100: #f4f4f5;
+  --adaptive-zinc-200: #e4e4e7;
+  --adaptive-zinc-300: #d4d4d8;
+  --adaptive-zinc-400: #a1a1aa;
+  --adaptive-zinc-500: #71717a;
+  --adaptive-zinc-800: #27272a;
+  --adaptive-zinc-850: #1a1a1f;
+  --adaptive-zinc-900: #18181b;
+  --adaptive-zinc-950: #09090b;
+}
+
 @theme {
   --font-sans: "Cairo", "Inter", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-theme-bg: var(--theme-bg);
+  --color-theme-bg-secondary: var(--theme-bg-secondary);
+  --color-theme-card: var(--theme-card);
+  --color-theme-card-hover: var(--theme-card-hover);
+  --color-theme-text: var(--theme-text);
+  --color-theme-text-muted: var(--theme-text-muted);
+  --color-theme-border: var(--theme-border);
+  --color-theme-panel: var(--theme-panel);
+
+  /* Override standard zinc colors to dynamically map to the adaptive system properties */
+  --color-zinc-50: var(--adaptive-zinc-50);
+  --color-zinc-100: var(--adaptive-zinc-100);
+  --color-zinc-200: var(--adaptive-zinc-200);
+  --color-zinc-300: var(--adaptive-zinc-300);
+  --color-zinc-400: var(--adaptive-zinc-400);
+  --color-zinc-500: var(--adaptive-zinc-500);
+  --color-zinc-800: var(--adaptive-zinc-800);
+  --color-zinc-850: var(--adaptive-zinc-850);
+  --color-zinc-855: var(--adaptive-zinc-850); /* Custom 855 as well */
+  --color-zinc-900: var(--adaptive-zinc-900);
+  --color-zinc-950: var(--adaptive-zinc-950);
 }
 
 @layer base {
   html, body {
-    @apply bg-black text-white antialiased;
+    @apply bg-theme-bg text-theme-text antialiased transition-colors duration-300;
     font-family: var(--font-sans);
     overflow-x: hidden;
     max-width: 100vw;
@@ -26,65 +108,67 @@
 @layer utilities {
   .glow-border {
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-border);
   }
   
   .glow-text {
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
   }
 
   .crystal-button {
     background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 10px rgba(255,255,255,0.1);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow);
   }
 
   .crystal-button:hover {
     background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.1) 100%);
-    border-color: rgba(255,255,255,0.3);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4), inset 0 0 15px rgba(255,255,255,0.2);
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow: var(--theme-shadow);
   }
 
   /* Global SaaS Glassmorphism styles */
   .glass-panel {
-    background: rgba(10, 10, 10, 0.45);
+    background: var(--theme-panel);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow);
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
 
   .glass-panel-light {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-shadow);
   }
 
   .glass-card {
-    background: rgba(20, 20, 20, 0.5);
+    background: var(--theme-card);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-border);
     border-radius: 1.5rem;
+    box-shadow: var(--theme-shadow);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .glass-card:hover {
-    background: rgba(25, 25, 25, 0.6);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 12px 40px 0 rgba(147, 51, 234, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover);
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow: var(--theme-card-shadow);
     transform: translateY(-2px);
   }
 
   .glass-modal {
-    background: rgba(10, 10, 10, 0.8);
+    background: var(--theme-card);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-border);
+    box-shadow: var(--theme-card-shadow);
   }
 
   .neon-text-gradient {
@@ -113,15 +197,16 @@
   }
 
   .slick-input {
-    background: rgba(15, 15, 15, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-input-bg);
+    border: 1px solid var(--theme-input-border);
     border-radius: 0.75rem;
+    color: var(--theme-text);
     transition: all 0.2s ease;
   }
 
   .slick-input:focus {
     border-color: rgba(167, 139, 250, 0.6);
-    background: rgba(20, 20, 20, 0.6);
+    background: var(--theme-input-focus);
     box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.15);
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, RefreshCw, LogOut, Trash2 } from "lucide-react";
+import { Menu, RefreshCw, LogOut, Trash2, Moon } from "lucide-react";
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -35,6 +35,7 @@ import { translations, Language } from "./lib/translations";
 import { OrderData, InventoryItem, UserData } from "./types";
 import { safeStorage } from "./lib/utils";
 import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { Logo } from "./components/CommonUI";
 import { NotificationBell } from "./components/Notifications";
 import LandingPage from "./components/LandingPage";
@@ -81,6 +82,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 // --- Main App Component ---
 function AppContent() {
+  const { theme, setTheme, toggleTheme } = useTheme();
   const { user, loading: authLoading, signIn, logout } = useUser();
   const [lang, setLang] = useState<Language>(() => {
     const saved = safeStorage.getItem("smarty_lang");
@@ -120,12 +122,6 @@ function AppContent() {
   useEffect(() => {
     safeStorage.setItem("smarty_lang", lang);
   }, [lang]);
-
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-    document.documentElement.classList.remove("light");
-    safeStorage.setItem("smarty_theme", "dark");
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -756,7 +752,7 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col gap-4 items-center justify-center p-6 text-center select-none">
+      <div className="min-h-screen bg-theme-bg flex flex-col gap-4 items-center justify-center p-6 text-center select-none transition-colors duration-300 text-theme-text">
         <RefreshCw className="animate-spin text-zinc-500 w-8 h-8" />
         {authStallDetected && (
           <motion.div
@@ -794,13 +790,15 @@ function AppContent() {
         t={t}
         isRtl={isRtl}
         setScreen={setScreen}
+        theme={theme}
+        setTheme={setTheme}
       />
     );
   }
 
   return (
     <div
-      className="min-h-screen bg-[#050505] text-white flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-200"
+      className="min-h-screen bg-theme-bg text-theme-text flex flex-col items-center p-4 pt-12 md:pt-16 font-sans mb-20 select-none transition-all duration-300"
       dir={isRtl ? "rtl" : "ltr"}
     >
       <NetworkStatus isRtl={isRtl} lang={lang} />
@@ -838,16 +836,23 @@ function AppContent() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowSidebar(true)}
-              className="p-2 bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-colors"
+              className="p-2 bg-slate-100/50 dark:bg-zinc-900/50 border border-slate-200/60 dark:border-zinc-800 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-slate-600 dark:text-zinc-400"
             >
-              <Menu className="w-5 h-5 text-zinc-400" />
+              <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-bold tracking-tight text-white/90">
+            <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-white/90">
               {screen === "dashboard" ? t.nav_dashboard : t.nav_inventory}
             </h2>
           </div>
 
           <div className="flex items-center gap-3">
+             <button
+               onClick={toggleTheme}
+               className="p-2 bg-slate-100/50 dark:bg-zinc-900/50 border border-slate-200/60 dark:border-zinc-800 hover:bg-slate-200/50 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-slate-600 dark:text-zinc-400 select-none active:scale-95 flex items-center justify-center shrink-0"
+               title={lang === "ar" ? "تغيير المظهر" : lang === "fr" ? "Changer le mode" : "Toggle theme"}
+             >
+               <Moon className={`w-5 h-5 transition-colors duration-200 ${theme === "dark" ? "text-white" : "text-black"}`} />
+             </button>
              <NotificationBell t={t} isRtl={isRtl} />
           </div>
         </motion.div>
@@ -1149,8 +1154,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <FirebaseProvider>
-      <AppContent />
-    </FirebaseProvider>
+    <ThemeProvider>
+      <FirebaseProvider>
+        <AppContent />
+      </FirebaseProvider>
+    </ThemeProvider>
   );
 }
