@@ -15,7 +15,7 @@ import inventoryRouter from './src/server/routes/inventory.routes.ts';
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Setup JSON parsing and capture rawBody buffer for cryptographic signature validation
 app.use(express.json({
