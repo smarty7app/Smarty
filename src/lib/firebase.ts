@@ -4,26 +4,21 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-const isPlaceholder = (val?: string) => !val || val === '' || val.startsWith('YOUR_') || val.startsWith('MY_');
-const getVal = (configVal?: string, envVal?: string) => {
-  return isPlaceholder(configVal) ? envVal : configVal;
-};
-
-// Use the built-in json config primarily to stay in sync with server-side AI Studio expectations.
-// Environment variables remain as secondary overrides for specialized local dev.
+// Use the .env environment variables as the absolute primary source of configuration.
+// If any value is missing or is a placeholder, fallback to the firebase-applet-config.json file.
 const config = {
-  apiKey: getVal(firebaseConfig?.apiKey, import.meta.env.VITE_FIREBASE_API_KEY),
-  authDomain: getVal(firebaseConfig?.authDomain, import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
-  projectId: getVal(firebaseConfig?.projectId, import.meta.env.VITE_FIREBASE_PROJECT_ID),
-  storageBucket: getVal(firebaseConfig?.storageBucket, import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
-  messagingSenderId: getVal(firebaseConfig?.messagingSenderId, import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
-  appId: getVal(firebaseConfig?.appId, import.meta.env.VITE_FIREBASE_APP_ID),
-  measurementId: getVal(firebaseConfig?.measurementId, import.meta.env.VITE_FIREBASE_MEASUREMENT_ID),
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfig?.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig?.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig?.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig?.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig?.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfig?.appId,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || firebaseConfig?.measurementId,
 };
 
 console.log("[Firebase Frontend Init] Active Project ID:", config.projectId);
 
-const databaseId = getVal(firebaseConfig?.firestoreDatabaseId, import.meta.env.VITE_FIREBASE_DATABASE_ID || import.meta.env.VITE_FIRESTORE_DATABASE_ID) || 'ai-studio-64ffac1e-c7a5-4b17-a837-7b1e29c3c8c8';
+const databaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID || import.meta.env.VITE_FIRESTORE_DATABASE_ID || firebaseConfig?.firestoreDatabaseId || 'ai-studio-64ffac1e-c7a5-4b17-a837-7b1e29c3c8c8';
 
 const app = initializeApp(config);
 export const db = getFirestore(app, databaseId);
