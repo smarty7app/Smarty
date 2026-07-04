@@ -8,9 +8,10 @@ import {
   updateDoc, 
   query, 
   where, 
-  serverTimestamp 
+  serverTimestamp,
+  runTransaction
 } from 'firebase/firestore';
-import { db, PLAN_LIMITS } from '../config.js';
+import { db, PLAN_LIMITS, trackMerchantUsage } from '../config.js';
 
 const router = Router();
 
@@ -93,7 +94,9 @@ router.get('/store/:merchantId/products', async (req, res) => {
     // Extract unique categories
     const categoriesSet = new Set<string>();
     allProducts.forEach((p: any) => {
-      if (p.category) categoriesSet.add(p.category);
+      if (p.category && p.category !== "مستخرج تلقائياً" && p.category !== "Auto-extracted") {
+        categoriesSet.add(p.category);
+      }
     });
     const categories = Array.from(categoriesSet);
 
@@ -124,21 +127,80 @@ router.get('/store/:merchantId/products', async (req, res) => {
 // Algerian shipping dynamic cost breakdown
 router.get('/store/shipping-cost', async (req, res) => {
   try {
-    const { wilaya, deliveryType } = req.query;
+    const { wilaya, deliveryType, merchantId } = req.query;
     if (!wilaya) return res.status(400).json({ error: 'Wilaya query parameter is required' });
 
-    const wStr = String(wilaya).toLowerCase();
     const isDesk = String(deliveryType) === 'desk';
     
-    let fee = isDesk ? 400 : 700; // default Algerian logistics standard pricing
+    // Helper to extract 2-digit wilaya code
+    const extractCode = (str: string): string => {
+      if (!str) return "";
+      const m = str.match(/\d+/);
+      return m ? m[0].padStart(2, "0") : "";
+    };
 
-    // Smart Algerian logistics profiling
-    if (wStr.includes('16') || wStr.includes('alger')) {
+    const targetCode = extractCode(String(wilaya));
+
+    // If merchantId is provided, look up merchant settings to check if they have a flat shipping fee or custom source wilaya
+    let shippingCostType = "auto";
+    let fixedShippingCost = 600;
+    let merchantWilaya = "16 - الجزائر"; // Default to Algiers
+
+    if (merchantId) {
+      try {
+        const publicRef = doc(db, "merchant_public_configs", String(merchantId));
+        const publicSnap = await getDoc(publicRef);
+        if (publicSnap.exists()) {
+          const data = publicSnap.data();
+          if (data.shippingCostType) shippingCostType = data.shippingCostType;
+          if (data.fixedShippingCost !== undefined) fixedShippingCost = Number(data.fixedShippingCost);
+          if (data.merchantWilaya) merchantWilaya = data.merchantWilaya;
+        }
+      } catch (err) {
+        console.warn("Could not load merchant config for shipping fee, using defaults:", err);
+      }
+    }
+
+    // 1. If merchant has fixed/flat shipping cost configured, return it directly
+    if (shippingCostType === "fixed") {
+      return res.json({ success: true, shippingFee: fixedShippingCost });
+    }
+
+    // 2. Otherwise, calculate dynamic Yalidine shipping fee between source and target wilayas
+    const srcCode = extractCode(merchantWilaya) || "16";
+
+    let fee = isDesk ? 400 : 700; // standard default fallbacks
+
+    // Far South destinations
+    const farSouthCodes = [
+      "01", "11", "33", "37", "47", "30", "39", "50", "53", "54", "55", "56", "57", "58"
+    ];
+
+    // Clusters for adjacent/local zoning
+    const centreCluster = ["16", "09", "35", "42"];
+    const eastCluster = [
+      "19", "25", "23", "05", "18", "43", "34", "06", "41", "21", "24", "12", "04", "40", "28"
+    ];
+    const westCluster = [
+      "31", "46", "29", "27", "22", "13", "48", "02", "20", "14", "38"
+    ];
+
+    if (srcCode === targetCode) {
+      // Same wilaya delivery
       fee = isDesk ? 300 : 400;
-    } else if (wStr.includes('09') || wStr.includes('blida') || wStr.includes('35') || wStr.includes('boumerd') || wStr.includes('42') || wStr.includes('tipaza')) {
-      fee = isDesk ? 350 : 500;
-    } else if (wStr.includes('01') || wStr.includes('adrar') || wStr.includes('11') || wStr.includes('tamanrasset') || wStr.includes('33') || wStr.includes('illizi')) {
+    } else if (farSouthCodes.includes(targetCode)) {
+      // Far south desert shipping
       fee = isDesk ? 600 : 1000;
+    } else if (
+      (centreCluster.includes(srcCode) && centreCluster.includes(targetCode)) ||
+      (eastCluster.includes(srcCode) && eastCluster.includes(targetCode)) ||
+      (westCluster.includes(srcCode) && westCluster.includes(targetCode))
+    ) {
+      // Neighboring wilayas within same regional cluster
+      fee = isDesk ? 350 : 500;
+    } else {
+      // Standard regional transport
+      fee = isDesk ? 400 : 700;
     }
 
     res.json({ success: true, shippingFee: fee });
@@ -211,14 +273,21 @@ router.post('/store/create-order', async (req, res) => {
           pricePerUnit: unitPrice
         });
 
-        // Smart stock decrement (if tracked and in stock)
-        const currentStock = Number(invItem.stockQuantity) || 0;
-        if (currentStock > 0) {
-          const newQty = Math.max(0, currentStock - qty);
-          await updateDoc(doc(db, "inventory", invItem.id), {
-            stockQuantity: newQty
+        // Smart atomic stock decrement with checking
+        const invItemRef = doc(db, "inventory", invItem.id);
+        await runTransaction(db, async (transaction) => {
+          const invDoc = await transaction.get(invItemRef);
+          if (!invDoc.exists()) {
+            throw new Error(`المنتج "${prodName}" غير موجود في المخزون`);
+          }
+          const currentStock = Number(invDoc.data()?.stockQuantity) || 0;
+          if (currentStock < qty) {
+            throw new Error(`المخزون غير كافٍ للمنتج "${prodName}" (الكمية المتوفرة: ${currentStock}، المطلوبة: ${qty})`);
+          }
+          transaction.update(invItemRef, {
+            stockQuantity: currentStock - qty
           });
-        }
+        });
       } else {
         // Fallback for custom entries
         orderItems.push({
@@ -275,11 +344,11 @@ router.post('/store/create-order', async (req, res) => {
       console.warn("Could not increment public merchant orderCounter:", err.message);
     });
 
-    // Also attempt to increment the users collection (will work if authenticated, or log silently)
-    await updateDoc(doc(db, "users", merchantId), {
-      orderCounter: orderCounter + 1
+    // Also attempt to update the users/merchants collection centrally
+    await trackMerchantUsage(merchantId, {
+      ordersProcessed: 1
     }).catch(err => {
-      console.log("Unauthenticated users collection increment bypassed:", err.message);
+      console.log("Users collection trackMerchantUsage increment bypassed/failed:", err.message);
     });
 
     res.json({

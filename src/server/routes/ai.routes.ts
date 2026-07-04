@@ -4,7 +4,8 @@ import {
   db,
   decodeAuthUser,
   parseDataUrl,
-  generateContentWithRetry
+  generateContentWithRetry,
+  trackMerchantUsage
 } from '../config.js';
 
 const router = Router();
@@ -22,7 +23,7 @@ router.post('/parse-order', async (req, res) => {
     if (!text) return res.status(400).json({ error: 'Text is required' });
 
     const response = await generateContentWithRetry({
-      preferredModel: 'gemini-2.5-flash',
+      preferredModel: 'gemini-3.5-flash',
       contents: [{
         text: `Extract order details from this text in JSON format. Return ONLY the JSON object.
         {
@@ -52,7 +53,7 @@ router.post('/parse-order', async (req, res) => {
 // 2. Multimodal extract-order (handles conversation, vocal, receipt snapshots)
 router.post('/extract-order', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -124,7 +125,7 @@ ${conversation || "No text conversation provided."}
     }
 
     const response = await generateContentWithRetry({
-      preferredModel: 'gemini-2.5-flash',
+      preferredModel: 'gemini-3.5-flash',
       contents: parts,
       config: {
         responseMimeType: 'application/json',
@@ -165,6 +166,18 @@ ${conversation || "No text conversation provided."}
       throw new Error("No extraction received from Gemini AI model");
     }
 
+    // Centrally track tokens used and AI cost
+    const promptTokens = response.usageMetadata?.promptTokenCount || Math.ceil(promptText.length / 4);
+    const candidatesTokens = response.usageMetadata?.candidatesTokenCount || Math.ceil((resultText || "").length / 4);
+    const totalTokens = promptTokens + candidatesTokens;
+    const modelCostRate = 0.00000015; // standard flash model average rate
+    const cost = totalTokens * modelCostRate;
+
+    trackMerchantUsage(user.uid, {
+      tokensUsed: totalTokens,
+      aiCost: cost
+    }).catch(err => console.error("Failed to update merchant usage in background:", err));
+
     const parsedData = JSON.parse(resultText);
     res.json(parsedData);
 
@@ -177,7 +190,7 @@ ${conversation || "No text conversation provided."}
 // 3. Inventory AI Parsing
 router.post('/inventory/ai-parse', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ success: false, error: "Unauthorized access" });
     }
@@ -277,6 +290,18 @@ router.post('/inventory/ai-parse', async (req, res) => {
     if (!resultText) {
       throw new Error("No extraction received from Gemini AI model");
     }
+
+    // Centrally track tokens used and AI cost
+    const promptTokens = response.usageMetadata?.promptTokenCount || Math.ceil(promptText.length / 4);
+    const candidatesTokens = response.usageMetadata?.candidatesTokenCount || Math.ceil((resultText || "").length / 4);
+    const totalTokens = promptTokens + candidatesTokens;
+    const modelCostRate = 0.00000015; // standard flash model average rate
+    const cost = totalTokens * modelCostRate;
+
+    trackMerchantUsage(user.uid, {
+      tokensUsed: totalTokens,
+      aiCost: cost
+    }).catch(err => console.error("Failed to update merchant usage in background:", err));
 
     const parsedData = JSON.parse(resultText);
     res.json({ success: true, product: parsedData });

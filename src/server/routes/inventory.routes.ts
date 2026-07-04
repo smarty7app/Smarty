@@ -6,7 +6,7 @@ const router = Router();
 // Endpoint to support user image uploads (returns the URI or registers base64 securely)
 router.post('/inventory/upload-image', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }

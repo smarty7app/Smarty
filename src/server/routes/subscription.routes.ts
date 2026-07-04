@@ -47,7 +47,7 @@ function getSiteUrl(req: any): string {
 // 1. Create Checkout Session Route (Real Chargily integration + Mock Sandbox Fallback)
 router.post('/payments/create-checkout', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -133,7 +133,7 @@ router.post('/payments/create-checkout', async (req, res) => {
 // 2. Direct client verification Route (Heals or verifies transaction states synchronously)
 router.post('/payments/verify-checkout', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -181,8 +181,11 @@ router.post('/payments/verify-checkout', async (req, res) => {
       const userRef = doc(db, 'users', targetUserId);
       await updateDoc(userRef, {
         planType: planType,
+        subscriptionPlan: planType,
+        merchantId: targetUserId,
         orderCounter: 0,
-        subscriptionUpdatedAt: serverTimestamp()
+        subscriptionUpdatedAt: serverTimestamp(),
+        lastBillingDate: new Date().toISOString()
       }).catch(err => {
         console.warn("Soft upgrade db write error in verify-checkout:", err.message);
       });
@@ -209,7 +212,7 @@ router.post('/payments/verify-checkout', async (req, res) => {
 // 3. Simulated Sandbox Success endpoint (only used when no secret key exists for easy test validation)
 router.post('/payments/sandbox-pay', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -234,8 +237,11 @@ router.post('/payments/sandbox-pay', async (req, res) => {
     
     await updateDoc(userRef, {
       planType: planType,
+      subscriptionPlan: planType,
+      merchantId: user.uid,
       orderCounter: 0,
-      subscriptionUpdatedAt: serverTimestamp()
+      subscriptionUpdatedAt: serverTimestamp(),
+      lastBillingDate: new Date().toISOString()
     }).catch(err => {
       console.warn("Error updating user subscription document:", err.message);
     });

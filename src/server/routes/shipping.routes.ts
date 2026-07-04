@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db, decodeAuthUser } from '../config.js';
+import { db, decodeAuthUser, trackMerchantUsage } from '../config.js';
 
 const router = Router();
 
 // Single Order shipping logistics registration
 router.post('/ship-order', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -59,6 +59,11 @@ router.post('/ship-order', async (req, res) => {
       labelUrl = `https://colisliv.com/labels/thermal?tracking=${trackingNumber}`;
     }
 
+    // Track shipping requests
+    trackMerchantUsage(user.uid, {
+      shippingRequests: 1
+    }).catch(err => console.error("Failed to track single shipping request:", err));
+
     res.json({
       status: "shipped",
       trackingNumber,
@@ -74,7 +79,7 @@ router.post('/ship-order', async (req, res) => {
 // Bulk Orders shipping logistics support
 router.post('/bulk-confirm-orders', async (req, res) => {
   try {
-    const user = decodeAuthUser(req.headers.authorization);
+    const user = await decodeAuthUser(req.headers.authorization);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
@@ -101,6 +106,11 @@ router.post('/bulk-confirm-orders', async (req, res) => {
     });
 
     await Promise.all(promises);
+
+    // Track shipping requests
+    trackMerchantUsage(user.uid, {
+      shippingRequests: orderIds.length
+    }).catch(err => console.error("Failed to track bulk shipping requests:", err));
 
     res.json({ success: true, message: "Bulk orders confirmed and carrier dispatched successfully." });
 
