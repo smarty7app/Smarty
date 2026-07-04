@@ -35,7 +35,7 @@ import { translations, Language } from "./lib/translations";
 import { OrderData, InventoryItem, UserData } from "./types";
 import { safeStorage } from "./lib/utils";
 import { useUser, FirebaseProvider } from "./components/FirebaseProvider";
-import { ThemeProvider, useTheme } from "./context/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext.tsx";
 import { Logo } from "./components/CommonUI";
 import { NotificationBell } from "./components/Notifications";
 import LandingPage from "./components/LandingPage";
@@ -83,7 +83,7 @@ const PLAN_LIMITS: Record<string, number> = {
 // --- Main App Component ---
 function AppContent() {
   const { theme, setTheme, toggleTheme } = useTheme();
-  const { user, loading: authLoading, signIn, logout } = useUser();
+  const { user, loading: authLoading, signIn, logout, authError, setAuthError } = useUser();
   const [lang, setLang] = useState<Language>(() => {
     const saved = safeStorage.getItem("smarty_lang");
     if (saved === "ar" || saved === "fr" || saved === "en") {
@@ -319,6 +319,14 @@ function AppContent() {
               subscriptionStatus: "active",
               email: user.email || "",
               hasBeenWelcomed: false,
+              merchantId: user.uid,
+              ordersProcessed: 0,
+              tokensUsed: 0,
+              shippingRequests: 0,
+              storageUsed: 0,
+              aiCost: 0,
+              subscriptionPlan: "free",
+              lastBillingDate: new Date().toISOString(),
             };
             await setDoc(doc(db, "users", user.uid), newUser);
           }
@@ -387,6 +395,32 @@ function AppContent() {
       },
     );
   }, [user]);
+
+  // Synchronize storageUsed (total number of products in inventory + orders in history)
+  useEffect(() => {
+    if (!user || !userData) return;
+    const updateStorageMetric = async () => {
+      try {
+        const qProducts = query(collection(db, "inventory"), where("userId", "==", user.uid));
+        const productsSnap = await getDocs(qProducts);
+        const productsCount = productsSnap.size;
+        const ordersCount = ordersHistory.length;
+        const currentStorage = productsCount + ordersCount;
+        
+        if (userData.storageUsed !== currentStorage) {
+          await updateDoc(doc(db, "users", user.uid), {
+            storageUsed: currentStorage,
+            merchantId: user.uid,
+            lastBillingDate: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.error("Failed to automatically update storage metric:", err);
+      }
+    };
+    const timeout = setTimeout(updateStorageMetric, 3000);
+    return () => clearTimeout(timeout);
+  }, [user, ordersHistory.length, screen]);
 
   const handleExtract = async () => {
     if (!conversation.trim() && !fileUrl && !fileBase64) return;
@@ -529,12 +563,15 @@ function AppContent() {
           ...payload,
           createdAt: order.createdAt || serverTimestamp(),
         });
-        // Increment consumption
+        // Increment consumption and update tracking fields
         await updateDoc(doc(db, "users", user.uid), {
           orderCounter: (userData.orderCounter || 0) + 1,
+          ordersProcessed: (userData.ordersProcessed || 0) + 1,
+          merchantId: user.uid,
+          lastBillingDate: new Date().toISOString(),
         });
       }
-      alert(t.shipped_success);
+      alert(t.order_saved_success || "Saved successfully!");
       setScreen("dashboard");
       setOrder(initialOrder);
     } catch (err: any) {
@@ -627,9 +664,12 @@ function AppContent() {
         finalOrderId = docRef.id;
         // Decrement product inventory stock levels when shipping label is received
         await decrementStock(order.items);
-        // Increment consumption
+        // Increment consumption and update tracking fields
         await updateDoc(doc(db, "users", user.uid), {
           orderCounter: (userData.orderCounter || 0) + 1,
+          ordersProcessed: (userData.ordersProcessed || 0) + 1,
+          merchantId: user.uid,
+          lastBillingDate: new Date().toISOString(),
         });
       }
 
@@ -728,7 +768,7 @@ function AppContent() {
       setKaziTourKey("");
       setSoudiaToken("");
       setColisLivKey("");
-      alert(t.shipped_success || "Keys cleared successfully!");
+      alert(isRtl ? "تمت إزالة مفاتيح الربط بنجاح" : "API keys successfully cleared!");
     } catch (err: any) {
       console.error(err);
       alert(t.save_error || "Failed to clear API keys");
@@ -792,6 +832,8 @@ function AppContent() {
         setScreen={setScreen}
         theme={theme}
         setTheme={setTheme}
+        authError={authError}
+        setAuthError={setAuthError}
       />
     );
   }

@@ -59,6 +59,16 @@ export interface UserData {
   subscriptionStatus: "active" | "pending_verification" | "expired";
   email?: string;
   hasBeenWelcomed?: boolean;
+  
+  // Usage tracking fields
+  merchantId?: string;
+  ordersProcessed?: number;
+  tokensUsed?: number;
+  shippingRequests?: number;
+  storageUsed?: number;
+  aiCost?: number;
+  subscriptionPlan?: string;
+  lastBillingDate?: string;
 }
 
 export enum OperationType {
