@@ -14,22 +14,26 @@ router.post('/chargily', async (req: any, res) => {
 
     console.log(`[Chargily Webhook] Received webhook trigger from Chargily.`);
 
-    // 1. Strictly verify the cryptographic signature if a security secret is set in the env
-    if (secretKey && signature) {
-      const rawPayload = req.rawBody || JSON.stringify(req.body);
-      const computedSignature = crypto
-        .createHmac('sha256', secretKey)
-        .update(rawPayload)
-        .digest('hex');
-
-      if (computedSignature !== signature) {
-        console.error("[Chargily Webhook] Cryptographic signature check match failed. Request rejected.");
-        return res.status(403).json({ success: false, error: "Invalid signature" });
-      }
-      console.log("[Chargily Webhook] Cryptographic signature matched successfully.");
-    } else {
-      console.warn("⚠️ Warning: Chargily webhook signature couldn't be cryptographically validated because secret or signature is missing. Processing transaction in sandbox-aligned fallback.");
+    // 1. Strictly verify the cryptographic signature
+    if (!secretKey || !signature) {
+      console.error("[Chargily Webhook] Unauthorized request. Signature or webhook secret is missing.");
+      return res.status(401).send('Unauthorized');
     }
+
+    const rawPayload = req.rawBody || JSON.stringify(req.body);
+    const computedSignature = crypto
+      .createHmac('sha256', secretKey)
+      .update(rawPayload)
+      .digest('hex');
+
+    const computedBuffer = Buffer.from(computedSignature, 'utf-8');
+    const signatureBuffer = Buffer.from(signature, 'utf-8');
+
+    if (computedBuffer.length !== signatureBuffer.length || !crypto.timingSafeEqual(computedBuffer, signatureBuffer)) {
+      console.error("[Chargily Webhook] Cryptographic signature check match failed. Request rejected.");
+      return res.status(401).send('Unauthorized');
+    }
+    console.log("[Chargily Webhook] Cryptographic signature matched successfully.");
 
     // 2. Process the payment confirmation event securely
     const payload = req.body;
@@ -54,8 +58,11 @@ router.post('/chargily', async (req: any, res) => {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         planType: planType,
+        subscriptionPlan: planType,
+        merchantId: userId,
         orderCounter: 0,
-        subscriptionUpdatedAt: serverTimestamp()
+        subscriptionUpdatedAt: serverTimestamp(),
+        lastBillingDate: new Date().toISOString()
       });
 
       const publicRef = doc(db, 'merchant_public_configs', userId);
