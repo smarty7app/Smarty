@@ -1,121 +1,121 @@
-# 📦 SmartyAI - منصة إدارة الطلبيات الذكية والتجارة الإلكترونية في الجزائر
+# 📦 SmartyAI - Smart Order Management & E-Commerce Platform in Algeria
 ### *THE LUXURY SUITE FOR ALGERIAN MERCHANTS & DROP-SHIPPERS*
 
-منصة **SmartyAI** هي نظام سحابي متكامل (Full-Stack App) مصمم خصيصاً لمرافقة وتمكين التجار والمسوقين الإلكترونيين في السوق الجزائرية. يجمع التطبيق بين قوة الذكاء الاصطناعي التوليدي عبر نماذج **Gemini** من Google في استخلاص الطلبيات فورياً، وبوابات الدفع الوطنية الرسمية لتفعيل الاشتراكات تلقائياً، والربط الاحترافي اللوجستي مع كبرى شركات التوصيل الجزائرية في واجهة استخدام أحادية وسلسة للغاية.
+**SmartyAI** is an integrated cloud-based system (Full-Stack App) specifically designed to accompany and empower e-commerce merchants and marketers in the Algerian market. The app combines the power of Google's **Gemini** generative AI models to extract orders instantly, official national payment gateways to automatically activate subscriptions, and professional logistics integrations with major Algerian delivery companies in a single, seamless user interface.
 
 ---
 
-## 🚀 الميزات التقنية والريادية الكبرى في المنصة
+## 🚀 Key Technical and Innovative Features
 
-### 1. تفكيك الطلبات الجوال عبر الذكاء الاصطناعي (Gemini SDK Wrapper)
-* **دعم المدخلات الفوضوية والمتعددة الوسائط (Multimodal Inputs)**: يمكن للتاجر لصق محادثة كاملة من فيسبوك ماسنجر أو واتساب، أو شحن لقطة شاشة لفاتورة (Image Checkout Receipt)، أو تسجيل صوتي (Vocal Note)، وسيتولى الذكاء الاصطناعي فرز وحفظ البيانات.
-* **التعامل الذكي مع اللوجستيات المحلية**: يتعرف النموذج فورياً على اسم المستلم الجزائري، ويقوم بنمذجة رقم الهاتف ونسبة شكوك جودته، مع تصنيف دقيق للولاية (Normalizing to French) ومطابقة البلديات (Communes)، وتحديد رغبة الزبون في التوصيل للمنزل (`home`) أو الاستلام من المكتب (`desk / bureau`).
-* **خوارزمية التراجع الذكي وتجنب التوقف (Model Fallback Strategy)**: في ملف `src/server/config.ts` طورنا المحرك `generateContentWithRetry` ليتنقل أوتوماتيكياً بين النماذج (`gemini-2.5-flash`, `gemini-3.5-flash`, `gemini-1.5-flash`, `gemini-2.5-pro`) مع ميزة التباطؤ الأسي المتضاعف (Exponential Backoff) لامتصاص الأخطاء اللحظية وحماية العمليات الحيوية للتاجر.
+### 1. Mobile Order Extraction via AI (Gemini SDK Wrapper)
+* **Support for Unstructured & Multimodal Inputs**: Merchants can paste an entire chat history from Facebook Messenger or WhatsApp, upload a screenshot of a receipt/invoice (Image Checkout Receipt), or send a vocal note. The AI will handle parsing, organizing, and saving the data.
+* **Smart Handling of Local Logistics**: The model instantly recognizes Algerian recipient names, standardizes phone numbers (evaluating their format quality), performs accurate Wilaya classification (mapping and normalizing Arabic/French names), matches Communes (municipalities), and identifies the customer's delivery preference—whether home delivery (`home`) or office pick-up (`desk / bureau`).
+* **Resilient Model Fallback Strategy**: Within `src/server/config.ts`, we developed the custom `generateContentWithRetry` engine to automatically cycle through Gemini models (`gemini-2.5-flash`, `gemini-3.5-flash`, `gemini-1.5-flash`, `gemini-2.5-pro`) using Exponential Backoff to absorb temporary API errors and safeguard vital merchant operations.
 
-### 2. منظومة المتاجر الرقمية المستقلة (Storefront Ecosystem)
-* **صفحات مبيعات مخصصة للعموم**: يحصل كل تاجر فورياً على مسار متجر رقمي خاص به (بالمسار `/store/:merchantId`) يعرض بضائعه المدرجة في المخازن بتصميم جذاب يراعي سرعة التحميل على الهواتف.
-* **سلة تسوق وعربة سريعة**: واجهة `StorefrontCart.tsx` و `PublicCheckoutForm.tsx` تتيح للمشتري النهائي اختيار المقاس، اللون، والكمية، مع حساب تلقائي وموثوق لمصاريف الشحن وتوفير ميزة تتبع المخزون اللحظية.
+### 2. Independent Digital Storefronts (Storefront Ecosystem)
+* **Custom Public Sales Pages**: Every merchant instantly gets a unique digital storefront path (`/store/:merchantId`) displaying their active inventory in an elegant, mobile-responsive layout designed for fast loading.
+* **Fast Checkout & Shopping Cart**: The `StorefrontCart.tsx` and `PublicCheckoutForm.tsx` interfaces allow buyers to choose the required size, color, and quantity, with auto-calculated shipping rates and real-time inventory tracking.
 
-### 3. بوابات الاشتراكات الرقمية والترقية الآلية (Chargily Pay V2)
-* **ربط فوري ومؤتمت**: ربط مباشر مع البوابة المالية الوطنية الأولى في الجزائر **Chargily Pay** لتنفيذ عمليات الدفع بواسطة البطاقة الذهبية لبريد الجزائر وبطاقة CIB البنكية.
-* **بيئة Sandbox تفاعلية**: عند غياب مفتاح التشفير السحابي يتم توجيه المشترك لبيئة دفع تجريبية آمنة في واجهة التطبيق لتجربة الترقية السلسة والمحاكاة الآمنة.
-* **نظام CCP والموافقة الإدارية**: يدعم التطبيق كذلك خيار الترقية التقليدية لرفع إيصال الحوالة البريدية (CCP) مع واجهة مخصصة للمطورين في لوحة المسؤول لتدقيق الصور وتسهيل تفعيل الحسابات يدوياً.
+### 3. Subscription Gateways & Automated Upgrades (Chargily Pay V2)
+* **Instant Automated Link**: Direct integration with Algeria's leading national payment gateway, **Chargily Pay**, facilitating seamless payments using Algeria Post's Edahabia card or CIB bank cards.
+* **Interactive Sandbox Environment**: If the cloud API key is missing or not configured, subscribers are intelligently guided to an integrated sandbox payment simulator within the UI for safe testing of the checkout experience.
+* **CCP & Administrative Approval**: The app also features a traditional subscription upgrade flow allowing users to upload postal transfer (CCP) receipts, coupled with a specialized dashboard for admin approval to inspect receipts and manually activate accounts.
 
-### 4. محرك الشحن الجزائري والاتصال بالناقلين (Courier Dispatch Engine)
-* **تغطية شاملة لأبرز شركات التوصيل**: تكامل ذكي وافتراضي يولد أرقام التتبع وبطاقات الشحن الرمزية (Thermal Waybills) فورياً لمختلف شركات الشحن المتداولة في السوق الوطنية:
+### 4. Algerian Shipping & Courier Dispatch Engine
+* **Comprehensive Coverage of Major Delivery Agencies**: Smooth virtual integration that instantly generates tracking numbers and customized thermal waybills for major Algerian shipping companies active in the market:
   * **Yalidine Express** • **ZR Express** • **Maystro Delivery** • **Ecotrack** • **Anderson Express** • **Procolis** • **Nord & Sud Express** • **Fastlo** • **Kazi Tour** • **Soudia Express** • **Colisliv**.
-* **مكافحة المرتجعات وتحليل المخاطر (Return Rate Analytics)**: نظام ذكي يحسب ويقيس كفاءة ونسب التسليم في الـ 58 ولاية جزائرية، مع إبراز تحذيرات حمراء للولايات التي تسجل نسب مرتفعة من الطرود غير المستلمة لحث التاجر على التأكيد الهاتفي قبل البعث.
+* **Anti-Return Analysis & Risk Mitigation (Return Rate Analytics)**: A smart system that calculates and measures delivery success rates across Algeria's 58 Wilayas, highlighting high-risk, high-return-rate Wilayas with red flags so merchants can call and verbally confirm the order before dispatch.
 
-### 5. رصد الشبكة، دروع الحماية ووحدة المراقبة (PWA & Watchdogs)
-* **دعم التصفح دون إنترنت (Offline Resilience)**: إدماج مكون `NetworkStatus.tsx` للتنبيه بجودة ونشاط الاتصال في أسواق الجملة أو المستودعات ضعيفة التغطية وحفظ التغييرات للمزامنة المعززة لاحقاً.
-* **دروع واقية لمستعرضات iFrame**: نظام رصد آمن (Redirection & Auth Watchdog) يتفادى القيود الصارمة لملفات الكوكيز داخل المعاينات المؤطرة في متصفحات المطورين، مع تقديم شريط تلميح ذكي لتوجيه التاجر لفتح التطبيق في نافذة حرة.
-* **قنوات الـ Webhooks والمعايرة الرقمية**: بوابات استقبال إشارات الدفع الرقمية مزودة بحسابات بصمة التشفير الآمنة (HMAC SHA-256) لمنع الاحتيال وضمان استقرار عمليات الدفع.
+### 5. Network Watchdogs, Security Shields & Monitoring (PWA & Watchdogs)
+* **Offline Resilience**: Integration of the `NetworkStatus.tsx` component to monitor network connectivity in wholesalers or low-coverage warehouses, buffering changes for reliable local/cloud synchronization later.
+* **iFrame Security Shields**: A built-in security checker (Redirection & Auth Watchdog) bypassing strict cookie restrictions within framed previews on developers' browsers, offering an intelligent tooltip that guides merchants to launch the application safely in a standalone window.
+* **Secure Webhooks with Signatures**: Direct digital payment verification hooks secured with modern cryptographic signatures (HMAC SHA-256) to prevent fraud and guarantee reliable payment confirmations.
 
 ---
 
-## 📂 هيكل بناء وتنظيم ملفات المشروع (Directory Architecture)
+## 📂 Directory Architecture
 
 ```text
 SmartyAI Workspace
-├── .env.example                       # المحتوى النموذجي للمتغيرات البيئية ومفاتيح الربط
-├── .gitignore                         # استبعاد الملفات الخاصة والمؤقتة وحزم المزامنة السحابية
-├── firebase-applet-config.json       # تفاصيل الاتصال النشط والتحقق بقاعدة بيانات Firebase
-├── firebase-applet-config.example.json# نموذج استرشادي لربط وإعداد قاعدة البيانات وحجرات Firestore
-├── firebase-blueprint.json            # المخطط والخرائط الهيكلية للجداول والمجموعات على Firebase
-├── firestore.rules                    # قواعد الصلاحيات والأمان الصارمة لحفظ خصوصية التاجر
-├── index.html                         # نقطة البناء والتحميل في المتصفح لواجهات React
-├── metadata.json                      # تصاريح وصلاحيات التطبيق المتوافقة مع سحابة AI Studio
-├── package.json                       # الحزم البرمجية وإعدادات ومخرجات البناء (React + Express)
-├── server.ts                          # خادم Express السحابي الرئيسي (الذكاء الاصطناعي، الشحن، وبوابات الدفع)
+├── .env.example                       # Template for environment variables and API keys
+├── .gitignore                         # List of ignored files for build artifacts and local configs
+├── firebase-applet-config.json       # Active verification config for Firebase connection
+├── firebase-applet-config.example.json# Reference template for database setup and Firestore collections
+├── firebase-blueprint.json            # Collections and rules layout schema for Firebase
+├── firestore.rules                    # Critical security and read/write permission rules for Firestore
+├── index.html                         # Entry browser loading template for React views
+├── metadata.json                      # Application permissions and settings for AI Studio
+├── package.json                       # Package scripts, dependencies, and build settings (React + Express)
+├── server.ts                          # Main Express cloud server entrypoint (AI, Shipping, Payments)
 │
-├── 📁 src/                            # التطبيق الأمامي والأكواد الوظيفية
-│   ├── main.tsx                       # نقطة الدخول وجسر الربط لـ React v19 / Vite v6
-│   ├── App.tsx                        # المكون القيادي الموجه للملاحة ومراقبة الجلسات وتأمين الـ iFrames
-│   ├── index.css                      # ملف الأنماط الموحد المدعم بتقنيات Tailwind CSS v4 الحديثة
-│   ├── types.ts                       # الهياكل القياسية للبيانات (الطلبيات، التاجر، الخطط، والمنتجات)
+├── 📁 src/                            # Font-end source code and UI logic
+│   ├── main.tsx                       # Initial mounting bridge for React v19 / Vite v6
+│   ├── App.tsx                        # Master router, iframe observer, session and auth supervisor
+│   ├── index.css                      # Global styled styles powered by Tailwind CSS v4
+│   ├── types.ts                       # Standard data structures (Orders, Merchants, Plans, Products)
 │   │
-│   ├── 📁 components/                 # وحدات الواجهة المقسمة والذكية (Modular UI)
-│   │   ├── LandingPage.tsx            # صفحة واجهة المنصة التفاعلية والترويجية بثلاث لغات
-│   │   ├── Sidebar.tsx                # القائمة الجانبية المرنة للتنقل الهادئ بين تبويبات الإدارة
-│   │   ├── Dashboard.tsx              # اللوحة التحليلية الرائعة مع الفرز المتشعب والمباشر لمستويات التوصيل
-│   │   ├── OrderInput.tsx             # ملصق المحادثات وموجه تفكيك البيانات بالذكاء الاصطناعي
-│   │   ├── OrderReview.tsx            # نافذة التدقيق اللطيفة والتأكيد الجغرافي الجزائري
-│   │   ├── WilayasList.tsx            # الدليل الجغرافي الشامل للـ 58 ولاية مع حاسبة الشحن الذكية
-│   │   ├── AdminDashboard.tsx         # واجهة تفعيل اشتراكات CCP للمسؤولين وحجم المبيعات
-│   │   ├── MerchantProducts.tsx       # لوحة إدارة وتحديث بضائع ومخزون التاجر وصور المنتجات
-│   │   ├── DynamicStorefront.tsx      # المتجر العام الموجه للعائلات والمشترين عبر الرابط
-│   │   ├── StorefrontCart.tsx         # عربة التسوق البسيطة وتجربة الدفع اللوجستية السريعة
-│   │   ├── Subscription.tsx           # بوابة الإشتراك الوطني والبطاقات الرقمية وتنزيل الإيصالات
-│   │   ├── FirebaseProvider.tsx       # مزود سياق وتوثيق الدخول الآمن وحماية بيانات Firestore
-│   │   ├── ErrorBoundary.tsx          # سياق احتواء وتخطي الأخطاء غير المتوقعة في الواجهات
-│   │   ├── Settings.tsx               # لوحة إعدادات التاجر، روابط حساباته، ومخازن الشحن
-│   │   ├── NetworkStatus.tsx          # شريط رصد نشاط وتغطية الإنترنت الفورية للمزامنة
-│   │   └── Notifications.tsx          # جرس الإشعارات وإدارة التنبيهات المباشرة للمبيعات الجديدة 
+│   ├── 📁 components/                 # Extracted and reusable modular interfaces (Modular UI)
+│   │   ├── LandingPage.tsx            # Multi-lingual interactive platform portal (AR / FR / EN)
+│   │   ├── Sidebar.tsx                # Flexible side-navigation drawer for admin screens
+│   │   ├── Dashboard.tsx              # Comprehensive analytic dashboard with live custom order filters
+│   │   ├── OrderInput.tsx             # Bulk message compiler and AI order parser interface
+│   │   ├── OrderReview.tsx            # Verification modal for address normalization & geolocation mapping
+│   │   ├── WilayasList.tsx            # Geological guide for Algeria's 58 Wilayas with shipping calculator
+│   │   ├── AdminDashboard.tsx         # Backend review for CCP upgrades, approvals, and transaction logs
+│   │   ├── MerchantProducts.tsx       # Live storefront inventory manager, products admin & images
+│   │   ├── DynamicStorefront.tsx      # Public-facing sales portal with unique sharing links
+│   │   ├── StorefrontCart.tsx         # Customer checkout flow with integrated shipping options
+│   │   ├── Subscription.tsx           # Premium subscription options, billing card UI, and invoice generator
+│   │   ├── FirebaseProvider.tsx       # Authorization contexts and state hooks for Firestore security
+│   │   ├── ErrorBoundary.tsx          # Wrapper preventing unexpected frontend failures from breaking the app
+│   │   ├── Settings.tsx               # Settings for APIs, credentials, social accounts, and default fees
+│   │   ├── NetworkStatus.tsx          # Real-time network detection line to maintain local state offline
+│   │   └── Notifications.tsx          # Alert indicators and logs of newly placed store orders
 │   │
-│   ├── 📁 lib/                        # المساعدات البرمجية والأدوات التحليلية
-│   │   ├── firebase.ts                # الاتصال الثنائي المتقدم وتجهيز خدمات السحابة والتحقق
-│   │   ├── notifications.ts           # وحدة صناعة وتوزيع التنبيهات الفورية لقاعدة البيانات
-│   │   ├── security.ts                # تشفير HMAC والتحقق الأمني لبوابات الدفع وقنوات Messenger
-│   │   └── translations.ts            # القاموس السلوكي واللوجستي الثلاثي للمنصة (AR / FR / EN)
+│   ├── 📁 lib/                        # Helpers and utilities
+│   │   ├── firebase.ts                # Cloud connection setups and authentication tools
+│   │   ├── notifications.ts           # Shared functions dispatching user alerts inside Firestore
+│   │   ├── security.ts                # HMAC signatures helper confirming payment requests and messenger payloads
+│   │   └── translations.ts            # Global dictionary for three system languages (AR / FR / EN)
 │   │
-│   └── 📁 server/                     # المنظومة الخلفية لإدارة الخادم (Sever-side Modules)
-│       ├── config.ts                  # تهيئة Firebase، تعريف الخطط، وإعداد معالج Gemini المرن
-│       └── 📁 routes/                 # المسارات الأساسية للتحكم بالذكاء، الشحن والمبيعات
-│           ├── ai.routes.ts           # مسارات تفكيك ومعالجة المحادثات والصور المتعددة اللغات
-│           ├── subscription.routes.ts # إدارة الجلسات الرقمية والـ Sandbox لبوابات Chargily Pay
-│           ├── shipping.routes.ts     # تسيير بوابات التوصيل وإنشاء أوراق الطبع اللحظية
-│           ├── store.routes.ts        # معالجة طلبات المشتري النهائي وحساب رسوم الشحن
-│           ├── inventory.routes.ts    # تسيير وحفظ صور البضائع والمنتجات
-│           └── 📁 webhooks/           # مسارات استقبال الإشارات والاتصال بالدول الخارجية
-│               ├── chargily.routes.ts # بوابات التحقق والتأكيد التلقائي المالي للاشتراكات بـ HMAC
-│               └── facebook.routes.ts # استقبال إشارات فيسبوك ماسنجر و Meta للتواصل المستمر
+│   └── 📁 server/                     # Backend components and server-side routes
+│       ├── config.ts                  # Firebase declarations, billing models, and Gemini backup strategies
+│       └── 📁 routes/                 # Core endpoints for AI, shipping, and storefront interactions
+│           ├── ai.routes.ts           # Multilingual message and image extraction endpoints
+│           ├── subscription.routes.ts # Subscription sessions, billing hooks, and simulated checkout routes
+│           ├── shipping.routes.ts     # Delivery engine interface and waybills dispatcher
+│           ├── store.routes.ts        # Direct-to-consumer store api and delivery calculations
+│           ├── inventory.routes.ts    # Secure media uploads and product resource endpoints
+│           └── 📁 webhooks/           # Integrations receiving callbacks from external networks
+│               ├── chargily.routes.ts # Webhook processing secure Chargily updates via HMAC verification
+│               └── facebook.routes.ts # Messenger platform message callbacks and webhooks
 ```
 
 ---
 
-## 🛠️ كيفية التشغيل وتثبيت المشروع محلياً (Run Guide)
+## 🛠️ Installation & Run Guide
 
-### 1. المتطلبات الأساسية وجلب الحزمة
-قم بتثبيت بيئة تشغيل **Node.js** (يفضل إصدار 18 فما فوق). تأكد من جلب الشيفرات المطلوبة ثم قم بتثبيت الحزم التابعة للمشروع:
+### 1. Prerequisites & Cloning
+Ensure you have **Node.js** installed (version 18 or higher is recommended). Install the required packages:
 ```bash
 npm install
 ```
 
-### 2. إعداد المتغيرات البيئية ومفاتيح الربط
-قم بإنشاء ملف `.env` في المجلد الرئيسي بناءً على الهيكل الموضح في `.env.example`:
+### 2. Environment Configurations
+Create a `.env` file in the root directory following the keys in `.env.example`:
 ```env
-# مفتاح الذكاء الاصطناعي السري للبحث وحفظ البيانات (سيرفر سايد)
+# Server-side Gemini AI key used to parse and extract data
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# سري بوابات الدفع الوطنية الجزائرية Chargily Pay V2
+# Chargily Pay V2 national checkout credentials
 CHARGILY_SECRET_KEY=your_chargily_secret_key_here
 CHARGILY_WEBHOOK_SECRET=your_chargily_webhook_signature_here
 ```
 
-### 3. إعداد وتهيئة خوادم قاعدة بيانات Firebase
-1. قم بإنشاء مشروع جديد عبر منصة [Firebase Console](https://console.firebase.google.com).
-2. قم بتفعيل قاعدة بيانات **Cloud Firestore** ونظام المصادقة **Firebase Authentication** (جوجل وبريد إلكتروني).
-3. قم بإنشاء تطبيق ويب (Web App) وانسخ بيانات إعداد المزامنة إلى ملف `firebase-applet-config.json` في المجلد الرئيسي للتطبيق:
+### 3. Set Up Firebase Infrastructure
+1. Create a new project in your [Firebase Console](https://console.firebase.google.com).
+2. Enable **Cloud Firestore** and **Firebase Authentication** (Google and Email providers).
+3. Register a Web App, then copy the configuration data into a file named `firebase-applet-config.json` at the project's root:
 ```json
 {
   "apiKey": "your_api_key",
@@ -128,14 +128,14 @@ CHARGILY_WEBHOOK_SECRET=your_chargily_webhook_signature_here
 }
 ```
 
-### 4. تشغيل خادم التطوير السريع لـ Express و Vite
-لتشغيل خادم التطوير المتكامل في المنفذ `3000`:
+### 4. Running the Fast Nest Dev Server (Express + Vite)
+To launch the unified development server on port `3000`:
 ```bash
 npm run dev
 ```
 
-### 5. بناء الحزمة الإنتاجية والتشغيل المثالي (Production Build)
-لبناء المشروع وتضمين نظام الواجهات والخلفية المجمعة عبر أداة `esbuild` في ملف مضغوط وحيد وسريع في الحاويات:
+### 5. Production Build & Execution
+To bundle the frontend resources and compile the Express server into a highly optimized, standalone `dist/server.cjs` file:
 ```bash
 npm run build
 npm start
@@ -143,36 +143,36 @@ npm start
 
 ---
 
-## 🌐 دليل ربط واستقبال المحادثات من منصات التواصل الاجتماعي (Social Webhooks API Integration Guide)
+## 🌐 Social Media Webhooks API Integration Guide
 
-من أجل تشغيل تفكيك الطلبيات الفوري بمجرد إرسال الزبون لرسالة على فيسبوك، إنستغرام أو واتساب، اتبع التوجيهات البرمجية التالية لوصل شبكات التواصل الاجتماعي بخادم **SmartyAI**:
+To process and extract customer orders automatically the moment a message lands in your Facebook Page, Instagram account, or WhatsApp Business dashboard, configure your webhooks to point to **SmartyAI**'s endpoints:
 
-### 📊 بوابات ومسارات الاستقبال المهيأة لخادم الـ Webhooks
+### 📊 Webhook Endpoint Routers
 
-| المنصة والشبكة | 🌐 واجهة الاتصال (API Endpoints) | البروتوكول المستهدف | مسارات التوجيه في `server.ts` |
+| Provider / Channel | 🌐 API Endpoint URL | Protocol | `server.ts` Controller |
 | :--- | :--- | :--- | :--- |
-| **فيسبوك ماسنجر** | Meta Messenger Platform API | HTTP POST / GET | `/api/webhooks/facebook` |
-| **إنستغرام دايركت** | Instagram Graph Messaging | Meta Webhooks Client | `/api/webhooks/facebook` |
-| **واتساب بيزنس** | Cloud WhatsApp API / Twilio | Express Request Payload | `/api/webhooks/facebook` |
-| **تبادل عام وشامل**| Unified CRM Multi-Channel API | Secure Custom Payload | `/api/webhooks/master` |
+| **Facebook Messenger** | Meta Messenger Platform API | HTTP POST / GET | `/api/webhooks/facebook` |
+| **Instagram Direct** | Instagram Graph Messaging | Meta Webhooks Client | `/api/webhooks/facebook` |
+| **WhatsApp Business** | Cloud WhatsApp API / Twilio | Express Request Payload | `/api/webhooks/facebook` |
+| **Unified Webhook**   | Unified CRM Multi-Channel API | Secure Custom Payload | `/api/webhooks/master` |
 
 ---
 
-### 🚀 خطوات تفصيلية لتأكيد الاتصال وتفعيل تفكيك رسائل الزبائن تلقائياً:
+### 🚀 Setup Steps to Enable Automated Order Parsing:
 
-1. **إعداد تطبيق للمطورين على Meta Developer Dashboard**:
-   * قم بالتوجه للموقع [developers.facebook.com](https://developers.facebook.com) والبدء في إنشاء تطبيق تجاري مخصص.
-   * أضف ميزة "Messenger" أو "Instagram" إلى باقة التطبيق.
-   * قم بتوليد مفتاح وصول الصفحة (Page Access Token) والاحتفاظ به في إعدادات المنصة.
+1. **Configure Meta Developer Dashboard**:
+   * Navigate to [developers.facebook.com](https://developers.facebook.com) and create a Business App type.
+   * Add the "Messenger" or "Instagram Graph API" product to your application.
+   * Generate a Page Access Token and save it in your platform configurations.
 
-2. **ضبط معايير التحقق الفوري (Verification Challenge)**:
-   * في لوحة تحويل إشارات Meta، أدخل رابط استقبال السيرفر الخاص بمتجرك:
+2. **Establish Verification Handshake (Verification Challenge)**:
+   * In your Meta Webhooks configuration page, input the callback endpoint:
      `https://your-domain.com/api/webhooks/facebook`
-   * أدخل رمز التحقق السري (Verify Token) والذي يتطابق مع القيمة الافتراضية في `server.ts` وهي `smarty_verification_token` (أو قم بكتابة متغير بيئي يحمل الاسم `FACEBOOK_VERIFY_TOKEN`).
-   * سيقوم خادم Express في السيرفر بالرد الفوري بتمرير الشفرة وتأكيد ربط القناة بنجاح في بضع ثوانٍ.
+   * Under "Verify Token", input the corresponding value defined in your server router: `smarty_verification_token` (or configure via the `FACEBOOK_VERIFY_TOKEN` env variable).
+   * The Express server will instantly verify the challenge handshake and successfully configure the webhook subscription in seconds.
 
-3. **نموذج استقبال وتدفق رسالة المحادثة بالـ JSON لإرسالها للتفكيك بالذكاء الاصطناعي**:
-عند استقبال رسالة من زبون، يرسل فيسبوك إشارة (Webhook Event). سيقوم خادمك الخلفي بالتقاط ملف الرسالة، إرساله فورياً إلى بوابة تفكيك الطلبات `/api/extract-order` لاسترجاع تفاصيل الشحنة ثم إدراجها بالكامل في Firestore وتنبيه التاجر بتوليد رنين إشعار المبيعات الفوري في بضع ثوانٍ حية!
+3. **Handling Chat Events via JSON Extraction**:
+   When a customer message is received, Meta will publish a webhook callback containing the raw chat input. The server picks up the payload, safely submits it to our `/api/extract-order` AI interface to build the order schema, saves it inside Firestore, and informs the merchant's dashboard with live visual and audio notifications.
 
 ---
-*SmartyAI • الخيار الأقوى والأذكى لتسريع ونمذجة تجارة التجزئة والتوصيل السريع في الـ 58 ولاية جزائرية.*
+*SmartyAI • The ultimate AI-powered ecosystem to skyrocket and modernize retail and delivery across Algeria's 58 Wilayas.*
