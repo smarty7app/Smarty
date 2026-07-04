@@ -175,4 +175,4 @@ To process and extract customer orders automatically the moment a message lands 
    When a customer message is received, Meta will publish a webhook callback containing the raw chat input. The server picks up the payload, safely submits it to our `/api/extract-order` AI interface to build the order schema, saves it inside Firestore, and informs the merchant's dashboard with live visual and audio notifications.
 
 ---
-*SmartyAI • The ultimate AI-powered ecosystem to skyrocket and modernize retail and delivery across Algeria's 58 Wilayas.*
+*SmartyAI • The ultimate AI-powered ecosystem to skyrocket and modernize retail and delivery across Algeria's 68 Wilayas.*
