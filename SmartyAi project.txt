@@ -1,0 +1,61 @@
+# 📦 SmartyAI - Smart Order Management Project Structure
+
+This file outlines the full organizational and architectural structure of the project, and the responsibility of each file within the system to facilitate ongoing development and maintenance in a real production environment, in both Arabic and English for collaboration coordination.
+
+```text
+SmartyAI Directory Structure
+├── 📁 src/                           # Main folder for frontend programming and code
+│   ├── 📄 main.tsx                   # Main entry point, setting up React 18 / Vite 6 environment
+│   ├── 📄 App.tsx                    # Main component controlling navigation, AI-powered text parsing, and session state management
+│   ├── 📄 index.css                  # Custom styles, gradients, and Tailwind CSS 4 integration with professional fonts
+│   ├── 📄 types.ts                   # Unified type definitions and data structures for orders, products, subscriptions, and users
+│   ├── 📄 vite-env.d.ts              # Type definitions for Vite build environment and environment variables
+│   │
+│   ├── 📁 components/                # Reusable UI components (Modular UI Setup)
+│   │   ├── 📄 LandingPage.tsx        # Landing page for visitors and partners with multi-language support
+│   │   ├── 📄 Sidebar.tsx            # Collapsible sidebar for navigation with smooth animations
+│   │   ├── 📄 Dashboard.tsx          # Interactive statistics dashboard with instant filtering and tracking of success metrics and delivery rates
+│   │   ├── 📄 OrderInput.tsx         # Interface for pasting conversations and triggering AI order parsing (Gemini SDK ⚡)
+│   │   ├── 📄 OrderReview.tsx        # Manual review form for recipient data, prices, products, and shipping details
+│   │   ├── 📄 WilayasList.tsx        # Geographic directory of Algeria's 58 provinces with phonetic sorting and sales geo-analysis
+│   │   ├── 📄 AdminDashboard.tsx     # Admin panel for developers and managers to monitor subscriptions, activate CCP payment plans, and overall sales
+│   │   ├── 📄 MerchantProducts.tsx   # Integrated inventory management interface for merchants to add, display, edit, and delete products and prices
+│   │   ├── 📄 ProductCard.tsx        # Elegant product card for displaying items in the merchant's digital storefront
+│   │   ├── 📄 ProductModal.tsx       # Popup modal for confirming product options and fast checkout
+│   │   ├── 📄 Storefront.tsx         # Public storefront interface to display merchant's products and allow direct ordering
+│   │   ├── 📄 StorefrontCart.tsx     # Customer shopping cart with purchase calculations and quick order placement
+│   │   ├── 📄 Subscription.tsx       # Subscription plan limits, upgrades, and payments via Chargily Pay V2 and CCP receipts
+│   │   ├── 📄 FirebaseProvider.tsx   # Context provider for authentication, Google login, user roles, and Firestore data synchronization
+│   │   ├── 📄 ErrorBoundary.tsx      # UI error boundary to handle unexpected errors and prevent app crashes
+│   │   ├── 📄 PublicCheckoutForm.tsx # Advanced public order form for buyers to fill shipping details and confirm orders
+│   │   ├── 📄 Settings.tsx           # Settings interface for managing security keys, matrix tokens, and social media channels
+│   │   ├── 📄 NetworkStatus.tsx      # Network status monitoring component to ensure connectivity and real-time cloud sync
+│   │   ├── 📄 Notifications.tsx      # Integrated notification bell system for alerts, new sales, and pending subscription reviews
+│   │   ├── 📄 PrivacyPolicy.tsx      # Privacy policy page covering data protection and user information handling
+│   │   ├── 📄 TermsConditions.tsx    # Terms and conditions for using the AI order parsing interface
+│   │   └── 📄 CommonUI.tsx           # Reusable UI components like buttons, cards, and custom metrics
+│   │
+│   └── 📁 lib/                       # Helper libraries, engines, and shared utilities
+│       ├── 📄 firebase.ts            # Firebase configuration and integration with dual-mode connection (ENV / Fallback JSON)
+│       ├── 📄 notifications.ts       # Library for sending and storing real-time notifications in Firestore for subscribers
+│       ├── 📄 security.ts            # Security utilities for HMAC (SHA-256) verification and secure webhook integration
+│       ├── 📄 translations.ts        # Unified trilingual translations (Arabic, French, English) with logistics terminology
+│       └── 📄 utils.ts               # Utility functions for merging classes, effects, and other helpers
+│
+│
+├── 📁 public/                        # Static public assets (icons, logos, images)
+├── 📄 server.ts                      # Express server for AI calls (Gemini SDK), authentication, shipping API management, and Chargily payments
+├── 📄 index.html                     # Browser entry point for React application
+├── 📄 metadata.json                  # App metadata and permissions, cloud invocation capabilities for AI Studio
+├── 📄 DEPLOY.md                      # Production deployment guide for Cloud Run containers
+├── 📄 firebase-blueprint.json        # Firestore data schema and collection structure
+├── 📄 firebase-applet-config.json   # Firebase app configuration details for auth and database connectivity
+├── 📄 firestore.rules                # Firestore security rules to protect user data
+├── 📄 package.json                   # List of dependencies and scripts for the system
+├── 📄 tsconfig.json                  # TypeScript compiler configuration for code safety and build
+├── 📄 vite.config.ts                 # Vite build tool configuration for fast development
+├── 📄 .env.example                   # Example environment variables for server setup, secrets, and Firebase keys
+├── 📄 .gitignore                     # Files excluded from version control
+├── 📄 copy-logo.js                   # Script to update and copy high-resolution platform logos
+├── 📄 manage_safepoint.ts            # Tool to create and track source code safepoints
+└── 📄 README.md                      # Platform manual, feature explanations, installation and usage steps with latest updates
