@@ -50,6 +50,10 @@ export interface Product {
   isPublished?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  sizes?: string;
+  colors?: string;
+  sizeLabel?: string;
+  colorLabel?: string;
 }
 
 export interface UserData {
