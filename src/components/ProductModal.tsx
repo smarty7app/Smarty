@@ -49,6 +49,14 @@ interface ProductModalProps {
   setIsPublished: (val: boolean) => void;
   isRtl: boolean;
   t: any;
+  sizes?: string;
+  setSizes?: (val: string) => void;
+  colors?: string;
+  setColors?: (val: string) => void;
+  sizeLabel?: string;
+  setSizeLabel?: (val: string) => void;
+  colorLabel?: string;
+  setColorLabel?: (val: string) => void;
 }
 
 export const ProductModal = React.memo(function ProductModal({
@@ -83,6 +91,14 @@ export const ProductModal = React.memo(function ProductModal({
   setIsPublished,
   isRtl,
   t,
+  sizes = "",
+  setSizes,
+  colors = "",
+  setColors,
+  sizeLabel = "",
+  setSizeLabel,
+  colorLabel = "",
+  setColorLabel,
 }: ProductModalProps) {
   const [showSuccessBadge, setShowSuccessBadge] = React.useState(false);
   const [aiText, setAiText] = React.useState("");
@@ -410,6 +426,83 @@ export const ProductModal = React.memo(function ProductModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* Custom Product Options Settings */}
+          <div className="space-y-3 bg-[#0d0d0d]/80 border border-zinc-900 p-4 rounded-2xl">
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+              <span className="text-xs font-bold text-indigo-350">
+                {isRtl ? "خيارات مخصصة للمنتج (مقاسات، أحجام، ألوان، روائح...)" : "Custom Product Options (Sizes, Colors, Volumes...)"}
+              </span>
+              <span className="text-[9px] bg-zinc-900 text-zinc-500 px-2 py-0.5 rounded border border-zinc-850">
+                {isRtl ? "اختياري" : "Optional"}
+              </span>
+            </div>
+            <p className="text-[10px] text-zinc-500 leading-relaxed text-left block">
+              {isRtl 
+                ? "اتركها فارغة لعدم تفعيلها، أو أدخل خيارات مفصولة بفاصلة لعرضها لزبائنك ليختاروا منها عند الشراء مباشرة."
+                : "Leave empty to hide, or define custom options for customers to select at checkout."}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Option 1 Label */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 block text-left">
+                  {isRtl ? "اسم الخيار الأول (مثال: المقاس، الحجم)" : "Option 1 Label (e.g. Size, Scent)"}
+                </label>
+                <input 
+                  type="text" 
+                  placeholder={isRtl ? "الحجم، القياس، السعة..." : "e.g. Size, Volume"}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  value={sizeLabel}
+                  onChange={(e) => setSizeLabel && setSizeLabel(e.target.value)}
+                />
+              </div>
+
+              {/* Option 1 Values */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 block text-left">
+                  {isRtl ? "القيم المتاحة (مفصولة بفاصلة)" : "Option 1 Values (comma separated)"}
+                </label>
+                <input 
+                  type="text" 
+                  placeholder={isRtl ? "S, M, L أو 50ml, 100ml" : "e.g. S, M, L or 50ml, 100ml"}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  value={sizes}
+                  onChange={(e) => setSizes && setSizes(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              {/* Option 2 Label */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 block text-left">
+                  {isRtl ? "اسم الخيار الثاني (مثال: اللون، الرائحة)" : "Option 2 Label (e.g. Color, Scent)"}
+                </label>
+                <input 
+                  type="text" 
+                  placeholder={isRtl ? "اللون، الرائحة، النوع..." : "e.g. Color, Scent"}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  value={colorLabel}
+                  onChange={(e) => setColorLabel && setColorLabel(e.target.value)}
+                />
+              </div>
+
+              {/* Option 2 Values */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 block text-left">
+                  {isRtl ? "القيم المتاحة (مفصولة بفاصلة)" : "Option 2 Values (comma separated)"}
+                </label>
+                <input 
+                  type="text" 
+                  placeholder={isRtl ? "أسود, أبيض أو عود, مسك" : "e.g. Black, White or Oud, Musk"}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  value={colors}
+                  onChange={(e) => setColors && setColors(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 

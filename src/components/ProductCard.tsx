@@ -146,7 +146,7 @@ export const ProductCard = React.memo(function ProductCard({
         <div className="pt-3 border-t border-zinc-900/60 flex items-center justify-between">
           <span className="text-emerald-400 font-extrabold text-sm">{product.price.toLocaleString()} {isRtl ? "دج" : "DA"}</span>
           
-          <div className="flex gap-1.5 opacity-0 translate-y-0.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+          <div className="flex gap-1.5 transition-all duration-300">
             {/* Direct storefront publish toggle */}
             <button 
               onClick={() => onTogglePublish?.(product)} 

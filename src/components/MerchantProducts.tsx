@@ -297,6 +297,12 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
   const [isDragging, setIsDragging] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
 
+  // Custom Product Options (Sizes, Colors, Labels)
+  const [sizes, setSizes] = useState("");
+  const [colors, setColors] = useState("");
+  const [sizeLabel, setSizeLabel] = useState("");
+  const [colorLabel, setColorLabel] = useState("");
+
   // Store Settings States
   const [activeTab, setActiveTab] = useState<"products" | "settings">("products");
   const [storeName, setStoreName] = useState("");
@@ -644,7 +650,11 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         userId: user.uid,
         isPublished: isPublished,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        sizes: sizes.trim(),
+        colors: colors.trim(),
+        sizeLabel: sizeLabel.trim(),
+        colorLabel: colorLabel.trim()
       });
 
       setShowAddModal(false);
@@ -697,7 +707,11 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         sku: generatedSku,
         imageUrl: finalImg || "",
         isPublished: isPublished,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        sizes: sizes.trim(),
+        colors: colors.trim(),
+        sizeLabel: sizeLabel.trim(),
+        colorLabel: colorLabel.trim()
       });
 
       setEditingProduct(null);
@@ -824,6 +838,10 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     setImageUrl(p.imageUrl || "");
     setImageFileBase64(null);
     setIsPublished(!!p.isPublished);
+    setSizes(p.sizes || "");
+    setColors(p.colors || "");
+    setSizeLabel(p.sizeLabel || "");
+    setColorLabel(p.colorLabel || "");
   };
 
   const resetForm = () => {
@@ -836,6 +854,10 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
     setImageUrl("");
     setImageFileBase64(null);
     setIsPublished(false);
+    setSizes("");
+    setColors("");
+    setSizeLabel("");
+    setColorLabel("");
   };
 
   // Categories lookup
@@ -1677,10 +1699,18 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                       </div>
 
                       {/* Manual Quick Modulation support */}
-                      <div className="pt-2 flex justify-end gap-1 select-none">
+                      <div className="pt-2 flex justify-between items-center select-none border-t border-zinc-950/40">
+                        <button 
+                          onClick={() => openEditModal(p)}
+                          className="flex items-center gap-1 px-2.5 py-1 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-850 cursor-pointer transition-all"
+                          title={isRtl ? "تعديل المنتج" : "Edit product"}
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isRtl ? "تعديل" : "Edit"}</span>
+                        </button>
                         <button 
                           onClick={() => updateStockLevel(p.id!, p.stockQuantity + 5)}
-                          className="px-2 py-0.5 bg-zinc-850 hover:bg-zinc-800 text-[8px] font-bold tracking-widest text-zinc-400 hover:text-white rounded border border-zinc-800 cursor-pointer"
+                          className="px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-800 cursor-pointer transition-all"
                         >
                           +5 Stock
                         </button>
@@ -1741,19 +1771,29 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                       </div>
 
                       {/* Quick Adjust triggers */}
-                      <div className="pt-2 flex justify-between items-center gap-1 select-none">
+                      <div className="pt-2 flex justify-between items-center select-none border-t border-zinc-950/40">
                         <button 
-                          onClick={() => updateStockLevel(p.id!, Math.max(0, p.stockQuantity - 5))}
-                          className="px-2 py-0.5 bg-zinc-850 hover:bg-zinc-800 text-[8px] font-bold tracking-widest text-zinc-500 hover:text-white rounded border border-zinc-800 cursor-pointer"
+                          onClick={() => openEditModal(p)}
+                          className="flex items-center gap-1 px-2.5 py-1 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-850 cursor-pointer transition-all"
+                          title={isRtl ? "تعديل المنتج" : "Edit product"}
                         >
-                          -5 Stock
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isRtl ? "تعديل" : "Edit"}</span>
                         </button>
-                        <button 
-                          onClick={() => updateStockLevel(p.id!, p.stockQuantity + 5)}
-                          className="px-2 py-0.5 bg-zinc-850 hover:bg-zinc-800 text-[8px] font-bold tracking-widest text-zinc-500 hover:text-white rounded border border-zinc-800 cursor-pointer"
-                        >
-                          +5 Stock
-                        </button>
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => updateStockLevel(p.id!, Math.max(0, p.stockQuantity - 5))}
+                            className="px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-800 cursor-pointer transition-all"
+                          >
+                            -5
+                          </button>
+                          <button 
+                            onClick={() => updateStockLevel(p.id!, p.stockQuantity + 5)}
+                            className="px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-800 cursor-pointer transition-all"
+                          >
+                            +5
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1811,19 +1851,29 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
                       </div>
 
                       {/* Manual adjust for drag actions falling back to buttons */}
-                      <div className="pt-2 flex justify-between items-center gap-1 select-none">
+                      <div className="pt-2 flex justify-between items-center select-none border-t border-zinc-950/40">
                         <button 
-                          onClick={() => updateStockLevel(p.id!, Math.max(0, p.stockQuantity - 5))}
-                          className="px-2 py-0.5 bg-zinc-850 hover:bg-zinc-800 text-[8px] font-bold tracking-widest text-zinc-500 hover:text-white rounded border border-zinc-800 cursor-pointer"
+                          onClick={() => openEditModal(p)}
+                          className="flex items-center gap-1 px-2.5 py-1 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-850 cursor-pointer transition-all"
+                          title={isRtl ? "تعديل المنتج" : "Edit product"}
                         >
-                          -5 Stock
+                          <Edit3 className="w-3 h-3" />
+                          <span>{isRtl ? "تعديل" : "Edit"}</span>
                         </button>
-                        <button 
-                          onClick={() => updateStockLevel(p.id!, p.stockQuantity + 5)}
-                          className="px-2 py-0.5 bg-zinc-850 hover:bg-zinc-800 text-[8px] font-bold tracking-widest text-zinc-500 hover:text-white rounded border border-zinc-800 cursor-pointer"
-                        >
-                          +5 Stock
-                        </button>
+                        <div className="flex gap-1">
+                          <button 
+                            onClick={() => updateStockLevel(p.id!, Math.max(0, p.stockQuantity - 5))}
+                            className="px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-800 cursor-pointer transition-all"
+                          >
+                            -5
+                          </button>
+                          <button 
+                            onClick={() => updateStockLevel(p.id!, p.stockQuantity + 5)}
+                            className="px-2 py-1 bg-zinc-850 hover:bg-zinc-800 text-[10px] font-bold text-zinc-400 hover:text-white rounded-xl border border-zinc-800 cursor-pointer transition-all"
+                          >
+                            +5
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1893,6 +1943,14 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
             setIsPublished={setIsPublished}
             isRtl={isRtl}
             t={t}
+            sizes={sizes}
+            setSizes={setSizes}
+            colors={colors}
+            setColors={setColors}
+            sizeLabel={sizeLabel}
+            setSizeLabel={setSizeLabel}
+            colorLabel={colorLabel}
+            setColorLabel={setColorLabel}
           />
         )}
       </AnimatePresence>

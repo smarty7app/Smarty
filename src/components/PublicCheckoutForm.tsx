@@ -243,6 +243,80 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
     loadStoreCatalog();
   }, [merchantId, selectedCategory, searchQuery, currentPage]);
 
+  // Dynamic parsing of product options to accommodate perfumes, electronics, clothes, and other items
+  const getProductOptions = (prod: any) => {
+    let sizeList: string[] = [];
+    let colorList: string[] = [];
+
+    // Parse custom sizes/options if specified by merchant
+    if (prod.sizes) {
+      if (Array.isArray(prod.sizes)) {
+        sizeList = prod.sizes.filter(Boolean);
+      } else if (typeof prod.sizes === "string" && prod.sizes.trim() !== "") {
+        sizeList = prod.sizes.split(",").map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
+    // Parse custom colors/options if specified by merchant
+    if (prod.colors) {
+      if (Array.isArray(prod.colors)) {
+        colorList = prod.colors.filter(Boolean);
+      } else if (typeof prod.colors === "string" && prod.colors.trim() !== "") {
+        colorList = prod.colors.split(",").map((c: string) => c.trim()).filter(Boolean);
+      }
+    }
+
+    const nameLower = (prod.productName || "").toLowerCase();
+    const catLower = (prod.category || "").toLowerCase();
+
+    // Smart contextual categorisation for intelligent fallbacks
+    const isClothing = 
+      nameLower.includes("ملابس") || nameLower.includes("ألبسة") || nameLower.includes("قميص") || 
+      nameLower.includes("سروال") || nameLower.includes("عباية") || nameLower.includes("فستان") || 
+      nameLower.includes("t-shirt") || nameLower.includes("shirt") || nameLower.includes("pants") || 
+      nameLower.includes("dress") || nameLower.includes("clothing") || nameLower.includes("veste") || 
+      nameLower.includes("معطف") || nameLower.includes("جاكيت") || nameLower.includes("abaya") ||
+      catLower.includes("ملابس") || catLower.includes("clothing") || catLower.includes("abaya") || catLower.includes("ألبسة");
+
+    const isShoes = 
+      nameLower.includes("حذاء") || nameLower.includes("أحذية") || nameLower.includes("shoes") || 
+      nameLower.includes("sneakers") || nameLower.includes("talon") || nameLower.includes("كعب") || 
+      nameLower.includes("بوط") || nameLower.includes("chaussure") ||
+      catLower.includes("أحذية") || catLower.includes("shoes") || catLower.includes("chaussures");
+
+    // Default lists ONLY if we determine it's clothing or shoes, OR if the category is general
+    if (sizeList.length === 0) {
+      if (isClothing) {
+        sizeList = ["S", "M", "L", "XL", "XXL"];
+      } else if (isShoes) {
+        sizeList = ["38", "39", "40", "41", "42", "43"];
+      }
+    }
+
+    if (colorList.length === 0) {
+      if (isClothing || isShoes || nameLower.includes("ماكياج") || nameLower.includes("تجميل") || catLower.includes("makeup") || catLower.includes("cosmetics")) {
+        colorList = isRtl 
+          ? ["أسود", "أبيض", "أحمر", "أزرق", "رمادي", "بني", "ذهبي"] 
+          : lang === "fr" 
+            ? ["Noir", "Blanc", "Rouge", "Bleu", "Gris", "Marron", "Doré"] 
+            : ["Black", "White", "Red", "Blue", "Gray", "Brown", "Gold"];
+      }
+    }
+
+    // Dynamic label translation / custom selection headers
+    const sizeLabel = prod.sizeLabel?.trim() || (isRtl ? "المقاس" : lang === "fr" ? "Taille" : "Size");
+    const colorLabel = prod.colorLabel?.trim() || (isRtl ? "اللون" : lang === "fr" ? "Couleur" : "Color");
+
+    return {
+      sizes: sizeList,
+      colors: colorList,
+      sizeLabel,
+      colorLabel,
+      hasSizes: sizeList.length > 0,
+      hasColors: colorList.length > 0
+    };
+  };
+
   const handleOpenProduct = (prod: any) => {
     setSelectedProduct(prod);
     setTempQty(1);
@@ -478,90 +552,94 @@ export default function PublicCheckoutForm({ merchantId }: PublicCheckoutFormPro
                 </div>
 
                 {/* Custom Options config */}
-                <div className="space-y-4 py-1">
-                  {/* Option: Size Selection */}
-                  <div className="space-y-2">
-                    <label className="block text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{t.label_select_size}</label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {["S", "M", "L", "XL", "XXL", "38", "39", "40", "41", "42", "43"].map(sz => (
-                        <button
-                          key={sz}
-                          type="button"
-                          onClick={() => setTempSize(sz)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all border cursor-pointer ${
-                            tempSize === sz 
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
-                              : "bg-slate-50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-900"
-                          }`}
-                        >
-                          {sz}
-                        </button>
-                      ))}
-                    </div>
-                    <input 
-                      type="text" 
-                      placeholder={t.placeholder_custom_size}
-                      value={tempSize}
-                      onChange={(e) => setTempSize(e.target.value)}
-                      className="w-full mt-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-750 outline-none focus:border-slate-350 dark:focus:border-zinc-800 transition-colors"
-                    />
-                  </div>
+                {(() => {
+                  const prodOptions = getProductOptions(selectedProduct);
+                  return (
+                    <div className="space-y-4 py-1">
+                      {/* Option: Size Selection */}
+                      {prodOptions.hasSizes && (
+                        <div className="space-y-2">
+                          <label className="block text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{prodOptions.sizeLabel}</label>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {prodOptions.sizes.map(sz => (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => setTempSize(sz)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all border cursor-pointer ${
+                                  tempSize === sz 
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
+                                    : "bg-slate-50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-900"
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            ))}
+                          </div>
+                          <input 
+                            type="text" 
+                            placeholder={t.placeholder_custom_size}
+                            value={tempSize}
+                            onChange={(e) => setTempSize(e.target.value)}
+                            className="w-full mt-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-750 outline-none focus:border-slate-350 dark:focus:border-zinc-800 transition-colors"
+                          />
+                        </div>
+                      )}
 
-                  {/* Option: Color Selection */}
-                  <div className="space-y-2 pt-1">
-                    <label className="block text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{t.label_select_color}</label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {(isRtl 
-                        ? ["أسود", "أبيض", "أحمر", "أزرق", "رمادي", "بني", "ذهبي"] 
-                        : lang === "fr" 
-                          ? ["Noir", "Blanc", "Rouge", "Bleu", "Gris", "Marron", "Doré"] 
-                          : ["Black", "White", "Red", "Blue", "Gray", "Brown", "Gold"]
-                      ).map(col => (
-                        <button
-                          key={col}
-                          type="button"
-                          onClick={() => setTempColor(col)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                            tempColor === col 
-                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
-                              : "bg-slate-50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-105 dark:hover:bg-zinc-900"
-                          }`}
-                        >
-                          {col}
-                        </button>
-                      ))}
-                    </div>
-                    <input 
-                      type="text" 
-                      placeholder={t.placeholder_custom_color}
-                      value={tempColor}
-                      onChange={(e) => setTempColor(e.target.value)}
-                      className="w-full mt-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-750 outline-none focus:border-slate-350 dark:focus:border-zinc-800 transition-colors"
-                    />
-                  </div>
+                      {/* Option: Color Selection */}
+                      {prodOptions.hasColors && (
+                        <div className="space-y-2 pt-1">
+                          <label className="block text-[10px] text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{prodOptions.colorLabel}</label>
+                          <div className="flex gap-1.5 flex-wrap">
+                            {prodOptions.colors.map(col => (
+                              <button
+                                key={col}
+                                type="button"
+                                onClick={() => setTempColor(col)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                                  tempColor === col 
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/50 shadow-sm shadow-emerald-500/5" 
+                                    : "bg-slate-50 dark:bg-zinc-900/30 border-slate-200 dark:border-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-105 dark:hover:bg-zinc-900"
+                                }`}
+                              >
+                                {col}
+                              </button>
+                            ))}
+                          </div>
+                          <input 
+                            type="text" 
+                            placeholder={t.placeholder_custom_color}
+                            value={tempColor}
+                            onChange={(e) => setTempColor(e.target.value)}
+                            className="w-full mt-2 bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-900 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-750 outline-none focus:border-slate-350 dark:focus:border-zinc-800 transition-colors"
+                          />
+                        </div>
+                      )}
 
-                  {/* Option: Quantity Selectors */}
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-900 select-none">
-                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-405">{t.label_quantity_requested}</span>
-                    <div className="flex items-center bg-slate-100/80 dark:bg-zinc-900/60 rounded-xl border border-slate-200 dark:border-zinc-850 p-1 gap-1 leading-none">
-                      <button 
-                        type="button"
-                        onClick={() => setTempQty(prev => Math.max(1, prev - 1))}
-                        className="w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="text-xs font-mono font-bold w-10 text-center text-slate-800 dark:text-zinc-200">{tempQty}</span>
-                      <button 
-                        type="button"
-                        onClick={() => setTempQty(prev => prev + 1)}
-                        className="w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+                      {/* Option: Quantity Selectors */}
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-900 select-none">
+                        <span className="text-xs font-bold text-slate-500 dark:text-zinc-405">{t.label_quantity_requested}</span>
+                        <div className="flex items-center bg-slate-100/80 dark:bg-zinc-900/60 rounded-xl border border-slate-200 dark:border-zinc-850 p-1 gap-1 leading-none">
+                          <button 
+                            type="button"
+                            onClick={() => setTempQty(prev => Math.max(1, prev - 1))}
+                            className="w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="text-xs font-mono font-bold w-10 text-center text-slate-800 dark:text-zinc-200">{tempQty}</span>
+                          <button 
+                            type="button"
+                            onClick={() => setTempQty(prev => prev + 1)}
+                            className="w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* Confirm control - Sleek Radiant Emerald Dynamic Button */}
                 <button
