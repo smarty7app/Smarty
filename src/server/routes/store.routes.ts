@@ -75,7 +75,7 @@ router.get('/store/:merchantId/products', async (req, res) => {
     let allProducts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
-    }));
+    })).filter((p: any) => p.isPublished === true);
 
     // Memory filter to avoid index dependencies on Firebase
     if (category && category !== 'all' && category !== 'undefined') {

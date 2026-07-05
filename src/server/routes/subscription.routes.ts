@@ -22,9 +22,30 @@ function isKeyPlaceholder(key?: string): boolean {
 
 // Resilient site URL helper to bypass proxy or header stripping on Cloud Run
 function getSiteUrl(req: any): string {
-  const envUrl = process.env.APP_URL || process.env.VITE_APP_URL;
+  let envUrl = process.env.APP_URL || process.env.VITE_APP_URL;
   if (envUrl && envUrl.trim() !== "" && !envUrl.includes("MY_APP_URL")) {
-    return envUrl.trim().replace(/\/$/, "");
+    envUrl = envUrl.trim().replace(/\/$/, "");
+    if (!envUrl.startsWith("http://") && !envUrl.startsWith("https://")) {
+      envUrl = `https://${envUrl}`;
+    }
+    return envUrl;
+  }
+
+  // Fallback to origin header if available
+  const origin = req.headers.origin;
+  if (origin && origin.startsWith("http")) {
+    return origin.replace(/\/$/, "");
+  }
+
+  // Fallback to referer header if available
+  const referer = req.headers.referer;
+  if (referer && referer.startsWith("http")) {
+    try {
+      const parsedUrl = new URL(referer);
+      return `${parsedUrl.protocol}//${parsedUrl.host}`;
+    } catch (e) {
+      // ignore parsing errors and proceed
+    }
   }
 
   const host = req.headers.host || 'localhost:3000';
@@ -41,7 +62,11 @@ function getSiteUrl(req: any): string {
     protocol = 'https';
   }
   
-  return `${protocol}://${host}`;
+  let result = `${protocol}://${host}`;
+  if (!result.startsWith("http://") && !result.startsWith("https://")) {
+    result = `https://${result}`;
+  }
+  return result;
 }
 
 // 1. Create Checkout Session Route (Real Chargily integration + Mock Sandbox Fallback)
