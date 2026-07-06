@@ -103,3 +103,34 @@ export interface WebhookPayload {
   platformUserId: string;
   timestamp: number;
 }
+
+export interface MerchantConnections {
+  id?: string; // merchantId as the document ID
+  facebook?: {
+    pageId: string;
+    accessToken: string;
+    pageName: string;
+    connectedAt: string;
+  };
+  instagram?: {
+    businessId: string;
+    accessToken: string;
+    connectedAt: string;
+  };
+  whatsapp?: {
+    phoneNumberId: string;
+    accessToken: string;
+    connectedAt: string;
+  };
+}
+
+export interface IncomingMessage {
+  id?: string; // autoId as the document ID
+  merchantId: string;
+  senderId: string;
+  platform: "facebook" | "instagram" | "whatsapp";
+  text: string;
+  status: "pending" | "processed" | "failed";
+  createdAt: any; // ISO string or serverTimestamp
+}
+
