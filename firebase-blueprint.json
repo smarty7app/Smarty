@@ -51,6 +51,52 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "merchantId", "customerName", "customerPhone", "wilaya", "status"]
+    },
+    "MerchantConnections": {
+      "title": "Merchant Connections",
+      "description": "Integration configurations for merchant social channels",
+      "type": "object",
+      "properties": {
+        "facebook": {
+          "type": "object",
+          "properties": {
+            "pageId": { "type": "string" },
+            "accessToken": { "type": "string" },
+            "pageName": { "type": "string" },
+            "connectedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "instagram": {
+          "type": "object",
+          "properties": {
+            "businessId": { "type": "string" },
+            "accessToken": { "type": "string" },
+            "connectedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "whatsapp": {
+          "type": "object",
+          "properties": {
+            "phoneNumberId": { "type": "string" },
+            "accessToken": { "type": "string" },
+            "connectedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    },
+    "IncomingMessage": {
+      "title": "Incoming Message",
+      "description": "An incoming conversational message from a connected platform",
+      "type": "object",
+      "properties": {
+        "merchantId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "platform": { "type": "string", "enum": ["facebook", "instagram", "whatsapp"] },
+        "text": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "processed", "failed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["merchantId", "senderId", "platform", "text", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -65,6 +111,14 @@
     "/orders/{orderId}": {
       "schema": "Order",
       "description": "Customer orders"
+    },
+    "/merchant_connections/{merchantId}": {
+      "schema": "MerchantConnections",
+      "description": "Social media channel connection details per merchant"
+    },
+    "/incoming_messages/{autoId}": {
+      "schema": "IncomingMessage",
+      "description": "Stored conversation log streams for order processing and smart replies"
     }
   }
 }

@@ -11,6 +11,9 @@ SmartyAI Directory Structure
 │   ├── 📄 types.ts                   # Unified type definitions and data structures for orders, products, subscriptions, and users
 │   ├── 📄 vite-env.d.ts              # Type definitions for Vite build environment and environment variables
 │   │
+│   ├── 📁 context/                   # Context providers for global state management
+│   │   └── 📄 ThemeContext.tsx       # Dynamic light/dark theme toggle and client aesthetic preferences provider
+│   │
 │   ├── 📁 components/                # Reusable UI components (Modular UI Setup)
 │   │   ├── 📄 LandingPage.tsx        # Landing page for visitors and partners with multi-language support
 │   │   ├── 📄 Sidebar.tsx            # Collapsible sidebar for navigation with smooth animations
@@ -19,8 +22,8 @@ SmartyAI Directory Structure
 │   │   ├── 📄 OrderReview.tsx        # Manual review form for recipient data, prices, products, and shipping details
 │   │   ├── 📄 WilayasList.tsx        # Geographic directory of Algeria's 58 provinces with phonetic sorting and sales geo-analysis
 │   │   ├── 📄 AdminDashboard.tsx     # Admin panel for developers and managers to monitor subscriptions, activate CCP payment plans, and overall sales
-│   │   ├── 📄 MerchantProducts.tsx   # Integrated inventory management interface for merchants to add, display, edit, and delete products and prices
-│   │   ├── 📄 ProductCard.tsx        # Elegant product card for displaying items in the merchant's digital storefront
+│   │   ├── 📄 MerchantProducts.tsx   # Integrated inventory management interface for merchants to add, display, edit (including Kanban), and delete products
+│   │   ├── 📄 ProductCard.tsx        # Elegant product card with visible publishing toggles for instant storefront curation
 │   │   ├── 📄 ProductModal.tsx       # Popup modal for confirming product options and fast checkout
 │   │   ├── 📄 Storefront.tsx         # Public storefront interface to display merchant's products and allow direct ordering
 │   │   ├── 📄 StorefrontCart.tsx     # Customer shopping cart with purchase calculations and quick order placement
@@ -35,16 +38,27 @@ SmartyAI Directory Structure
 │   │   ├── 📄 TermsConditions.tsx    # Terms and conditions for using the AI order parsing interface
 │   │   └── 📄 CommonUI.tsx           # Reusable UI components like buttons, cards, and custom metrics
 │   │
-│   └── 📁 lib/                       # Helper libraries, engines, and shared utilities
-│       ├── 📄 firebase.ts            # Firebase configuration and integration with dual-mode connection (ENV / Fallback JSON)
-│       ├── 📄 notifications.ts       # Library for sending and storing real-time notifications in Firestore for subscribers
-│       ├── 📄 security.ts            # Security utilities for HMAC (SHA-256) verification and secure webhook integration
-│       ├── 📄 translations.ts        # Unified trilingual translations (Arabic, French, English) with logistics terminology
-│       └── 📄 utils.ts               # Utility functions for merging classes, effects, and other helpers
-│
+│   ├── 📁 lib/                       # Helper libraries, engines, and shared utilities
+│   │   ├── 📄 firebase.ts            # Firebase configuration and integration with dual-mode connection (ENV / Fallback JSON)
+│   │   ├── 📄 notifications.ts       # Library for sending and storing real-time notifications in Firestore for subscribers
+│   │   ├── 📄 security.ts            # Security utilities for HMAC (SHA-256) verification and secure webhook integration
+│   │   ├── 📄 translations.ts        # Unified trilingual translations (Arabic, French, English) with logistics terminology
+│   │   └── 📄 utils.ts               # Utility functions for merging classes, effects, and other helpers
+│   │
+│   └── 📁 server/                    # Server-side business logic and endpoint configurations
+│       ├── 📄 config.ts              # Environmental settings, API configuration credentials, and external endpoints
+│       └── 📁 routes/                # Modular Express routing controllers
+│           ├── 📄 ai.routes.ts       # Intelligent NLP and conversation parsing endpoints using Google GenAI SDK
+│           ├── 📄 inventory.routes.ts # Backend operations for custom stock levels and inventory metrics
+│           ├── 📄 shipping.routes.ts # Algeria national delivery matrix integrations and shipping costs
+│           ├── 📄 store.routes.ts    # Secure public storefront API enforcing strict publication filters (`isPublished === true`)
+│           ├── 📄 subscription.routes.ts # Subscription checkout generation (Chargily) and plan limit gatekeeper
+│           └── 📁 webhooks/          # Real-time third-party automated feedback loops
+│               ├── 📄 chargily.routes.ts # Webhook listener for processing automated subscription activations
+│               └── 📄 facebook.routes.ts # Webhook listener for managing conversational platform triggers
 │
 ├── 📁 public/                        # Static public assets (icons, logos, images)
-├── 📄 server.ts                      # Express server for AI calls (Gemini SDK), authentication, shipping API management, and Chargily payments
+├── 📄 server.ts                      # Core Express server bootstrap (integrates routes, handles CORS, and injects Vite dev/prod middleware)
 ├── 📄 index.html                     # Browser entry point for React application
 ├── 📄 metadata.json                  # App metadata and permissions, cloud invocation capabilities for AI Studio
 ├── 📄 DEPLOY.md                      # Production deployment guide for Cloud Run containers

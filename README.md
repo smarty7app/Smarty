@@ -15,6 +15,10 @@
 ### 2. Independent Digital Storefronts (Storefront Ecosystem)
 * **Custom Public Sales Pages**: Every merchant instantly gets a unique digital storefront path (`/store/:merchantId`) displaying their active inventory in an elegant, mobile-responsive layout designed for fast loading.
 * **Fast Checkout & Shopping Cart**: The `StorefrontCart.tsx` and `PublicCheckoutForm.tsx` interfaces allow buyers to choose the required size, color, and quantity, with auto-calculated shipping rates and real-time inventory tracking.
+* **Dynamic Custom Product Options**: Support for custom, merchant-defined options (such as custom sizes, colors, capacities, or fragrances) directly mapped from the inventory settings to the checkout page, with adaptive, smart fallbacks for clothing, shoes, cosmetics, and perfumes.
+* **Strict Warehouse Isolation (Unpublished by Default)**: Newly added products default to secure "Warehouse Only" storage (unpublished status) to prevent premature storefront exposure. Back-end APIs strictly enforce visibility filtering, serving only active catalog items (`isPublished: true`) to storefront consumers.
+* **Direct Curation & Publishing Controls**: Re-engineered visual publishing triggers with always-visible toggles on product grids, enabling seamless, single-tap item synchronization between the private warehouse and the public storefront.
+* **Universal Edit Modals**: Ubiquitous "Edit Product" actions accessible across all admin layouts—including Modern Grid cards, Structured Tables, and Interactive Kanban columns.
 
 ### 3. Subscription Gateways & Automated Upgrades (Chargily Pay V2)
 * **Instant Automated Link**: Direct integration with Algeria's leading national payment gateway, **Chargily Pay**, facilitating seamless payments using Algeria Post's Edahabia card or CIB bank cards.
@@ -175,4 +179,4 @@ To process and extract customer orders automatically the moment a message lands 
    When a customer message is received, Meta will publish a webhook callback containing the raw chat input. The server picks up the payload, safely submits it to our `/api/extract-order` AI interface to build the order schema, saves it inside Firestore, and informs the merchant's dashboard with live visual and audio notifications.
 
 ---
-*SmartyAI • The ultimate AI-powered ecosystem to skyrocket and modernize retail and delivery across Algeria's 68 Wilayas.*
+*SmartyAI • The ultimate AI-powered ecosystem to skyrocket and modernize retail and delivery across Algeria's 58 Wilayas.*
