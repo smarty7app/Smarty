@@ -1919,7 +1919,7 @@ export default function LandingPage({
               {/* Close Button */}
               <button 
                 onClick={() => setShowGuide(false)} 
-                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white`}
+                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2028,7 +2028,7 @@ export default function LandingPage({
             >
               <button 
                 onClick={() => setShowAboutModal(false)} 
-                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white`}
+                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2086,16 +2086,16 @@ export default function LandingPage({
             >
               <button 
                 onClick={() => setShowComplianceModal(false)} 
-                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white`}
+                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" dir="ltr">
                 <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-500 shrink-0">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <div>
+                <div className="text-left select-none">
                   <h3 className="text-xl font-bold tracking-tight text-white">{t.compliance_modal_title || "Compliance & Standards"}</h3>
                   <p className="text-[10px] text-zinc-550 text-zinc-505 font-mono mt-0.5">Secure National Integration</p>
                 </div>
@@ -2137,16 +2137,16 @@ export default function LandingPage({
                 onClick={() => {
                   setShowSupportModal(false);
                 }} 
-                className={`absolute top-6 ${isRtl ? 'left-6' : 'right-6'} p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-455 hover:text-white`}
+                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-455 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" dir="ltr">
                 <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shrink-0">
                   <Cpu className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="text-left select-none">
                   <h3 className="text-xl font-bold tracking-tight text-white">{t.support_title || "Technical Support"}</h3>
                   <p className="text-[10px] text-zinc-550 text-zinc-505 font-mono mt-0.5">24/7 Developer Helpdesk Bureau</p>
                 </div>
