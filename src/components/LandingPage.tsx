@@ -5,7 +5,7 @@ import {
   Brain, ArrowRight, Lock, AlertCircle, Terminal, Smartphone, Search, Database, 
   Facebook, Instagram, Send, MessageCircle,
   HelpCircle, ShieldCheck, RefreshCw, FileText, ShoppingBag, CreditCard, Package,
-  Image, Paperclip, Sun, Moon
+  Image, Paperclip, Sun, Moon, Bot, MapPin
 } from "lucide-react";
 import { Logo, FeatureCard } from "./CommonUI";
 import { Language } from "../lib/translations";
@@ -1784,7 +1784,7 @@ export default function LandingPage({
                     <button 
                       key={l.code} 
                       onClick={() => setLang(l.code as any)} 
-                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none ${lang === l.code ? 'bg-white dark:bg-white text-slate-900 dark:text-black shadow-md' : 'text-slate-500 dark:text-zinc-505 hover:text-slate-800 dark:hover:text-zinc-350'}`}
+                      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none ${lang === l.code ? 'bg-white dark:bg-white text-slate-900 dark:text-black shadow-md' : 'text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-300'}`}
                     >
                       {l.label}
                     </button>
@@ -1792,7 +1792,7 @@ export default function LandingPage({
                 </div>
               </div>
 
-              <div className="pt-3 text-xs text-slate-500 dark:text-zinc-505">
+              <div className="pt-3 text-xs text-slate-500 dark:text-zinc-500">
                 {t.contact_support_prefix || "Contact & Support: "}
                 <a href="mailto:smarty@smartyai.net" className="text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-all font-mono font-medium">smarty@smartyai.net</a>
               </div>
@@ -1879,7 +1879,7 @@ export default function LandingPage({
                       <li key={lIdx}>
                         <button
                           onClick={link.action}
-                          className="text-slate-600 dark:text-zinc-405 hover:text-slate-900 dark:hover:text-white transition-colors text-xs cursor-pointer text-start flex items-start justify-start w-full gap-1 p-0.5"
+                          className="text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors text-xs cursor-pointer text-start flex items-start justify-start w-full gap-1 p-0.5"
                         >
                           <span className="whitespace-normal break-words text-start leading-relaxed">{link.label}</span>
                         </button>
@@ -1913,13 +1913,13 @@ export default function LandingPage({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-6 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              className="bg-white dark:bg-[#0e1321] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] p-6 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-800 dark:text-zinc-200"
               dir={isRtl ? "rtl" : "ltr"}
             >
               {/* Close Button */}
               <button 
                 onClick={() => setShowGuide(false)} 
-                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
+                className="absolute top-6 right-6 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1929,8 +1929,8 @@ export default function LandingPage({
                   <Download className="w-5 h-5 select-none" />
                 </div>
                 <div className="text-left select-none">
-                  <h3 className="text-xl font-bold tracking-tight text-white select-none">{t.pwa_install_guide}</h3>
-                  <p className="text-[10px] text-zinc-505 font-mono mt-0.5 select-none" dir="ltr">
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white select-none">{t.pwa_install_guide}</h3>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 select-none" dir="ltr">
                     Smarty<span className="inline-block bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent font-extrabold select-none">Ai</span> <span className="text-[8px] opacity-80 uppercase font-bold select-none">Order</span> Premium App
                   </p>
                 </div>
@@ -1938,12 +1938,12 @@ export default function LandingPage({
 
               <div className="space-y-4">
                 {/* Method 1: Safari / iOS */}
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
+                <div className="bg-zinc-50 dark:bg-white/[0.02] border border-zinc-100 dark:border-white/5 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
-                    <span className="text-xs font-bold px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded border border-purple-500/10">iOS</span>
-                    <h4 className="text-sm font-bold text-zinc-200">Apple Safari</h4>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-purple-600/20 text-purple-600 dark:text-purple-400 rounded border border-purple-500/10">iOS</span>
+                    <h4 className="text-sm font-black text-black dark:text-white">Apple Safari</h4>
                   </div>
-                  <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                  <ol className="list-decimal list-inside text-xs text-black dark:text-zinc-100 font-medium space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
                     <li>
                       {lang === "ar" 
                         ? "اضغط على أيقونة المشاركة في متصفح سفاري (أيقونة المربع مع السهم للأعلى)." 
@@ -1969,12 +1969,12 @@ export default function LandingPage({
                 </div>
 
                 {/* Method 2: Android / Chrome / Edge */}
-                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3">
+                <div className="bg-zinc-50 dark:bg-white/[0.02] border border-zinc-100 dark:border-white/5 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center gap-2" dir={isRtl ? "rtl" : "ltr"}>
-                    <span className="text-xs font-bold px-2 py-0.5 bg-yellow-500/20 text-yellow-500 rounded border border-yellow-500/10">Android / PC</span>
-                    <h4 className="text-sm font-bold text-zinc-200">Google Chrome & Edge</h4>
+                    <span className="text-xs font-bold px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded border border-amber-500/10">Android / PC</span>
+                    <h4 className="text-sm font-black text-black dark:text-white">Google Chrome & Edge</h4>
                   </div>
-                  <ol className="list-decimal list-inside text-xs text-zinc-405 space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
+                  <ol className="list-decimal list-inside text-xs text-black dark:text-zinc-100 font-medium space-y-2 leading-relaxed" dir={isRtl ? "rtl" : "ltr"}>
                     <li>
                       {lang === "ar" 
                         ? "اضغط على أيقونة الخيارات (النقاط الثلاث) في أعلى أو أسفل المتصفح." 
@@ -2000,14 +2000,14 @@ export default function LandingPage({
                 </div>
               </div>
 
-              <div className="pt-2 flex justify-between items-center text-xs text-zinc-505" dir={isRtl ? "rtl" : "ltr"}>
+              <div className="pt-2 flex justify-between items-center text-xs text-zinc-600 dark:text-zinc-300" dir={isRtl ? "rtl" : "ltr"}>
                 <div className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-zinc-650 shrink-0" />
-                  <span className="text-[11px] text-zinc-550 text-zinc-505">{t.pwa_lightweight || "Very lightweight, fast, no updates required"}</span>
+                  <Info className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                  <span className="text-[11px] text-zinc-700 dark:text-zinc-200 font-medium">{t.pwa_lightweight || "Very lightweight, fast, no updates required"}</span>
                 </div>
                 <button 
                   onClick={() => setShowGuide(false)}
-                  className="px-4 py-2 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all text-zinc-350 font-bold cursor-pointer"
+                  className="px-4 py-2 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-all text-black dark:text-zinc-200 font-extrabold cursor-pointer"
                 >
                   {t.got_it_btn || "Got it"}
                 </button>
@@ -2023,12 +2023,12 @@ export default function LandingPage({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              className="bg-white dark:bg-[#0e1321] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] p-8 max-w-2xl w-full relative space-y-6 shadow-2xl text-zinc-800 dark:text-zinc-200 overflow-y-auto max-h-[90vh]"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <button 
                 onClick={() => setShowAboutModal(false)} 
-                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-700 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
+                className="absolute top-6 right-6 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-202 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2038,34 +2038,216 @@ export default function LandingPage({
                   <Logo className="w-full h-full rounded-full select-none" />
                 </div>
                 <div className="text-left select-none">
-                  <h3 className="text-xl font-bold tracking-tight text-white select-none">
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white select-none">
                     {lang === "ar" ? "عن المؤسسة" : lang === "fr" ? "À Propos de l'Entreprise" : "About the Company"}
                   </h3>
-                  <p className="text-[10px] text-zinc-505 font-mono mt-0.5 select-none" dir="ltr">SmartyAi Algerian Tech</p>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5 select-none" dir="ltr">SmartyAi Algerian Tech</p>
                 </div>
               </div>
 
-              <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-zinc-300 font-medium">
-                <p>
-                  {lang === "ar"
-                    ? "SmartyAi هي مؤسسة جزائرية رائدة متخصصة في تطوير حلول الذكاء الاصطناعي المبتكرة لقطاع التجارة الإلكترونية والخدمات اللوجستية في الجزائر. تهدف المؤسسة إلى تمكين التجار الجزائريين من أتمتة عملياتهم، خفض التكاليف التشغيلية، ومزامنة بيانات الشحنات بكفاءة تامة تتماشى مع معايير السوق المحلية."
-                    : lang === "fr"
-                      ? "SmartyAi est une entreprise algérienne de premier plan spécialisée dans le développement de solutions d'intelligence artificielle innovantes pour le secteur du commerce électronique et de la logistique en Algérie. L'entreprise vise à permettre aux commerçants algériens d'automatiser leurs opérations, de réduire leurs coûts opérationnels et de synchroniser les données d'expédition avec une efficacité totale conforme aux normes du marché local."
-                      : "SmartyAi is a leading Algerian enterprise specializing in the development of innovative Artificial Intelligence solutions for the e-commerce and logistics sector in Algeria. The company aims to empower Algerian merchants by automating their operations, reducing operational costs, and synchronizing shipment data with absolute efficiency that aligns with local market standards."}
-                </p>
-                <p className="text-zinc-410">
-                  {lang === "ar"
-                    ? "تأسست لحل مشاكل تجميع العناوين يدوياً وتوحيد الفهرسة الجغرافية لمختلف دوائر وبلديات الجزائر الـ 68."
-                    : lang === "fr"
-                      ? "Elle a été fondée pour résoudre les problèmes de collecte manuelle des adresses et d'unification de l'indexation géographique parmi les différentes communes et daïras des 68 wilayas d'Algérie."
-                      : "It was founded to solve manual address normalization challenges and consolidate geographical indexing across all districts and municipalities of the 68 Algerian wilayas."}
-                </p>
+              <div className="space-y-5 text-xs sm:text-sm leading-relaxed text-zinc-900 dark:text-zinc-100 font-medium">
+                {lang === "ar" ? (
+                  <>
+                    <p className="text-black dark:text-white font-bold text-sm">
+                      SmartyAi هي مؤسسة تكنولوجية جزائرية رائدة متخصصة في هندسة وتطوير حلول الذكاء الاصطناعي والأنظمة اللوجستية المتقدمة لقطاع التجارة الإلكترونية وسلاسل الإمداد في الجزائر. تهدف المؤسسة إلى تمكين وتحديث عمليات التجار والمؤسسات الجزائرية عبر توفير منظومة رقمية متكاملة تضمن أتمتة معالجة الطلبات، خفض النفقات التشغيلية، ومزامنة بيانات الشحنات بدقة متناهية تتوافق بالكامل مع خصوصية ومتطلبات السوق الوطنية.
+                    </p>
+                    <p className="text-black dark:text-zinc-100">
+                      لقد تأسست SmartyAi لمعالجة وحل إشكالات التجارة الرقمية التقليدية وتوحيد الفهرسة الجغرافية لمختلف دوائر وبلديات الجزائر الـ 68 بشكل جذري. وتشمل أبرز ميزات المنصة المتكاملة ما يلي:
+                    </p>
+                    <ul className="space-y-3.5 pl-0 pr-4 list-none text-black dark:text-zinc-100 border-r-2 border-sky-500/30">
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Bot className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">الاستخراج الذكي للطلبات بالذكاء الاصطناعي (AI Parser):</strong>{" "}
+                          قراءة وتحليل نصوص ومحادثات منصات التواصل الاجتماعي (Facebook, Instagram, WhatsApp) واستخلاص بيانات العميل (الاسم، الهاتف، الولاية، البلدية) وتدوينها تلقائياً بدقة متناهية في ثانيتين فقط.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <MapPin className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">الفهرسة الجغرافية الموحدة لـ 68 ولاية:</strong>{" "}
+                          حل شامل لمشكلة صياغة وتجميع العناوين والمسميات المحلية عبر ربط وتوحيد قاعدة البيانات الجغرافية بجميع بلديات ودوائر الجزائر الـ 68، وتحديد تسعيرة التوصيل المناسبة تلقائياً.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <ShoppingBag className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">المتاجر الرقمية المتكاملة (Storefront):</strong>{" "}
+                          تزويد كل تاجر بمتجر إلكتروني عام واحترافي يتيح للزبائن تصفح المنتجات وشراء الخيارات المختلفة لترسل الطلبات فورياً للوحة تحكم التاجر.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <CreditCard className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">الدفع الإلكتروني الوطني الآمن (Chargily Pay):</strong>{" "}
+                          دمج بوابات الدفع الإلكتروني بالبطاقة الذهبية وبطاقات CIB لتسهيل الدفع الفوري الآمن مع تفعيل فوري ومتابعة حالة الدفع والاشتراكات بشكل ذكي.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Smartphone className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">تطبيق الويب التقدمي (PWA):</strong>{" "}
+                          تطبيق فائق الخفة والسرعة يعمل على الهواتف والأجهزة اللوحية والمكتبية لتمكين التجار وفريق العمل من تسيير المنتجات، الطلبات والمخزون بسلاسة كاملة من صالات العرض والمستودعات.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Truck className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">المزامنة اللوجستية مع رواد التوصيل:</strong>{" "}
+                          تكامل مدمج لتسهيل حجز وتأكيد الشحنات مع إصدار ملصقات الشحن والباركود الرسمي بالتعاون مع رواد الخدمات اللوجستية في الجزائر (Yalidine, ZR, Maystro, Ecotrack).
+                        </div>
+                      </li>
+                    </ul>
+                  </>
+                ) : lang === "fr" ? (
+                  <>
+                    <p className="text-black dark:text-white font-bold text-sm">
+                      SmartyAi est une entreprise technologique algérienne de premier plan spécialisée dans l'ingénierie et le développement de solutions d'intelligence artificielle et de systèmes logistiques avancés pour le secteur du e-commerce et de la supply chain en Algérie. Notre mission est de moderniser les opérations des commerçants algériens en fournissant une plateforme numérique intégrée qui automatise le traitement des commandes, réduit les coûts opérationnels et synchronise les données d'expédition avec une précision optimale.
+                    </p>
+                    <p className="text-black dark:text-zinc-100">
+                      SmartyAi a été fondée pour résoudre les défis fondamentaux du commerce traditionnel et normaliser l'indexation géographique des 68 wilayas d'Algérie grâce à des modules performants :
+                    </p>
+                    <ul className="space-y-3.5 pl-4 list-none text-black dark:text-zinc-100 border-l-2 border-sky-500/30">
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Bot className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Extracteur Intelligent IA (AI Parser) :</strong>{" "}
+                          Analyse instantanée des conversations et des textes bruts issus de Messenger, Instagram et WhatsApp pour extraire automatiquement les informations clients (nom, téléphone, wilaya, commune) en moins de 2 secondes.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <MapPin className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Normalisation Géographique des 68 Wilayas :</strong>{" "}
+                          Base de données unifiée intégrant toutes les communes et daïras d'Algérie pour corriger les fautes de frappe et calculer automatiquement les tarifs de livraison.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <ShoppingBag className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Boutique E-Commerce Publique (Storefront) :</strong>{" "}
+                          Une vitrine en ligne dédiée permettant aux clients de commander directement les produits avec leurs variantes, synchronisant les colis en temps réel vers votre tableau de bord.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <CreditCard className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Paiement Électronique Sécurisé (Chargily Pay) :</strong>{" "}
+                          Intégration fluide de la carte Edahabia et des cartes CIB pour sécuriser et automatiser les règlements de vos clients et la gestion des abonnements.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Smartphone className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Application Web Progressive (PWA) :</strong>{" "}
+                          Application ultra-légère et réactive pour smartphones et PC permettant aux équipes de gérer les stocks et de préparer les commandes directement depuis l'entrepôt.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Truck className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Intégration Logistique Intégrée :</strong>{" "}
+                          Génération de bordereaux d'expédition officiels et suivi en direct avec les leaders de la livraison en Algérie (Yalidine, ZR, Maystro, Ecotrack).
+                        </div>
+                      </li>
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-black dark:text-white font-bold text-sm">
+                      SmartyAi is a premier Algerian technology enterprise specializing in engineering and developing innovative Artificial Intelligence solutions and advanced logistical frameworks for the e-commerce and supply chain sectors in Algeria. The company aims to empower Algerian merchants by providing an integrated digital ecosystem that automates order processing, reduces operational overhead, and synchronizes shipment data with absolute precision tailored to the local market standards.
+                    </p>
+                    <p className="text-black dark:text-zinc-100">
+                      SmartyAi was established to eliminate traditional workflow bottlenecks and standardize geographical indexing across the 68 Algerian wilayas through advanced features:
+                    </p>
+                    <ul className="space-y-3.5 pl-4 list-none text-black dark:text-zinc-100 border-l-2 border-sky-500/30">
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Bot className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">AI-Powered Order Extraction (AI Parser):</strong>{" "}
+                          Instantly parses raw chat logs from Facebook Messenger, Instagram, and WhatsApp to extract structured buyer info (name, phone, state, municipality) in under 2 seconds.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <MapPin className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Unified Geographical Indexing for 68 Wilayas:</strong>{" "}
+                          Standardizes regional addresses across all districts and municipalities of the 68 Algerian states, automatically matching dialects and mapping dynamic courier fees.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <ShoppingBag className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Public E-Commerce Storefront:</strong>{" "}
+                          Equips merchants with a professional storefront where customers can browse, select variants, and order, instantly funneling shipments to the seller's console.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <CreditCard className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Secured National e-Payment (Chargily Pay):</strong>{" "}
+                          Native integration for Edahabia and CIB card transactions, facilitating automated immediate payments and subscription billing.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Smartphone className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Progressive Web App (PWA) Client:</strong>{" "}
+                          An ultra-lightweight, responsive app layout for mobile and desktop, enabling frictionless on-the-go inventory control and warehouse parcel fulfillment.
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <span className="text-sky-500 dark:text-sky-400 shrink-0 mt-1">
+                          <Truck className="w-4 h-4" />
+                        </span>
+                        <div className="leading-relaxed">
+                          <strong className="text-sky-600 dark:text-sky-400 font-bold">Native Courier Sync & Labeling:</strong>{" "}
+                          Direct connectivity with leading Algerian logistics services (Yalidine, ZR, Maystro, Ecotrack) to print official shipping labels, track parcels, and prevent overselling.
+                        </div>
+                      </li>
+                    </ul>
+                  </>
+                )}
               </div>
 
               <div className="pt-2 flex justify-end">
                 <button 
                   onClick={() => setShowAboutModal(false)}
-                  className="px-6 py-2.5 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-707 transition-all text-zinc-350 font-bold cursor-pointer"
+                  className="px-6 py-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-all text-zinc-700 dark:text-zinc-300 font-bold cursor-pointer"
                 >
                   {t.got_it_btn || "Got it"}
                 </button>
@@ -2081,27 +2263,27 @@ export default function LandingPage({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              className="bg-white dark:bg-[#0e1321] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-800 dark:text-zinc-200"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <button 
                 onClick={() => setShowComplianceModal(false)} 
-                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-450 hover:text-white"
+                className="absolute top-6 right-6 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-707 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex items-center gap-3" dir="ltr">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-red-500 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-red-505 shrink-0">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div className="text-left select-none">
-                  <h3 className="text-xl font-bold tracking-tight text-white">{t.compliance_modal_title || "Compliance & Standards"}</h3>
-                  <p className="text-[10px] text-zinc-550 text-zinc-505 font-mono mt-0.5">Secure National Integration</p>
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">{t.compliance_modal_title || "Compliance & Standards"}</h3>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">Secure National Integration</p>
                 </div>
               </div>
 
-              <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-zinc-300 font-medium font-sans">
+              <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 font-medium font-sans">
                 <p>
                   {lang === 'ar' 
                     ? "نلتزم في SmartyAi بالامتثال الكامل للتشريعات والقوانين الوطنية للتجارة الإلكترونية وحماية المعطيات ذات الطابع الشخصي في الجمهورية الجزائرية الديمقراطية الشعبية. نضمن تأمين وحفظ بيانات عملائكم، وتقديم بروتوكولات آمنة بالكامل للربط مع المنصات الشريكة وشركات التوصيل المعتمدة."
@@ -2114,7 +2296,7 @@ export default function LandingPage({
               <div className="pt-2 flex justify-end">
                 <button 
                   onClick={() => setShowComplianceModal(false)}
-                  className="px-6 py-2.5 bg-zinc-900 border border-zinc-850 rounded-xl hover:bg-zinc-800 hover:text-white hover:border-zinc-707 transition-all text-zinc-350 font-bold cursor-pointer"
+                  className="px-6 py-2.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-300 dark:hover:border-zinc-700 transition-all text-zinc-700 dark:text-zinc-300 font-bold cursor-pointer"
                 >
                   {t.got_it_btn || "Got it"}
                 </button>
@@ -2130,29 +2312,29 @@ export default function LandingPage({
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-[#0e1321] border border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-200"
+              className="bg-white dark:bg-[#0e1321] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] p-8 max-w-lg w-full relative space-y-6 shadow-2xl text-zinc-800 dark:text-zinc-200"
               dir={isRtl ? "rtl" : "ltr"}
             >
               <button 
                 onClick={() => {
                   setShowSupportModal(false);
                 }} 
-                className="absolute top-6 right-6 p-1.5 bg-zinc-900 border border-zinc-805 hover:border-zinc-708 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-455 hover:text-white"
+                className="absolute top-6 right-6 p-1.5 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-all cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="flex items-center gap-3" dir="ltr">
-                <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-blue-400 shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-blue-500 dark:text-blue-400 shrink-0">
                   <Cpu className="w-5 h-5" />
                 </div>
                 <div className="text-left select-none">
-                  <h3 className="text-xl font-bold tracking-tight text-white">{t.support_title || "Technical Support"}</h3>
-                  <p className="text-[10px] text-zinc-550 text-zinc-505 font-mono mt-0.5">24/7 Developer Helpdesk Bureau</p>
+                  <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">{t.support_title || "Technical Support"}</h3>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">24/7 Developer Helpdesk Bureau</p>
                 </div>
               </div>
 
-              <div className="space-y-4 text-xs leading-relaxed text-zinc-300 font-medium">
+              <div className="space-y-4 text-xs leading-relaxed text-zinc-600 dark:text-zinc-300 font-medium">
                 <p dir={isRtl ? "rtl" : "ltr"} className="text-right sm:text-start">
                   {lang === 'ar' 
                     ? "فريق الدعم المخصص في خدمتكم للإجابة على جميع الاستفسارات وحل المشاكل التقنية."
