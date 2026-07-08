@@ -20,8 +20,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 
-             request.auth.token.email_verified == true && (
+      return isSignedIn() && (
                request.auth.token.email == "12benabdallah@gmail.com" || 
                request.auth.token.email == "17benabdallah@gmail.com" || 
                request.auth.token.email == "smarty7.app@gmail.com"
@@ -61,7 +60,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow get: if isOwner(uid) || isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData(request.auth.uid).parentMerchantId == uid);
+      allow get, list: if isOwner(uid) || isAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData(request.auth.uid).parentMerchantId == uid);
       allow create: if isOwner(uid) && isValidUser(incoming()) && (
         (incoming().role == 'merchant') ||
         (incoming().role in ['manager', 'support', 'warehouse'] && 
