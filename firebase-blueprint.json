@@ -2,19 +2,32 @@
   "entities": {
     "UserProfile": {
       "title": "User Profile",
-      "description": "Information about the merchant or admin",
+      "description": "Information about the merchant, sub-user, or admin",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
         "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["merchant", "admin"] },
+        "role": { "type": "string", "enum": ["merchant", "admin", "manager", "support", "warehouse"] },
+        "parentMerchantId": { "type": "string" },
         "subscriptionPlan": { "type": "string", "enum": ["free", "pro", "elite"] },
         "subscriptionStatus": { "type": "string", "enum": ["active", "expired", "canceled"] },
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role", "subscriptionPlan", "subscriptionStatus"]
+      "required": ["uid", "email", "role"]
+    },
+    "TeamMember": {
+      "title": "Team Member",
+      "description": "Team member registration record linking an email to a merchant owner with a specific role",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "role": { "type": "string", "enum": ["manager", "support", "warehouse"] },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "ownerId", "role"]
     },
     "Product": {
       "title": "Product",
@@ -104,7 +117,7 @@
       "schema": "UserProfile",
       "description": "User profile data"
     },
-    "/products/{productId}": {
+    "/inventory/{itemId}": {
       "schema": "Product",
       "description": "Products available for sale"
     },
@@ -119,6 +132,10 @@
     "/incoming_messages/{autoId}": {
       "schema": "IncomingMessage",
       "description": "Stored conversation log streams for order processing and smart replies"
+    },
+    "/team_members/{email}": {
+      "schema": "TeamMember",
+      "description": "Team members registered by merchant owners"
     }
   }
 }
