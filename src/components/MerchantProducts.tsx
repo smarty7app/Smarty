@@ -261,6 +261,7 @@ const PRODUCT_LIMITS: Record<string, number> = {
 };
 
 export default function MerchantProducts({ user, userData, t, isRtl }: MerchantProductsProps) {
+  const isWarehouse = userData?.role === "warehouse";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -985,7 +986,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
         </div>
         
         <div className="flex items-center gap-2 self-start md:self-auto">
-          {selectedProductIds.length > 0 && (
+          {selectedProductIds.length > 0 && !isWarehouse && (
             <button 
               onClick={() => setIsBulkDeleteConfirm(true)}
               className="px-3 py-2 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
@@ -1005,43 +1006,47 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
             {isRtl ? "تصدير CSV" : "Export CSV"}
           </button>
 
-          <button 
-            onClick={() => { setShowAddModal(true); }}
-            className="bg-white hover:bg-zinc-100 text-black px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer font-black"
-          >
-            <Plus className="w-4 h-4" />
-            {isRtl ? "إضافة منتج جديد" : "Add New Product"}
-          </button>
+          {!isWarehouse && (
+            <button 
+              onClick={() => { setShowAddModal(true); }}
+              className="bg-white hover:bg-zinc-100 text-black px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer font-black"
+            >
+              <Plus className="w-4 h-4" />
+              {isRtl ? "إضافة منتج جديد" : "Add New Product"}
+            </button>
+          )}
         </div>
       </div>
 
       {/* Segmented Switcher for Products vs Store Settings */}
-      <div className="flex bg-slate-100/80 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md shadow-md dark:shadow-2xl transition-all">
-        <button
-          type="button"
-          onClick={() => setActiveTab("products")}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeTab === "products"
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
-              : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
-          }`}
-        >
-          <Package className="w-4 h-4" />
-          {isRtl ? "المستودع وقائمة السلع" : "Warehouse & Products"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("settings")}
-          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-            activeTab === "settings"
-              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
-              : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
-          }`}
-        >
-          <Store className="w-4 h-4" />
-          {isRtl ? "إعدادات المتجر" : "Store Settings"}
-        </button>
-      </div>
+      {!isWarehouse && (
+        <div className="flex bg-slate-100/80 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-900 p-1.5 rounded-2xl w-full max-w-md backdrop-blur-md shadow-md dark:shadow-2xl transition-all">
+          <button
+            type="button"
+            onClick={() => setActiveTab("products")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === "products"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
+                : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
+            }`}
+          >
+            <Package className="w-4 h-4" />
+            {isRtl ? "المستودع وقائمة السلع" : "Warehouse & Products"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              activeTab === "settings"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-600/15 font-semibold"
+                : "text-slate-500 dark:text-zinc-500 hover:text-slate-900 dark:hover:text-zinc-300 hover:bg-slate-200/50 dark:hover:bg-white/[0.02]"
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            {isRtl ? "إعدادات المتجر" : "Store Settings"}
+          </button>
+        </div>
+      )}
 
       {activeTab === "settings" ? (
         <motion.div
@@ -1897,6 +1902,7 @@ export default function MerchantProducts({ user, userData, t, isRtl }: MerchantP
       <AnimatePresence>
         {(showAddModal || editingProduct !== null) && (
           <ProductModal
+            isWarehouse={isWarehouse}
             showAddModal={showAddModal}
             editingProduct={editingProduct}
             onClose={() => {

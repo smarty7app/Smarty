@@ -57,6 +57,7 @@ interface ProductModalProps {
   setSizeLabel?: (val: string) => void;
   colorLabel?: string;
   setColorLabel?: (val: string) => void;
+  isWarehouse?: boolean;
 }
 
 export const ProductModal = React.memo(function ProductModal({
@@ -99,6 +100,7 @@ export const ProductModal = React.memo(function ProductModal({
   setSizeLabel,
   colorLabel = "",
   setColorLabel,
+  isWarehouse = false,
 }: ProductModalProps) {
   const [showSuccessBadge, setShowSuccessBadge] = React.useState(false);
   const [aiText, setAiText] = React.useState("");
@@ -210,128 +212,131 @@ export const ProductModal = React.memo(function ProductModal({
         <form onSubmit={onSubmit} className="space-y-4">
 
           {/* AI ASSIST PANEL */}
-          <div className="bg-gradient-to-br from-indigo-950/30 to-purple-950/30 border border-indigo-900/40 rounded-2xl p-4 space-y-3 shadow-md">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => setAiActive(!aiActive)}
-                className="flex items-center gap-2 text-xs font-bold text-indigo-300 hover:text-white transition-colors cursor-pointer"
-              >
-                <span>
-                  {isRtl ? "مساعد الذكاء الاصطناعي الذكي" : "Smart AI Auto-Fill"}
-                </span>
-              </button>
-              
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
-                {isRtl ? "توفير الوقت" : "Time Saver"}
-              </span>
-            </div>
-
-            {aiActive ? (
-              <div className="space-y-3 pt-2 border-t border-indigo-950/40 animate-fadeIn">
-                <p className="text-[10.5px] text-zinc-400 leading-normal">
-                  {isRtl 
-                    ? "اكتب مواصفات منتجك بشكل عشوائي، أو الصق منشور فيسبوك/إنستغرام، أو دع الذكاء الاصطناعي يحلل مستندات أو صورة المنتج المرفوعة تلقائياً بضغطة واحدة!"
-                    : "Write random notes, paste a social media draft, or analyze the uploaded picture below to auto-populate fields instantly!"
-                  }
-                </p>
-
-                <div className="relative">
-                  <textarea
-                    rows={2}
-                    value={aiText}
-                    onChange={(e) => setAiText(e.target.value)}
-                    placeholder={isRtl 
-                      ? "مثال: عباية فاخرة سوداء مطرزة، السعر 4900 دج، متوفر منها 15 حبة من دبي..."
-                      : "e.g. black abaya, price 4900 da, 15 items in stock..."
-                    }
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-650 outline-none focus:border-indigo-800 transition-all resize-none h-14"
-                  />
-                </div>
-
-                {/* Helper notice if image uploaded */}
-                {(imageFileBase64 || imageUrl) && (
-                  <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[10px] text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>
-                      {isRtl 
-                        ? "صورة المنتج جاهزة! سيحلل الذكاء الاصطناعي الصورة أيضاً لتوفير أدق البيانات." 
-                        : "Image detected! AI will combine both text hint and visual analysis."
-                      }
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={runAiExtraction}
-                    disabled={aiParsing}
-                    className="flex-1 py-1.5 px-3 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-lg shadow-purple-500/10 min-h-[36px]"
-                  >
-                    {aiParsing ? (
-                      <>
-                        <RefreshCw className="animate-spin w-3.5 h-3.5 text-white" />
-                        <span>{isRtl ? "جاري التحليل وملء النموذج..." : "Analyzing & autofilling..."}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-3.5 h-3.5 text-purple-200" />
-                        <span>{isRtl ? "توليد تلقائي بالذكاء الاصطناعي" : "Analyze & Autofill Details"}</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setAiActive(false)}
-                    className="px-3 py-2 bg-slate-100 dark:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 text-xs rounded-xl hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-                  >
-                    {isRtl ? "إخفاء" : "Hide"}
-                  </button>
-                </div>
-
-                {/* Status displays */}
-                {aiStatus === "success" && (
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-medium text-center animate-fadeIn">
-                    {isRtl ? "تم ملء كافة الحقول بنجاح! يرجى مراجعتها وتأكيد الإضافة." : "Form fields populated successfully! Check out details below."}
-                  </div>
-                )}
-
-                {aiStatus === "error" && (
-                  <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-[11px] font-medium text-center animate-fadeIn">
-                     ⚠️ {aiErrorMsg}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                <span>
-                  {isRtl ? "وفر الوقت واجعل الذكاء الاصطناعي يكتب مواصفات المنتج ويرفعه!" : "Instantly write specifications and upload via AI!"}
-                </span>
+          {!isWarehouse && (
+            <div className="bg-gradient-to-br from-indigo-950/30 to-purple-950/30 border border-indigo-900/40 rounded-2xl p-4 space-y-3 shadow-md">
+              <div className="flex items-center justify-between">
                 <button
                   type="button"
-                  onClick={() => setAiActive(true)}
-                  className="text-indigo-400 hover:text-indigo-300 underline font-semibold text-[10.5px] cursor-pointer"
+                  onClick={() => setAiActive(!aiActive)}
+                  className="flex items-center gap-2 text-xs font-bold text-indigo-300 hover:text-white transition-colors cursor-pointer"
                 >
-                  {isRtl ? "تفعيل مساعد الكتابة 🧠" : "Expand Assistant 🧠"}
+                  <span>
+                    {isRtl ? "مساعد الذكاء الاصطناعي الذكي" : "Smart AI Auto-Fill"}
+                  </span>
                 </button>
+                
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 uppercase tracking-wider">
+                  {isRtl ? "توفير الوقت" : "Time Saver"}
+                </span>
               </div>
-            )}
-          </div>
+
+              {aiActive ? (
+                <div className="space-y-3 pt-2 border-t border-indigo-950/40 animate-fadeIn">
+                  <p className="text-[10.5px] text-zinc-400 leading-normal">
+                    {isRtl 
+                      ? "اكتب مواصفات منتجك بشكل عشوائي، أو الصق منشور فيسبوك/إنستغرام، أو دع الذكاء الاصطناعي يحلل مستندات أو صورة المنتج المرفوعة تلقائياً بضغطة واحدة!"
+                      : "Write random notes, paste a social media draft, or analyze the uploaded picture below to auto-populate fields instantly!"
+                    }
+                  </p>
+
+                  <div className="relative">
+                    <textarea
+                      rows={2}
+                      value={aiText}
+                      onChange={(e) => setAiText(e.target.value)}
+                      placeholder={isRtl 
+                        ? "مثال: عباية فاخرة سوداء مطرزة، السعر 4900 دج، متوفر منها 15 حبة من دبي..."
+                        : "e.g. black abaya, price 4900 da, 15 items in stock..."
+                      }
+                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder:text-zinc-650 outline-none focus:border-indigo-800 transition-all resize-none h-14"
+                    />
+                  </div>
+
+                  {/* Helper notice if image uploaded */}
+                  {(imageFileBase64 || imageUrl) && (
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[10px] text-emerald-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>
+                        {isRtl 
+                          ? "صورة المنتج جاهزة! سيحلل الذكاء الاصطناعي الصورة أيضاً لتوفير أدق البيانات." 
+                          : "Image detected! AI will combine both text hint and visual analysis."
+                        }
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={runAiExtraction}
+                      disabled={aiParsing}
+                      className="flex-1 py-1.5 px-3 bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-lg shadow-purple-500/10 min-h-[36px]"
+                    >
+                      {aiParsing ? (
+                        <>
+                          <RefreshCw className="animate-spin w-3.5 h-3.5 text-white" />
+                          <span>{isRtl ? "جاري التحليل وملء النموذج..." : "Analyzing & autofilling..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-3.5 h-3.5 text-purple-200" />
+                          <span>{isRtl ? "توليد تلقائي بالذكاء الاصطناعي" : "Analyze & Autofill Details"}</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setAiActive(false)}
+                      className="px-3 py-2 bg-slate-100 dark:bg-zinc-900 border border-slate-300 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 text-xs rounded-xl hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                    >
+                      {isRtl ? "إخفاء" : "Hide"}
+                    </button>
+                  </div>
+
+                  {/* Status displays */}
+                  {aiStatus === "success" && (
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-medium text-center animate-fadeIn">
+                      {isRtl ? "تم ملء كافة الحقول بنجاح! يرجى مراجعتها وتأكيد الإضافة." : "Form fields populated successfully! Check out details below."}
+                    </div>
+                  )}
+
+                  {aiStatus === "error" && (
+                    <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/25 text-red-400 text-[11px] font-medium text-center animate-fadeIn">
+                       ⚠️ {aiErrorMsg}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                  <span>
+                    {isRtl ? "وفر الوقت واجعل الذكاء الاصطناعي يكتب مواصفات المنتج ويرفعه!" : "Instantly write specifications and upload via AI!"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAiActive(true)}
+                    className="text-indigo-400 hover:text-indigo-300 underline font-semibold text-[10.5px] cursor-pointer"
+                  >
+                    {isRtl ? "تفعيل مساعد الكتابة 🧠" : "Expand Assistant 🧠"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Product Name */}
           <div className="space-y-1">
             <label className="text-[11px] text-zinc-300 font-medium uppercase px-1 tracking-wider block text-left">
               {isRtl ? "اسم المنتج المطلوب *" : t.product_name || "Product Name *"}
             </label>
-            <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all">
+            <div className={`flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all ${isWarehouse ? "opacity-60 cursor-not-allowed" : ""}`}>
               <Tag className="w-4 h-4 text-zinc-400 shrink-0" />
               <input 
                 type="text" 
                 required
+                disabled={isWarehouse}
                 placeholder={isRtl ? "مثال: حذاء رياضي من الجلد الفاخر" : "e.g. Leather sneakers, silk abaya..."}
-                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100"
+                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 disabled:cursor-not-allowed"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
               />
@@ -344,12 +349,13 @@ export const ProductModal = React.memo(function ProductModal({
               <label className="text-[11px] text-zinc-300 font-medium uppercase px-1 tracking-wider block text-left">
                 {isRtl ? "رمز المنتج SKU" : t.product_sku || "Sku Code"}
               </label>
-              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all">
+              <div className={`flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all ${isWarehouse ? "opacity-60 cursor-not-allowed" : ""}`}>
                 <Hash className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "أدخل رمز SKU" : "AB-4029"}
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono uppercase"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono uppercase disabled:cursor-not-allowed"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                 />
@@ -360,12 +366,13 @@ export const ProductModal = React.memo(function ProductModal({
               <label className="text-[11px] text-zinc-300 font-medium uppercase px-1 tracking-wider block text-left">
                 {isRtl ? "فئة السلعة" : t.product_category || "Category"}
               </label>
-              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all">
+              <div className={`flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all ${isWarehouse ? "opacity-60 cursor-not-allowed" : ""}`}>
                 <Layers className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "مثال: أحذية، ملابس..." : "Clothing, Accessories..."}
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 disabled:cursor-not-allowed"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                 />
@@ -379,14 +386,15 @@ export const ProductModal = React.memo(function ProductModal({
               <label className="text-[11px] text-zinc-300 font-medium uppercase px-1 tracking-wider block text-left">
                 {isRtl ? "السعر بالدينار (DZD) *" : t.product_price || "Price in DZD *"}
               </label>
-              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all">
+              <div className={`flex items-center gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-3 focus-within:border-zinc-500 transition-all ${isWarehouse ? "opacity-60 cursor-not-allowed" : ""}`}>
                 <DollarSign className="w-4 h-4 text-zinc-400 shrink-0" />
                 <input 
                   type="number" 
                   required
+                  disabled={isWarehouse}
                   min="0"
                   placeholder="3500"
-                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono font-bold"
+                  className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 font-mono font-bold disabled:cursor-not-allowed"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                 />
@@ -417,12 +425,13 @@ export const ProductModal = React.memo(function ProductModal({
             <label className="text-[11px] text-zinc-300 font-medium uppercase px-1 tracking-wider block text-left">
               {isRtl ? "وصف مقتضب وثانوي" : t.product_description || "Short Description"}
             </label>
-            <div className="flex items-start gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 focus-within:border-zinc-500 transition-all">
+            <div className={`flex items-start gap-2 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 focus-within:border-zinc-500 transition-all ${isWarehouse ? "opacity-60 cursor-not-allowed" : ""}`}>
               <FileText className="w-4 h-4 text-zinc-400 mt-1 shrink-0" />
               <textarea 
                 rows={2}
+                disabled={isWarehouse}
                 placeholder={isRtl ? "أضف أية تفاصيل، خيارات الألوان، مواصفات الضمان..." : "Write custom descriptions, color codes, size specs..."}
-                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 resize-none h-14"
+                className="bg-transparent w-full text-xs outline-none placeholder:text-zinc-500 text-zinc-100 resize-none h-14 disabled:cursor-not-allowed"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -430,7 +439,7 @@ export const ProductModal = React.memo(function ProductModal({
           </div>
 
           {/* Custom Product Options Settings */}
-          <div className="space-y-3 bg-[#0d0d0d]/80 border border-zinc-900 p-4 rounded-2xl">
+          <div className={`space-y-3 bg-[#0d0d0d]/80 border border-zinc-900 p-4 rounded-2xl ${isWarehouse ? "opacity-55 pointer-events-none" : ""}`}>
             <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
               <span className="text-xs font-bold text-indigo-350">
                 {isRtl ? "خيارات مخصصة للمنتج (مقاسات، أحجام، ألوان، روائح...)" : "Custom Product Options (Sizes, Colors, Volumes...)"}
@@ -453,8 +462,9 @@ export const ProductModal = React.memo(function ProductModal({
                 </label>
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "الحجم، القياس، السعة..." : "e.g. Size, Volume"}
-                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700 disabled:cursor-not-allowed"
                   value={sizeLabel}
                   onChange={(e) => setSizeLabel && setSizeLabel(e.target.value)}
                 />
@@ -467,8 +477,9 @@ export const ProductModal = React.memo(function ProductModal({
                 </label>
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "S, M, L أو 50ml, 100ml" : "e.g. S, M, L or 50ml, 100ml"}
-                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700 disabled:cursor-not-allowed"
                   value={sizes}
                   onChange={(e) => setSizes && setSizes(e.target.value)}
                 />
@@ -483,8 +494,9 @@ export const ProductModal = React.memo(function ProductModal({
                 </label>
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "اللون، الرائحة، النوع..." : "e.g. Color, Scent"}
-                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700 disabled:cursor-not-allowed"
                   value={colorLabel}
                   onChange={(e) => setColorLabel && setColorLabel(e.target.value)}
                 />
@@ -497,8 +509,9 @@ export const ProductModal = React.memo(function ProductModal({
                 </label>
                 <input 
                   type="text" 
+                  disabled={isWarehouse}
                   placeholder={isRtl ? "أسود, أبيض أو عود, مسك" : "e.g. Black, White or Oud, Musk"}
-                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700"
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-zinc-200 outline-none focus:border-zinc-700 disabled:cursor-not-allowed"
                   value={colors}
                   onChange={(e) => setColors && setColors(e.target.value)}
                 />
@@ -507,7 +520,7 @@ export const ProductModal = React.memo(function ProductModal({
           </div>
 
           {/* Storefront Display Toggle */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex items-center justify-between gap-4 mt-2">
+          <div className={`bg-zinc-950 border border-zinc-900 rounded-2xl p-4 flex items-center justify-between gap-4 mt-2 ${isWarehouse ? "opacity-55 pointer-events-none" : ""}`}>
             <div className="space-y-1 text-left flex-1 font-sans">
               <span className="text-xs font-bold text-zinc-100 block">
                 {t.upload_to_store_label || (isRtl ? "عرض في المتجر الإلكتروني" : "Publish to Online Storefront")}
@@ -519,6 +532,7 @@ export const ProductModal = React.memo(function ProductModal({
             
             <button
               type="button"
+              disabled={isWarehouse}
               onClick={() => setIsPublished(!isPublished)}
               className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                 isPublished ? "bg-purple-600" : "bg-zinc-800"

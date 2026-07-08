@@ -1234,13 +1234,13 @@ export default function LandingPage({
                   <div className="flex gap-2 justify-end pt-1">
                     <button
                       onClick={() => setDemoHomeDelivery(false)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${!demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
+                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${!demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5 cursor-pointer'}`}
                     >
                       {lang === "ar" ? "مكتب يالدين" : "Yalidine Desk"}
                     </button>
                     <button
                       onClick={() => setDemoHomeDelivery(true)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
+                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5 cursor-pointer'}`}
                     >
                       {lang === "ar" ? "شحن للمنزل" : "To Domicile"}
                     </button>
@@ -1287,46 +1287,46 @@ export default function LandingPage({
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none" />
 
             {/* Warehouse card */}
-            <div className="w-full max-w-xl bg-white dark:bg-zinc-950/85 border border-slate-200 dark:border-zinc-800 rounded-[2rem] shadow-lg dark:shadow-2xl p-5 md:p-6 space-y-5">
-              <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/5 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+            <div className="w-full max-w-xl bg-white dark:bg-zinc-950/85 border border-slate-200 dark:border-zinc-850 rounded-[2rem] shadow-lg dark:shadow-2xl p-5 md:p-6 space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-100 dark:border-white/5 pb-4">
+                <div className="flex items-center gap-3 text-right" dir="rtl">
+                  <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
                     <Package className="w-4.5 h-4.5 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <div className="text-left">
-                    <h4 className="font-extrabold text-slate-900 dark:text-white text-xs select-none">{lang === "ar" ? "جرد مستودع بئر توتة الرئيسي" : "Central Birtouta Warehouse"}</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-zinc-500 tracking-wider font-mono uppercase">STORE_ID: #4092-DZ</p>
+                  <div className="text-right">
+                    <h4 className="font-black text-black dark:text-white text-xs select-none">{lang === "ar" ? "جرد مستودع التاجر" : lang === "fr" ? "Inventaire de l'Entrepôt du Marchand" : "Merchant Warehouse Inventory"}</h4>
+                    <p className="text-[10px] text-zinc-700 dark:text-zinc-300 font-bold tracking-wider font-mono uppercase">STORE_ID: #4092-DZ</p>
                   </div>
                 </div>
                 {/* Active totals badge */}
-                <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-850 rounded-full text-[9px] font-bold text-slate-650 dark:text-zinc-400">
-                  {whProduct1Stock + whProduct2Stock + whProduct3Stock} {lang === "ar" ? "قطع إجمالي" : "Total Items"}
+                <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-full text-[9.5px] font-black text-black dark:text-zinc-200 shrink-0">
+                  {whProduct1Stock + whProduct2Stock + whProduct3Stock} {lang === "ar" ? "قطعة إجمالاً" : "Total Items"}
                 </span>
               </div>
 
               {/* Inventory Table Grid simulate */}
-              <div className="space-y-3">
+              <div className="space-y-3.5">
 
-                {/* Product Block 1 */}
-                <div className="bg-slate-100/50 dark:bg-white/[0.01] border border-slate-200/80 dark:border-white/5 rounded-xl p-3.5 space-y-2.5 text-right lg:text-right" dir="rtl">
+                {/* Product Block 1 (عطر كريستال عود الفاخر) */}
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-4 space-y-3 text-right lg:text-right transition-all hover:border-slate-300 dark:hover:border-white/10" dir="rtl">
                   <div className="flex justify-between items-start gap-4">
                     <div className="space-y-1 text-right flex-1" dir="rtl">
-                      <h5 className="font-bold text-slate-900 dark:text-white text-[11px] leading-snug">عطر كريستال عود الفاخر</h5>
-                      <p className="text-[9px] text-slate-500 dark:text-zinc-500">Variants: <strong className="text-slate-700 dark:text-zinc-400">100ml / أزرق داكن</strong> • SKU: CRYS-OUD-BL</p>
+                      <h5 className="font-extrabold text-black dark:text-white text-[12px] leading-snug">عطر كريستال عود الفاخر</h5>
+                      <p className="text-[10px] text-zinc-700 dark:text-zinc-300 font-medium">Variants: <strong className="text-black dark:text-white font-bold">100ml / أزرق داكن</strong> • SKU: CRYS-OUD-BL</p>
                     </div>
                     {/* Visual adjustable stock block */}
                     <div className="flex flex-col items-end gap-1.5" dir="ltr">
-                      <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5">
+                      <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5">
                         <button 
-                          onClick={() => setWhProduct1Stock(Math.max(0, whProduct1Stock - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-slate-600 dark:text-zinc-300 font-extrabold hover:bg-slate-200 dark:hover:bg-zinc-800"
+                          onClick={() => setWhProduct3Stock(Math.max(0, whProduct3Stock - 1))}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
                         >
                           -
                         </button>
-                        <span className="w-5 text-center font-mono text-[9px] font-bold text-slate-850 dark:text-white">{whProduct1Stock}</span>
+                        <span className="w-5 text-center font-mono text-[10px] font-black text-black dark:text-white">{whProduct3Stock}</span>
                         <button 
-                          onClick={() => setWhProduct1Stock(whProduct1Stock + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-slate-600 dark:text-zinc-300 font-extrabold hover:bg-slate-200 dark:hover:bg-zinc-800"
+                          onClick={() => setWhProduct3Stock(whProduct3Stock + 1)}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
                         >
                           +
                         </button>
@@ -1334,25 +1334,107 @@ export default function LandingPage({
                       
                       {/* Critical visual badge reacting to local state! */}
                       {whProduct3Stock === 0 ? (
-                        <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-650 dark:text-red-500 text-[8px] font-bold rounded-md">نفذ من المستودع Out Stock</span>
-                      ) : whProduct3Stock < 10 ? (
-                        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 text-[8px] font-bold rounded-md">شبه نافذ Low Stock</span>
+                        <span className="px-2 py-0.5 bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[9px] font-bold rounded-md">نفد من المستودع Out Stock</span>
+                      ) : whProduct3Stock < 5 ? (
+                        <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold rounded-md">شبه نافد Low Stock</span>
                       ) : (
-                        <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold rounded-md">مـتوفر بالكامل In Stock</span>
+                        <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold rounded-md">متوفر بالكامل In Stock</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-zinc-400 pt-1.5 border-t border-slate-200 dark:border-white/[0.03]">
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">1200 DA</span>
-                    <span>{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
+                  <div className="flex justify-between items-center text-[10px] text-zinc-700 dark:text-zinc-300 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">1200 DA</span>
+                    <span className="font-semibold">{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
+                  </div>
+                </div>
+
+                {/* Product Block 2 (ساعة يد رياضية ذكية Pro) */}
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-4 space-y-3 text-right lg:text-right transition-all hover:border-slate-300 dark:hover:border-white/10" dir="rtl">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1 text-right flex-1" dir="rtl">
+                      <h5 className="font-extrabold text-black dark:text-white text-[12px] leading-snug">ساعة يد رياضية ذكية Pro</h5>
+                      <p className="text-[10px] text-zinc-700 dark:text-zinc-300 font-medium">Variants: <strong className="text-black dark:text-white font-bold">ألومنيوم / أسود</strong> • SKU: SMART-WTCH-BK</p>
+                    </div>
+                    {/* Visual adjustable stock block */}
+                    <div className="flex flex-col items-end gap-1.5" dir="ltr">
+                      <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5">
+                        <button 
+                          onClick={() => setWhProduct2Stock(Math.max(0, whProduct2Stock - 1))}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-5 text-center font-mono text-[10px] font-black text-black dark:text-white">{whProduct2Stock}</span>
+                        <button 
+                          onClick={() => setWhProduct2Stock(whProduct2Stock + 1)}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                      
+                      {/* Critical visual badge reacting to local state! */}
+                      {whProduct2Stock === 0 ? (
+                        <span className="px-2 py-0.5 bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[9px] font-bold rounded-md">نفد من المستودع Out Stock</span>
+                      ) : whProduct2Stock < 5 ? (
+                        <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold rounded-md">شبه نافد Low Stock</span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold rounded-md">متوفر بالكامل In Stock</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-zinc-700 dark:text-zinc-300 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">4500 DA</span>
+                    <span className="font-semibold">{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
+                  </div>
+                </div>
+
+                {/* Product Block 3 (حقيبة ظهر كلاسيكية مقاومة للماء) */}
+                <div className="bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/5 rounded-2xl p-4 space-y-3 text-right lg:text-right transition-all hover:border-slate-300 dark:hover:border-white/10" dir="rtl">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1 text-right flex-1" dir="rtl">
+                      <h5 className="font-extrabold text-black dark:text-white text-[12px] leading-snug">حقيبة ظهر كلاسيكية مقاومة للماء</h5>
+                      <p className="text-[10px] text-zinc-700 dark:text-zinc-300 font-medium">Variants: <strong className="text-black dark:text-white font-bold">بوليستر / رمادي</strong> • SKU: BAG-WPRF-GR</p>
+                    </div>
+                    {/* Visual adjustable stock block */}
+                    <div className="flex flex-col items-end gap-1.5" dir="ltr">
+                      <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5">
+                        <button 
+                          onClick={() => setWhProduct1Stock(Math.max(0, whProduct1Stock - 1))}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-5 text-center font-mono text-[10px] font-black text-black dark:text-white">{whProduct1Stock}</span>
+                        <button 
+                          onClick={() => setWhProduct1Stock(whProduct1Stock + 1)}
+                          className="w-5.5 h-5.5 flex items-center justify-center rounded-md text-black dark:text-white font-black hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors border border-slate-150 dark:border-zinc-750 text-xs cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                      
+                      {/* Critical visual badge reacting to local state! */}
+                      {whProduct1Stock === 0 ? (
+                        <span className="px-2 py-0.5 bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 text-[9px] font-bold rounded-md">نفد من المستودع Out Stock</span>
+                      ) : whProduct1Stock < 5 ? (
+                        <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[9px] font-bold rounded-md">شبه نافد Low Stock</span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold rounded-md">متوفر بالكامل In Stock</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-zinc-700 dark:text-zinc-300 pt-2 border-t border-slate-200/50 dark:border-white/[0.04]">
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold text-xs">3800 DA</span>
+                    <span className="font-semibold">{lang === "ar" ? "سعر البيع المقترح للجمهور:" : "Retail Public Price:"}</span>
                   </div>
                 </div>
 
               </div>
 
-              <div className="flex gap-2 bg-orange-500/5 border border-orange-500/10 rounded-xl p-3 text-[10px] text-slate-600 dark:text-zinc-400 font-medium text-right" dir="rtl">
-                <AlertCircle className="w-4 h-4 text-orange-650 dark:text-orange-400 shrink-0 mt-0.5 ml-2" />
-                <span>
+              <div className="flex gap-2 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3.5 text-right" dir="rtl">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 ml-2.5" />
+                <span className="text-black dark:text-zinc-100 font-semibold text-[11px] leading-relaxed">
                   {lang === "ar"
                     ? "عند تفعيل نظام المستودع، تُخصم السلع تلقائياً من مخزونك فور إصدار ملصق الشحن الفعلي من شركة التوصيل، مما يضمن دقة المخزون ويمنع تداخل الحسابات والبيع الزائد."
                     : lang === "fr"
@@ -1362,6 +1444,7 @@ export default function LandingPage({
               </div>
             </div>
           </div>
+
 
           {/* Text Right */}
           <div className="lg:col-span-5 space-y-6 text-right md:text-right" dir={isRtl ? "rtl" : "ltr"}>
