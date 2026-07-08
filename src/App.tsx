@@ -207,7 +207,7 @@ function AppContent() {
 
   const t = translations[lang];
   const isRtl = lang === "ar";
-  const isAdmin = user?.email === "12benabdallah@gmail.com" || user?.email === "smarty7.app@gmail.com";
+  const isAdmin = user?.email === "12benabdallah@gmail.com" || user?.email === "smarty7.app@gmail.com" || userData?.role === "admin";
 
   const validateStockAvailability = async (items: any[]): Promise<boolean> => {
     if (!items || items.length === 0) return true;
