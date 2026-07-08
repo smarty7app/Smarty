@@ -62,6 +62,9 @@ export interface UserData {
   expiresAt?: string;
   subscriptionStatus: "active" | "pending_verification" | "expired";
   email?: string;
+  displayName?: string;
+  photoURL?: string;
+  isBanned?: boolean;
   hasBeenWelcomed?: boolean;
   
   // Usage tracking fields
@@ -73,6 +76,7 @@ export interface UserData {
   aiCost?: number;
   subscriptionPlan?: string;
   lastBillingDate?: string;
+  createdAt?: string;
 }
 
 export enum OperationType {

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, RefreshCw, LogOut, Trash2, Moon } from "lucide-react";
+import { Menu, RefreshCw, LogOut, Trash2, Moon, Ban, MessageSquare, Send, X, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -147,6 +147,14 @@ function AppContent() {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showRedirectWarning, setShowRedirectWarning] = useState(false);
   const [authStallDetected, setAuthStallDetected] = useState(false);
+
+  // States for banned user support ticket
+  const [bannedSupportOpen, setBannedSupportOpen] = useState(false);
+  const [bannedSupportName, setBannedSupportName] = useState("");
+  const [bannedSupportMessage, setBannedSupportMessage] = useState("");
+  const [bannedSupportSending, setBannedSupportSending] = useState(false);
+  const [bannedSupportSuccess, setBannedSupportSuccess] = useState(false);
+  const [bannedSupportError, setBannedSupportError] = useState("");
 
   // Startup watchdog for auth loading
   useEffect(() => {
@@ -296,6 +304,15 @@ function AppContent() {
           if (snapshot.exists()) {
             const data = snapshot.data();
             setUserData(data as UserData);
+            
+            // Sync displayName and photoURL if they are in Firebase Auth but missing in Firestore
+            if (data && (!data.displayName || !data.photoURL) && (user.displayName || user.photoURL)) {
+              await updateDoc(doc(db, "users", user.uid), {
+                displayName: data.displayName || user.displayName || "",
+                photoURL: data.photoURL || user.photoURL || ""
+              });
+            }
+
             if (data?.courierKeys) {
               setYalidineId(data.courierKeys.yalidineId || "");
               setYalidineToken(data.courierKeys.yalidineToken || "");
@@ -318,6 +335,8 @@ function AppContent() {
               orderCounter: 0,
               subscriptionStatus: "active",
               email: user.email || "",
+              displayName: user.displayName || "",
+              photoURL: user.photoURL || "",
               hasBeenWelcomed: false,
               merchantId: user.uid,
               ordersProcessed: 0,
@@ -327,6 +346,7 @@ function AppContent() {
               aiCost: 0,
               subscriptionPlan: "free",
               lastBillingDate: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
             };
             await setDoc(doc(db, "users", user.uid), newUser);
           }
@@ -835,6 +855,285 @@ function AppContent() {
         authError={authError}
         setAuthError={setAuthError}
       />
+    );
+  }
+  
+  if (user && userData?.isBanned) {
+    const bannedTranslations = {
+      ar: {
+        title: "تنبيه الدخول",
+        desc: "لا يمكنك الوصول إلى هذا الحساب حالياً، إذا كنت تظن أن هذا الإجراء تم بالخطأ فيرجى التواصل مع الدعم الفني.",
+        contactBtn: "تواصل مع الدعم الفني",
+        logoutBtn: "تسجيل الخروج",
+        supportTitle: "الدعم الفني والمساندة",
+        supportDesc: "أرسل تفاصيل استفسارك وسيقوم فريق الدعم بالرد عليك ومراجعة حالة حسابك.",
+        nameLabel: "الاسم الكامل",
+        emailLabel: "البريد الإلكتروني",
+        msgLabel: "تفاصيل الرسالة",
+        msgPlaceholder: "اكتب تفاصيل استفسارك أو مشكلتك هنا...",
+        sendBtn: "إرسال الرسالة",
+        cancelBtn: "إلغاء والعودة",
+        sending: "جاري الإرسال...",
+        successTitle: "تم الإرسال بنجاح!",
+        successDesc: "تم إرسال رسالتك بنجاح. سيقوم فريق الدعم بمراجعة طلبك والتواصل معك عبر البريد الإلكتروني قريباً.",
+        successClose: "إغلاق",
+        errFill: "يرجى كتابة نص الرسالة أولاً.",
+        errSend: "حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة لاحقاً."
+      },
+      en: {
+        title: "Access Notification",
+        desc: "You cannot access this account right now. If you think this is a mistake, please contact our technical support team.",
+        contactBtn: "Contact Technical Support",
+        logoutBtn: "Log Out",
+        supportTitle: "Technical Support",
+        supportDesc: "Send us a message, and our support team will review your account status and assist you.",
+        nameLabel: "Full Name",
+        emailLabel: "Email Address",
+        msgLabel: "Message Details",
+        msgPlaceholder: "Describe your query or issue details here...",
+        sendBtn: "Send Message",
+        cancelBtn: "Cancel & Back",
+        sending: "Sending...",
+        successTitle: "Sent Successfully!",
+        successDesc: "Your message has been received. Our team will review your request and get back to you via email shortly.",
+        successClose: "Close",
+        errFill: "Please write your message details first.",
+        errSend: "An error occurred while sending. Please try again later."
+      },
+      fr: {
+        title: "Notification d'accès",
+        desc: "Vous ne pouvez pas accéder à ce compte pour le moment. Si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre équipe d'assistance technique.",
+        contactBtn: "Contacter le Support Technique",
+        logoutBtn: "Se déconnecter",
+        supportTitle: "Support Technique",
+        supportDesc: "Envoyez-nous un message et notre équipe d'assistance examinera votre compte pour vous aider.",
+        nameLabel: "Nom complet",
+        emailLabel: "Adresse e-mail",
+        msgLabel: "Détails du message",
+        msgPlaceholder: "Décrivez votre demande ou problème ici...",
+        sendBtn: "Envoyer le message",
+        cancelBtn: "Annuler",
+        sending: "Envoi en cours...",
+        successTitle: "Envoyé avec succès !",
+        successDesc: "Votre message a été bien reçu. Notre équipe d'assistance examinera votre demande et vous contactera bientôt.",
+        successClose: "Fermer",
+        errFill: "Veuillez d'abord rédiger votre message.",
+        errSend: "Une erreur est survenue lors de l'envoi. Veuillez réessayer plus tard."
+      }
+    };
+
+    const currentTrans = bannedTranslations[lang] || bannedTranslations.en;
+    const isBannedRtl = lang === "ar";
+
+    const handleSubmitBannedSupport = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!bannedSupportMessage.trim()) {
+        setBannedSupportError(currentTrans.errFill);
+        return;
+      }
+      setBannedSupportSending(true);
+      setBannedSupportError("");
+      try {
+        await addDoc(collection(db, "support_messages"), {
+          name: (bannedSupportName || user?.displayName || user?.email?.split('@')[0] || "User").trim(),
+          email: user?.email || "",
+          message: bannedSupportMessage.trim(),
+          attachment: null,
+          createdAt: serverTimestamp()
+        });
+        setBannedSupportSuccess(true);
+        setBannedSupportMessage("");
+      } catch (err) {
+        console.error("Banned support submit error:", err);
+        setBannedSupportError(currentTrans.errSend);
+      } finally {
+        setBannedSupportSending(false);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col items-center justify-center p-6 text-center transition-all duration-300 font-sans" dir={isBannedRtl ? "rtl" : "ltr"}>
+        
+        {/* Top Floating Language Switcher for Banned User */}
+        <div className="absolute top-6 right-6 left-6 flex justify-end gap-2 z-10">
+          <div className="flex bg-white/85 border border-slate-200 rounded-2xl p-1 shadow-sm backdrop-blur-md">
+            {([
+              { code: "ar", label: "عربي" },
+              { code: "en", label: "EN" },
+              { code: "fr", label: "FR" }
+            ] as const).map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  lang === l.code ? "bg-slate-700 text-white shadow-md" : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white border border-slate-200 rounded-[2rem] p-8 space-y-6 shadow-xl relative overflow-hidden"
+        >
+          {/* Subtle light background slate glows */}
+          <div className="absolute -top-10 -left-10 w-32 h-32 bg-slate-100 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-slate-100 rounded-full blur-3xl pointer-events-none" />
+
+          {!bannedSupportOpen ? (
+            <div className="space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center mx-auto text-slate-600 shadow-sm">
+                <Info className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-extrabold text-slate-800">
+                  {currentTrans.title}
+                </h2>
+                <p className="text-xs text-slate-400 font-mono">
+                  {user?.email}
+                </p>
+                <p className="text-sm text-slate-600 leading-relaxed text-center">
+                  {currentTrans.desc}
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={() => {
+                    setBannedSupportName(user?.displayName || "");
+                    setBannedSupportOpen(true);
+                  }}
+                  className="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-slate-800/10"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{currentTrans.contactBtn}</span>
+                </button>
+
+                <button
+                  onClick={() => logout()}
+                  className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/60 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>{currentTrans.logoutBtn}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Support Form view inside the card
+            <div className="space-y-6 text-start">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/60 flex items-center justify-center text-slate-600 shrink-0">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-800">{currentTrans.supportTitle}</h3>
+                  <p className="text-[10px] text-slate-500 leading-tight">{currentTrans.supportDesc}</p>
+                </div>
+              </div>
+
+              {bannedSupportSuccess ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl text-center space-y-4"
+                >
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-600">
+                    <CheckCircle className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-slate-800 text-sm">{currentTrans.successTitle}</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed">{currentTrans.successDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setBannedSupportSuccess(false);
+                      setBannedSupportOpen(false);
+                    }}
+                    className="px-6 py-2 bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+                  >
+                    {currentTrans.successClose}
+                  </button>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmitBannedSupport} className="space-y-4">
+                  {bannedSupportError && (
+                    <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl flex items-start gap-2 text-amber-700 text-xs">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <span>{bannedSupportError}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{currentTrans.nameLabel}</label>
+                    <input
+                      type="text"
+                      value={bannedSupportName}
+                      onChange={(e) => setBannedSupportName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:border-slate-400 outline-none transition-all placeholder:text-slate-400"
+                      placeholder={currentTrans.nameLabel}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{currentTrans.emailLabel}</label>
+                    <input
+                      type="email"
+                      value={user?.email || ""}
+                      disabled
+                      className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200/50 rounded-xl text-slate-400 text-xs outline-none cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{currentTrans.msgLabel}</label>
+                    <textarea
+                      value={bannedSupportMessage}
+                      onChange={(e) => setBannedSupportMessage(e.target.value)}
+                      rows={4}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs focus:border-slate-400 outline-none transition-all placeholder:text-slate-400 resize-none"
+                      placeholder={currentTrans.msgPlaceholder}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBannedSupportOpen(false);
+                        setBannedSupportError("");
+                      }}
+                      className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/60 font-bold text-xs rounded-xl transition-all cursor-pointer text-center"
+                    >
+                      {currentTrans.cancelBtn}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={bannedSupportSending}
+                      className="flex-1 py-3 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-600/40 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      {bannedSupportSending ? (
+                        <>
+                          <RefreshCw className="animate-spin w-3 h-3" />
+                          <span>{currentTrans.sending}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{currentTrans.sendBtn}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+        </motion.div>
+      </div>
     );
   }
 
