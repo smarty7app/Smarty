@@ -36,6 +36,111 @@ const renderFormattedBrandText = (text: string) => {
   );
 };
 
+const cardT: Record<string, {
+  storeName: string;
+  bestSeller: string;
+  prodName: string;
+  prodDesc: string;
+  sizeLabel: string;
+  sizes: string[];
+  colorLabel: string;
+  colors: string[];
+  qtyLabel: string;
+  shippingTitle: string;
+  secure: string;
+  wilayaLabel: string;
+  wilayas: { name: string; fee: number }[];
+  desk: string;
+  home: string;
+  itemsPrice: string;
+  deliveryFee: string;
+  totalCollect: string;
+  confirmBtn: string;
+  alertMsg: string;
+}> = {
+  ar: {
+    storeName: "متجرك 🛍️",
+    bestSeller: "الأكثر مبيعاً",
+    prodName: "عطر كريستال عود الفاخر - الأصلي",
+    prodDesc: "عطر مركز • 100 مل • فخامة جزائرية فاخرة",
+    sizeLabel: "المقاس / السعة",
+    sizes: ["100ml", "50ml Luxury", "Gift Box"],
+    colorLabel: "اللون / النوع",
+    colors: ["أزرق داكن", "أسود ملكي", "نسخة ليميتد"],
+    qtyLabel: "الكمية المطلوبة",
+    shippingTitle: "معلومات الشحن السريع",
+    secure: "توصيل آمن",
+    wilayaLabel: "الولاية المستقبلة",
+    wilayas: [
+      { name: "16 - الجزائر", fee: 400 },
+      { name: "31 - وهران", fee: 600 },
+      { name: "25 - قسنطينة", fee: 650 },
+      { name: "09 - البليدة", fee: 400 }
+    ],
+    desk: "مكتب يالدين",
+    home: "شحن للمنزل",
+    itemsPrice: "سعر المنتجات",
+    deliveryFee: "سعر التوصيل",
+    totalCollect: "المجموع الكلي لشحن الطرد",
+    confirmBtn: "تأكيـد الشراء الفوري",
+    alertMsg: "محاكاة ناجحة! هذه هي الواجهة الحقيقية الفائقة السهولة والوضوح التي تظهر لزبائنك مباشرة لشراء منتجاتك وتأكيد طلباتهم بضغطة زر واحدة."
+  },
+  fr: {
+    storeName: "Votre Boutique 🛍️",
+    bestSeller: "LE PLUS VENDU",
+    prodName: "Parfum Crystal Oud de Luxe - Original",
+    prodDesc: "Eau de Parfum • 100ml • Luxe Algérien Premium",
+    sizeLabel: "Taille / Capacité",
+    sizes: ["100ml", "50ml Luxe", "Coffret Cadeau"],
+    colorLabel: "Couleur / Style",
+    colors: ["Bleu Nuit", "Noir Royal", "Édition Limitée"],
+    qtyLabel: "Quantité Souhaitée",
+    shippingTitle: "Détails de Livraison Rapide",
+    secure: "Sécurisé",
+    wilayaLabel: "Wilaya de Destination",
+    wilayas: [
+      { name: "16 - Alger", fee: 400 },
+      { name: "31 - Oran", fee: 600 },
+      { name: "25 - Constantine", fee: 650 },
+      { name: "09 - Blida", fee: 400 }
+    ],
+    desk: "Bureau Yalidine",
+    home: "À Domicile",
+    itemsPrice: "Prix des articles",
+    deliveryFee: "Frais de livraison",
+    totalCollect: "Montant Total à collecter",
+    confirmBtn: "Confirmer l'Achat Immédiat",
+    alertMsg: "Simulation réussie ! C'est exactement l'interface ultra-simple et claire que verront vos clients pour acheter vos produits et confirmer leurs commandes en un seul clic."
+  },
+  en: {
+    storeName: "Your Store 🛍️",
+    bestSeller: "BEST SELLER",
+    prodName: "Crystal Oud Luxury Perfume - Original",
+    prodDesc: "Eau de Parfum • 100ml • Premium Algerian Luxury",
+    sizeLabel: "Size / Capacity",
+    sizes: ["100ml", "50ml Luxury", "Gift Box"],
+    colorLabel: "Color / Style",
+    colors: ["Dark Blue", "Royal Black", "Limited Edition"],
+    qtyLabel: "Order Qty",
+    shippingTitle: "Fast Shipping Details",
+    secure: "Secure",
+    wilayaLabel: "Shipping Wilaya",
+    wilayas: [
+      { name: "16 - Algiers", fee: 400 },
+      { name: "31 - Oran", fee: 600 },
+      { name: "25 - Constantine", fee: 650 },
+      { name: "09 - Blida", fee: 400 }
+    ],
+    desk: "Yalidine Desk",
+    home: "To Domicile",
+    itemsPrice: "Items Price",
+    deliveryFee: "Delivery Fee",
+    totalCollect: "Total Collect",
+    confirmBtn: "Confirm Fast Checkout",
+    alertMsg: "Simulation successful! This is exactly the ultra-simple and clear interface that your clients will see directly to order your products and confirm their checkout with a single click."
+  }
+};
+
 export default function LandingPage({ 
   lang, 
   setLang, 
@@ -76,12 +181,12 @@ export default function LandingPage({
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
 
   // Interactive Live Showcases State
-  const [demoSize, setDemoSize] = useState<string>("100ml");
-  const [demoColor, setDemoColor] = useState<string>("أزرق داكن");
+  const [demoSizeIndex, setDemoSizeIndex] = useState<number>(0);
+  const [demoColorIndex, setDemoColorIndex] = useState<number>(0);
   const [demoQuantity, setDemoQuantity] = useState<number>(1);
   const [demoHomeDelivery, setDemoHomeDelivery] = useState<boolean>(true);
-  const [demoWilayaFee, setDemoWilayaFee] = useState<number>(600);
-  const [demoWilayaName, setDemoWilayaName] = useState<string>("16 - الجزائر");
+  const [demoWilayaIndex, setDemoWilayaIndex] = useState<number>(0);
+  const [demoCheckedOut, setDemoCheckedOut] = useState<boolean>(false);
 
   // Interactive Warehousing Live State
   const [whProduct1Stock, setWhProduct1Stock] = useState<number>(24);
@@ -1099,179 +1204,242 @@ export default function LandingPage({
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-purple-500/10 blur-[80px] rounded-full pointer-events-none" />
             
             {/* Phone Container */}
-            <div className="w-full max-w-[360px] bg-zinc-950 border-4 border-zinc-900 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.8)] overflow-hidden relative">
+            <div className="w-full max-w-[360px] bg-slate-200 dark:bg-zinc-950 border-4 border-slate-300 dark:border-zinc-900 rounded-[2.5rem] shadow-[0_0_80px_rgba(0,0,0,0.15)] dark:shadow-[0_0_80px_rgba(0,0,0,0.8)] overflow-hidden relative transition-all duration-300">
               {/* Speaker / Notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-4 w-28 bg-zinc-900 rounded-b-xl z-20 flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-zinc-800" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-4 w-28 bg-slate-300 dark:bg-zinc-900 rounded-b-xl z-20 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-800" />
               </div>
 
               {/* Inside Phone Screen */}
-              <div className="p-4 pt-8 text-zinc-200 text-xs min-h-[480px] flex flex-col justify-between space-y-4">
-                
-                {/* Store Header */}
-                <div className="flex justify-between items-center bg-white/[0.02] border border-white/5 rounded-xl p-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500" />
-                    <span className="font-bold text-[10px] text-white">Smarty Brand 🛍️</span>
-                  </div>
-                  <div className="relative bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800 text-[9px] font-bold text-yellow-400 flex items-center gap-1">
-                    <ShoppingBag className="w-3 h-3" />
-                    <span>{demoQuantity}</span>
-                  </div>
-                </div>
+              {(() => {
+                const currentT = cardT[lang] || cardT.en;
+                const selectedWilaya = currentT.wilayas[demoWilayaIndex] || currentT.wilayas[0];
+                const itemPriceSingle = demoSizeIndex === 1 ? 4800 : 5900;
+                const itemsTotal = demoQuantity * itemPriceSingle;
+                const deliveryCharge = demoHomeDelivery ? selectedWilaya.fee : Math.round(selectedWilaya.fee * 0.6);
+                const grandTotal = itemsTotal + deliveryCharge;
 
-                {/* Product Detail Card */}
-                <div className="space-y-2">
-                  <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/5 rounded-2xl p-3 space-y-3">
-                    <div className="w-full h-24 rounded-lg bg-zinc-800 flex items-center justify-center relative overflow-hidden font-sans">
-                      <div className="absolute top-2 left-2 bg-purple-650 bg-purple-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md">
-                        {lang === "ar" ? "الأكثر مبيعاً" : "BEST SELLER"}
+                if (demoCheckedOut) {
+                  return (
+                    <div className="p-6 bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-zinc-200 text-xs min-h-[480px] flex flex-col justify-center items-center space-y-5 text-center transition-all duration-300">
+                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 animate-bounce shadow-md">
+                        <CheckCircle className="w-10 h-10" />
                       </div>
-                      <ShoppingBag className="w-8 h-8 text-zinc-700 animate-pulse" />
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                          {lang === "ar" ? "تم تسجيل الطلب بنجاح! 🎉" : lang === "fr" ? "Commande Enregistrée ! 🎉" : "Order Registered! 🎉"}
+                        </h4>
+                        <p className="text-[10.5px] text-slate-700 dark:text-zinc-300 font-bold leading-relaxed" dir={lang === "ar" ? "rtl" : "ltr"}>
+                          {currentT.alertMsg}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDemoCheckedOut(false)}
+                        className="w-full py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-white font-extrabold text-[10px] rounded-xl transition-all cursor-pointer select-none"
+                      >
+                        {lang === "ar" ? "🔄 تجربة المحاكاة مجدداً" : lang === "fr" ? "🔄 Réessayer la simulation" : "🔄 Try Simulation Again"}
+                      </button>
                     </div>
+                  );
+                }
+
+                return (
+                  <div className="p-4 pt-8 bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-zinc-200 text-xs min-h-[480px] flex flex-col justify-between space-y-4 transition-colors duration-300">
                     
-                    <div className="space-y-1">
-                      <h4 className="font-extrabold text-white text-[11px] text-right" dir="rtl">
-                        عطر كريستال عود الفاخر - الأصلي
-                      </h4>
-                      <p className="text-zinc-550 text-zinc-500 text-[10px] text-right">
-                        Eau de Parfum • 100ml • Premium Algerian Luxury
-                      </p>
-                    </div>
-
-                    {/* Size Selector */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[8px] font-semibold text-zinc-400">
-                        <span>{lang === "ar" ? "المقاس / السعة" : "Size / Capacity"}</span>
-                        <span className="text-purple-400">{demoSize}</span>
+                    {/* Store Header */}
+                    <div className="flex justify-between items-center bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/5 rounded-xl p-2.5 shadow-sm transition-all">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse" />
+                        <span className="font-bold text-[10px] text-slate-800 dark:text-white">
+                          {currentT.storeName}
+                        </span>
                       </div>
-                      <div className="flex gap-1.5 justify-end">
-                        {["100ml", "50ml Luxury", "Gift Box"].map((sz) => (
-                          <button
-                            key={sz}
-                            onClick={() => {
-                              setDemoSize(sz);
-                            }}
-                            className={`px-3 py-1 text-[9px] rounded-lg border font-bold transition-all ${demoSize === sz ? 'bg-purple-600 text-white border-purple-500' : 'bg-transparent text-zinc-400 border-white/5 hover:border-white/10'}`}
-                          >
-                            {sz}
-                          </button>
-                        ))}
+                      <div className="relative bg-amber-500/10 dark:bg-zinc-900 px-2 py-0.5 rounded-full border border-amber-500/20 dark:border-zinc-800 text-[9px] font-bold text-amber-700 dark:text-yellow-400 flex items-center gap-1">
+                        <ShoppingBag className="w-3 h-3" />
+                        <span>{demoQuantity}</span>
                       </div>
                     </div>
 
-                    {/* Color Selector */}
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[8px] font-semibold text-zinc-400">
-                        <span>{lang === "ar" ? "اللون / النوع" : "Color / Style"}</span>
-                        <span className="text-purple-400">{demoColor}</span>
-                      </div>
-                      <div className="flex gap-1.5 justify-end">
-                        {["أزرق داكن", "أسود ملكي", "نسخة ليميتد"].map((col) => (
-                          <button
-                            key={col}
-                            onClick={() => setDemoColor(col)}
-                            className={`px-2.5 py-1 text-[9px] rounded-lg border font-bold transition-all ${demoColor === col ? 'bg-zinc-800 text-purple-400 border-purple-500' : 'bg-transparent text-zinc-400 border-white/5'}`}
-                          >
-                            {col}
-                          </button>
-                        ))}
+                    {/* Product Detail Card */}
+                    <div className="space-y-2">
+                      <div className="bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/5 rounded-2xl p-3 space-y-3 shadow-sm">
+                        <div className="w-full h-24 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center relative overflow-hidden font-sans">
+                          <div className="absolute top-2 left-2 bg-purple-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-md shadow-xs">
+                            {currentT.bestSeller}
+                          </div>
+                          <ShoppingBag className="w-8 h-8 text-slate-300 dark:text-zinc-700 animate-pulse" />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <h4 className="font-extrabold text-slate-900 dark:text-white text-[11px] text-right" dir="rtl">
+                            {currentT.prodName}
+                          </h4>
+                          <p className="text-slate-500 dark:text-zinc-400 text-[10px] text-right font-medium">
+                            {currentT.prodDesc}
+                          </p>
+                        </div>
+
+                        {/* Size Selector */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[8px] font-bold text-slate-500 dark:text-zinc-400">
+                            <span>{currentT.sizeLabel}</span>
+                            <span className="text-purple-600 dark:text-purple-400 font-extrabold">{currentT.sizes[demoSizeIndex]}</span>
+                          </div>
+                          <div className="flex gap-1.5 justify-end">
+                            {currentT.sizes.map((sz, idx) => (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => {
+                                  setDemoSizeIndex(idx);
+                                }}
+                                className={`px-3 py-1 text-[9px] rounded-lg border font-bold transition-all cursor-pointer ${
+                                  demoSizeIndex === idx 
+                                    ? 'bg-purple-600 text-white border-purple-500 shadow-sm' 
+                                    : 'bg-slate-50 dark:bg-transparent text-slate-700 dark:text-zinc-400 border-slate-200 dark:border-white/5 hover:border-slate-350 dark:hover:border-zinc-700'
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Color Selector */}
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[8px] font-bold text-slate-500 dark:text-zinc-400">
+                            <span>{currentT.colorLabel}</span>
+                            <span className="text-purple-600 dark:text-purple-400 font-extrabold">{currentT.colors[demoColorIndex]}</span>
+                          </div>
+                          <div className="flex gap-1.5 justify-end">
+                            {currentT.colors.map((col, idx) => (
+                              <button
+                                key={col}
+                                type="button"
+                                onClick={() => setDemoColorIndex(idx)}
+                                className={`px-2.5 py-1 text-[9px] rounded-lg border font-bold transition-all cursor-pointer ${
+                                  demoColorIndex === idx 
+                                    ? 'bg-purple-100 dark:bg-zinc-800 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-500 font-black' 
+                                    : 'bg-slate-50 dark:bg-transparent text-slate-700 dark:text-zinc-400 border-slate-200 dark:border-white/5 hover:border-slate-350 dark:hover:border-zinc-800'
+                                }`}
+                              >
+                                {col}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Quantity Control */}
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-white/[0.05]">
+                          <span className="text-[9px] font-bold text-slate-500 dark:text-zinc-400">{currentT.qtyLabel}</span>
+                          <div className="flex items-center gap-2 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg p-0.5 shadow-inner">
+                            <button
+                              type="button"
+                              onClick={() => setDemoQuantity(Math.max(1, demoQuantity - 1))}
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-800 font-bold cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <span className="w-4 text-center font-mono text-[9px] font-bold text-slate-900 dark:text-white">{demoQuantity}</span>
+                            <button
+                              type="button"
+                              onClick={() => setDemoQuantity(demoQuantity + 1)}
+                              className="w-5 h-5 flex items-center justify-center rounded text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-800 font-bold cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
 
-                    {/* Quantity Control */}
-                    <div className="flex justify-between items-center pt-1 border-t border-white/[0.03]">
-                      <span className="text-[9px] font-bold text-zinc-400">{lang === "ar" ? "الكمية المطلوبة" : "Order Qty"}</span>
-                      <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                    {/* Shipping Details Checkout form inside the phone */}
+                    <div className="bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-white/5 rounded-2xl p-3 space-y-2 text-right lg:text-right shadow-sm" dir="rtl">
+                      <h5 className="font-extrabold text-slate-900 dark:text-white text-[9px] border-b border-slate-100 dark:border-white/5 pb-1 flex items-center justify-between">
+                        <span>{currentT.shippingTitle}</span>
+                        <span className="text-[8px] font-bold text-purple-600 dark:text-purple-400">⚡ {currentT.secure}</span>
+                      </h5>
+                      
+                      {/* Wilaya selector simulation */}
+                      <div className="space-y-1.5">
+                        <label className="text-[8px] text-slate-500 dark:text-zinc-400 block font-bold">{currentT.wilayaLabel}</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {currentT.wilayas.map((w, idx) => (
+                            <button
+                              key={w.name}
+                              type="button"
+                              onClick={() => {
+                                setDemoWilayaIndex(idx);
+                              }}
+                              className={`py-1 rounded text-[8px] font-bold border transition-all text-center cursor-pointer ${
+                                demoWilayaIndex === idx 
+                                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30 font-black' 
+                                  : 'bg-slate-50 dark:bg-transparent text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-white/5 hover:border-slate-350 dark:hover:border-zinc-800'
+                              }`}
+                            >
+                              {w.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Delivery type simulation */}
+                      <div className="flex gap-2 justify-end pt-1">
                         <button
-                          onClick={() => setDemoQuantity(Math.max(1, demoQuantity - 1))}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 hover:bg-zinc-800 font-bold"
+                          type="button"
+                          onClick={() => setDemoHomeDelivery(false)}
+                          className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all cursor-pointer ${
+                            !demoHomeDelivery 
+                              ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-500/30 font-black' 
+                              : 'bg-slate-50 dark:bg-transparent text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-white/5 hover:border-slate-350'
+                          }`}
                         >
-                          -
+                          {currentT.desk}
                         </button>
-                        <span className="w-4 text-center font-mono text-[9px] font-bold text-white">{demoQuantity}</span>
                         <button
-                          onClick={() => setDemoQuantity(demoQuantity + 1)}
-                          className="w-5 h-5 flex items-center justify-center rounded text-zinc-300 hover:bg-zinc-800 font-bold"
+                          type="button"
+                          onClick={() => setDemoHomeDelivery(true)}
+                          className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all cursor-pointer ${
+                            demoHomeDelivery 
+                              ? 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-500/30 font-black' 
+                              : 'bg-slate-50 dark:bg-transparent text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-white/5 hover:border-slate-350'
+                          }`}
                         >
-                          +
+                          {currentT.home}
                         </button>
+                      </div>
+
+                      {/* Price Calculator display */}
+                      <div className="bg-slate-100 dark:bg-black/40 rounded-lg p-2.5 space-y-1 text-[8px] text-slate-700 dark:text-zinc-400 font-mono text-left border border-slate-200/60 dark:border-0" dir="ltr">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-800 dark:text-zinc-200 font-bold">{itemsTotal} DA</span>
+                          <span className="font-sans text-slate-700 dark:text-zinc-400 font-bold">{currentT.itemsPrice}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-800 dark:text-zinc-200 font-bold">{deliveryCharge} DA</span>
+                          <span className="font-sans text-slate-700 dark:text-zinc-400 font-bold">{currentT.deliveryFee}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-900 dark:text-white font-bold border-t border-slate-200 dark:border-white/5 pt-1.5">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px]">{grandTotal} DA</span>
+                          <span className="font-sans text-slate-800 dark:text-white font-extrabold">{currentT.totalCollect}</span>
+                        </div>
                       </div>
                     </div>
 
-                  </div>
-                </div>
-
-                {/* Shipping Details Checkout form inside the phone */}
-                <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-3 space-y-2 text-right lg:text-right" dir="rtl">
-                  <h5 className="font-extrabold text-white text-[9px] border-b border-white/5 pb-1">{lang === "ar" ? "معلومات الشحن السريع" : "Checkout Invoice Details"}</h5>
-                  
-                  {/* Wilaya selector simulation */}
-                  <div className="space-y-1">
-                    <label className="text-[8px] text-zinc-400 block">{lang === "ar" ? "الولاية المستقبلة" : "Shipping Wilaya"}</label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {[
-                        { name: "16 - الجزائر", fee: 400 },
-                        { name: "31 - وهران", fee: 600 },
-                        { name: "25 - قسنطينة", fee: 650 },
-                        { name: "09 - البليدة", fee: 400 }
-                      ].map((w) => (
-                        <button
-                          key={w.name}
-                          onClick={() => {
-                            setDemoWilayaName(w.name);
-                            setDemoWilayaFee(w.fee);
-                          }}
-                          className={`py-1 rounded text-[8px] font-bold border transition-all text-center ${demoWilayaName === w.name ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-transparent text-zinc-400 border-white/5'}`}
-                        >
-                          {w.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Delivery type simulation */}
-                  <div className="flex gap-2 justify-end pt-1">
+                    {/* Checkout Submit Call-To-Action inside phone */}
                     <button
-                      onClick={() => setDemoHomeDelivery(false)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${!demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5 cursor-pointer'}`}
+                      type="button"
+                      className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black text-[10px] tracking-wider uppercase transition-all duration-200 active:scale-[0.98] cursor-pointer select-none animate-pulse shadow-sm"
+                      onClick={() => setDemoCheckedOut(true)}
                     >
-                      {lang === "ar" ? "مكتب يالدين" : "Yalidine Desk"}
+                      {currentT.confirmBtn}
                     </button>
-                    <button
-                      onClick={() => setDemoHomeDelivery(true)}
-                      className={`px-3 py-1 rounded text-[8px] font-bold border flex-1 text-center transition-all ${demoHomeDelivery ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-transparent text-zinc-400 border-white/5 cursor-pointer'}`}
-                    >
-                      {lang === "ar" ? "شحن للمنزل" : "To Domicile"}
-                    </button>
+
                   </div>
-
-                  {/* Price Calculator display */}
-                  <div className="bg-black/40 rounded-lg p-2 space-y-1 text-[8px] text-zinc-500 font-mono text-left" dir="ltr">
-                    <div className="flex justify-between items-center">
-                      <span className="text-zinc-300">{(demoQuantity * (demoSize === "50ml Luxury" ? 4800 : 5900))} DA</span>
-                      <span>{lang === "ar" ? "سعر المنتجات" : "Items Price"}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-zinc-500">
-                      <span className="text-zinc-300">{demoHomeDelivery ? demoWilayaFee : Math.round(demoWilayaFee * 0.6)} DA</span>
-                      <span>{lang === "ar" ? "سعر التوصيل" : "Delivery Fee"}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-white font-bold border-t border-white/5 pt-1">
-                      <span className="text-emerald-400">{(demoQuantity * (demoSize === "50ml Luxury" ? 4800 : 5900)) + (demoHomeDelivery ? demoWilayaFee : Math.round(demoWilayaFee * 0.6))} DA</span>
-                      <span>{lang === "ar" ? "المجموع الكلي لشحن الطرد" : "Total Collect"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Checkout Submit Call-To-Action inside phone */}
-                <button
-                  className="w-full py-2.5 rounded-xl bg-emerald-500 text-neutral-950 font-black text-[10px] tracking-wider uppercase transition-transform active:scale-[0.98] cursor-pointer select-none animate-pulse"
-                  onClick={() => alert(isRtl ? "محاكاة ناجحة! هذه هي الواجهة الحقيقية التي يدخل إليها زبناؤك لشراء منتجاتك بسهولة تامة." : "Interactive Simulation success! This is exactly how your customers buy from your elegant custom storefront.")}
-                >
-                  {lang === "ar" ? "تأكيـد الشراء الفوري" : "Confirm Fast Checkout"}
-                </button>
-
-              </div>
+                );
+              })()}
             </div>
           </div>
 
