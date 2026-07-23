@@ -1,4 +1,9 @@
  SmartyAI - Smart Order Management & E-Commerce Platform in Algeria
+ 
+ ![Version](https://img.shields.io/badge/version-0.1.0--beta-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Built with](https://img.shields.io/badge/Built%20with-React%20%26%20Express-61DAFB?logo=react)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 
 THE LUXURY SUITE FOR ALGERIAN MERCHANTS & DROP-SHIPPERS
 
