@@ -1,8 +1,19 @@
 {
-  "name": "react-example",
+  "name": "smartyai",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0-beta",
+  "description": "AI-powered e-commerce management platform for Algeria.",
   "type": "module",
+  "author": "smarty7app",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smarty7app/Smarty"
+  },
+  "bugs": {
+    "url": "https://github.com/smarty7app/Smarty/issues"
+  },
+  "homepage": "https://github.com/smarty7app/Smarty#readme",
   "scripts": {
     "dev": "node -e \"const fs = require('fs'); if (!fs.existsSync('firebase-applet-config.json')) fs.writeFileSync('firebase-applet-config.json', fs.readFileSync('firebase-applet-config.example.json'));\" && tsx server.ts",
     "build": "node -e \"const fs = require('fs'); if (!fs.existsSync('firebase-applet-config.json')) fs.writeFileSync('firebase-applet-config.json', fs.readFileSync('firebase-applet-config.example.json'));\" && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
